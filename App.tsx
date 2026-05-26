@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image, StatusBar, Alert, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image, StatusBar, Alert, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, Animated, Easing, Pressable } from 'react-native';
 import { supabase } from './supabase';
 import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
@@ -39,20 +39,28 @@ export default function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const notifListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
+  const registeredUserId = useRef<string | null>(null);
+
+  const maybeRegisterPush = (uid: string) => {
+    if (registeredUserId.current === uid) return;
+    registeredUserId.current = uid;
+    registerForPushNotifications(uid);
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setScreen('main');
-        registerForPushNotifications(session.user.id);
+        maybeRegisterPush(session.user.id);
       }
       setCheckingAuth(false);
     });
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setScreen('main');
-        registerForPushNotifications(session.user.id);
+        maybeRegisterPush(session.user.id);
       } else {
+        registeredUserId.current = null;
         setScreen('splash');
       }
     });
@@ -130,27 +138,33 @@ function Splash({ onNext }: { onNext: () => void }) {
 
   if (showLogin) {
     return (
-      <View style={s.splashContainer}>
-        <StatusBar barStyle="light-content" />
-        <Image source={require('./assets/ecriture-reiz-blanc.png')} style={s.splashLogo} resizeMode="contain" />
-        <Text style={s.splashTagline}>RISE TO YOUR GOALS</Text>
-        <View style={s.splashBottom}>
-          <View style={s.inputBlock}>
-            <Text style={s.inputLabel}>EMAIL</Text>
-            <TextInput style={s.inputField} placeholder="yllan@reiz.app" placeholderTextColor="#444" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <KeyboardAvoidingView style={s.splashContainer} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <StatusBar barStyle="light-content" />
+          <Image source={require('./assets/ecriture-reiz-blanc.png')} style={s.splashLogo} resizeMode="contain" />
+          <Text style={s.splashTagline}>RISE TO YOUR GOALS</Text>
+          <View style={s.splashBottom}>
+            <View style={s.inputBlock}>
+              <Text style={s.inputLabel}>EMAIL</Text>
+              <TextInput style={s.inputField} placeholder="yllan@reiz.app" placeholderTextColor="#444" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+            </View>
+            <View style={s.inputBlock}>
+              <Text style={s.inputLabel}>MOT DE PASSE</Text>
+              <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#444" value={password} onChangeText={setPassword} secureTextEntry />
+            </View>
+            <TouchableOpacity style={[s.btn, loading && s.btnDisabled]} onPress={loading ? undefined : handleLogin}>
+              {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Se connecter →</Text>}
+            </TouchableOpacity>
+            <View style={s.divider}><View style={s.dividerLine} /><Text style={s.dividerText}>ou</Text><View style={s.dividerLine} /></View>
+            <TouchableOpacity style={s.appleBtn} onPress={() => Alert.alert('Bientôt disponible', 'La connexion avec Apple arrive très prochainement.')}>
+              <Text style={s.appleBtnText}>Continuer avec Apple</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ marginTop: 14, alignItems: 'center' }} onPress={() => setShowLogin(false)}>
+              <Text style={s.splashLogin}>← Retour</Text>
+            </TouchableOpacity>
           </View>
-          <View style={s.inputBlock}>
-            <Text style={s.inputLabel}>MOT DE PASSE</Text>
-            <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#444" value={password} onChangeText={setPassword} secureTextEntry />
-          </View>
-          <TouchableOpacity style={[s.btn, loading && s.btnDisabled]} onPress={loading ? undefined : handleLogin}>
-            {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Se connecter →</Text>}
-          </TouchableOpacity>
-          <TouchableOpacity style={{ marginTop: 14, alignItems: 'center' }} onPress={() => setShowLogin(false)}>
-            <Text style={s.splashLogin}>← Retour</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     );
   }
 
@@ -198,22 +212,67 @@ function Onboarding({ onNext }: { onNext: () => void }) {
   const next = () => setStep(st => st + 1);
 
   const handleSignUp = async () => {
-    if (!name || !email || !password) { Alert.alert('Erreur', 'Remplis tous les champs !'); return; }
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    if (!trimmedName || !trimmedEmail || !password) { Alert.alert('Erreur', 'Remplis tous les champs !'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) { Alert.alert('Erreur', 'Email invalide.'); return; }
     if (password.length < 6) { Alert.alert('Erreur', 'Le mot de passe doit faire au moins 6 caractères.'); return; }
+
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
+    const { data, error } = await supabase.auth.signUp({
+      email: trimmedEmail, password,
+      options: { data: { full_name: trimmedName } },
+    });
     if (error) { setLoading(false); Alert.alert('Erreur', error.message); return; }
-    if (data.user) {
-      await supabase.from('users').insert({ id: data.user.id, username: name.toLowerCase().replace(/\s/g, ''), full_name: name });
-      if (goal.trim()) {
-        await supabase.from('objectives').insert({
-          user_id: data.user.id, title: goal.trim(), emoji: '🎯',
-          target_value: 100, current_value: 0, unit: '%', visibility: 'public',
-        });
+    if (!data.user) { setLoading(false); Alert.alert('Erreur', 'Compte non créé, réessaie.'); return; }
+
+    // Username unique : base + suffixe random si collision
+    const base = trimmedName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
+    let username = base;
+    let attempt = 0;
+    let inserted = false;
+    while (attempt < 4 && !inserted) {
+      const { error: insErr } = await supabase.from('users').insert({
+        id: data.user.id, username, full_name: trimmedName,
+      });
+      if (!insErr) { inserted = true; break; }
+      if (insErr.code === '23505') {
+        username = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
+        attempt++;
+      } else {
+        setLoading(false);
+        Alert.alert('Erreur profil', insErr.message);
+        return;
       }
     }
+    if (!inserted) {
+      setLoading(false);
+      Alert.alert('Erreur', "Impossible de créer ton profil. Réessaie.");
+      return;
+    }
+
+    if (goal.trim()) {
+      const { error: objErr } = await supabase.from('objectives').insert({
+        user_id: data.user.id, title: goal.trim(), emoji: '🎯',
+        target_value: 100, current_value: 0, unit: '%', visibility: 'public',
+      });
+      if (objErr) console.warn('Création objectif échouée:', objErr.message);
+    }
+
     setLoading(false);
-    Alert.alert('Bienvenue sur Reiz ! 🎉', '', [{ text: 'C\'est parti', onPress: onNext }]);
+
+    // Si confirmation email requise, pas de session → on ne navigue pas vers Main
+    if (!data.session) {
+      Alert.alert(
+        'Vérifie ta boîte mail 📬',
+        `Un email a été envoyé à ${trimmedEmail}. Clique sur le lien pour confirmer ton compte, puis reviens te connecter.`,
+        [{ text: 'OK', onPress: () => setShowLogin(true) }]
+      );
+      return;
+    }
+
+    // Session active : onAuthStateChange va navigateur vers Main, l'alert reste informatif
+    Alert.alert('Bienvenue sur Reiz ! 🎉', '', [{ text: 'C\'est parti' }]);
   };
 
   const handleLogin = async () => {
@@ -558,18 +617,25 @@ function FeedCard({ u, onRefresh }: { u: Update; onRefresh: () => void }) {
   const toggleReaction = async (emoji: string) => {
     if (!currentUserId) return;
     const isActive = myReactions.includes(emoji);
+    // Snapshot pour rollback si la requête échoue
+    const prevMy = myReactions;
+    const prevCounts = reactions;
+    setShowEmojiPicker(false);
+
     if (isActive) {
-      await supabase.from('reactions').delete().eq('update_id', u.id).eq('user_id', currentUserId).eq('type', emoji);
+      // update optimiste
       setMyReactions(prev => prev.filter(e => e !== emoji));
       setReactions(prev => ({ ...prev, [emoji]: Math.max((prev[emoji] || 1) - 1, 0) }));
+      const { error } = await supabase.from('reactions').delete().eq('update_id', u.id).eq('user_id', currentUserId).eq('type', emoji);
+      if (error) { setMyReactions(prevMy); setReactions(prevCounts); }
     } else {
-      await supabase.from('reactions').insert({ update_id: u.id, user_id: currentUserId, type: emoji });
       setMyReactions(prev => [...prev, emoji]);
       setReactions(prev => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
       const id = ++floatId;
       setFloatingEmojis(prev => [...prev, { id, emoji }]);
+      const { error } = await supabase.from('reactions').insert({ update_id: u.id, user_id: currentUserId, type: emoji });
+      if (error) { setMyReactions(prevMy); setReactions(prevCounts); }
     }
-    setShowEmojiPicker(false);
   };
 
   const uname = u.users?.full_name || 'Utilisateur';
@@ -1051,7 +1117,7 @@ function ProfileScreen({ onClose, streak }: { onClose: () => void; streak: numbe
         onPress: async () => {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
           if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la caméra dans les réglages.'); return; }
-          const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, allowsEditing: true, aspect: [1, 1] });
+          const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
           if (!result.canceled) uploadAvatar(result.assets[0].uri);
         }
       },
@@ -1060,7 +1126,7 @@ function ProfileScreen({ onClose, streak }: { onClose: () => void; streak: numbe
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la galerie dans les réglages.'); return; }
-          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, allowsEditing: true, aspect: [1, 1] });
+          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
           if (!result.canceled) uploadAvatar(result.assets[0].uri);
         }
       },
@@ -1210,7 +1276,7 @@ function Main({ onPost }: { onPost: () => void }) {
     setLoadingObj(false);
   };
 
-  // ✅ Suppression d'objectif
+  // ✅ Suppression d'objectif — supprime aussi les updates liées (au cas où la BDD n'a pas ON DELETE CASCADE)
   const handleDeleteObjective = (id: string, title: string) => {
     Alert.alert(
       "Supprimer l'objectif",
@@ -1221,8 +1287,11 @@ function Main({ onPost }: { onPost: () => void }) {
           text: 'Supprimer',
           style: 'destructive',
           onPress: async () => {
-            await supabase.from('objectives').delete().eq('id', id);
+            await supabase.from('updates').delete().eq('objective_id', id);
+            const { error } = await supabase.from('objectives').delete().eq('id', id);
+            if (error) { Alert.alert('Erreur', error.message); return; }
             fetchObjectives();
+            fetchUpdates();
           }
         }
       ]
@@ -1302,12 +1371,11 @@ function Main({ onPost }: { onPost: () => void }) {
             ) : objectives.map((o) => {
               const pct = progressPct(o);
               return (
-                // ✅ Long press pour supprimer
-                <TouchableOpacity
+                // ✅ Long press pour supprimer — Pressable évite les conflits de tap avec le bouton enfant
+                <Pressable
                   key={o.id}
                   style={s.objCard}
                   onLongPress={() => handleDeleteObjective(o.id, o.title)}
-                  activeOpacity={0.85}
                 >
                   <View style={s.objCardTop}>
                     <Text style={s.objEmoji}>{o.emoji}</Text>
@@ -1328,7 +1396,7 @@ function Main({ onPost }: { onPost: () => void }) {
                   <TouchableOpacity style={s.updateBtn} onPress={onPost}>
                     <Text style={s.updateBtnText}>+ Mise à jour</Text>
                   </TouchableOpacity>
-                </TouchableOpacity>
+                </Pressable>
               );
             })
           }
@@ -1403,7 +1471,7 @@ function Post({ onBack, onPublish }: { onBack: () => void, onPublish: () => void
         onPress: async () => {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
           if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la caméra dans les réglages.'); return; }
-          const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, allowsEditing: true, aspect: [4, 3] });
+          const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [4, 3] });
           if (!result.canceled) setPhotoUri(result.assets[0].uri);
         }
       },
@@ -1412,7 +1480,7 @@ function Post({ onBack, onPublish }: { onBack: () => void, onPublish: () => void
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la galerie dans les réglages.'); return; }
-          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, allowsEditing: true, aspect: [4, 3] });
+          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [4, 3] });
           if (!result.canceled) setPhotoUri(result.assets[0].uri);
         }
       },

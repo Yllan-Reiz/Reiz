@@ -16,7 +16,13 @@ const MESSAGES = [
   'Ton cercle progresse. Tu ne veux pas rester en arrière ? 🏆',
 ];
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  // Protection conditionnelle : si CRON_SECRET est défini côté Supabase, on l'exige dans le header.
+  const expected = Deno.env.get('CRON_SECRET');
+  if (expected && req.headers.get('x-cron-secret') !== expected) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
   const { data: users } = await supabase
     .from('users')
     .select('push_token')

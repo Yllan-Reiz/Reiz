@@ -5,7 +5,14 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  // Protection conditionnelle : si CRON_SECRET est défini côté Supabase, on l'exige dans le header.
+  // Configure côté cron: header `x-cron-secret: <ta-valeur>`
+  const expected = Deno.env.get('CRON_SECRET');
+  if (expected && req.headers.get('x-cron-secret') !== expected) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayISO = today.toISOString();
