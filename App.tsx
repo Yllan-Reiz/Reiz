@@ -6,6 +6,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -139,29 +140,37 @@ function Splash({ onNext }: { onNext: () => void }) {
 
   if (showLogin) {
     return (
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <KeyboardAvoidingView style={s.splashContainer} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <StatusBar barStyle="light-content" />
-          <Image source={require('./assets/ecriture-reiz-blanc.png')} style={s.splashLogo} resizeMode="contain" />
-          <Text style={s.splashTagline}>RISE TO YOUR GOALS</Text>
-          <View style={s.splashBottom}>
-            <View style={s.inputBlock}>
-              <Text style={s.inputLabel}>EMAIL</Text>
-              <TextInput style={s.inputField} placeholder="yllan@reiz.app" placeholderTextColor="#444" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-            </View>
-            <View style={s.inputBlock}>
-              <Text style={s.inputLabel}>MOT DE PASSE</Text>
-              <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#444" value={password} onChangeText={setPassword} secureTextEntry />
-            </View>
-            <TouchableOpacity style={[s.btn, loading && s.btnDisabled]} onPress={loading ? undefined : handleLogin}>
-              {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Se connecter →</Text>}
-            </TouchableOpacity>
-            <TouchableOpacity style={{ marginTop: 14, alignItems: 'center' }} onPress={() => setShowLogin(false)}>
-              <Text style={s.splashLogin}>← Retour</Text>
-            </TouchableOpacity>
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: '#0a0a0a' }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <StatusBar barStyle="light-content" />
+        <ScrollView
+          contentContainerStyle={s.splashLoginContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={{ alignItems: 'center', marginBottom: 32 }}>
+            <Image source={require('./assets/ecriture-reiz-blanc.png')} style={s.splashLogoLogin} resizeMode="contain" />
+            <Text style={s.splashTagline}>RISE TO YOUR GOALS</Text>
           </View>
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
+          <View style={s.inputBlock}>
+            <Text style={s.inputLabel}>EMAIL</Text>
+            <TextInput style={s.inputField} placeholder="yllan@reiz.app" placeholderTextColor="#444" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+          </View>
+          <View style={s.inputBlock}>
+            <Text style={s.inputLabel}>MOT DE PASSE</Text>
+            <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#444" value={password} onChangeText={setPassword} secureTextEntry />
+          </View>
+          <TouchableOpacity style={[s.btn, { marginTop: 8 }, loading && s.btnDisabled]} onPress={loading ? undefined : handleLogin}>
+            {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Se connecter →</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity style={{ marginTop: 18, alignItems: 'center' }} onPress={() => setShowLogin(false)}>
+            <Text style={s.splashLogin}>← Retour</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -396,7 +405,7 @@ function Onboarding({ onNext }: { onNext: () => void }) {
 
 // ============ TYPES ============
 type Update = { id: string; caption: string; progress_value: number; created_at: string; photo_url?: string; users: any; };
-type Objective = { id: string; emoji: string; title: string; current_value: number; target_value: number; unit: string; visibility: string; };
+type Objective = { id: string; emoji: string; title: string; current_value: number; target_value: number; unit: string; visibility: string; duration_days?: number | null; };
 type Comment = { id: string; content: string; created_at: string; users: any; };
 type Friend = { id: string; full_name: string; username: string; friendship_id: string; status: string; is_requester: boolean; };
 type PendingRequest = { id: string; full_name: string; username: string; friendship_id: string; };
@@ -501,7 +510,12 @@ function CommentsModal({ visible, updateId, onClose }: { visible: boolean; updat
     if (!user) { setSending(false); return; }
     const { error } = await supabase.from('comments').insert({ update_id: updateId, user_id: user.id, content: newComment.trim() });
     setSending(false);
-    if (!error) { setNewComment(''); fetchComments(); }
+    if (!error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      setNewComment(''); fetchComments();
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+    }
   };
 
   return (
@@ -585,11 +599,13 @@ function FeedCard({ u, onRefresh }: { u: Update; onRefresh: () => void }) {
 
     if (isActive) {
       // update optimiste
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {});
       setMyReactions(prev => prev.filter(e => e !== emoji));
       setReactions(prev => ({ ...prev, [emoji]: Math.max((prev[emoji] || 1) - 1, 0) }));
       const { error } = await supabase.from('reactions').delete().eq('update_id', u.id).eq('user_id', currentUserId).eq('type', emoji);
       if (error) { setMyReactions(prevMy); setReactions(prevCounts); }
     } else {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       setMyReactions(prev => [...prev, emoji]);
       setReactions(prev => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
       const id = ++floatId;
@@ -720,16 +736,34 @@ function FeedCard({ u, onRefresh }: { u: Update; onRefresh: () => void }) {
   );
 }
 
-const UNITS = ['%', 'km', 'm', 'kg', 'lbs', 'min', 'h', 'x', '€', 'L', 'ml', 'pages', 'j', 'séances', 'fois'];
+const UNITS = ['%', 'km', 'm', 'kg', 'lbs', 'min', 'h', 'x', 'reps', 'séances', 'cal', 'pas', 'fois'];
 const ITEM_H = 44;
 
 function WheelPicker({ selected, onSelect }: { selected: string; onSelect: (u: string) => void }) {
   const ref = useRef<ScrollView>(null);
+  const lastIdx = useRef<number>(UNITS.indexOf(selected) === -1 ? 0 : UNITS.indexOf(selected));
   const idx = UNITS.indexOf(selected) === -1 ? 0 : UNITS.indexOf(selected);
 
+  // Scroll initial vers l'unité sélectionnée
   useEffect(() => {
     setTimeout(() => ref.current?.scrollTo({ y: idx * ITEM_H, animated: false }), 50);
   }, []);
+
+  const handleSelectFromOffset = (offsetY: number) => {
+    const i = Math.round(offsetY / ITEM_H);
+    const clamped = Math.max(0, Math.min(i, UNITS.length - 1));
+    onSelect(UNITS[clamped]);
+  };
+
+  // Vibration "tick" à chaque changement de cran pendant le scroll
+  const handleScroll = (offsetY: number) => {
+    const i = Math.round(offsetY / ITEM_H);
+    const clamped = Math.max(0, Math.min(i, UNITS.length - 1));
+    if (clamped !== lastIdx.current) {
+      lastIdx.current = clamped;
+      Haptics.selectionAsync().catch(() => {});
+    }
+  };
 
   return (
     <View style={s.wheelWrap}>
@@ -740,16 +774,26 @@ function WheelPicker({ selected, onSelect }: { selected: string; onSelect: (u: s
         showsVerticalScrollIndicator={false}
         snapToInterval={ITEM_H}
         decelerationRate="fast"
+        nestedScrollEnabled
+        scrollEventThrottle={16}
         contentContainerStyle={{ paddingVertical: ITEM_H * 2 }}
-        onMomentumScrollEnd={e => {
-          const i = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
-          onSelect(UNITS[Math.max(0, Math.min(i, UNITS.length - 1))]);
-        }}
+        onScroll={e => handleScroll(e.nativeEvent.contentOffset.y)}
+        onMomentumScrollEnd={e => handleSelectFromOffset(e.nativeEvent.contentOffset.y)}
+        onScrollEndDrag={e => handleSelectFromOffset(e.nativeEvent.contentOffset.y)}
       >
         {UNITS.map((u, i) => (
-          <View key={u} style={s.wheelItem}>
+          <TouchableOpacity
+            key={u}
+            style={s.wheelItem}
+            activeOpacity={0.6}
+            onPress={() => {
+              Haptics.selectionAsync().catch(() => {});
+              onSelect(u);
+              ref.current?.scrollTo({ y: i * ITEM_H, animated: true });
+            }}
+          >
             <Text style={[s.wheelItemText, selected === u && s.wheelItemTextActive]}>{u}</Text>
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </View>
@@ -757,14 +801,24 @@ function WheelPicker({ selected, onSelect }: { selected: string; onSelect: (u: s
 }
 
 // ============ MODAL CRÉATION OBJECTIF ============
+const DURATION_OPTIONS: { label: string; value: number | null }[] = [
+  { label: '7j', value: 7 },
+  { label: '21j', value: 21 },
+  { label: '30j', value: 30 },
+  { label: '60j', value: 60 },
+  { label: '90j', value: 90 },
+  { label: '∞', value: null },
+];
+
 function CreateObjectiveModal({ visible, onClose, onCreated }: { visible: boolean; onClose: () => void; onCreated: () => void }) {
   const [title, setTitle] = useState('');
   const [unit, setUnit] = useState('%');
   const [targetValue, setTargetValue] = useState('');
   const [visibility, setVisibility] = useState('public');
+  const [duration, setDuration] = useState<number | null>(21); // par défaut 21j
   const [saving, setSaving] = useState(false);
 
-  const reset = () => { setTitle(''); setUnit('%'); setTargetValue(''); setVisibility('public'); };
+  const reset = () => { setTitle(''); setUnit('%'); setTargetValue(''); setVisibility('public'); setDuration(21); };
 
   const handleCreate = async () => {
     if (!title.trim()) { Alert.alert('Erreur', 'Donne un nom à ton objectif !'); return; }
@@ -776,6 +830,7 @@ function CreateObjectiveModal({ visible, onClose, onCreated }: { visible: boolea
       user_id: user.id, title: title.trim(), emoji: '🎯',
       target_value: Number(targetValue), current_value: 0,
       unit: unit, visibility,
+      duration_days: duration,
     });
     setSaving(false);
     if (error) { Alert.alert('Erreur', error.message); return; }
@@ -785,7 +840,6 @@ function CreateObjectiveModal({ visible, onClose, onCreated }: { visible: boolea
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView style={s.modalContainer} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={s.modalHeader}>
           <TouchableOpacity onPress={() => { reset(); onClose(); }}><Text style={s.modalCancel}>Annuler</Text></TouchableOpacity>
@@ -794,7 +848,12 @@ function CreateObjectiveModal({ visible, onClose, onCreated }: { visible: boolea
             {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.modalSave}>Créer</Text>}
           </TouchableOpacity>
         </View>
-        <ScrollView style={s.modalBody} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={s.modalBody}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>NOM DE L'OBJECTIF</Text>
             <TextInput style={s.inputField} placeholder="Ex: Courir 10 km, Lire 12 livres..." placeholderTextColor="#444" value={title} onChangeText={setTitle} autoCapitalize="sentences" />
@@ -806,6 +865,22 @@ function CreateObjectiveModal({ visible, onClose, onCreated }: { visible: boolea
 
           <Text style={s.inputLabel}>UNITÉ</Text>
           <WheelPicker selected={unit} onSelect={setUnit} />
+          <Text style={s.inputLabel}>DURÉE D'ENGAGEMENT</Text>
+          <View style={s.durationRow}>
+            {DURATION_OPTIONS.map(opt => {
+              const active = duration === opt.value;
+              return (
+                <TouchableOpacity
+                  key={opt.label}
+                  style={[s.durationPill, active && s.durationPillActive]}
+                  onPress={() => { Haptics.selectionAsync().catch(() => {}); setDuration(opt.value); }}
+                >
+                  <Text style={[s.durationPillText, active && s.durationPillTextActive]}>{opt.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           <Text style={s.inputLabel}>VISIBILITÉ</Text>
           <View style={s.visToggle}>
             {[{ key: 'public', label: '🌍 Public' }, { key: 'friends', label: '👥 Amis' }, { key: 'private', label: '🔒 Privé' }].map(v => (
@@ -817,13 +892,12 @@ function CreateObjectiveModal({ visible, onClose, onCreated }: { visible: boolea
           <View style={{ height: 60 }} />
         </ScrollView>
       </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
     </Modal>
   );
 }
 
 // ============ ONGLET AMIS ============
-function FriendsTab() {
+function FriendsTab({ onViewProfile }: { onViewProfile: (userId: string) => void }) {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pending, setPending] = useState<PendingRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -942,7 +1016,7 @@ function FriendsTab() {
           <Text style={s.sectionTitle}>RÉSULTATS</Text>
           {searching && <ActivityIndicator color="#fff" style={{ marginBottom: 10 }} />}
           {searchResults.map((u) => (
-            <View key={u.id} style={s.friendRow}>
+            <TouchableOpacity key={u.id} style={s.friendRow} onPress={() => onViewProfile(u.id)} activeOpacity={0.8}>
               <View style={s.friendRowAv}><Text style={s.friendRowAvText}>{u.full_name.charAt(0).toUpperCase()}</Text></View>
               <View style={s.friendRowInfo}>
                 <Text style={s.friendRowName}>{u.full_name}</Text>
@@ -955,7 +1029,7 @@ function FriendsTab() {
                   <Text style={s.addFriendBtnText}>Ajouter</Text>
                 </TouchableOpacity>
               )}
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       )}
@@ -992,14 +1066,14 @@ function FriendsTab() {
           <Text style={s.sectionTitle}>MÊME OBJECTIF</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.suggestScroll} contentContainerStyle={{ gap: 12 }}>
             {suggestions.map((u) => (
-              <View key={u.id} style={s.suggestCard}>
+              <TouchableOpacity key={u.id} style={s.suggestCard} onPress={() => onViewProfile(u.id)} activeOpacity={0.8}>
                 <View style={s.suggestAv}><Text style={s.suggestAvText}>{u.full_name.charAt(0).toUpperCase()}</Text></View>
                 <Text style={s.suggestName} numberOfLines={1}>{u.full_name}</Text>
                 <Text style={s.suggestObj} numberOfLines={2}>{u.objectiveTitle}</Text>
                 <TouchableOpacity style={s.suggestAddBtn} onPress={() => sendFriendRequest(u.id)}>
                   <Text style={s.suggestAddText}>Ajouter</Text>
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
@@ -1016,7 +1090,13 @@ function FriendsTab() {
           <Text style={{ color: '#333', fontSize: 13 }}>Cherche des amis par leur prénom</Text>
         </View>
       ) : friends.map((f) => (
-        <TouchableOpacity key={f.friendship_id} style={s.friendRow} onLongPress={() => removeFriend(f.friendship_id, f.full_name)} activeOpacity={0.8}>
+        <TouchableOpacity
+          key={f.friendship_id}
+          style={s.friendRow}
+          onPress={() => onViewProfile(f.id)}
+          onLongPress={() => removeFriend(f.friendship_id, f.full_name)}
+          activeOpacity={0.8}
+        >
           <View style={[s.friendRowAv, s.friendRowAvActive]}>
             <Text style={s.friendRowAvText}>{f.full_name.charAt(0).toUpperCase()}</Text>
           </View>
@@ -1032,10 +1112,30 @@ function FriendsTab() {
 }
 
 // ============ PROFIL ============
-function ProfileScreen({ onClose, streak }: { onClose: () => void; streak: number }) {
+const HEATMAP_DEFAULT_DAYS = 30; // pour les objectifs ∞ (durée indéfinie)
+const HEATMAP_MAX_DAYS = 90;     // plafond visuel pour ne pas exploser l'écran
+
+function daysFor(obj: { duration_days?: number | null }): number {
+  if (obj.duration_days == null) return HEATMAP_DEFAULT_DAYS;
+  return Math.max(1, Math.min(obj.duration_days, HEATMAP_MAX_DAYS));
+}
+
+function dayKeysFor(nbDays: number): string[] {
+  const keys: string[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = nbDays - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    keys.push(d.toDateString());
+  }
+  return keys;
+}
+
+function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose: () => void; streak: number; onCreateObjective: () => void }) {
   const [profile, setProfile] = useState<any>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
-  const [recentUpdates, setRecentUpdates] = useState<Update[]>([]);
+  const [activityByObj, setActivityByObj] = useState<Record<string, Set<string>>>({});
   const [friendCount, setFriendCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [editingName, setEditingName] = useState(false);
@@ -1049,15 +1149,25 @@ function ProfileScreen({ onClose, streak }: { onClose: () => void; streak: numbe
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
+    const sinceISO = new Date(Date.now() - HEATMAP_MAX_DAYS * 24 * 60 * 60 * 1000).toISOString();
     const [profileRes, objRes, updatesRes, friendsRes] = await Promise.all([
       supabase.from('users').select('full_name, username, created_at, avatar_url').eq('id', user.id).single(),
-      supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility').eq('user_id', user.id).order('created_at', { ascending: false }),
-      supabase.from('updates').select('id, caption, progress_value, created_at, photo_url, users(full_name)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
+      supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility, duration_days').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('updates').select('objective_id, created_at').eq('user_id', user.id).gte('created_at', sinceISO),
       supabase.from('friendships').select('id').or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`).eq('status', 'accepted'),
     ]);
     if (profileRes.data) { setProfile(profileRes.data); setNewName(profileRes.data.full_name); }
     if (objRes.data) setObjectives(objRes.data as Objective[]);
-    if (updatesRes.data) setRecentUpdates(updatesRes.data as unknown as Update[]);
+    if (updatesRes.data) {
+      const map: Record<string, Set<string>> = {};
+      (updatesRes.data as { objective_id: string; created_at: string }[]).forEach(u => {
+        if (!u.objective_id) return;
+        const key = new Date(u.created_at).toDateString();
+        if (!map[u.objective_id]) map[u.objective_id] = new Set<string>();
+        map[u.objective_id].add(key);
+      });
+      setActivityByObj(map);
+    }
     if (friendsRes.data) setFriendCount(friendsRes.data.length);
     setLoading(false);
   };
@@ -1118,27 +1228,6 @@ function ProfileScreen({ onClose, streak }: { onClose: () => void; streak: numbe
     ]);
   };
 
-  const handleDeleteUpdate = (id: string) => {
-    Alert.alert(
-      'Supprimer la publication',
-      'Cette publication ainsi que ses réactions et commentaires seront supprimés.',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            await supabase.from('reactions').delete().eq('update_id', id);
-            await supabase.from('comments').delete().eq('update_id', id);
-            const { error } = await supabase.from('updates').delete().eq('id', id);
-            if (error) { Alert.alert('Erreur', error.message); return; }
-            loadProfile();
-          }
-        }
-      ]
-    );
-  };
-
   const progressPct = (o: Objective) => o.target_value > 0 ? Math.min(Math.round((o.current_value / o.target_value) * 100), 100) : 0;
   const initial = profile?.full_name?.charAt(0).toUpperCase() || '?';
   const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '';
@@ -1193,9 +1282,120 @@ function ProfileScreen({ onClose, streak }: { onClose: () => void; streak: numbe
             <View style={s.statPill}><Text style={s.statVal}>{friendCount}</Text><Text style={s.statLbl}>Amis</Text></View>
           </View>
 
-          <Text style={s.sectionTitle}>MES OBJECTIFS</Text>
           {objectives.length === 0 ? (
-            <View style={{ paddingVertical: 20, alignItems: 'center' }}><Text style={{ color: '#555', fontSize: 13 }}>Aucun objectif pour l'instant</Text></View>
+            <View style={s.emptyState}>
+              <Text style={s.emptyStateTitle}>Pose ton premier objectif</Text>
+              <Text style={s.emptyStateText}>Choisis ce que tu veux dépasser. Ton cercle te suivra chaque jour.</Text>
+              <TouchableOpacity style={s.emptyStateBtn} onPress={onCreateObjective}>
+                <Text style={s.emptyStateBtnText}>Aller à mes objectifs →</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <Text style={s.sectionTitle}>MES OBJECTIFS</Text>
+              {objectives.map((o) => {
+                const set = activityByObj[o.id] || new Set<string>();
+                const nbDays = daysFor(o);
+                const dayKeys = dayKeysFor(nbDays);
+                const doneCount = dayKeys.filter(d => set.has(d)).length;
+                const pct = progressPct(o);
+                const isInfinite = o.duration_days == null;
+                return (
+                  <View key={o.id} style={s.objCardProfile}>
+                    <View style={s.objCardProfileHead}>
+                      <Text style={s.objCardProfileTitle} numberOfLines={1}>{o.title}</Text>
+                      <Text style={s.objCardProfilePct}>{pct}%</Text>
+                    </View>
+                    <View style={s.progressBg}><View style={[s.progressFill, { width: `${pct}%` as any }]} /></View>
+                    <View style={s.heatGrid}>
+                      {dayKeys.map((d, i) => (
+                        <View key={i} style={[s.heatCell, set.has(d) && s.heatCellActive]} />
+                      ))}
+                    </View>
+                    <Text style={s.objCardProfileFoot}>
+                      {doneCount} jours {isInfinite ? `sur les ${nbDays} derniers` : `sur ${nbDays}`}
+                    </Text>
+                  </View>
+                );
+              })}
+            </>
+          )}
+
+          <TouchableOpacity style={s.signOutBtn} onPress={handleSignOut}>
+            <Text style={s.signOutBtnText}>Se déconnecter</Text>
+          </TouchableOpacity>
+          <View style={{ height: 60 }} />
+        </ScrollView>
+      )}
+    </View>
+  );
+}
+
+// ============ PROFIL D'UN AMI (lecture seule) ============
+function FriendProfileScreen({ userId, onClose }: { userId: string; onClose: () => void }) {
+  const [profile, setProfile] = useState<any>(null);
+  const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [recentUpdates, setRecentUpdates] = useState<Update[]>([]);
+  const [friendCount, setFriendCount] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const [profileRes, objRes, updatesRes, friendsRes] = await Promise.all([
+        supabase.from('users').select('full_name, username, created_at, avatar_url').eq('id', userId).single(),
+        supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility').eq('user_id', userId).in('visibility', ['public', 'friends']).order('created_at', { ascending: false }),
+        supabase.from('updates').select('id, caption, progress_value, created_at, photo_url, users(full_name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(5),
+        supabase.from('friendships').select('id').or(`requester_id.eq.${userId},receiver_id.eq.${userId}`).eq('status', 'accepted'),
+      ]);
+      if (profileRes.data) setProfile(profileRes.data);
+      if (objRes.data) setObjectives(objRes.data as Objective[]);
+      if (updatesRes.data) setRecentUpdates(updatesRes.data as unknown as Update[]);
+      if (friendsRes.data) setFriendCount(friendsRes.data.length);
+      const streakVal = await calculateStreak(userId);
+      setStreak(streakVal);
+      setLoading(false);
+    };
+    load();
+  }, [userId]);
+
+  const progressPct = (o: Objective) => o.target_value > 0 ? Math.min(Math.round((o.current_value / o.target_value) * 100), 100) : 0;
+  const initial = profile?.full_name?.charAt(0).toUpperCase() || '?';
+  const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '';
+
+  return (
+    <View style={s.container}>
+      <View style={s.header}>
+        <TouchableOpacity style={s.backBtn} onPress={onClose}><Text style={s.backText}>←</Text></TouchableOpacity>
+        <Text style={s.headerTitle}>{profile?.full_name || 'Profil'}</Text>
+        <View style={{ width: 34 }} />
+      </View>
+      {loading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#fff" /></View>
+      ) : (
+        <ScrollView style={s.feed} showsVerticalScrollIndicator={false}>
+          <View style={s.profileHero}>
+            <View style={s.profileAvatarWrap}>
+              {profile?.avatar_url
+                ? <Image source={{ uri: profile.avatar_url }} style={s.profileAvatarImg} />
+                : <View style={s.profileAvatar}><Text style={s.profileAvatarText}>{initial}</Text></View>
+              }
+            </View>
+            <Text style={s.profileName}>{profile?.full_name || 'Utilisateur'}</Text>
+            <Text style={s.profileUsername}>@{profile?.username}</Text>
+            <Text style={s.profileMember}>Membre depuis {memberSince}</Text>
+          </View>
+
+          <View style={s.statsRow}>
+            <View style={s.statPill}><Text style={s.statVal}>🔥 {streak}j</Text><Text style={s.statLbl}>Streak</Text></View>
+            <View style={s.statPill}><Text style={s.statVal}>{objectives.length}</Text><Text style={s.statLbl}>Objectifs</Text></View>
+            <View style={s.statPill}><Text style={s.statVal}>{friendCount}</Text><Text style={s.statLbl}>Amis</Text></View>
+          </View>
+
+          <Text style={s.sectionTitle}>SES OBJECTIFS</Text>
+          {objectives.length === 0 ? (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}><Text style={{ color: '#555', fontSize: 13 }}>Pas d'objectifs visibles</Text></View>
           ) : objectives.map((o) => (
             <View key={o.id} style={s.profileObjRow}>
               <Text style={s.profileObjEmoji}>{o.emoji}</Text>
@@ -1209,27 +1409,18 @@ function ProfileScreen({ onClose, streak }: { onClose: () => void; streak: numbe
 
           <Text style={s.sectionTitle}>PUBLICATIONS RÉCENTES</Text>
           {recentUpdates.length === 0 ? (
-            <View style={{ paddingVertical: 20, alignItems: 'center' }}><Text style={{ color: '#555', fontSize: 13 }}>Aucune publication pour l'instant</Text></View>
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}><Text style={{ color: '#555', fontSize: 13 }}>Pas de publication pour l'instant</Text></View>
           ) : recentUpdates.map((u) => (
-            <Pressable key={u.id} style={s.profileUpdateRow} onLongPress={() => handleDeleteUpdate(u.id)}>
+            <View key={u.id} style={s.profileUpdateRow}>
               {u.photo_url && <Image source={{ uri: u.photo_url }} style={s.profileUpdatePhoto} resizeMode="cover" />}
               <View style={{ flex: 1 }}>
                 <Text style={s.profileUpdateCaption} numberOfLines={2}>{u.caption}</Text>
                 <Text style={s.profileUpdateTime}>{timeAgo(u.created_at)}</Text>
               </View>
               <View style={s.profileProgressBadge}><Text style={s.profileProgressBadgeText}>{u.progress_value || 0}</Text></View>
-            </Pressable>
+            </View>
           ))}
-          {recentUpdates.length > 0 && (
-            <Text style={{ color: '#333', fontSize: 11, textAlign: 'center', marginTop: 4, marginBottom: 8 }}>
-              Appui long sur une publication pour la supprimer
-            </Text>
-          )}
-
-          <TouchableOpacity style={s.signOutBtn} onPress={handleSignOut}>
-            <Text style={s.signOutBtnText}>Se déconnecter</Text>
-          </TouchableOpacity>
-          <View style={{ height: 60 }} />
+          <View style={{ height: 80 }} />
         </ScrollView>
       )}
     </View>
@@ -1246,6 +1437,7 @@ function Main({ onPost }: { onPost: () => void }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [streak, setStreak] = useState(0);
   const [showProfile, setShowProfile] = useState(false);
+  const [viewingFriendId, setViewingFriendId] = useState<string | null>(null);
 
   const fetchUpdates = async () => {
     setLoadingFeed(true);
@@ -1295,7 +1487,14 @@ function Main({ onPost }: { onPost: () => void }) {
 
   const progressPct = (obj: Objective) => obj.target_value > 0 ? Math.min(Math.round((obj.current_value / obj.target_value) * 100), 100) : 0;
 
-  if (showProfile) return <ProfileScreen onClose={() => setShowProfile(false)} streak={streak} />;
+  if (viewingFriendId) return <FriendProfileScreen userId={viewingFriendId} onClose={() => setViewingFriendId(null)} />;
+  if (showProfile) return (
+    <ProfileScreen
+      onClose={() => setShowProfile(false)}
+      streak={streak}
+      onCreateObjective={() => { setShowProfile(false); setTab('objectives'); }}
+    />
+  );
 
   return (
     <View style={s.container}>
@@ -1339,23 +1538,28 @@ function Main({ onPost }: { onPost: () => void }) {
       )}
 
       {tab === 'objectives' && (
+        loadingObj ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color="#fff" />
+          </View>
+        ) : objectives.length === 0 ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingBottom: 82 }}>
+            <Text style={{ color: '#555', fontSize: 14, fontWeight: '700', marginBottom: 20 }}>Aucun objectif pour l'instant</Text>
+            <TouchableOpacity style={s.emptyStateBtn} onPress={() => setShowCreateModal(true)}>
+              <Text style={s.emptyStateBtnText}>+ Ajouter un objectif</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
         <ScrollView style={s.feed} showsVerticalScrollIndicator={false}>
           <View style={s.statsRow}>
             <View style={s.statPill}><Text style={s.statVal}>{objectives.length}</Text><Text style={s.statLbl}>Actifs</Text></View>
             <View style={s.statPill}><Text style={s.statVal}>🔥 {streak}j</Text><Text style={s.statLbl}>Streak</Text></View>
             <View style={s.statPill}>
-              <Text style={s.statVal}>{objectives.length > 0 ? Math.round(objectives.reduce((acc, o) => acc + progressPct(o), 0) / objectives.length) : 0}%</Text>
+              <Text style={s.statVal}>{Math.round(objectives.reduce((acc, o) => acc + progressPct(o), 0) / objectives.length)}%</Text>
               <Text style={s.statLbl}>Moy.</Text>
             </View>
           </View>
-          {loadingObj ? <View style={{ paddingTop: 30, alignItems: 'center' }}><ActivityIndicator color="#fff" /></View>
-            : objectives.length === 0 ? (
-              <View style={{ paddingTop: 30, alignItems: 'center' }}>
-                <Text style={{ fontSize: 32 }}>🎯</Text>
-                <Text style={{ color: '#555', marginTop: 10, fontSize: 14, fontWeight: '700' }}>Aucun objectif pour l'instant</Text>
-                <Text style={{ color: '#444', marginTop: 4, fontSize: 12 }}>Crée ton premier objectif !</Text>
-              </View>
-            ) : objectives.map((o) => {
+          {objectives.map((o) => {
               const pct = progressPct(o);
               return (
                 // ✅ Long press pour supprimer — Pressable évite les conflits de tap avec le bouton enfant
@@ -1365,14 +1569,13 @@ function Main({ onPost }: { onPost: () => void }) {
                   onLongPress={() => handleDeleteObjective(o.id, o.title)}
                 >
                   <View style={s.objCardTop}>
-                    <Text style={s.objEmoji}>{o.emoji}</Text>
+                    <Text style={s.objCardName} numberOfLines={1}>{o.title}</Text>
                     <View style={[s.visBadge, o.visibility === 'public' && s.visBadgePublic]}>
                       <Text style={[s.visText, o.visibility === 'public' && s.visTextPublic]}>
                         {o.visibility === 'public' ? 'Public' : o.visibility === 'friends' ? 'Amis' : 'Privé'}
                       </Text>
                     </View>
                   </View>
-                  <Text style={s.objCardName}>{o.title}</Text>
                   <Text style={s.objCardSub}>{o.current_value} {o.unit} sur {o.target_value}</Text>
                   <View style={s.objProgressRow}>
                     <View style={s.objProgressBg}>
@@ -1388,38 +1591,37 @@ function Main({ onPost }: { onPost: () => void }) {
             })
           }
           {/* Hint suppression */}
-          {objectives.length > 0 && (
-            <Text style={{ color: '#333', fontSize: 11, textAlign: 'center', marginBottom: 8 }}>
-              Appui long sur un objectif pour le supprimer
-            </Text>
-          )}
+          <Text style={{ color: '#333', fontSize: 11, textAlign: 'center', marginBottom: 8 }}>
+            Appui long sur un objectif pour le supprimer
+          </Text>
           <TouchableOpacity style={s.addObjBtn} onPress={() => setShowCreateModal(true)}>
             <Text style={s.addObjBtnText}>+ Ajouter un objectif</Text>
           </TouchableOpacity>
           <View style={{ height: 100 }} />
         </ScrollView>
+        )
       )}
 
-      {tab === 'friends' && <FriendsTab />}
+      {tab === 'friends' && <FriendsTab onViewProfile={(id) => setViewingFriendId(id)} />}
 
       <View style={s.bottomNav}>
         <TouchableOpacity style={s.navItem} onPress={() => setTab('feed')}>
-          <Text style={[s.navIcon, tab === 'feed' && s.navIconActive]}>⊞</Text>
+          <Ionicons name="home" size={22} color={tab === 'feed' ? '#fff' : '#444'} />
           <Text style={[s.navLabel, tab === 'feed' && s.navLabelActive]}>Feed</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.navItem} onPress={() => setTab('objectives')}>
-          <Text style={[s.navIcon, tab === 'objectives' && s.navIconActive]}>◎</Text>
+          <Ionicons name="apps" size={22} color={tab === 'objectives' ? '#fff' : '#444'} />
           <Text style={[s.navLabel, tab === 'objectives' && s.navLabelActive]}>Objectifs</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.navItem} onPress={onPost}>
           <View style={s.navPostBtn}><Text style={s.navPostBtnText}>+</Text></View>
         </TouchableOpacity>
         <TouchableOpacity style={s.navItem} onPress={() => setTab('friends')}>
-          <Ionicons name="people" size={22} color={tab === 'friends' ? '#fff' : '#444'} />
+          <Ionicons name="person-add" size={22} color={tab === 'friends' ? '#fff' : '#444'} />
           <Text style={[s.navLabel, tab === 'friends' && s.navLabelActive]}>Amis</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.navItem} onPress={() => setShowProfile(true)}>
-          <Text style={s.navIcon}>◉</Text>
+          <Ionicons name="person" size={22} color="#444" />
           <Text style={s.navLabel}>Profil</Text>
         </TouchableOpacity>
       </View>
@@ -1503,9 +1705,19 @@ function Post({ onBack, onPublish }: { onBack: () => void, onPublish: () => void
       progress_value: progressValue,
       photo_url: photoUrl,
     });
+    if (!error) {
+      // Met à jour le current_value de l'objectif pour que le profil reflète la nouvelle progression
+      await supabase.from('objectives').update({ current_value: progressValue }).eq('id', obj.id);
+    }
     setPublishing(false);
-    if (error) { Alert.alert('Erreur', error.message); }
-    else { Alert.alert('Publié ! 🚀', 'Ta mise à jour est en ligne.'); onPublish(); }
+    if (error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      Alert.alert('Erreur', error.message);
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      Alert.alert('Publié ! 🚀', 'Ta mise à jour est en ligne.');
+      onPublish();
+    }
   };
 
   return (
@@ -1561,8 +1773,20 @@ function Post({ onBack, onPublish }: { onBack: () => void, onPublish: () => void
                 <Text style={s.postProgressBtnText}>−</Text>
               </TouchableOpacity>
               <View style={s.postProgressCenter}>
-                <Text style={s.postProgressPct}>{progress}%</Text>
-                <Text style={s.postProgressVal}>{Math.round((progress / 100) * obj.target_value * 10) / 10} {obj.unit} / {obj.target_value}</Text>
+                {obj.unit === '%' ? (
+                  <>
+                    <Text style={s.postProgressPct}>{progress}%</Text>
+                    <Text style={s.postProgressVal}>objectif {obj.target_value}%</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={s.postProgressPct}>
+                      {Math.round((progress / 100) * obj.target_value * 10) / 10}
+                      <Text style={{ fontSize: 16, color: '#888', fontWeight: '700' }}> {obj.unit}</Text>
+                    </Text>
+                    <Text style={s.postProgressVal}>{progress}% · objectif {obj.target_value} {obj.unit}</Text>
+                  </>
+                )}
                 <View style={s.postProgressBar}>
                   <View style={[s.postProgressFill, { width: `${progress}%` as any }]} />
                 </View>
@@ -1614,6 +1838,8 @@ const s = StyleSheet.create({
   obProgressBarActive: { backgroundColor: '#fff' },
   splashContainer: { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 },
   splashLogo: { width: 340, height: 118, marginBottom: -16, alignSelf: 'center' },
+  splashLoginContent: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 80, paddingBottom: 32, justifyContent: 'center' },
+  splashLogoLogin: { width: 220, height: 76, marginBottom: -10 },
   splashTagline: { fontSize: 10, color: '#555', letterSpacing: 3 },
   splashBottom: { position: 'absolute', bottom: 48, left: 28, right: 28 },
   splashLogin: { fontSize: 12, color: '#555', textAlign: 'center', marginTop: 14 },
@@ -1743,13 +1969,13 @@ const s = StyleSheet.create({
   declineBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1e1e1e', alignItems: 'center', justifyContent: 'center' },
   declineBtnText: { fontSize: 14, color: '#555', fontWeight: '800' },
   statsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  statPill: { flex: 1, backgroundColor: '#111', borderRadius: 18, padding: 14, alignItems: 'center' },
+  statPill: { flex: 1, backgroundColor: '#111', borderRadius: 18, paddingVertical: 14, paddingHorizontal: 6, alignItems: 'center' },
   statVal: { fontSize: 20, fontWeight: '900', color: '#fff' },
-  statLbl: { fontSize: 10, color: '#555', fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.8 },
+  statLbl: { fontSize: 9, color: '#555', fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 0 },
   objCard: { backgroundColor: '#111', borderRadius: 24, padding: 18, marginBottom: 12 },
   objCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   objEmoji: { fontSize: 32 },
-  objCardName: { fontSize: 18, fontWeight: '800', color: '#fff', marginBottom: 4 },
+  objCardName: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff', marginRight: 8 },
   objCardSub: { fontSize: 12, color: '#555', marginBottom: 14 },
   visBadge: { backgroundColor: '#1e1e1e', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   visBadgePublic: { backgroundColor: '#fff' },
@@ -1761,8 +1987,8 @@ const s = StyleSheet.create({
   objPct: { fontSize: 13, fontWeight: '800', color: '#fff' },
   updateBtn: { backgroundColor: '#fff', borderRadius: 14, padding: 12, alignItems: 'center' },
   updateBtnText: { fontSize: 13, fontWeight: '800', color: '#000' },
-  addObjBtn: { borderWidth: 1.5, borderColor: '#1e1e1e', borderRadius: 20, padding: 16, alignItems: 'center', marginBottom: 12 },
-  addObjBtnText: { fontSize: 14, fontWeight: '700', color: '#444' },
+  addObjBtn: { backgroundColor: '#fff', borderRadius: 20, padding: 16, alignItems: 'center', marginBottom: 12 },
+  addObjBtnText: { fontSize: 14, fontWeight: '800', color: '#000' },
   bottomNav: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 82, backgroundColor: '#0a0a0a', borderTopWidth: 1, borderTopColor: '#1a1a1a', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingBottom: 16 },
   navItem: { alignItems: 'center', gap: 3, minWidth: 48 },
   navIcon: { fontSize: 22, color: '#444' },
@@ -1910,4 +2136,35 @@ const s = StyleSheet.create({
   suggestObj: { fontSize: 11, color: '#555', textAlign: 'center', lineHeight: 15, marginBottom: 12 },
   suggestAddBtn: { backgroundColor: '#fff', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 },
   suggestAddText: { fontSize: 12, fontWeight: '800', color: '#000' },
+  // Heatmap d'assiduité
+  heatRow: { backgroundColor: '#141414', borderWidth: 1, borderColor: '#1e1e1e', borderRadius: 16, padding: 12, marginBottom: 8 },
+  heatRowHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  heatRowEmoji: { fontSize: 18 },
+  heatRowTitle: { flex: 1, fontSize: 13, fontWeight: '700', color: '#fff' },
+  heatRowStat: { fontSize: 11, color: '#888', fontWeight: '700' },
+  heatGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 3 },
+  heatCell: { width: 12, height: 12, borderRadius: 2, backgroundColor: '#1e1e1e' },
+  heatCellActive: { backgroundColor: '#fff' },
+  heatLegend: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 8, marginBottom: 8 },
+  heatLegendText: { color: '#555', fontSize: 11, fontWeight: '600' },
+  heatLegendCell: { width: 12, height: 12, borderRadius: 2, backgroundColor: '#1e1e1e' },
+  // Card objectif unifiée (profil) — progression + heatmap
+  objCardProfile: { backgroundColor: '#141414', borderWidth: 1, borderColor: '#1e1e1e', borderRadius: 18, padding: 14, marginBottom: 10, gap: 10 },
+  objCardProfileHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  objCardProfileTitle: { flex: 1, fontSize: 15, fontWeight: '700', color: '#fff', marginRight: 8 },
+  objCardProfilePct: { fontSize: 15, fontWeight: '900', color: '#fff' },
+  objCardProfileFoot: { fontSize: 11, color: '#555', fontWeight: '600', textAlign: 'right', marginTop: -2 },
+  // Sélecteur de durée d'engagement
+  durationRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  durationPill: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 100, backgroundColor: '#141414', borderWidth: 1.5, borderColor: '#222' },
+  durationPillActive: { backgroundColor: '#fff', borderColor: '#fff' },
+  durationPillText: { fontSize: 13, fontWeight: '700', color: '#888' },
+  durationPillTextActive: { color: '#000' },
+  // Empty state profil (pas d'objectif)
+  emptyState: { alignItems: 'center', paddingVertical: 36, paddingHorizontal: 24, gap: 10, marginTop: 8 },
+  emptyStateEmoji: { fontSize: 44 },
+  emptyStateTitle: { fontSize: 18, fontWeight: '900', color: '#fff', textAlign: 'center', letterSpacing: -0.3, marginTop: 4 },
+  emptyStateText: { fontSize: 13, color: '#666', textAlign: 'center', lineHeight: 19, marginBottom: 8 },
+  emptyStateBtn: { backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 22, paddingVertical: 13, marginTop: 4 },
+  emptyStateBtnText: { fontSize: 14, fontWeight: '800', color: '#000' },
 });
