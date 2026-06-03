@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -155,10 +156,6 @@ function Splash({ onNext }: { onNext: () => void }) {
             <TouchableOpacity style={[s.btn, loading && s.btnDisabled]} onPress={loading ? undefined : handleLogin}>
               {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Se connecter →</Text>}
             </TouchableOpacity>
-            <View style={s.divider}><View style={s.dividerLine} /><Text style={s.dividerText}>ou</Text><View style={s.dividerLine} /></View>
-            <TouchableOpacity style={s.appleBtn} onPress={() => Alert.alert('Bientôt disponible', 'La connexion avec Apple arrive très prochainement.')}>
-              <Text style={s.appleBtnText}>Continuer avec Apple</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={{ marginTop: 14, alignItems: 'center' }} onPress={() => setShowLogin(false)}>
               <Text style={s.splashLogin}>← Retour</Text>
             </TouchableOpacity>
@@ -199,7 +196,6 @@ const GOALS = [
 
 function Onboarding({ onNext }: { onNext: () => void }) {
   const [step, setStep] = useState(0);
-  const [goal, setGoal] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -251,14 +247,6 @@ function Onboarding({ onNext }: { onNext: () => void }) {
       return;
     }
 
-    if (goal.trim()) {
-      const { error: objErr } = await supabase.from('objectives').insert({
-        user_id: data.user.id, title: goal.trim(), emoji: '🎯',
-        target_value: 100, current_value: 0, unit: '%', visibility: 'public',
-      });
-      if (objErr) console.warn('Création objectif échouée:', objErr.message);
-    }
-
     setLoading(false);
 
     // Si confirmation email requise, pas de session → on ne navigue pas vers Main
@@ -308,15 +296,15 @@ function Onboarding({ onNext }: { onNext: () => void }) {
     );
   }
 
-  // Écrans 0-4 (5 écrans), écran 5 = formulaire compte
-  const TOTAL_STEPS = 5;
+  // Écrans 0-3 (4 écrans), écran 4 = formulaire compte
+  const TOTAL_STEPS = 4;
 
-  const canGoNext = step === 3 ? goal.trim().length > 0 : step < TOTAL_STEPS;
+  const canGoNext = step < TOTAL_STEPS;
 
   return (
     <KeyboardAvoidingView style={s.obContainer} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       {/* Zones de tap gauche/droite */}
-      {step !== 3 && step !== 5 && (
+      {step !== 4 && (
         <View style={s.obTapZones} pointerEvents="box-none">
           <TouchableOpacity style={s.obTapLeft} onPress={() => step > 0 && setStep(st => st - 1)} activeOpacity={1} />
           <TouchableOpacity style={s.obTapRight} onPress={() => canGoNext && setStep(st => st + 1)} activeOpacity={1} />
@@ -336,7 +324,7 @@ function Onboarding({ onNext }: { onNext: () => void }) {
       {step === 0 && (
         <View style={s.obScreen}>
           <View>
-            <Text style={s.obBigTitle}>Tes proches savent quand tu sautes ta séance.</Text>
+            <Text style={s.obBigTitle}>Tes proches savent quand tu lâches ton entraînement.</Text>
             <Text style={s.obBody}>Reiz transforme ton entourage en raison de ne pas lâcher.</Text>
           </View>
         </View>
@@ -346,7 +334,7 @@ function Onboarding({ onNext }: { onNext: () => void }) {
         <View style={s.obScreen}>
           <View>
             <Text style={s.obBigTitle}>Un cercle. Un objectif. Zéro excuse.</Text>
-            <Text style={s.obBody}>Tu choisis ton objectif sportif. Tu invites les personnes qui comptent. Ils voient ta progression chaque jour — et toi la leur.</Text>
+            <Text style={s.obBody}>Tu choisis ton objectif sportif. Tu invites les personnes qui comptent. Ils voient ta progression chaque jour et toi la leur.</Text>
           </View>
         </View>
       )}
@@ -361,31 +349,6 @@ function Onboarding({ onNext }: { onNext: () => void }) {
       )}
 
       {step === 3 && (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={s.obScreen}>
-            <View>
-              <Text style={s.obBigTitle}>Quel est ton objectif en ce moment ?</Text>
-              <Text style={s.obBody}>Sois précis. C'est ce que ton cercle va suivre.</Text>
-            </View>
-            <TextInput
-              style={s.obGoalInput}
-              placeholder="Ex: Courir 3x par semaine, perdre 5 kg..."
-              placeholderTextColor="#444"
-              value={goal}
-              onChangeText={setGoal}
-              multiline
-              autoCapitalize="sentences"
-            />
-            <View style={s.obBottom}>
-              <TouchableOpacity style={[s.btn, !goal.trim() && s.btnDisabled]} onPress={goal.trim() ? next : undefined}>
-                <Text style={[s.btnText, !goal.trim() && s.btnTextDisabled]}>Suivant →</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableWithoutFeedback>
-      )}
-
-      {step === 4 && (
         <View style={s.obScreen}>
           <View>
             <Text style={s.obBigTitle}>Crée ton compte et invite ton cercle.</Text>
@@ -403,7 +366,7 @@ function Onboarding({ onNext }: { onNext: () => void }) {
         </TouchableOpacity>
       )}
 
-      {step === 5 && (
+      {step === 4 && (
         <ScrollView style={s.screen} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
           <Text style={s.headline}>Dernière étape.</Text>
           <Text style={s.subtext}>Ton parcours commence maintenant.</Text>
@@ -422,8 +385,6 @@ function Onboarding({ onNext }: { onNext: () => void }) {
           <TouchableOpacity style={[s.btn, { marginTop: 8 }, loading && s.btnDisabled]} onPress={loading ? undefined : handleSignUp}>
             {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Créer mon compte</Text>}
           </TouchableOpacity>
-          <View style={s.divider}><View style={s.dividerLine} /><Text style={s.dividerText}>ou</Text><View style={s.dividerLine} /></View>
-          <TouchableOpacity style={s.appleBtn} onPress={() => Alert.alert('Bientôt disponible', 'La connexion avec Apple arrive très prochainement.')}><Text style={s.appleBtnText}>Continuer avec Apple</Text></TouchableOpacity>
           <Text style={s.legal}>En créant un compte tu acceptes nos <Text style={s.legalLink}>CGU</Text></Text>
         </ScrollView>
       )}
@@ -1157,6 +1118,27 @@ function ProfileScreen({ onClose, streak }: { onClose: () => void; streak: numbe
     ]);
   };
 
+  const handleDeleteUpdate = (id: string) => {
+    Alert.alert(
+      'Supprimer la publication',
+      'Cette publication ainsi que ses réactions et commentaires seront supprimés.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            await supabase.from('reactions').delete().eq('update_id', id);
+            await supabase.from('comments').delete().eq('update_id', id);
+            const { error } = await supabase.from('updates').delete().eq('id', id);
+            if (error) { Alert.alert('Erreur', error.message); return; }
+            loadProfile();
+          }
+        }
+      ]
+    );
+  };
+
   const progressPct = (o: Objective) => o.target_value > 0 ? Math.min(Math.round((o.current_value / o.target_value) * 100), 100) : 0;
   const initial = profile?.full_name?.charAt(0).toUpperCase() || '?';
   const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '';
@@ -1229,15 +1211,20 @@ function ProfileScreen({ onClose, streak }: { onClose: () => void; streak: numbe
           {recentUpdates.length === 0 ? (
             <View style={{ paddingVertical: 20, alignItems: 'center' }}><Text style={{ color: '#555', fontSize: 13 }}>Aucune publication pour l'instant</Text></View>
           ) : recentUpdates.map((u) => (
-            <View key={u.id} style={s.profileUpdateRow}>
+            <Pressable key={u.id} style={s.profileUpdateRow} onLongPress={() => handleDeleteUpdate(u.id)}>
               {u.photo_url && <Image source={{ uri: u.photo_url }} style={s.profileUpdatePhoto} resizeMode="cover" />}
               <View style={{ flex: 1 }}>
                 <Text style={s.profileUpdateCaption} numberOfLines={2}>{u.caption}</Text>
                 <Text style={s.profileUpdateTime}>{timeAgo(u.created_at)}</Text>
               </View>
               <View style={s.profileProgressBadge}><Text style={s.profileProgressBadgeText}>{u.progress_value || 0}</Text></View>
-            </View>
+            </Pressable>
           ))}
+          {recentUpdates.length > 0 && (
+            <Text style={{ color: '#333', fontSize: 11, textAlign: 'center', marginTop: 4, marginBottom: 8 }}>
+              Appui long sur une publication pour la supprimer
+            </Text>
+          )}
 
           <TouchableOpacity style={s.signOutBtn} onPress={handleSignOut}>
             <Text style={s.signOutBtnText}>Se déconnecter</Text>
@@ -1428,7 +1415,7 @@ function Main({ onPost }: { onPost: () => void }) {
           <View style={s.navPostBtn}><Text style={s.navPostBtnText}>+</Text></View>
         </TouchableOpacity>
         <TouchableOpacity style={s.navItem} onPress={() => setTab('friends')}>
-          <Text style={[s.navIcon, tab === 'friends' && s.navIconActive]}>◈</Text>
+          <Ionicons name="people" size={22} color={tab === 'friends' ? '#fff' : '#444'} />
           <Text style={[s.navLabel, tab === 'friends' && s.navLabelActive]}>Amis</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.navItem} onPress={() => setShowProfile(true)}>
