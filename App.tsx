@@ -407,8 +407,8 @@ function Onboarding({ onNext }: { onNext: () => void }) {
 type Update = { id: string; caption: string; progress_value: number; created_at: string; photo_url?: string; users: any; };
 type Objective = { id: string; emoji: string; title: string; current_value: number; target_value: number; unit: string; visibility: string; duration_days?: number | null; };
 type Comment = { id: string; content: string; created_at: string; users: any; };
-type Friend = { id: string; full_name: string; username: string; friendship_id: string; status: string; is_requester: boolean; };
-type PendingRequest = { id: string; full_name: string; username: string; friendship_id: string; };
+type Friend = { id: string; full_name: string; username: string; friendship_id: string; status: string; is_requester: boolean; avatar_url?: string | null; };
+type PendingRequest = { id: string; full_name: string; username: string; friendship_id: string; avatar_url?: string | null; };
 
 function timeAgo(dateStr: string) {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
@@ -617,6 +617,10 @@ function FeedCard({ u, onRefresh }: { u: Update; onRefresh: () => void }) {
 
   const uname = u.users?.full_name || 'Utilisateur';
   const initial = uname.charAt(0).toUpperCase();
+  const avatarUrl: string | undefined = u.users?.avatar_url;
+  const Avatar = () => avatarUrl
+    ? <Image source={{ uri: avatarUrl }} style={s.avImg} />
+    : <View style={s.av}><Text style={s.avText}>{initial}</Text></View>;
   const activeReactions = Object.entries(reactions).filter(([_, count]) => count > 0);
 
   return (
@@ -640,7 +644,7 @@ function FeedCard({ u, onRefresh }: { u: Update; onRefresh: () => void }) {
           {/* Header superposé en haut */}
           <LinearGradient colors={['rgba(0,0,0,0.6)', 'transparent']} style={s.feedOverlayTop}>
             <View style={s.feedOverlayHeader}>
-              <View style={s.av}><Text style={s.avText}>{initial}</Text></View>
+              <Avatar />
               <View style={s.cardMeta}>
                 <Text style={s.cardName}>{uname}</Text>
                 <Text style={s.cardTime}>{timeAgo(u.created_at)}</Text>
@@ -688,7 +692,7 @@ function FeedCard({ u, onRefresh }: { u: Update; onRefresh: () => void }) {
       ) : (
         <View style={s.feedNoPhoto}>
           <View style={s.cardHeader}>
-            <View style={s.av}><Text style={s.avText}>{initial}</Text></View>
+            <Avatar />
             <View style={s.cardMeta}>
               <Text style={s.cardName}>{uname}</Text>
               <Text style={s.cardTime}>{timeAgo(u.created_at)}</Text>
@@ -907,6 +911,16 @@ function FriendsTab({ onViewProfile }: { onViewProfile: (userId: string) => void
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
 
+  // Helpers d'avatar (image si dispo, sinon initiale)
+  const RowAvatar = ({ url, name, active }: { url?: string | null; name: string; active?: boolean }) =>
+    url
+      ? <Image source={{ uri: url }} style={[s.friendRowAvImg, active && s.friendRowAvActive]} />
+      : <View style={[s.friendRowAv, active && s.friendRowAvActive]}><Text style={s.friendRowAvText}>{name.charAt(0).toUpperCase()}</Text></View>;
+  const SuggestAvatar = ({ url, name }: { url?: string | null; name: string }) =>
+    url
+      ? <Image source={{ uri: url }} style={s.suggestAvImg} />
+      : <View style={s.suggestAv}><Text style={s.suggestAvText}>{name.charAt(0).toUpperCase()}</Text></View>;
+
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -919,7 +933,7 @@ function FriendsTab({ onViewProfile }: { onViewProfile: (userId: string) => void
     setLoading(true);
     const { data, error } = await supabase
       .from('friendships')
-      .select('id, status, requester_id, receiver_id, requester:users!friendships_requester_id_fkey(id, full_name, username), receiver:users!friendships_receiver_id_fkey(id, full_name, username)')
+      .select('id, status, requester_id, receiver_id, requester:users!friendships_requester_id_fkey(id, full_name, username, avatar_url), receiver:users!friendships_receiver_id_fkey(id, full_name, username, avatar_url)')
       .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`);
     if (!error && data) {
       const accepted: Friend[] = [];
@@ -928,8 +942,8 @@ function FriendsTab({ onViewProfile }: { onViewProfile: (userId: string) => void
         const isRequester = f.requester_id === uid;
         const other = isRequester ? f.receiver : f.requester;
         if (!other) return;
-        if (f.status === 'accepted') accepted.push({ id: other.id, full_name: other.full_name, username: other.username, friendship_id: f.id, status: f.status, is_requester: isRequester });
-        else if (f.status === 'pending' && !isRequester) pendingReqs.push({ id: other.id, full_name: other.full_name, username: other.username, friendship_id: f.id });
+        if (f.status === 'accepted') accepted.push({ id: other.id, full_name: other.full_name, username: other.username, friendship_id: f.id, status: f.status, is_requester: isRequester, avatar_url: other.avatar_url });
+        else if (f.status === 'pending' && !isRequester) pendingReqs.push({ id: other.id, full_name: other.full_name, username: other.username, friendship_id: f.id, avatar_url: other.avatar_url });
       });
       setFriends(accepted); setPending(pendingReqs);
       loadSuggestions(uid, accepted.map(f => f.id));
@@ -941,7 +955,7 @@ function FriendsTab({ onViewProfile }: { onViewProfile: (userId: string) => void
     const { data: myObjs } = await supabase.from('objectives').select('title').eq('user_id', uid);
     if (!myObjs || myObjs.length === 0) return;
     const myKeywords = myObjs.flatMap((o: any) => o.title.toLowerCase().split(/\s+/)).filter((w: string) => w.length > 3);
-    const { data } = await supabase.from('objectives').select('user_id, title, users!inner(id, full_name, username)').neq('user_id', uid).limit(40);
+    const { data } = await supabase.from('objectives').select('user_id, title, users!inner(id, full_name, username, avatar_url)').neq('user_id', uid).limit(40);
     if (!data) return;
     const excluded = new Set([uid, ...friendIds]);
     const seen = new Set<string>();
@@ -961,7 +975,7 @@ function FriendsTab({ onViewProfile }: { onViewProfile: (userId: string) => void
     setSearchQuery(query);
     if (query.trim().length < 2) { setSearchResults([]); return; }
     setSearching(true);
-    const { data, error } = await supabase.from('users').select('id, full_name, username').ilike('full_name', `%${query}%`).neq('id', currentUserId || '').limit(8);
+    const { data, error } = await supabase.from('users').select('id, full_name, username, avatar_url').ilike('full_name', `%${query}%`).neq('id', currentUserId || '').limit(8);
     if (!error && data) setSearchResults(data);
     setSearching(false);
   };
@@ -997,7 +1011,7 @@ function FriendsTab({ onViewProfile }: { onViewProfile: (userId: string) => void
   const getFriendshipStatus = (userId: string) => friends.find(f => f.id === userId) ? 'ami' : null;
 
   return (
-    <ScrollView style={s.feed} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+    <ScrollView style={s.feed} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
 
       {/* Barre de recherche */}
       <View style={s.searchBarActive}>
@@ -1017,7 +1031,7 @@ function FriendsTab({ onViewProfile }: { onViewProfile: (userId: string) => void
           {searching && <ActivityIndicator color="#fff" style={{ marginBottom: 10 }} />}
           {searchResults.map((u) => (
             <TouchableOpacity key={u.id} style={s.friendRow} onPress={() => onViewProfile(u.id)} activeOpacity={0.8}>
-              <View style={s.friendRowAv}><Text style={s.friendRowAvText}>{u.full_name.charAt(0).toUpperCase()}</Text></View>
+              <RowAvatar url={u.avatar_url} name={u.full_name} />
               <View style={s.friendRowInfo}>
                 <Text style={s.friendRowName}>{u.full_name}</Text>
                 <Text style={s.friendRowSub}>@{u.username}</Text>
@@ -1040,9 +1054,7 @@ function FriendsTab({ onViewProfile }: { onViewProfile: (userId: string) => void
           <Text style={s.sectionTitle}>DEMANDES REÇUES · {pending.length}</Text>
           {pending.map((p) => (
             <View key={p.friendship_id} style={s.friendRow}>
-              <View style={[s.friendRowAv, { borderWidth: 1.5, borderColor: '#fff' }]}>
-                <Text style={s.friendRowAvText}>{p.full_name.charAt(0).toUpperCase()}</Text>
-              </View>
+              <RowAvatar url={p.avatar_url} name={p.full_name} active />
               <View style={s.friendRowInfo}>
                 <Text style={s.friendRowName}>{p.full_name}</Text>
                 <Text style={s.friendRowSub}>@{p.username}</Text>
@@ -1067,7 +1079,7 @@ function FriendsTab({ onViewProfile }: { onViewProfile: (userId: string) => void
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.suggestScroll} contentContainerStyle={{ gap: 12 }}>
             {suggestions.map((u) => (
               <TouchableOpacity key={u.id} style={s.suggestCard} onPress={() => onViewProfile(u.id)} activeOpacity={0.8}>
-                <View style={s.suggestAv}><Text style={s.suggestAvText}>{u.full_name.charAt(0).toUpperCase()}</Text></View>
+                <SuggestAvatar url={u.avatar_url} name={u.full_name} />
                 <Text style={s.suggestName} numberOfLines={1}>{u.full_name}</Text>
                 <Text style={s.suggestObj} numberOfLines={2}>{u.objectiveTitle}</Text>
                 <TouchableOpacity style={s.suggestAddBtn} onPress={() => sendFriendRequest(u.id)}>
@@ -1097,9 +1109,7 @@ function FriendsTab({ onViewProfile }: { onViewProfile: (userId: string) => void
           onLongPress={() => removeFriend(f.friendship_id, f.full_name)}
           activeOpacity={0.8}
         >
-          <View style={[s.friendRowAv, s.friendRowAvActive]}>
-            <Text style={s.friendRowAvText}>{f.full_name.charAt(0).toUpperCase()}</Text>
-          </View>
+          <RowAvatar url={f.avatar_url} name={f.full_name} active />
           <View style={s.friendRowInfo}>
             <Text style={s.friendRowName}>{f.full_name}</Text>
             <Text style={s.friendRowSub}>@{f.username}</Text>
@@ -1234,11 +1244,6 @@ function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose: () => 
 
   return (
     <View style={s.container}>
-      <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={onClose}><Text style={s.backText}>←</Text></TouchableOpacity>
-        <Text style={s.headerTitle}>Mon profil</Text>
-        <View style={{ width: 34 }} />
-      </View>
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#fff" /></View>
       ) : (
@@ -1427,6 +1432,16 @@ function FriendProfileScreen({ userId, onClose }: { userId: string; onClose: () 
   );
 }
 
+// ============ NAV TAB (onglet de la bottom nav, sans label) ============
+function NavTab({ icon, active, onPress }: { icon: any; label?: string; active: boolean; onPress: () => void }) {
+  return (
+    <TouchableOpacity style={s.navItem} onPress={onPress} activeOpacity={0.7}>
+      {/* L'icône occupe l'espace mais devient transparente quand actif : le bubble flottant la remplace */}
+      <Ionicons name={icon} size={22} color={active ? 'transparent' : '#888'} />
+    </TouchableOpacity>
+  );
+}
+
 // ============ MAIN ============
 function Main({ onPost }: { onPost: () => void }) {
   const [tab, setTab] = useState('feed');
@@ -1436,12 +1451,28 @@ function Main({ onPost }: { onPost: () => void }) {
   const [loadingObj, setLoadingObj] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [streak, setStreak] = useState(0);
-  const [showProfile, setShowProfile] = useState(false);
   const [viewingFriendId, setViewingFriendId] = useState<string | null>(null);
+
+  // === Animations des 2 pilules de la nav ===
+  const leftPillAnim = useRef(new Animated.Value(0)).current;   // 0=feed, 1=objectives
+  const rightPillAnim = useRef(new Animated.Value(0)).current;  // 0=friends, 1=profile
+  const [leftPillWidth, setLeftPillWidth] = useState(0);
+  const [rightPillWidth, setRightPillWidth] = useState(0);
+  const isLeftActive = tab === 'feed' || tab === 'objectives';
+  const isRightActive = tab === 'friends' || tab === 'profile';
+
+  useEffect(() => {
+    const target = tab === 'feed' || tab === 'friends' ? 0 : 1;
+    const anim = isLeftActive ? leftPillAnim : isRightActive ? rightPillAnim : null;
+    if (anim) {
+      Animated.spring(anim, { toValue: target, useNativeDriver: true, friction: 7, tension: 70 }).start();
+    }
+    Haptics.selectionAsync().catch(() => {});
+  }, [tab]);
 
   const fetchUpdates = async () => {
     setLoadingFeed(true);
-    const { data, error } = await supabase.from('updates').select('id, caption, progress_value, created_at, photo_url, users(full_name, username)').order('created_at', { ascending: false }).limit(20);
+    const { data, error } = await supabase.from('updates').select('id, caption, progress_value, created_at, photo_url, users(full_name, username, avatar_url)').order('created_at', { ascending: false }).limit(20);
     if (!error && data) setUpdates(data as unknown as Update[]);
     setLoadingFeed(false);
   };
@@ -1488,13 +1519,6 @@ function Main({ onPost }: { onPost: () => void }) {
   const progressPct = (obj: Objective) => obj.target_value > 0 ? Math.min(Math.round((obj.current_value / obj.target_value) * 100), 100) : 0;
 
   if (viewingFriendId) return <FriendProfileScreen userId={viewingFriendId} onClose={() => setViewingFriendId(null)} />;
-  if (showProfile) return (
-    <ProfileScreen
-      onClose={() => setShowProfile(false)}
-      streak={streak}
-      onCreateObjective={() => { setShowProfile(false); setTab('objectives'); }}
-    />
-  );
 
   return (
     <View style={s.container}>
@@ -1527,7 +1551,7 @@ function Main({ onPost }: { onPost: () => void }) {
               <Text style={{ color: '#444', marginTop: 4, fontSize: 12 }}>Sois le premier à publier !</Text>
             </View>
           ) : updates.map((u) => <FeedCard key={u.id} u={u} onRefresh={fetchUpdates} />)}
-          <View style={{ height: 100 }} />
+          <View style={{ height: 110 }} />
         </ScrollView>
         <LinearGradient
           colors={['#0a0a0a', 'transparent']}
@@ -1597,33 +1621,74 @@ function Main({ onPost }: { onPost: () => void }) {
           <TouchableOpacity style={s.addObjBtn} onPress={() => setShowCreateModal(true)}>
             <Text style={s.addObjBtnText}>+ Ajouter un objectif</Text>
           </TouchableOpacity>
-          <View style={{ height: 100 }} />
+          <View style={{ height: 110 }} />
         </ScrollView>
         )
       )}
 
       {tab === 'friends' && <FriendsTab onViewProfile={(id) => setViewingFriendId(id)} />}
 
-      <View style={s.bottomNav}>
-        <TouchableOpacity style={s.navItem} onPress={() => setTab('feed')}>
-          <Ionicons name="home" size={22} color={tab === 'feed' ? '#fff' : '#444'} />
-          <Text style={[s.navLabel, tab === 'feed' && s.navLabelActive]}>Feed</Text>
+      {tab === 'profile' && (
+        <ProfileScreen
+          onClose={() => setTab('feed')}
+          streak={streak}
+          onCreateObjective={() => setTab('objectives')}
+        />
+      )}
+
+      <View style={s.bottomNavSplit}>
+        {/* === Pilule gauche : Feed + Objectifs === */}
+        <View style={s.navPill} onLayout={e => setLeftPillWidth(e.nativeEvent.layout.width)}>
+          <View style={s.bottomNavGlass} />
+          {isLeftActive && leftPillWidth > 0 && (() => {
+            const innerW = leftPillWidth - 12;
+            const slot = innerW / 2;
+            const bubbleSize = 48;
+            const translateX = leftPillAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [
+                6 + slot * 0 + slot / 2 - bubbleSize / 2,
+                6 + slot * 1 + slot / 2 - bubbleSize / 2,
+              ],
+            });
+            return (
+              <Animated.View pointerEvents="none" style={[s.navActiveBubble, { transform: [{ translateX }] }]}>
+                <Ionicons name={tab === 'feed' ? 'home' : 'apps'} size={22} color="#fff" />
+              </Animated.View>
+            );
+          })()}
+          <NavTab icon="home" active={tab === 'feed'} onPress={() => setTab('feed')} />
+          <NavTab icon="apps" active={tab === 'objectives'} onPress={() => setTab('objectives')} />
+        </View>
+
+        {/* === Bouton + central, isolé === */}
+        <TouchableOpacity style={s.navPostStandalone} onPress={onPost} activeOpacity={0.85}>
+          <Text style={s.navPostBtnText}>+</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.navItem} onPress={() => setTab('objectives')}>
-          <Ionicons name="apps" size={22} color={tab === 'objectives' ? '#fff' : '#444'} />
-          <Text style={[s.navLabel, tab === 'objectives' && s.navLabelActive]}>Objectifs</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={s.navItem} onPress={onPost}>
-          <View style={s.navPostBtn}><Text style={s.navPostBtnText}>+</Text></View>
-        </TouchableOpacity>
-        <TouchableOpacity style={s.navItem} onPress={() => setTab('friends')}>
-          <Ionicons name="person-add" size={22} color={tab === 'friends' ? '#fff' : '#444'} />
-          <Text style={[s.navLabel, tab === 'friends' && s.navLabelActive]}>Amis</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={s.navItem} onPress={() => setShowProfile(true)}>
-          <Ionicons name="person" size={22} color="#444" />
-          <Text style={s.navLabel}>Profil</Text>
-        </TouchableOpacity>
+
+        {/* === Pilule droite : Amis + Profil === */}
+        <View style={s.navPill} onLayout={e => setRightPillWidth(e.nativeEvent.layout.width)}>
+          <View style={s.bottomNavGlass} />
+          {isRightActive && rightPillWidth > 0 && (() => {
+            const innerW = rightPillWidth - 12;
+            const slot = innerW / 2;
+            const bubbleSize = 48;
+            const translateX = rightPillAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [
+                6 + slot * 0 + slot / 2 - bubbleSize / 2,
+                6 + slot * 1 + slot / 2 - bubbleSize / 2,
+              ],
+            });
+            return (
+              <Animated.View pointerEvents="none" style={[s.navActiveBubble, { transform: [{ translateX }] }]}>
+                <Ionicons name={tab === 'friends' ? 'person-add' : 'person'} size={22} color="#fff" />
+              </Animated.View>
+            );
+          })()}
+          <NavTab icon="person-add" active={tab === 'friends'} onPress={() => setTab('friends')} />
+          <NavTab icon="person" active={tab === 'profile'} onPress={() => setTab('profile')} />
+        </View>
       </View>
     </View>
   );
@@ -1912,6 +1977,7 @@ const s = StyleSheet.create({
   feedNoPhotoCaption: { fontSize: 16, color: '#fff', fontWeight: '600', marginTop: 10, marginBottom: 14, lineHeight: 22 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   av: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#2a2a2a', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#333' },
+  avImg: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: '#333' },
   avText: { fontSize: 14, fontWeight: '800', color: '#fff' },
   cardMeta: { flex: 1 },
   cardName: { fontSize: 14, fontWeight: '700', color: '#fff' },
@@ -1955,6 +2021,7 @@ const s = StyleSheet.create({
   friendRow: { backgroundColor: '#111', borderRadius: 20, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   pendingRow: {},
   friendRowAv: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#1e1e1e', alignItems: 'center', justifyContent: 'center' },
+  friendRowAvImg: { width: 46, height: 46, borderRadius: 23 },
   friendRowAvActive: { borderWidth: 2, borderColor: '#fff' },
   friendRowAvText: { fontSize: 16, fontWeight: '800', color: '#fff' },
   friendRowInfo: { flex: 1 },
@@ -1989,14 +2056,108 @@ const s = StyleSheet.create({
   updateBtnText: { fontSize: 13, fontWeight: '800', color: '#000' },
   addObjBtn: { backgroundColor: '#fff', borderRadius: 20, padding: 16, alignItems: 'center', marginBottom: 12 },
   addObjBtnText: { fontSize: 14, fontWeight: '800', color: '#000' },
-  bottomNav: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 82, backgroundColor: '#0a0a0a', borderTopWidth: 1, borderTopColor: '#1a1a1a', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingBottom: 16 },
-  navItem: { alignItems: 'center', gap: 3, minWidth: 48 },
+  // Nouveau layout : 2 pilules + bouton + standalone au milieu
+  bottomNavSplit: {
+    position: 'absolute',
+    bottom: 24,
+    left: 16,
+    right: 16,
+    height: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  navPill: {
+    flex: 1,
+    height: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingHorizontal: 6,
+    borderRadius: 36,
+    overflow: 'visible',
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 12,
+  },
+  navPostStandalone: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#fff',
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  // Bottom nav flottante "Liquid Glass" — container externe avec overflow visible (pour bubble + bouton dépassants)
+  bottomNav: {
+    position: 'absolute',
+    bottom: 24,
+    left: 16,
+    right: 16,
+    height: 64,
+    borderRadius: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingHorizontal: 6,
+    overflow: 'visible',
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 12,
+  },
+  // Couche "glass" simulée (semi-transparente). Pas de blur natif → on compense avec un alpha plus élevé.
+  bottomNavGlass: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 36,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(20,20,20,0.75)',
+  },
+  navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', height: 64, gap: 2 },
+  navItemPost: { flex: 1, alignItems: 'center', justifyContent: 'center', height: 64, zIndex: 3 },
+  // Cercle qui reste DANS la barre (centré verticalement). Position horizontale animée via translateX.
+  navActiveBubble: {
+    position: 'absolute',
+    top: 8,            // (barre 64 - bulle 48) / 2 → centré verticalement
+    left: 0,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.1)', // léger pop sur le glass dark
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
   navIcon: { fontSize: 22, color: '#444' },
   navIconActive: { color: '#fff' },
-  navLabel: { fontSize: 10, fontWeight: '600', color: '#444' },
-  navLabelActive: { color: '#fff' },
-  navPostBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  navPostBtnText: { fontSize: 28, color: '#000', fontWeight: '300', lineHeight: 34 },
+  navLabel: { fontSize: 10, fontWeight: '600', color: '#666' },
+  navLabelActive: { color: '#fff', fontWeight: '800' },
+  // Bouton + central qui dépasse aussi
+  navPostBtn: {
+    position: 'absolute',
+    top: -22,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#fff',
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  navPostBtnText: { fontSize: 30, color: '#000', fontWeight: '300', lineHeight: 36 },
   content: { flex: 1, paddingHorizontal: 20 },
   stepIndicator: { fontSize: 12, color: '#555' },
   sectionLabel: { fontSize: 10, color: '#555', letterSpacing: 1.5, fontWeight: '700', textTransform: 'uppercase', marginBottom: 10, marginTop: 16 },
@@ -2131,6 +2292,7 @@ const s = StyleSheet.create({
   suggestScroll: { marginHorizontal: -16 },
   suggestCard: { width: 130, backgroundColor: '#111', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: '#1e1e1e', alignItems: 'center' },
   suggestAv: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#2a2a2a', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  suggestAvImg: { width: 44, height: 44, borderRadius: 22, marginBottom: 8 },
   suggestAvText: { fontSize: 18, fontWeight: '800', color: '#fff' },
   suggestName: { fontSize: 13, fontWeight: '700', color: '#fff', marginBottom: 4, textAlign: 'center' },
   suggestObj: { fontSize: 11, color: '#555', textAlign: 'center', lineHeight: 15, marginBottom: 12 },

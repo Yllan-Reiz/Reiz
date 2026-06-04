@@ -10,7 +10,7 @@ Concrètement ça donnerait un écran "Découvrir" où tu vois des profils de pe
 - Notifications push
 - Landing page + waitlist pour les premiers utilisateurs
 
-## code à écrire
+## code à écrirer
 - git add .
 git commit -m "mise à jour du projet"
 git push
