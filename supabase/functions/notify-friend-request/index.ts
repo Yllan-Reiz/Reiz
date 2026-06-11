@@ -31,16 +31,17 @@ Deno.serve(async (req) => {
   await sendPush(
     receiver.push_token,
     '👋 Nouvelle demande d\'ami',
-    `${requester.full_name} t'a ajouté sur Reiz`
+    `${requester.full_name} t'a ajouté sur Reiz`,
+    'friend_request'
   );
 
   return new Response('ok');
 });
 
-async function sendPush(token: string, title: string, body: string) {
+async function sendPush(token: string, title: string, body: string, type: string) {
   await fetch('https://exp.host/--/api/v2/push/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ to: token, title, body, sound: 'default' }),
+    body: JSON.stringify({ to: token, title, body, sound: 'default', data: { type } }),
   });
 }

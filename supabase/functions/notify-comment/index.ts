@@ -31,15 +31,15 @@ Deno.serve(async (req) => {
     ? comment.content.substring(0, 40) + '...'
     : comment.content;
 
-  await sendPush(owner.push_token, `💬 ${commenter?.full_name} a commenté`, preview);
+  await sendPush(owner.push_token, `💬 ${commenter?.full_name} a commenté`, preview, 'comment');
 
   return new Response('ok');
 });
 
-async function sendPush(token: string, title: string, body: string) {
+async function sendPush(token: string, title: string, body: string, type: string) {
   await fetch('https://exp.host/--/api/v2/push/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ to: token, title, body, sound: 'default' }),
+    body: JSON.stringify({ to: token, title, body, sound: 'default', data: { type } }),
   });
 }

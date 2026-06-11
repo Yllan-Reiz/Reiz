@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reiz — Rise to your goals</title>
+  <meta name="description" content="Reiz transforme ton entourage en raison de ne pas lâcher. Tes objectifs, ton cercle, zéro excuse. Rejoins la liste d'attente." />
+  <meta property="og:title" content="Reiz — Rise to your goals" />
+  <meta property="og:description" content="Tes proches savent quand tu lâches. Un cercle. Un objectif. Zéro excuse." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0a;
+      color: #fff;
+      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .wrap { width: 100%; max-width: 560px; padding: 0 28px; }
+    header { padding: 48px 0 0; text-align: center; }
+    header img { width: 180px; height: auto; }
+    .tagline { font-size: 11px; letter-spacing: 4px; color: #888; margin-top: 4px; }
+    .hero { padding: 72px 0 40px; text-align: left; }
+    h1 {
+      font-size: clamp(34px, 8vw, 48px);
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+    .hero p { font-size: 17px; color: #999; line-height: 1.65; }
+    .features { display: grid; gap: 12px; padding-bottom: 48px; }
+    .feature {
+      background: #111;
+      border: 1px solid #1e1e1e;
+      border-radius: 20px;
+      padding: 18px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .feature .emoji { font-size: 26px; line-height: 1.2; }
+    .feature b { display: block; font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+    .feature span { font-size: 13px; color: #888; line-height: 1.5; }
+    .waitlist {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 24px;
+      padding: 28px 24px;
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .waitlist h2 { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .waitlist p { font-size: 13px; color: #888; margin-bottom: 18px; }
+    form { display: flex; gap: 8px; flex-wrap: wrap; }
+    input[type="email"] {
+      flex: 1;
+      min-width: 200px;
+      background: #1a1a1a;
+      border: 1.5px solid #2a2a2a;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 14px;
+      color: #fff;
+      font-family: inherit;
+      outline: none;
+    }
+    input[type="email"]:focus { border-color: #fff; }
+    input::placeholder { color: #666; }
+    button {
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 22px;
+      font-size: 14px;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.1s ease, opacity 0.15s ease;
+    }
+    button:hover { opacity: 0.85; }
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.4; cursor: default; }
+    .msg { font-size: 13px; margin-top: 12px; min-height: 18px; }
+    .msg.ok { color: #6ee7a0; }
+    .msg.err { color: #ff6b61; }
+    footer { padding: 0 0 36px; font-size: 11px; color: #555; text-align: center; }
+    footer a { color: #888; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="logo-reiz.png" alt="Reiz" />
+      <div class="tagline">RISE TO YOUR GOALS</div>
+    </header>
+
+    <section class="hero">
+      <h1>Tes proches savent quand tu lâches.</h1>
+      <p>Les applications d'objectifs te demandent d'être motivé tout seul. Reiz, non. Tu choisis ton objectif, tu invites les personnes qui comptent — et quand quelqu'un que tu respectes regarde, tu te lèves.</p>
+    </section>
+
+    <section class="features">
+      <div class="feature"><div class="emoji">🎯</div><div><b>Un cercle. Un objectif. Zéro excuse.</b><span>Courir, lire, épargner... Ton cercle voit ta progression chaque jour, et toi la leur.</span></div></div>
+      <div class="feature"><div class="emoji">🔥</div><div><b>Ta streak, sous les yeux de ton cercle</b><span>Chaque jour posté entretient ta flamme. Chaque jour raté, ton cercle le sait.</span></div></div>
+      <div class="feature"><div class="emoji">👀</div><div><b>La pression sociale qui te fait du bien</b><span>Réactions, commentaires, rappels : ton entourage devient ta raison de ne pas lâcher.</span></div></div>
+    </section>
+
+    <section class="waitlist">
+      <h2>Sois dans les premiers 🚀</h2>
+      <p>Laisse ton email — tu recevras l'accès dès l'ouverture.</p>
+      <form id="waitlist-form">
+        <input type="email" id="email" placeholder="ton@email.com" required autocomplete="email" />
+        <button type="submit" id="submit-btn">Rejoindre →</button>
+      </form>
+      <div class="msg" id="msg"></div>
+    </section>
+
+    <footer>© 2026 Reiz · <a href="cgu.html">CGU</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="mailto:contact@reiz.app">Contact</a></footer>
+  </div>
+
+  <script>
+    // Clé publique Supabase (anon) — conçue pour être exposée côté client.
+    const SUPABASE_URL = 'https://vpaizbtetwsnvbpmeuab.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_dAHRrHfSQvNwm1LEpNw5Ww_EOTyejXT';
+
+    const form = document.getElementById('waitlist-form');
+    const msg = document.getElementById('msg');
+    const btn = document.getElementById('submit-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      if (!email) return;
+      btn.disabled = true;
+      btn.textContent = '...';
+      msg.textContent = '';
+      msg.className = 'msg';
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/waitlist`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ email }),
+        });
+        if (res.ok) {
+          msg.textContent = 'C\'est noté ! On te prévient dès que c\'est prêt 🎉';
+          msg.classList.add('ok');
+          form.reset();
+        } else if (res.status === 409) {
+          msg.textContent = 'Tu es déjà sur la liste 😉';
+          msg.classList.add('ok');
+        } else {
+          throw new Error('http ' + res.status);
+        }
+      } catch (err) {
+        msg.textContent = 'Oups, ça n\'a pas marché. Réessaie dans un instant.';
+        msg.classList.add('err');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Rejoindre →';
+    });
+  </script>
+</body>
+</html>

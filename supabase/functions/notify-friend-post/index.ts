@@ -47,6 +47,7 @@ Deno.serve(async (req) => {
       title: `👀 ${poster.full_name} vient de publier`,
       body: 'Voir sa progression →',
       sound: 'default',
+      data: { type: 'friend_post' },
     }));
 
   if (messages.length > 0) {
