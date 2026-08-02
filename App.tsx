@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
+import { Linking } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useFonts, Inter_300Light, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, Inter_900Black } from '@expo-google-fonts/inter';
 import { supabase } from './src/lib/supabase';
 import { registerForPushNotifications } from './src/lib/notifications';
+import { captureInviteFromUrl, consumePendingInvite } from './src/lib/invites';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { Splash } from './src/screens/Splash';
 import { Onboarding } from './src/screens/Onboarding';
@@ -34,10 +36,18 @@ function AppInner() {
   };
 
   useEffect(() => {
+    // Deep link d'invitation : capture le lien d'ouverture (app fermée) puis ceux reçus
+    // app ouverte. Le ref est consommé après connexion (cf. onAuthStateChange ci-dessous).
+    Linking.getInitialURL().then((url) => captureInviteFromUrl(url, registeredUserId.current));
+    const linkSub = Linking.addEventListener('url', ({ url }) => {
+      captureInviteFromUrl(url, registeredUserId.current);
+    });
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setScreen('main');
         maybeRegisterPush(session.user.id);
+        consumePendingInvite(session.user.id);
       }
       setCheckingAuth(false);
     });
@@ -45,6 +55,7 @@ function AppInner() {
       if (session) {
         setScreen('main');
         maybeRegisterPush(session.user.id);
+        consumePendingInvite(session.user.id);
       } else {
         registeredUserId.current = null;
         setScreen('splash');
@@ -65,6 +76,7 @@ function AppInner() {
       authListener.subscription.unsubscribe();
       notifListener.current?.remove();
       responseListener.current?.remove();
+      linkSub.remove();
     };
   }, []);
 

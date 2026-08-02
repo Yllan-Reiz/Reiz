@@ -1,8 +1,11 @@
-// ⚠️ Remplace par l'URL réelle de ta landing une fois déployée sur Netlify
-// (ex: https://reiz.netlify.app). Utilisée par le lien CGU et les invitations.
-export const LANDING_URL = 'https://reiz.netlify.app';
+// Landing officielle (Netlify) — utilisée par le lien CGU et les invitations.
+export const LANDING_URL = 'https://reiz-landing.netlify.app';
 export const CGU_URL = `${LANDING_URL}/cgu.html`;
 export const PRIVACY_URL = `${LANDING_URL}/confidentialite.html`;
+
+// Lien d'invitation : ouvre la page /invite.html qui route vers l'app (deep link).
+// Le ?ref=pseudo permet d'auto-envoyer la demande d'ami au parrain à l'inscription.
+export const inviteUrl = (username: string) => `${LANDING_URL}/invite.html?ref=${encodeURIComponent(username)}`;
 
 export const EMOJI_LIST =['🎯','💪','🏃','📚','🧘','🚀','🏋️','🏦','💰','❤️','🎵','🎨','✍️','🧠','🌍','🏊','🚴','⚽','🎾','🍎','😴','💼','📈','🔥'];
 

@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, Acti
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
 import { Friend, PendingRequest } from '../lib/types';
-import { LANDING_URL } from '../constants';
+import { LANDING_URL, inviteUrl } from '../constants';
 import { s, F } from '../styles';
 
 export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (userId: string) => void; onPendingCount?: (n: number) => void }) {
@@ -18,14 +18,31 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   const [refreshingFriends, setRefreshingFriends] = useState(false);
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const [myUsername, setMyUsername] = useState<string | null>(null);
+  // Objectif en cours (jamais privé) pour personnaliser l'invitation.
+  const [myTopObjective, setMyTopObjective] = useState<{ emoji: string; title: string } | null>(null);
 
   // Le @pseudo sert de code d'invitation : l'ami télécharge l'app puis le cherche.
+  // On incarne le message avec l'objectif réel + un hook d'accountability et une
+  // relance ("et toi ?") : c'est le seul levier d'acquisition au lancement, un
+  // message concret convertit bien mieux qu'un texte générique.
   const inviteFriends = async () => {
-    const tag = myUsername ? `@${myUsername}` : 'mon prénom';
+    const hook = myTopObjective
+      ? `${myTopObjective.emoji} Je me suis lancé un objectif : ${myTopObjective.title}.`
+      : `💪 Je me lance un nouveau défi.`;
+    const closer = myTopObjective
+      ? `Et toi, t'as le cran de me montrer le tien ? 🔥`
+      : `Et toi, c'est quoi ton prochain objectif ? 🔥`;
+    // Lien d'invitation perso (deep link) : l'ami est auto-ajouté, plus de recherche manuelle.
+    // Repli sur la landing si le pseudo n'est pas encore chargé.
+    const link = myUsername ? inviteUrl(myUsername) : LANDING_URL;
+    const message =
+      `${hook}\n\n` +
+      `Sur Reiz, mon cercle voit ma progression chaque jour. Pas d'excuse, pas d'abandon.\n\n` +
+      `Rejoins mon cercle en 1 tap 👇\n` +
+      `${link}\n\n` +
+      `${closer}`;
     try {
-      await Share.share({
-        message: `Rejoins mon cercle sur Reiz 💪 Je poste ma progression chaque jour — et toi ?\n\n1. Télécharge l'app : ${LANDING_URL}\n2. Dans l'onglet Amis, cherche ${tag} et ajoute-moi !`,
-      });
+      await Share.share({ message, title: 'Rejoins mon cercle sur Reiz' });
     } catch {}
   };
 
@@ -46,6 +63,12 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
         setCurrentUserId(user.id);
         supabase.from('users').select('username').eq('id', user.id).single()
           .then(({ data }) => { if (data) setMyUsername(data.username); });
+        // Objectif le plus récent non privé → personnalise le message d'invitation.
+        supabase.from('objectives').select('emoji, title, visibility').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5)
+          .then(({ data }) => {
+            const shareable = (data || []).find((o: any) => o.visibility !== 'private');
+            if (shareable) setMyTopObjective({ emoji: shareable.emoji, title: shareable.title });
+          });
         // Utilisateurs que j'ai bloqués : exclus de la recherche et des suggestions
         const { data: blocks } = await supabase.from('blocks').select('blocked_id').eq('blocker_id', user.id);
         const blocked = new Set<string>((blocks || []).map((b: any) => b.blocked_id));

@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "scheme": "reiz",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.yllan.reiz",

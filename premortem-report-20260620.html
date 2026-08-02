@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premortem — Reiz · Lancement TestFlight & Build-in-Public</title>
+<style>
+  :root{
+    --bg:#0a0e1a; --panel:#111726; --panel2:#0f1422; --line:#1e2740;
+    --txt:#e6ebf5; --muted:#8a96b3; --dim:#5d6585;
+    --accent:#6ea8fe;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55;padding:0 0 60px}
+  .wrap{max-width:980px;margin:0 auto;padding:0 22px}
+  header.hero{padding:48px 22px 30px;border-bottom:1px solid var(--line);
+    background:radial-gradient(1200px 300px at 50% -120px,rgba(110,168,254,.14),transparent)}
+  .hero .wrap{max-width:980px;margin:0 auto;padding:0}
+  .kick{letter-spacing:.18em;text-transform:uppercase;font-size:12px;color:var(--accent);font-weight:700}
+  h1{font-size:34px;margin:10px 0 6px;font-weight:800;letter-spacing:-.5px}
+  .sub{color:var(--muted);font-size:16px;max-width:680px}
+  .frame{margin-top:22px;padding:16px 18px;border:1px solid #3a2a3f;border-left:3px solid #ff6b9d;
+    background:rgba(255,107,157,.06);border-radius:10px;color:#ffd5e3;font-size:14.5px}
+  .frame b{color:#fff}
+  h2.sec{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+    margin:42px 0 14px;font-weight:700;border-bottom:1px solid var(--line);padding-bottom:8px}
+  /* synthesis */
+  .syn{display:grid;gap:14px}
+  .synrow{display:grid;grid-template-columns:160px 1fr;gap:16px;align-items:start;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .synrow .lbl{font-weight:800;font-size:14px}
+  .synrow .lbl small{display:block;color:var(--muted);font-weight:500;font-size:12px;margin-top:3px}
+  .synrow .body{color:#d4dbec;font-size:15px}
+  .l-likely .lbl{color:#ffd166}.l-danger .lbl{color:#ff6b6b}
+  .l-hidden .lbl{color:#a78bfa}.l-revise .lbl{color:#4ade80}.l-check .lbl{color:#6ea8fe}
+  .body ol,.body ul{margin:8px 0 0;padding-left:18px}.body li{margin:6px 0}
+  .body code{background:#1a2236;padding:1px 6px;border-radius:5px;font-size:13px;color:#9ec5ff}
+  /* meta strip */
+  .strip{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 0}
+  .pill{background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+    padding:7px 14px;font-size:13px;color:var(--muted)}
+  .pill b{color:var(--txt)}
+  /* cards */
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}.synrow{grid-template-columns:1fr;gap:8px}}
+  .card{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--ac,#6ea8fe);
+    border-radius:12px;padding:18px 18px 16px;position:relative}
+  .card h3{margin:0 0 4px;font-size:17px;font-weight:800;color:var(--ac,#6ea8fe);line-height:1.25}
+  .card .num{position:absolute;top:14px;right:16px;font-size:30px;font-weight:800;color:#1c2740;opacity:.9}
+  .sev{display:flex;gap:8px;margin:6px 0 12px}
+  .sev span{font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:6px;font-weight:700}
+  .h{background:rgba(255,107,107,.16);color:#ff8a8a}
+  .m{background:rgba(255,209,102,.16);color:#ffd166}
+  .c{background:rgba(255,71,87,.22);color:#ff5a6a;border:1px solid #5a2230}
+  .card p{margin:8px 0;font-size:14px;color:#cdd5e8}
+  .card .meta{margin-top:12px;border-top:1px solid var(--line);padding-top:11px}
+  .card .meta .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:3px}
+  .card .assume{font-size:13.5px;color:#e0c8ff}
+  .card .warn{font-size:13.5px;color:#ffd9a8}
+  footer{margin-top:46px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:12.5px;text-align:center}
+  .scope{display:flex;align-items:center;gap:14px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:12px;padding:14px 18px;margin-top:6px}
+  .scope .big{font-size:30px;font-weight:800;color:var(--accent)}
+  .scope .t{color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="kick">Premortem · analyse de défaillance</div>
+    <h1>Reiz — Lancement TestFlight &amp; Build-in-Public</h1>
+    <div class="sub">App sociale d'accountability « ton cercle te regarde » · Expo/RN + Supabase. On imagine que le lancement a déjà échoué, et on remonte aux causes.</div>
+    <div class="strip">
+      <div class="pill"><b>Cible :</b> cercle de 10-30 testeurs → build-in-public → stores</div>
+      <div class="pill"><b>Succès =</b> testeurs qui postent &amp; reviennent sans qu'on leur demande</div>
+      <div class="pill"><b>8</b> modes de défaillance analysés</div>
+    </div>
+    <div class="frame">🎬 <b>Cadrage :</b> nous sommes en <b>décembre 2026</b>. Reiz a échoué — le lancement TestFlight n'a pas pris, le build-in-public n'a généré aucune traction, l'app dort dans un dossier. Voici pourquoi.</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2 class="sec">⚡ Synthèse — à lire en premier</h2>
+  <div class="syn">
+    <div class="synrow l-likely">
+      <div class="lbl">Échec le + probable<small>concentre-toi là d'abord</small></div>
+      <div class="body">Le <b>feed vide</b> (F1) couplé à la <b>boucle de rappel trop faible</b> (F3). 30 testeurs éparpillés sur des objectifs différents = chacun ouvre l'app, voit un feed désert, personne ne réagit, et sans notif pour le ramener, il oublie l'app en 3-4 jours. Un réseau social à 1 utilisateur actif ne vaut rien — c'est le tueur classique des apps sociales.</div>
+    </div>
+    <div class="synrow l-danger">
+      <div class="lbl">Échec le + dangereux<small>moins visible, plus coûteux</small></div>
+      <div class="body">Le <b>faux signal des amis polis</b> (F4). Tes 30 testeurs sont ton cercle : ils seront gentils, mettront des ❤️, diront « c'est cool ». Tu liras ça comme une validation et tu investiras <b>2 mois de build-in-public</b> sur un produit dont la rétention n'a jamais été prouvée auprès d'inconnus. C'est invisible et ça compose : tu scales un produit qui fuit.</div>
+    </div>
+    <div class="synrow l-hidden">
+      <div class="lbl">L'hypothèse cachée<small>ce que tu tiens pour acquis</small></div>
+      <div class="body">Que <b>« si je construis bien l'app, la boucle sociale va démarrer toute seule »</b>. Tu supposes qu'un cercle de 10-30 personnes suffit à créer (a) la densité sociale réelle <i>et</i> (b) la preuve que des inconnus utiliseront l'app. Ce sont deux paris distincts, et les deux sont fragiles.</div>
+    </div>
+    <div class="synrow l-revise">
+      <div class="lbl">Le plan révisé<small>concret, actionnable cette semaine</small></div>
+      <div class="body">
+        <ol>
+          <li><b>Densité &gt; nombre.</b> Ne lance pas à 30 personnes dispersées. Lance à <b>1 groupe dense de 6-10 amis qui se connaissent entre eux</b> et partagent un <b>objectif commun</b> (ex : tous veulent courir 3×/sem). Un feed plein à 8 vaut mieux qu'un feed vide à 30.</li>
+          <li><b>Notifs push de bout en bout AVANT de lancer.</b> « ton ami a posté » + rappel quotidien, testés sur un vrai device. C'est ton moteur de rétention n°1, pas une option — et c'est encore en TODO dans <code>NOTES.md</code>.</li>
+          <li><b>Écris ta métrique go/no-go MAINTENANT :</b> « ≥5 des 10 testeurs postent 4 jours/7 en semaine 2, sans que je le demande ». Si ce n'est pas atteint → <b>ne lance pas</b> le build-in-public, corrige la rétention d'abord.</li>
+          <li><b>Ne mesure pas le succès aux compliments,</b> mesure-le à l'usage non sollicité : posts spontanés, invitations spontanées hors du cercle.</li>
+          <li><b>Repousse le build-in-public</b> jusqu'à preuve de rétention. 1 mois de « ça retient » &gt; 2 mois de vidéos sur un produit qui fuit.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="synrow l-check">
+      <div class="lbl">Checklist pré-lancement<small>à cocher avant d'exécuter</small></div>
+      <div class="body">
+        <ul>
+          <li>☐ Notifs push testées de bout en bout (opt-in + « ami a posté » + rappel) sur un device TestFlight réel.</li>
+          <li>☐ Premier build EAS <i>production</i> réussi et installé sur <b>≥2 iPhones autres que le tien</b> (régler le cache npm avant : <code>--cache /tmp/npm-cache-reiz</code>).</li>
+          <li>☐ Groupe de lancement = cercle <b>dense</b> (≥6 personnes qui se connaissent + objectif commun), pas une liste éparpillée.</li>
+          <li>☐ Métrique de succès écrite noir sur blanc + <b>date de décision</b> go/no-go build-in-public.</li>
+          <li>☐ Onboarding qui force le nouvel utilisateur à (1) créer un objectif <b>ET</b> (2) ajouter ≥3 amis dès la 1<sup>re</sup> session — sinon feed vide garanti.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="sec">🔬 Les 8 modes de défaillance — analyses approfondies</h2>
+  <div class="scope">
+    <div class="big">8</div>
+    <div class="t">enquêteurs ont chacun creusé un mode de défaillance en profondeur : récit de l'échec, hypothèse sous-jacente, signaux d'alerte précoces.</div>
+  </div>
+  <br>
+  <div class="grid">
+
+    <div class="card" style="--ac:#ff6b6b">
+      <div class="num">01</div>
+      <h3>Le feed vide</h3>
+      <div class="sev"><span class="h">Probabilité élevée</span><span class="h">Impact élevé</span></div>
+      <p>Week-end de lancement : les 30 testeurs installent Reiz. Marie crée son objectif course… et tombe sur un feed quasi désert — 2 amis sur l'app, peu actifs. Son premier post : 0 réaction pendant 6 h. Le lendemain, personne n'a posté.</p>
+      <p>« Ton cercle te regarde » devient « personne ne regarde ». À J4 : rien à voir → aucune raison de revenir → personne ne poste → rien à voir. La spirale du réseau vide. L'app n'a pas échoué parce qu'elle était mauvaise, mais parce qu'un réseau social à 1 actif ne vaut rien.</p>
+      <div class="meta"><div class="k">Hypothèse sous-jacente</div><div class="assume">30 testeurs éparpillés suffisent à créer la densité pour que chacun ait toujours quelque chose à regarder.</div></div>
+      <div class="meta"><div class="k">Signaux d'alerte</div><div class="warn">&gt;50% des users ont &lt;3 amis actifs · nb de posts/jour qui décroît dès J3.</div></div>
+    </div>
+
+    <div class="card" style="--ac:#ff8cc6">
+      <div class="num">02</div>
+      <h3>La mécanique de honte</h3>
+      <div class="sev"><span class="m">Probabilité moyenne</span><span class="h">Impact élevé</span></div>
+      <p>Le cœur de Reiz, c'est la pression sociale : tes amis voient tes streaks et tes échecs. Pour Thomas, motivé au début, casser un streak de 8 jours <i>devant ses amis</i> est humiliant. Plutôt que d'affronter le regard du cercle, il arrête d'ouvrir l'app.</p>
+      <p>Idem pour les objectifs intimes (poids, argent) : exposer un échec à des connaissances est anxiogène. La mécanique conçue pour retenir produit l'évitement. Il ne reste qu'un petit noyau de ceux qui réussissent déjà ; le reste s'évapore en silence.</p>
+      <div class="meta"><div class="k">Hypothèse sous-jacente</div><div class="assume">La pression sociale motive plus qu'elle n'intimide, pour la majorité des gens.</div></div>
+      <div class="meta"><div class="k">Signaux d'alerte</div><div class="warn">Pic d'abandon juste après une rupture de streak · objectifs sensibles sous-représentés vs « safe ».</div></div>
+    </div>
+
+    <div class="card" style="--ac:#ffb86b">
+      <div class="num">03</div>
+      <h3>La boucle de rappel trop faible</h3>
+      <div class="sev"><span class="h">Probabilité élevée</span><span class="h">Impact élevé</span></div>
+      <p><code>notifications.ts</code> = 32 lignes, et « Notifications push » est encore en TODO dans <code>NOTES.md</code>. Or une app d'accountability vit et meurt par son moteur de rappel.</p>
+      <p>Sans notif fiable (« ton ami a posté », « log ta journée »), rien ne ramène l'utilisateur. Les testeurs installent, utilisent 2 jours, puis l'app sort de leur esprit. Pas de notif → pas de retour → app oubliée dans un dossier. En décembre, le DAU est à 2-3 amis proches qui se forcent.</p>
+      <div class="meta"><div class="k">Hypothèse sous-jacente</div><div class="assume">Les gens reviendront d'eux-mêmes, sans qu'on les ramène activement.</div></div>
+      <div class="meta"><div class="k">Signaux d'alerte</div><div class="warn">Opt-in notifs &lt;50% · rétention J1→J7 sous 20%.</div></div>
+    </div>
+
+    <div class="card" style="--ac:#ff5a6a">
+      <div class="num">04</div>
+      <h3>Le faux signal des amis polis</h3>
+      <div class="sev"><span class="h">Probabilité élevée</span><span class="c">Impact critique</span></div>
+      <p>Les 30 testeurs sont ton cercle. Ils sont gentils. Ils utilisent l'app une semaine, mettent des ❤️, disent « c'est cool ! ». Tu lis ça comme une validation produit et tu lances 2 mois de build-in-public.</p>
+      <p>Mais aucun testeur ne l'utilise parce qu'il en a <i>besoin</i> — ils te rendent service. À J30, l'usage réel est nul, mais tu as déjà investi dans la croissance d'un produit dont la rétention n'a jamais été prouvée auprès d'inconnus. C'est l'échec le plus dangereux parce qu'il est invisible.</p>
+      <div class="meta"><div class="k">Hypothèse sous-jacente</div><div class="assume">L'enthousiasme des proches = preuve que des inconnus utiliseront l'app.</div></div>
+      <div class="meta"><div class="k">Signaux d'alerte</div><div class="warn">Feedback positif mais usage qui chute après J7 · aucun testeur n'invite spontanément quelqu'un hors du cercle.</div></div>
+    </div>
+
+    <div class="card" style="--ac:#ffd166">
+      <div class="num">05</div>
+      <h3>Le build-in-public mange le dev</h3>
+      <div class="sev"><span class="m">Probabilité moyenne</span><span class="m">Impact moyen</span></div>
+      <p>Construire une audience TikTok/Insta demande des mois de posts réguliers. Tu es seul, débutant, et l'app a encore des trous (profil, découverte, notifs).</p>
+      <p>Soit tu postes régulièrement et tu n'as plus le temps de corriger les problèmes de rétention que les testeurs révèlent ; soit tu codes et le build-in-public reste sporadique, sans traction. Tu fais les deux à moitié. En décembre, ni l'audience ni le produit n'ont décollé.</p>
+      <div class="meta"><div class="k">Hypothèse sous-jacente</div><div class="assume">On peut mener de front la finition du produit et la construction d'une audience, seul.</div></div>
+      <div class="meta"><div class="k">Signaux d'alerte</div><div class="warn">&lt;3 posts/semaine tenus sur 1 mois · backlog de bugs testeurs qui ne diminue pas.</div></div>
+    </div>
+
+    <div class="card" style="--ac:#a78bfa">
+      <div class="num">06</div>
+      <h3>La friction Apple / TestFlight</h3>
+      <div class="sev"><span class="m">Probabilité moyenne</span><span class="m">Impact moyen</span></div>
+      <p>Pas encore sur les stores, compte Apple Developer en attente, cache npm corrompu. Premier build EAS, première soumission App Review.</p>
+      <p>Rejet (contenu généré par les users, labels de confidentialité), problèmes de signing, build qui casse sur le cache npm. Des semaines de friction technique. Le momentum retombe avant qu'un seul testeur ouvre l'app. Débutant, tu passes l'été à déboguer la toolchain au lieu de mettre l'app entre les mains des gens.</p>
+      <div class="meta"><div class="k">Hypothèse sous-jacente</div><div class="assume">Passer de « ça marche en dev sur mon tel » à « distribué via TestFlight » est une formalité.</div></div>
+      <div class="meta"><div class="k">Signaux d'alerte</div><div class="warn">Premier build EAS qui échoue · &gt;2 semaines entre « app prête » et « 1er testeur l'a ».</div></div>
+    </div>
+
+    <div class="card" style="--ac:#6ea8fe">
+      <div class="num">07</div>
+      <h3>Positionnement indifférencié</h3>
+      <div class="sev"><span class="m">Probabilité moyenne</span><span class="m">Impact moyen</span></div>
+      <p>Le marché est saturé (Strava, BeReal, Habitica, Gas). « Suivi social d'objectifs » n'a pas d'angle tranchant. Au moment du build-in-public, ni les testeurs ni l'audience ne savent dire pourquoi Reiz plutôt qu'un groupe WhatsApp ou une app existante.</p>
+      <p>Les vidéos ne décollent pas car le pitch (« suis tes objectifs avec tes amis ») ne crée pas de « il me le faut ». L'app est correcte mais oubliable.</p>
+      <div class="meta"><div class="k">Hypothèse sous-jacente</div><div class="assume">« Tes amis te regardent » est assez différenciant pour qu'on en parle et qu'on switch.</div></div>
+      <div class="meta"><div class="k">Signaux d'alerte</div><div class="warn">Les testeurs ne savent pas résumer l'app en 1 phrase qui donne envie · vidéos sous 500 vues malgré la régularité.</div></div>
+    </div>
+
+    <div class="card" style="--ac:#4ade80">
+      <div class="num">08</div>
+      <h3>La vulnérabilité tue le feed</h3>
+      <div class="sev"><span class="m">Probabilité moyenne</span><span class="h">Impact élevé</span></div>
+      <p>Reiz demande d'exposer des objectifs intimes (poids, argent, santé, relations) à un cercle de connaissances. Beaucoup de testeurs hésitent à poster des progrès réels et vulnérables.</p>
+      <p>Le feed se remplit d'objectifs « safe » et superficiels, ou reste vide. Le cœur émotionnel — la vraie progression partagée — ne se déclenche jamais. Sans contenu authentique : pas de connexion, pas de raison de revenir.</p>
+      <div class="meta"><div class="k">Hypothèse sous-jacente</div><div class="assume">Les gens sont à l'aise pour exposer leurs objectifs personnels et leurs échecs à leur cercle.</div></div>
+      <div class="meta"><div class="k">Signaux d'alerte</div><div class="warn">Ratio objectifs sensibles/safe très faible · posts sans photo ni détail réel qui dominent.</div></div>
+    </div>
+
+  </div>
+
+  <footer>
+    Premortem généré le 20 juin 2026 · sujet : lancement TestFlight &amp; build-in-public de <b>Reiz</b> · méthode Gary Klein (prospective hindsight) · 8 modes de défaillance.
+  </footer>
+</div>
+</body>
+</html>

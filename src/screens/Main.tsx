@@ -37,6 +37,9 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   const [viewingFriendId, setViewingFriendId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  // Nb d'amis acceptés — sert à savoir si le nouvel utilisateur a déjà lancé son cercle.
+  // null = pas encore chargé (évite d'afficher la carte d'activation par erreur).
+  const [friendCount, setFriendCount] = useState<number | null>(null);
   // Offset réel en base (avant filtrage des posts privés) pour une pagination exacte
   const dbOffset = useRef(0);
 
@@ -45,6 +48,17 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     if (!id) return;
     const { count } = await supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('receiver_id', id).eq('status', 'pending');
     setPendingCount(count || 0);
+  };
+
+  const fetchFriendCount = async (uid?: string | null) => {
+    const id = uid ?? userId;
+    if (!id) return;
+    const { count } = await supabase
+      .from('friendships')
+      .select('id', { count: 'exact', head: true })
+      .or(`requester_id.eq.${id},receiver_id.eq.${id}`)
+      .eq('status', 'accepted');
+    setFriendCount(count || 0);
   };
 
   // Charge une page du feed + ses métadonnées (réactions, commentaires) en 3 requêtes
@@ -111,6 +125,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     setRefreshing(true);
     calculateStreak(userId).then(setStreak);
     fetchPendingCount();
+    fetchFriendCount();
     await Promise.all([loadFeedPage(0, userId, true), fetchObjectives(true)]);
     setRefreshing(false);
   };
@@ -153,6 +168,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     }
     Haptics.selectionAsync().catch(() => {});
     fetchPendingCount();
+    fetchFriendCount();
   }, [tab]);
 
   useEffect(() => {
@@ -162,6 +178,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       loadFeedPage(0, user.id);
       calculateStreak(user.id).then(setStreak);
       fetchPendingCount(user.id);
+      fetchFriendCount(user.id);
     });
     fetchObjectives();
   }, []);
@@ -175,6 +192,61 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   }, [navIntent]);
 
   const progressPct = (obj: Objective) => obj.target_value > 0 ? Math.min(Math.round((obj.current_value / obj.target_value) * 100), 100) : 0;
+
+  // === Carte d'activation (anti feed-vide) ===
+  // Un nouveau compte arrive sur un feed vide : tant qu'il n'a pas créé d'objectif
+  // ET invité son cercle, on affiche un guide en 2 étapes au lieu du CTA "Publier".
+  const hasObjective = objectives.length > 0;
+  const hasFriend = (friendCount ?? 0) > 0;
+  // !loadingObj évite que la carte clignote pendant le chargement chez un user existant.
+  const needsActivation = !loadingObj && (!hasObjective || !hasFriend);
+
+  const activationHeader = (
+    <View style={{ backgroundColor: '#111', borderRadius: 20, padding: 18, marginBottom: 14 }}>
+      <Text style={{ color: '#fff', fontSize: 17, fontFamily: F.bold, marginBottom: 2 }}>Bienvenue sur Reiz 👋</Text>
+      <Text style={{ color: '#888', fontSize: 13, marginBottom: 8 }}>Lance ton cercle en 2 étapes — sans ça, ton feed reste vide.</Text>
+
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => setShowCreateModal(true)}
+        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#222' }}
+      >
+        <Text style={{ fontSize: 20, marginRight: 12 }}>{hasObjective ? '✅' : '1️⃣'}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: hasObjective ? '#666' : '#fff', fontSize: 15, fontFamily: F.bold, textDecorationLine: hasObjective ? 'line-through' : 'none' }}>
+            Crée ton premier objectif
+          </Text>
+          <Text style={{ color: '#777', fontSize: 12, marginTop: 1 }}>Ce que ton cercle va suivre chaque jour</Text>
+        </View>
+        {!hasObjective && <Text style={{ color: '#fff', fontSize: 24, marginLeft: 8 }}>›</Text>}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => setTab('friends')}
+        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#222' }}
+      >
+        <Text style={{ fontSize: 20, marginRight: 12 }}>{hasFriend ? '✅' : '2️⃣'}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: hasFriend ? '#666' : '#fff', fontSize: 15, fontFamily: F.bold, textDecorationLine: hasFriend ? 'line-through' : 'none' }}>
+            {hasFriend ? `Ton cercle est lancé (${friendCount})` : 'Invite ton cercle (3 proches min.)'}
+          </Text>
+          <Text style={{ color: '#777', fontSize: 12, marginTop: 1 }}>Reiz ne marche que si tes proches te regardent</Text>
+        </View>
+        {!hasFriend && <Text style={{ color: '#fff', fontSize: 24, marginLeft: 8 }}>›</Text>}
+      </TouchableOpacity>
+    </View>
+  );
+
+  const postCTA = (
+    <TouchableOpacity style={s.myUpdate} onPress={onPost} activeOpacity={0.85}>
+      <View style={s.myUpdateInfo}>
+        <Text style={s.myUpdateTitle}>Poste ta progression</Text>
+        <Text style={s.myUpdateSub}>Ton cercle t'attend aujourd'hui 👀</Text>
+      </View>
+      <View style={s.postedBadge}><Text style={s.postedBadgeText}>Publier →</Text></View>
+    </TouchableOpacity>
+  );
 
   if (viewingFriendId) return <FriendProfileScreen userId={viewingFriendId} onClose={() => setViewingFriendId(null)} />;
 
@@ -197,15 +269,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1a1a1a" />}
             onEndReached={fetchMore}
             onEndReachedThreshold={0.6}
-            ListHeaderComponent={
-              <TouchableOpacity style={s.myUpdate} onPress={onPost} activeOpacity={0.85}>
-                <View style={s.myUpdateInfo}>
-                  <Text style={s.myUpdateTitle}>Poste ta progression</Text>
-                  <Text style={s.myUpdateSub}>Ton cercle t'attend aujourd'hui 👀</Text>
-                </View>
-                <View style={s.postedBadge}><Text style={s.postedBadgeText}>Publier →</Text></View>
-              </TouchableOpacity>
-            }
+            ListHeaderComponent={needsActivation ? activationHeader : postCTA}
             ListEmptyComponent={
               loadingFeed ? (
                 <FeedSkeleton />
