@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
+import { uploadImage } from '../lib/storage';
 import { Objective } from '../lib/types';
 import { s, F } from '../styles';
 
@@ -63,18 +64,14 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
     ]);
   };
 
+  // Renvoie le CHEMIN de stockage (pas une URL) : le bucket est privé, les URLs
+  // sont signées au moment de l'affichage.
   const uploadPhoto = async (uri: string, userId: string): Promise<string | null> => {
-    try {
-      setUploadingPhoto(true);
-      const fileName = `${userId}/${Date.now()}.jpg`;
-      const response = await fetch(uri);
-      const arrayBuffer = await response.arrayBuffer();
-      const { error } = await supabase.storage.from('updates').upload(fileName, arrayBuffer, { contentType: 'image/jpeg' });
-      if (error) { Alert.alert('Erreur upload', frError(error)); setUploadingPhoto(false); return null; }
-      const { data } = supabase.storage.from('updates').getPublicUrl(fileName);
-      setUploadingPhoto(false);
-      return data.publicUrl;
-    } catch (e: any) { setUploadingPhoto(false); return null; }
+    setUploadingPhoto(true);
+    const { path, error } = await uploadImage(`${userId}/${Date.now()}.jpg`, uri);
+    setUploadingPhoto(false);
+    if (error) { Alert.alert('Erreur upload', frError(error)); return null; }
+    return path;
   };
 
   const handlePublish = async () => {

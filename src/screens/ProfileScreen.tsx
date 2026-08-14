@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
+import { uploadImage, signOne } from '../lib/storage';
 import { Objective } from '../lib/types';
 import { HEATMAP_MAX_DAYS, daysFor, dayKeysFor } from '../constants';
 import { s } from '../styles';
@@ -19,6 +20,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
   const [newName, setNewName] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [refreshingProfile, setRefreshingProfile] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -35,7 +37,11 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
       supabase.from('updates').select('objective_id, created_at').eq('user_id', user.id).gte('created_at', sinceISO),
       supabase.from('friendships').select('id').or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`).eq('status', 'accepted'),
     ]);
-    if (profileRes.data) { setProfile(profileRes.data); setNewName(profileRes.data.full_name); }
+    if (profileRes.data) {
+      setProfile(profileRes.data);
+      setNewName(profileRes.data.full_name);
+      setAvatarUrl(await signOne(profileRes.data.avatar_url));
+    }
     if (objRes.data) setObjectives(objRes.data as Objective[]);
     if (updatesRes.data) {
       const map: Record<string, Set<string>> = {};
@@ -86,21 +92,19 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
 
   const uploadAvatar = async (uri: string) => {
     setUploadingAvatar(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const fileName = `avatars/${user.id}.jpg`;
-      const response = await fetch(uri);
-      const arrayBuffer = await response.arrayBuffer();
-      const { error: upErr } = await supabase.storage.from('updates').upload(fileName, arrayBuffer, { contentType: 'image/jpeg', upsert: true });
-      if (upErr) throw upErr;
-      const { data } = supabase.storage.from('updates').getPublicUrl(fileName);
-      // ?t=... force le rafraîchissement : sans ça, le cache d'images garde l'ancienne photo
-      await supabase.from('users').update({ avatar_url: `${data.publicUrl}?t=${Date.now()}` }).eq('id', user.id);
-      loadProfile();
-    } catch (e: any) {
-      Alert.alert('Erreur', frError(e));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setUploadingAvatar(false); return; }
+    // On enregistre le chemin, pas une URL : le bucket est privé et chaque
+    // affichage génère une URL signée (qui change à chaque fois, ce qui règle
+    // aussi le cache d'images sans avoir besoin d'un paramètre anti-cache).
+    const { path, error } = await uploadImage(`avatars/${user.id}.jpg`, uri, true);
+    if (error || !path) {
+      setUploadingAvatar(false);
+      Alert.alert('Erreur', frError(error));
+      return;
     }
+    await supabase.from('users').update({ avatar_url: path }).eq('id', user.id);
+    await loadProfile(true);
     setUploadingAvatar(false);
   };
 
@@ -155,8 +159,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
         >
           <View style={s.profileHero}>
             <TouchableOpacity style={s.profileAvatarWrap} onPress={handlePickAvatar} activeOpacity={0.8}>
-              {profile?.avatar_url
-                ? <Image source={{ uri: profile.avatar_url }} style={s.profileAvatarImg} />
+              {avatarUrl
+                ? <Image source={{ uri: avatarUrl }} style={s.profileAvatarImg} />
                 : <View style={s.profileAvatar}><Text style={s.profileAvatarText}>{initial}</Text></View>
               }
               {uploadingAvatar

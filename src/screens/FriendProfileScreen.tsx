@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { calculateStreak, timeAgo, frError } from '../lib/helpers';
+import { signOne, signMany } from '../lib/storage';
 import { Update, Objective } from '../lib/types';
 import { s } from '../styles';
 
@@ -13,6 +14,7 @@ export function FriendProfileScreen({ userId, onClose }: { userId: string; onClo
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -25,9 +27,18 @@ export function FriendProfileScreen({ userId, onClose }: { userId: string; onClo
         supabase.from('updates').select('id, caption, progress_value, created_at, photo_url, objectives(visibility), users(full_name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
         supabase.from('friendships').select('id').or(`requester_id.eq.${userId},receiver_id.eq.${userId}`).eq('status', 'accepted'),
       ]);
-      if (profileRes.data) setProfile(profileRes.data);
+      if (profileRes.data) {
+        setProfile(profileRes.data);
+        setAvatarUrl(await signOne(profileRes.data.avatar_url));
+      }
       if (objRes.data) setObjectives(objRes.data as Objective[]);
-      if (updatesRes.data) setRecentUpdates((updatesRes.data as unknown as Update[]).filter(u => u.objectives?.visibility !== 'private').slice(0, 5));
+      if (updatesRes.data) {
+        const posts = (updatesRes.data as unknown as Update[]).filter(u => u.objectives?.visibility !== 'private').slice(0, 5);
+        // Bucket privé : on signe les photos de la page en une seule requête.
+        const signed = await signMany(posts.map(u => u.photo_url));
+        posts.forEach(u => { if (u.photo_url) u.photo_url = signed[u.photo_url] ?? undefined; });
+        setRecentUpdates(posts);
+      }
       if (friendsRes.data) setFriendCount(friendsRes.data.length);
       const streakVal = await calculateStreak(userId);
       setStreak(streakVal);
@@ -93,8 +104,8 @@ export function FriendProfileScreen({ userId, onClose }: { userId: string; onClo
         <ScrollView style={s.feed} showsVerticalScrollIndicator={false}>
           <View style={s.profileHero}>
             <View style={s.profileAvatarWrap}>
-              {profile?.avatar_url
-                ? <Image source={{ uri: profile.avatar_url }} style={s.profileAvatarImg} />
+              {avatarUrl
+                ? <Image source={{ uri: avatarUrl }} style={s.profileAvatarImg} />
                 : <View style={s.profileAvatar}><Text style={s.profileAvatarText}>{initial}</Text></View>
               }
             </View>

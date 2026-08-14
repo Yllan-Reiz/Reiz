@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, Acti
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
+import { signMany } from '../lib/storage';
 import { Friend, PendingRequest } from '../lib/types';
 import { LANDING_URL, inviteUrl } from '../constants';
 import { s, F } from '../styles';
@@ -92,6 +93,14 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
         if (f.status === 'accepted') accepted.push({ id: other.id, full_name: other.full_name, username: other.username, friendship_id: f.id, status: f.status, is_requester: isRequester, avatar_url: other.avatar_url });
         else if (f.status === 'pending' && !isRequester) pendingReqs.push({ id: other.id, full_name: other.full_name, username: other.username, friendship_id: f.id, avatar_url: other.avatar_url });
       });
+      // Bucket privé : les avatars des deux listes sont signés en une requête.
+      const signed = await signMany([
+        ...accepted.map(f => f.avatar_url),
+        ...pendingReqs.map(p => p.avatar_url),
+      ]);
+      accepted.forEach(f => { if (f.avatar_url) f.avatar_url = signed[f.avatar_url] ?? null; });
+      pendingReqs.forEach(p => { if (p.avatar_url) p.avatar_url = signed[p.avatar_url] ?? null; });
+
       setFriends(accepted); setPending(pendingReqs);
       onPendingCount?.(pendingReqs.length);
       loadSuggestions(uid, accepted.map(f => f.id));
@@ -117,7 +126,10 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       result.push({ ...o.users, objectiveTitle: o.title, match });
     }
     result.sort((a, b) => Number(b.match) - Number(a.match));
-    setSuggestions(result.slice(0, 6));
+    const top = result.slice(0, 6);
+    const signed = await signMany(top.map(u => u.avatar_url));
+    top.forEach(u => { if (u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });
+    setSuggestions(top);
   };
 
   const handleSearch = async (query: string) => {
@@ -132,7 +144,12 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       .limit(8);
     if (currentUserId) req = req.neq('id', currentUserId);
     const { data, error } = await req;
-    if (!error && data) setSearchResults(data.filter((u: any) => !blockedIds.has(u.id)));
+    if (!error && data) {
+      const results = data.filter((u: any) => !blockedIds.has(u.id));
+      const signed = await signMany(results.map((u: any) => u.avatar_url));
+      results.forEach((u: any) => { if (u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });
+      setSearchResults(results);
+    }
     setSearching(false);
   };
 

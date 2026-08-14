@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
 import { calculateStreak, frError } from '../lib/helpers';
+import { signMany } from '../lib/storage';
 import { Update, Objective, FeedMeta } from '../lib/types';
 import { s, F } from '../styles';
 import { FlameStreak } from '../components/FlameStreak';
@@ -100,6 +101,18 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       dbOffset.current = offset + data.length;
       // Les posts liés à un objectif privé ne sont visibles que par leur auteur.
       const visible = (data as unknown as Update[]).filter(u => u.user_id === uid || u.objectives?.visibility !== 'private');
+
+      // Le bucket est privé : on convertit les chemins stockés en URLs signées,
+      // en une seule requête pour toute la page (photos de posts + avatars).
+      const signed = await signMany([
+        ...visible.map(u => u.photo_url),
+        ...visible.map(u => u.users?.avatar_url),
+      ]);
+      visible.forEach(u => {
+        if (u.photo_url) u.photo_url = signed[u.photo_url] ?? undefined;
+        if (u.users?.avatar_url) u.users.avatar_url = signed[u.users.avatar_url] ?? undefined;
+      });
+
       const ids = visible.map(u => u.id);
       const meta: Record<string, FeedMeta> = {};
       ids.forEach(id => { meta[id] = { reactions: {}, mine: [], commentCount: 0 }; });
