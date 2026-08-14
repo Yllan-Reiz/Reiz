@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
 import { timeAgo, frError } from '../lib/helpers';
@@ -86,7 +87,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
         reporter_id: currentUserId, update_id: u.id, reported_user_id: u.user_id, reason,
       });
       if (error) Alert.alert('Erreur', frError(error));
-      else Alert.alert('Merci 🙏', 'Ton signalement a bien été envoyé. Nous allons l\'examiner.');
+      else Alert.alert('Signalement envoyé', 'Ton signalement a bien été envoyé. Nous allons l\'examiner.');
     };
     Alert.alert('Signaler ce post', 'Pourquoi signales-tu ce contenu ?', [
       { text: 'Spam', onPress: () => send('spam') },
@@ -201,11 +202,11 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
             {/* Actions */}
             <View style={s.actionsRow}>
               <TouchableOpacity style={s.actionBtn} onPress={() => setShowEmojiPicker(!showEmojiPicker)}>
-                <Text style={s.actionEmoji}>😊</Text>
+                <Ionicons name="happy-outline" size={17} color="#888" />
                 <Text style={s.actionText}>Réagir</Text>
               </TouchableOpacity>
               <TouchableOpacity style={s.actionBtn} onPress={() => setShowComments(true)}>
-                <Text style={s.actionEmoji}>💬</Text>
+                <Ionicons name="chatbubble-outline" size={16} color="#888" />
                 <Text style={s.actionText}>{commentCount > 0 ? `${commentCount}` : 'Commenter'}</Text>
               </TouchableOpacity>
             </View>
@@ -238,11 +239,11 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
           )}
           <View style={s.actionsRow}>
             <TouchableOpacity style={s.actionBtn} onPress={() => setShowEmojiPicker(!showEmojiPicker)}>
-              <Text style={s.actionEmoji}>😊</Text>
+              <Ionicons name="happy-outline" size={17} color="#888" />
               <Text style={s.actionText}>Réagir</Text>
             </TouchableOpacity>
             <TouchableOpacity style={s.actionBtn} onPress={() => setShowComments(true)}>
-              <Text style={s.actionEmoji}>💬</Text>
+              <Ionicons name="chatbubble-outline" size={16} color="#888" />
               <Text style={s.actionText}>{commentCount > 0 ? `${commentCount}` : 'Commenter'}</Text>
             </TouchableOpacity>
           </View>

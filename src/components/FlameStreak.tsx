@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { View, Text, Animated, Easing } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { s } from '../styles';
+
+const AnimatedIcon = Animated.createAnimatedComponent(Ionicons);
 
 export function FlameStreak({ streak }: { streak: number }) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -29,11 +32,16 @@ export function FlameStreak({ streak }: { streak: number }) {
     return () => anim.stop();
   }, [streak]);
 
-  const fontSize = streak >= 15 ? 18 : streak >= 8 ? 16 : streak >= 4 ? 15 : 13;
+  const iconSize = streak >= 15 ? 18 : streak >= 8 ? 16 : streak >= 4 ? 15 : 13;
 
   return (
     <View style={s.streakBadge}>
-      <Animated.Text style={[s.streakFlame, { fontSize, transform: [{ scale }], opacity }]}>🔥</Animated.Text>
+      <AnimatedIcon
+        name="flame"
+        size={iconSize}
+        color="#fff"
+        style={{ transform: [{ scale }], opacity }}
+      />
       <Text style={s.streakText}>{streak}j</Text>
     </View>
   );

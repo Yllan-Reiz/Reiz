@@ -37,11 +37,11 @@ export function Splash({ onNext }: { onNext: () => void }) {
           </View>
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>EMAIL</Text>
-            <TextInput style={s.inputField} placeholder="yllan@reiz.app" placeholderTextColor="#666" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+            <TextInput style={s.inputField} placeholder="yllan@reiz.app" placeholderTextColor="#666" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
           </View>
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>MOT DE PASSE</Text>
-            <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#666" value={password} onChangeText={setPassword} secureTextEntry />
+            <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#666" value={password} onChangeText={setPassword} secureTextEntry maxLength={72} />
           </View>
           <TouchableOpacity style={[s.btn, { marginTop: 8 }, loading && s.btnDisabled]} onPress={loading ? undefined : handleLogin}>
             {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Se connecter →</Text>}

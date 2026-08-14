@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
@@ -41,7 +42,7 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
   const handlePickPhoto = async () => {
     Alert.alert('Ajouter une photo', 'Choisis une option', [
       {
-        text: '📷 Prendre une photo',
+        text: 'Prendre une photo',
         onPress: async () => {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
           if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la caméra dans les réglages.'); return; }
@@ -50,7 +51,7 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
         }
       },
       {
-        text: '🖼️ Importer depuis la galerie',
+        text: 'Importer depuis la galerie',
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la galerie dans les réglages.'); return; }
@@ -101,7 +102,7 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
       Alert.alert('Erreur', frError(error));
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      Alert.alert('Publié ! 🚀', 'Ta mise à jour est en ligne.');
+      Alert.alert('Publié', 'Ta mise à jour est en ligne.');
       onPublish();
     }
   };
@@ -125,9 +126,9 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
                 </View>
               </>
             : <View style={s.postPhotoEmpty}>
-                <Text style={s.postPhotoEmptyIcon}>📷</Text>
+                <Ionicons name="camera-outline" size={34} color="#666" />
                 <Text style={s.postPhotoEmptyText}>Ajoute une photo</Text>
-                <Text style={s.postPhotoEmptyHint}>Optionnel — mais fortement recommandé</Text>
+                <Text style={s.postPhotoEmptyHint}>Optionnel, mais fortement recommandé</Text>
               </View>
           }
         </TouchableOpacity>
@@ -139,7 +140,7 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
             ? <ActivityIndicator color="#fff" style={{ marginBottom: 20 }} />
             : objectives.length === 0
               ? <View style={s.postEmptyObj}>
-                  <Text style={{ color: '#888', fontSize: 13 }}>Aucun objectif — crée-en un dans "Mes objectifs"</Text>
+                  <Text style={{ color: '#888', fontSize: 13 }}>Aucun objectif. Crée-en un dans "Mes objectifs".</Text>
                 </View>
               : <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.postObjScroll} contentContainerStyle={{ gap: 10 }}>
                   {objectives.map((o, i) => (
@@ -192,6 +193,7 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
             value={caption}
             onChangeText={setCaption}
             multiline
+            maxLength={300}
           />
         </View>
       </ScrollView>

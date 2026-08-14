@@ -5,18 +5,19 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // puis on efface ses données avec la clé service role, et enfin le compte auth.
 Deno.serve(async (req) => {
   const authHeader = req.headers.get('Authorization') ?? '';
-  const supabaseAuth = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } }
-  );
-  const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser();
-  if (authErr || !user) return new Response('Unauthorized', { status: 401 });
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+  if (!token) return new Response('Unauthorized', { status: 401 });
 
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    Deno.env.get('SERVICE_KEY')!
   );
+
+  // On valide le jeton de l'appelant avec la clé de service : l'utilisateur ne
+  // peut supprimer que SON compte, jamais celui d'un autre.
+  const { data: { user }, error: authErr } = await admin.auth.getUser(token);
+  if (authErr || !user) return new Response('Unauthorized', { status: 401 });
+
   const uid = user.id;
 
   // 1. Données applicatives (ordre : enfants avant parents)

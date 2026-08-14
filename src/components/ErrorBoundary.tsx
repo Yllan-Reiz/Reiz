@@ -1,5 +1,6 @@
 import { Component, ReactNode } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { F } from '../styles';
 
 // Filet de sécurité : si un écran plante, on affiche un bouton "Réessayer"
@@ -11,7 +12,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { hasError
     if (this.state.hasError) {
       return (
         <View style={{ flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center', padding: 32, gap: 14 }}>
-          <Text style={{ fontSize: 40 }}>😅</Text>
+          <Ionicons name="alert-circle-outline" size={40} color="#666" />
           <Text style={{ color: '#fff', fontSize: 18, fontFamily: F.extrabold, textAlign: 'center' }}>Quelque chose a planté</Text>
           <Text style={{ color: '#999', fontSize: 13, textAlign: 'center', lineHeight: 19 }}>Ce n'est pas toi, c'est nous. Appuie pour relancer.</Text>
           <TouchableOpacity

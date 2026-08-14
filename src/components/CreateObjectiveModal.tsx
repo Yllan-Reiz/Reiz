@@ -33,7 +33,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
     });
     setSaving(false);
     if (error) { Alert.alert('Erreur', frError(error)); return; }
-    Alert.alert(`Objectif créé ! ${emoji}`, `"${title}" est ajouté à tes objectifs.`);
+    Alert.alert('Objectif créé', `"${title}" est ajouté à tes objectifs.`);
     reset(); onCreated();
   };
 
@@ -55,7 +55,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
         >
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>NOM DE L'OBJECTIF</Text>
-            <TextInput style={s.inputField} placeholder="Ex: Courir 10 km, Lire 12 livres..." placeholderTextColor="#666" value={title} onChangeText={setTitle} autoCapitalize="sentences" />
+            <TextInput style={s.inputField} placeholder="Ex: Courir 10 km, Lire 12 livres..." placeholderTextColor="#666" value={title} onChangeText={setTitle} autoCapitalize="sentences" maxLength={80} />
           </View>
 
           <Text style={s.inputLabel}>EMOJI</Text>
@@ -73,7 +73,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
 
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>VALEUR CIBLE</Text>
-            <TextInput style={s.inputField} placeholder="Ex: 10, 100, 12..." placeholderTextColor="#666" value={targetValue} onChangeText={setTargetValue} keyboardType="numeric" />
+            <TextInput style={s.inputField} placeholder="Ex: 10, 100, 12..." placeholderTextColor="#666" value={targetValue} onChangeText={setTargetValue} keyboardType="numeric" maxLength={9} />
           </View>
 
           <Text style={s.inputLabel}>UNITÉ</Text>
@@ -96,7 +96,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
 
           <Text style={s.inputLabel}>VISIBILITÉ</Text>
           <View style={s.visToggle}>
-            {[{ key: 'public', label: '🌍 Public' }, { key: 'friends', label: '👥 Amis' }, { key: 'private', label: '🔒 Privé' }].map(v => (
+            {[{ key: 'public', label: 'Public' }, { key: 'friends', label: 'Amis' }, { key: 'private', label: 'Privé' }].map(v => (
               <TouchableOpacity key={v.key} style={[s.visOpt, visibility === v.key && s.visOptActive]} onPress={() => setVisibility(v.key)}>
                 <Text style={[s.visOptText, visibility === v.key && s.visOptTextActive]}>{v.label}</Text>
               </TouchableOpacity>

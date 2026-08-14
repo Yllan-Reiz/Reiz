@@ -41,7 +41,7 @@ export function FriendProfileScreen({ userId, onClose }: { userId: string; onClo
       if (!currentUserId) return;
       const { error } = await supabase.from('reports').insert({ reporter_id: currentUserId, reported_user_id: userId, reason });
       if (error) Alert.alert('Erreur', frError(error));
-      else Alert.alert('Merci 🙏', 'Ton signalement a bien été envoyé.');
+      else Alert.alert('Signalement envoyé', 'Ton signalement a bien été envoyé.');
     };
     Alert.alert('Signaler ce profil', 'Pourquoi signales-tu ce profil ?', [
       { text: 'Spam', onPress: () => send('spam') },
@@ -104,7 +104,7 @@ export function FriendProfileScreen({ userId, onClose }: { userId: string; onClo
           </View>
 
           <View style={s.statsRow}>
-            <View style={s.statPill}><Text style={s.statVal}>🔥 {streak}j</Text><Text style={s.statLbl}>Streak</Text></View>
+            <View style={s.statPill}><Text style={s.statVal}>{streak}j</Text><Text style={s.statLbl}>Streak</Text></View>
             <View style={s.statPill}><Text style={s.statVal}>{objectives.length}</Text><Text style={s.statLbl}>Objectifs</Text></View>
             <View style={s.statPill}><Text style={s.statVal}>{friendCount}</Text><Text style={s.statLbl}>Amis</Text></View>
           </View>

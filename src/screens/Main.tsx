@@ -18,6 +18,22 @@ import { FriendProfileScreen } from './FriendProfileScreen';
 
 const PAGE_SIZE = 20;
 
+// Puce d'étape de la carte d'activation : coché une fois l'étape faite, numérotée sinon.
+function StepMarker({ done, step }: { done: boolean; step: number }) {
+  if (done) {
+    return (
+      <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+        <Ionicons name="checkmark" size={15} color="#000" />
+      </View>
+    );
+  }
+  return (
+    <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: '#444', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+      <Text style={{ color: '#888', fontSize: 12, fontFamily: F.bold }}>{step}</Text>
+    </View>
+  );
+}
+
 export function Main({ onPost, navIntent, onNavIntentHandled }: {
   onPost: () => void;
   navIntent?: string | null;
@@ -193,9 +209,6 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
 
   const progressPct = (obj: Objective) => obj.target_value > 0 ? Math.min(Math.round((obj.current_value / obj.target_value) * 100), 100) : 0;
 
-  // === Carte d'activation (anti feed-vide) ===
-  // Un nouveau compte arrive sur un feed vide : tant qu'il n'a pas créé d'objectif
-  // ET invité son cercle, on affiche un guide en 2 étapes au lieu du CTA "Publier".
   const hasObjective = objectives.length > 0;
   const hasFriend = (friendCount ?? 0) > 0;
   // !loadingObj évite que la carte clignote pendant le chargement chez un user existant.
@@ -203,15 +216,15 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
 
   const activationHeader = (
     <View style={{ backgroundColor: '#111', borderRadius: 20, padding: 18, marginBottom: 14 }}>
-      <Text style={{ color: '#fff', fontSize: 17, fontFamily: F.bold, marginBottom: 2 }}>Bienvenue sur Reiz 👋</Text>
-      <Text style={{ color: '#888', fontSize: 13, marginBottom: 8 }}>Lance ton cercle en 2 étapes — sans ça, ton feed reste vide.</Text>
+      <Text style={{ color: '#fff', fontSize: 17, fontFamily: F.bold, marginBottom: 2 }}>Bienvenue sur Reiz</Text>
+      <Text style={{ color: '#888', fontSize: 13, marginBottom: 8 }}>Lance ton cercle en 2 étapes. Sans ça, ton feed reste vide.</Text>
 
       <TouchableOpacity
         activeOpacity={0.8}
         onPress={() => setShowCreateModal(true)}
         style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#222' }}
       >
-        <Text style={{ fontSize: 20, marginRight: 12 }}>{hasObjective ? '✅' : '1️⃣'}</Text>
+        <StepMarker done={hasObjective} step={1} />
         <View style={{ flex: 1 }}>
           <Text style={{ color: hasObjective ? '#666' : '#fff', fontSize: 15, fontFamily: F.bold, textDecorationLine: hasObjective ? 'line-through' : 'none' }}>
             Crée ton premier objectif
@@ -226,7 +239,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         onPress={() => setTab('friends')}
         style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#222' }}
       >
-        <Text style={{ fontSize: 20, marginRight: 12 }}>{hasFriend ? '✅' : '2️⃣'}</Text>
+        <StepMarker done={hasFriend} step={2} />
         <View style={{ flex: 1 }}>
           <Text style={{ color: hasFriend ? '#666' : '#fff', fontSize: 15, fontFamily: F.bold, textDecorationLine: hasFriend ? 'line-through' : 'none' }}>
             {hasFriend ? `Ton cercle est lancé (${friendCount})` : 'Invite ton cercle (3 proches min.)'}
@@ -242,7 +255,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     <TouchableOpacity style={s.myUpdate} onPress={onPost} activeOpacity={0.85}>
       <View style={s.myUpdateInfo}>
         <Text style={s.myUpdateTitle}>Poste ta progression</Text>
-        <Text style={s.myUpdateSub}>Ton cercle t'attend aujourd'hui 👀</Text>
+        <Text style={s.myUpdateSub}>Ton cercle t'attend aujourd'hui</Text>
       </View>
       <View style={s.postedBadge}><Text style={s.postedBadgeText}>Publier →</Text></View>
     </TouchableOpacity>
@@ -275,9 +288,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 <FeedSkeleton />
               ) : (
                 <View style={{ paddingTop: 40, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 32 }}>🌱</Text>
-                  <Text style={{ color: '#888', marginTop: 10, fontSize: 14, fontFamily: F.bold }}>Aucune mise à jour pour l'instant</Text>
-                  <Text style={{ color: '#777', marginTop: 4, fontSize: 12 }}>Sois le premier à publier !</Text>
+                  <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>Aucune mise à jour pour l'instant</Text>
+                  <Text style={{ color: '#777', marginTop: 4, fontSize: 12 }}>Sois le premier à publier.</Text>
                 </View>
               )
             }
@@ -324,7 +336,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         >
           <View style={s.statsRow}>
             <View style={s.statPill}><Text style={s.statVal}>{objectives.length}</Text><Text style={s.statLbl}>Actifs</Text></View>
-            <View style={s.statPill}><Text style={s.statVal}>🔥 {streak}j</Text><Text style={s.statLbl}>Streak</Text></View>
+            <View style={s.statPill}><Text style={s.statVal}>{streak}j</Text><Text style={s.statLbl}>Streak</Text></View>
             <View style={s.statPill}>
               <Text style={s.statVal}>{Math.round(objectives.reduce((acc, o) => acc + progressPct(o), 0) / objectives.length)}%</Text>
               <Text style={s.statLbl}>Moy.</Text>

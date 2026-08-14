@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, RefreshControl, Share } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
 import { Friend, PendingRequest } from '../lib/types';
@@ -21,24 +22,20 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   // Objectif en cours (jamais privé) pour personnaliser l'invitation.
   const [myTopObjective, setMyTopObjective] = useState<{ emoji: string; title: string } | null>(null);
 
-  // Le @pseudo sert de code d'invitation : l'ami télécharge l'app puis le cherche.
-  // On incarne le message avec l'objectif réel + un hook d'accountability et une
-  // relance ("et toi ?") : c'est le seul levier d'acquisition au lancement, un
-  // message concret convertit bien mieux qu'un texte générique.
   const inviteFriends = async () => {
     const hook = myTopObjective
-      ? `${myTopObjective.emoji} Je me suis lancé un objectif : ${myTopObjective.title}.`
-      : `💪 Je me lance un nouveau défi.`;
+      ? `Je me suis lancé un objectif : ${myTopObjective.title}.`
+      : `Je me lance un nouveau défi.`;
     const closer = myTopObjective
-      ? `Et toi, t'as le cran de me montrer le tien ? 🔥`
-      : `Et toi, c'est quoi ton prochain objectif ? 🔥`;
+      ? `Et toi, t'as le cran de me montrer le tien ?`
+      : `Et toi, c'est quoi ton prochain objectif ?`;
     // Lien d'invitation perso (deep link) : l'ami est auto-ajouté, plus de recherche manuelle.
     // Repli sur la landing si le pseudo n'est pas encore chargé.
     const link = myUsername ? inviteUrl(myUsername) : LANDING_URL;
     const message =
       `${hook}\n\n` +
       `Sur Reiz, mon cercle voit ma progression chaque jour. Pas d'excuse, pas d'abandon.\n\n` +
-      `Rejoins mon cercle en 1 tap 👇\n` +
+      `Rejoins mon cercle en 1 tap :\n` +
       `${link}\n\n` +
       `${closer}`;
     try {
@@ -143,7 +140,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     if (!currentUserId) return;
     const { error } = await supabase.from('friendships').insert({ requester_id: currentUserId, receiver_id: receiverId, status: 'pending' });
     if (error) { if (error.code === '23505') Alert.alert('Déjà envoyé', 'Une demande est déjà en cours.'); else Alert.alert('Erreur', frError(error)); return; }
-    Alert.alert('Demande envoyée ! 🤝', 'En attente de confirmation.');
+    Alert.alert('Demande envoyée', 'En attente de confirmation.');
     setSearchResults([]); setSearchQuery('');
   };
 
@@ -191,7 +188,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       {/* Invitation du cercle */}
       <TouchableOpacity style={s.myUpdate} onPress={inviteFriends} activeOpacity={0.85}>
         <View style={s.myUpdateInfo}>
-          <Text style={s.myUpdateTitle}>Invite ton cercle 🤝</Text>
+          <Text style={s.myUpdateTitle}>Invite ton cercle</Text>
           <Text style={s.myUpdateSub}>Reiz marche mieux quand tes proches te regardent</Text>
         </View>
         <View style={s.postedBadge}><Text style={s.postedBadgeText}>Partager →</Text></View>
@@ -199,11 +196,11 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
 
       {/* Barre de recherche */}
       <View style={s.searchBarActive}>
-        <Text style={s.searchIcon}>🔍</Text>
-        <TextInput style={s.searchInput} placeholder="Prénom ou @pseudo..." placeholderTextColor="#666" value={searchQuery} onChangeText={handleSearch} autoCapitalize="none" />
+        <Ionicons name="search" size={16} color="#666" />
+        <TextInput style={s.searchInput} placeholder="Prénom ou @pseudo..." placeholderTextColor="#666" value={searchQuery} onChangeText={handleSearch} autoCapitalize="none" maxLength={40} />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => { setSearchQuery(''); setSearchResults([]); }}>
-            <Text style={{ color: '#777', fontSize: 16 }}>✕</Text>
+            <Ionicons name="close" size={18} color="#777" />
           </TouchableOpacity>
         )}
       </View>
@@ -221,7 +218,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
                 <Text style={s.friendRowSub}>@{u.username}</Text>
               </View>
               {getFriendshipStatus(u.id) === 'ami' ? (
-                <View style={s.friendBadge}><Text style={s.friendBadgeText}>✓ Ami</Text></View>
+                <View style={s.friendBadge}><Ionicons name="checkmark" size={14} color="#888" /></View>
               ) : (
                 <TouchableOpacity style={s.addFriendBtn} onPress={() => sendFriendRequest(u.id)}>
                   <Text style={s.addFriendBtnText}>Ajouter</Text>
@@ -245,10 +242,10 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TouchableOpacity style={s.acceptBtn} onPress={() => acceptRequest(p.friendship_id)}>
-                  <Text style={s.acceptBtnText}>✓</Text>
+                  <Ionicons name="checkmark" size={18} color="#000" />
                 </TouchableOpacity>
                 <TouchableOpacity style={s.declineBtn} onPress={() => declineRequest(p.friendship_id)}>
-                  <Text style={s.declineBtnText}>✕</Text>
+                  <Ionicons name="close" size={16} color="#888" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -281,7 +278,6 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
         <View style={{ paddingTop: 20, alignItems: 'center' }}><ActivityIndicator color="#fff" /></View>
       ) : friends.length === 0 ? (
         <View style={{ paddingTop: 30, alignItems: 'center', gap: 8 }}>
-          <Text style={{ fontSize: 36 }}>👥</Text>
           <Text style={{ color: '#888', fontSize: 15, fontFamily: F.bold }}>Pas encore d'amis</Text>
           <Text style={{ color: '#666', fontSize: 13 }}>Invite tes proches ou cherche-les par prénom</Text>
           <TouchableOpacity style={s.emptyStateBtn} onPress={inviteFriends}>
@@ -301,7 +297,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
             <Text style={s.friendRowName}>{f.full_name}</Text>
             <Text style={s.friendRowSub}>@{f.username}</Text>
           </View>
-          <View style={s.friendBadge}><Text style={s.friendBadgeText}>✓</Text></View>
+          <View style={s.friendBadge}><Ionicons name="checkmark" size={14} color="#888" /></View>
         </TouchableOpacity>
       ))}
     </ScrollView>

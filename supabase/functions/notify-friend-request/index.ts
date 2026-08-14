@@ -2,10 +2,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  Deno.env.get('SERVICE_KEY')!
 );
 
 Deno.serve(async (req) => {
+  // Seuls les webhooks de la base peuvent déclencher cette fonction.
+  // Configure l'en-tête x-webhook-secret dans Database > Webhooks.
+  const expected = Deno.env.get('WEBHOOK_SECRET');
+  if (expected && req.headers.get('x-webhook-secret') !== expected) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
   const payload = await req.json();
   const friendship = payload.record;
 
@@ -30,7 +37,7 @@ Deno.serve(async (req) => {
 
   await sendPush(
     receiver.push_token,
-    '👋 Nouvelle demande d\'ami',
+    'Nouvelle demande d\'ami',
     `${requester.full_name} t'a ajouté sur Reiz`,
     'friend_request'
   );

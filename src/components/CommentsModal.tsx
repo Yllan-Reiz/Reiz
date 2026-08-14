@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
 import { timeAgo } from '../lib/helpers';
@@ -58,9 +59,8 @@ export function CommentsModal({ visible, updateId, currentUserId, onClose, onCou
             <ScrollView style={s.modalBody} showsVerticalScrollIndicator={false}>
               {comments.length === 0 ? (
                 <View style={{ paddingTop: 40, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 32 }}>💬</Text>
-                  <Text style={{ color: '#888', marginTop: 10, fontSize: 14, fontFamily: F.bold }}>Pas encore de commentaires</Text>
-                  <Text style={{ color: '#777', marginTop: 4, fontSize: 12 }}>Sois le premier à commenter !</Text>
+                  <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>Pas encore de commentaires</Text>
+                  <Text style={{ color: '#777', marginTop: 4, fontSize: 12 }}>Sois le premier à commenter.</Text>
                 </View>
               ) : comments.map((c) => (
                 <View key={c.id} style={s.commentRow}>
@@ -76,7 +76,7 @@ export function CommentsModal({ visible, updateId, currentUserId, onClose, onCou
             </ScrollView>
           )}
           <View style={s.commentInputRow}>
-            <TextInput style={s.commentInput} placeholder="Écris un commentaire..." placeholderTextColor="#666" value={newComment} onChangeText={setNewComment} multiline />
+            <TextInput style={s.commentInput} placeholder="Écris un commentaire..." placeholderTextColor="#666" value={newComment} onChangeText={setNewComment} multiline maxLength={500} />
             <TouchableOpacity style={[s.sendBtn, (!newComment.trim() || sending) && s.sendBtnDisabled]} onPress={sending ? undefined : handleSend}>
               {sending ? <ActivityIndicator color="#000" size="small" /> : <Text style={s.sendBtnText}>→</Text>}
             </TouchableOpacity>

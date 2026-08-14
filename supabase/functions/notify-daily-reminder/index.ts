@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  Deno.env.get('SERVICE_KEY')!
 );
 
 Deno.serve(async (req) => {
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
   const messages = toNotify.map(u => ({
     to: u.push_token,
     title: '⏰ Rappel du jour',
-    body: 'Tu n\'as pas encore posté aujourd\'hui. Tes objectifs t\'attendent 💪',
+    body: 'Tu n\'as pas encore posté aujourd\'hui. Tes objectifs t\'attendent.',
     sound: 'default',
   }));
 

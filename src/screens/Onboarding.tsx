@@ -63,7 +63,7 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
     // Si confirmation email requise, pas de session → on ne navigue pas vers Main
     if (!data.session) {
       Alert.alert(
-        'Vérifie ta boîte mail 📬',
+        'Vérifie ta boîte mail',
         `Un email a été envoyé à ${trimmedEmail}. Clique sur le lien pour confirmer ton compte, puis reviens te connecter.`,
         [{ text: 'OK', onPress: () => setShowLogin(true) }]
       );
@@ -71,7 +71,7 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
     }
 
     // Session active : onAuthStateChange va naviguer vers Main, l'alert reste informatif
-    Alert.alert('Bienvenue sur Reiz ! 🎉', '', [{ text: 'C\'est parti' }]);
+    Alert.alert('Bienvenue sur Reiz', '', [{ text: 'C\'est parti' }]);
   };
 
   const handleLogin = async () => {
@@ -86,15 +86,15 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
     return (
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView style={s.obContainer} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Text style={s.headline}>Bon retour 👋</Text>
+        <Text style={s.headline}>Bon retour</Text>
         <Text style={s.subtext}>Connecte-toi pour reprendre ta progression.</Text>
         <View style={s.inputBlock}>
           <Text style={s.inputLabel}>EMAIL</Text>
-          <TextInput style={s.inputField} placeholder="yllan@reiz.app" placeholderTextColor="#666" value={loginEmail} onChangeText={setLoginEmail} keyboardType="email-address" autoCapitalize="none" />
+          <TextInput style={s.inputField} placeholder="yllan@reiz.app" placeholderTextColor="#666" value={loginEmail} onChangeText={setLoginEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
         </View>
         <View style={s.inputBlock}>
           <Text style={s.inputLabel}>MOT DE PASSE</Text>
-          <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#666" value={loginPassword} onChangeText={setLoginPassword} secureTextEntry />
+          <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#666" value={loginPassword} onChangeText={setLoginPassword} secureTextEntry maxLength={72} />
         </View>
         <TouchableOpacity style={[s.btn, { marginTop: 8 }, loginLoading && s.btnDisabled]} onPress={loginLoading ? undefined : handleLogin}>
           {loginLoading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Se connecter →</Text>}
@@ -197,15 +197,15 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
           <Text style={s.subtext}>Ton parcours commence maintenant.</Text>
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>PRÉNOM</Text>
-            <TextInput style={s.inputField} placeholder="Yllan" placeholderTextColor="#666" value={name} onChangeText={setName} autoCapitalize="words" />
+            <TextInput style={s.inputField} placeholder="Yllan" placeholderTextColor="#666" value={name} onChangeText={setName} autoCapitalize="words" maxLength={40} />
           </View>
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>EMAIL</Text>
-            <TextInput style={s.inputField} placeholder="yllan@reiz.app" placeholderTextColor="#666" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+            <TextInput style={s.inputField} placeholder="yllan@reiz.app" placeholderTextColor="#666" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
           </View>
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>MOT DE PASSE</Text>
-            <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#666" value={password} onChangeText={setPassword} secureTextEntry />
+            <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#666" value={password} onChangeText={setPassword} secureTextEntry maxLength={72} />
           </View>
           <TouchableOpacity style={[s.btn, { marginTop: 8 }, loading && s.btnDisabled]} onPress={loading ? undefined : handleSignUp}>
             {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Créer mon compte</Text>}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
@@ -62,7 +63,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
   const handlePickAvatar = async () => {
     Alert.alert('Photo de profil', 'Choisis une option', [
       {
-        text: '📷 Prendre une photo',
+        text: 'Prendre une photo',
         onPress: async () => {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
           if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la caméra dans les réglages.'); return; }
@@ -71,7 +72,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
         }
       },
       {
-        text: '🖼️ Importer depuis la galerie',
+        text: 'Importer depuis la galerie',
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la galerie dans les réglages.'); return; }
@@ -160,12 +161,12 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
               }
               {uploadingAvatar
                 ? <View style={s.profileAvatarOverlay}><ActivityIndicator color="#fff" /></View>
-                : <View style={s.profileAvatarOverlay}><Text style={s.profileAvatarEditIcon}>📷</Text></View>
+                : <View style={s.profileAvatarOverlay}><Ionicons name="camera" size={13} color="#fff" /></View>
               }
             </TouchableOpacity>
             {editingName ? (
               <View style={s.profileNameEdit}>
-                <TextInput style={s.profileNameInput} value={newName} onChangeText={setNewName} autoFocus autoCapitalize="words" placeholderTextColor="#666" />
+                <TextInput style={s.profileNameInput} value={newName} onChangeText={setNewName} autoFocus autoCapitalize="words" placeholderTextColor="#666" maxLength={40} />
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <TouchableOpacity style={s.profileSaveBtn} onPress={saving ? undefined : handleSaveName}>
                     {saving ? <ActivityIndicator color="#000" size="small" /> : <Text style={s.profileSaveBtnText}>Sauvegarder</Text>}
@@ -178,7 +179,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
             ) : (
               <TouchableOpacity onPress={() => setEditingName(true)}>
                 <Text style={s.profileName}>{profile?.full_name || 'Utilisateur'}</Text>
-                <Text style={s.profileEditHint}>Appuie pour modifier ✏️</Text>
+                <Text style={s.profileEditHint}>Appuie pour modifier</Text>
               </TouchableOpacity>
             )}
             <Text style={s.profileUsername}>@{profile?.username}</Text>
@@ -186,7 +187,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
           </View>
 
           <View style={s.statsRow}>
-            <View style={s.statPill}><Text style={s.statVal}>🔥 {streak}j</Text><Text style={s.statLbl}>Streak</Text></View>
+            <View style={s.statPill}><Text style={s.statVal}>{streak}j</Text><Text style={s.statLbl}>Streak</Text></View>
             <View style={s.statPill}><Text style={s.statVal}>{objectives.length}</Text><Text style={s.statLbl}>Objectifs</Text></View>
             <View style={s.statPill}><Text style={s.statVal}>{friendCount}</Text><Text style={s.statLbl}>Amis</Text></View>
           </View>
