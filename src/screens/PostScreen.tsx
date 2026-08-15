@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -10,6 +11,7 @@ import { Objective } from '../lib/types';
 import { s, F } from '../styles';
 
 export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublish: () => void }) {
+  const insets = useSafeAreaInsets();
   const [selectedObj, setSelectedObj] = useState(0);
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [loadingObj, setLoadingObj] = useState(true);
@@ -106,13 +108,15 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
 
   return (
     <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={onBack}><Text style={s.backText}>←</Text></TouchableOpacity>
+      <View style={[s.header, { paddingTop: insets.top + 6 }]}>
+        <TouchableOpacity style={s.backBtn} onPress={onBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="chevron-back" size={20} color="#888" />
+        </TouchableOpacity>
         <Text style={s.headerTitle}>Poste ta progression</Text>
         <View style={{ width: 34 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}>
         {/* Photo */}
         <TouchableOpacity style={s.postPhotoZone} onPress={handlePickPhoto} activeOpacity={0.85}>
           {photoUri
@@ -139,7 +143,7 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
               ? <View style={s.postEmptyObj}>
                   <Text style={{ color: '#888', fontSize: 13 }}>Aucun objectif. Crée-en un dans "Mes objectifs".</Text>
                 </View>
-              : <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.postObjScroll} contentContainerStyle={{ gap: 10 }}>
+              : <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.postObjScroll} contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }}>
                   {objectives.map((o, i) => (
                     <TouchableOpacity key={o.id} style={[s.postObjCard, selectedObj === i && s.postObjCardActive]} onPress={() => setSelectedObj(i)}>
                       <Text style={s.postObjEmoji}>{o.emoji}</Text>
@@ -153,8 +157,11 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
           {obj && <>
             <Text style={[s.postLabel, { marginTop: 28 }]}>PROGRESSION</Text>
             <View style={s.postProgressWrap}>
-              <TouchableOpacity style={s.postProgressBtn} onPress={() => setProgress(p => Math.max(0, p - 5))}>
-                <Text style={s.postProgressBtnText}>−</Text>
+              <TouchableOpacity
+                style={s.postProgressBtn}
+                onPress={() => { Haptics.selectionAsync().catch(() => {}); setProgress(p => Math.max(0, p - 5)); }}
+              >
+                <Ionicons name="remove" size={22} color="#fff" />
               </TouchableOpacity>
               <View style={s.postProgressCenter}>
                 {obj.unit === '%' ? (
@@ -175,14 +182,17 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
                   <View style={[s.postProgressFill, { width: `${progress}%` as any }]} />
                 </View>
               </View>
-              <TouchableOpacity style={s.postProgressBtn} onPress={() => setProgress(p => Math.min(100, p + 5))}>
-                <Text style={s.postProgressBtnText}>+</Text>
+              <TouchableOpacity
+                style={s.postProgressBtn}
+                onPress={() => { Haptics.selectionAsync().catch(() => {}); setProgress(p => Math.min(100, p + 5)); }}
+              >
+                <Ionicons name="add" size={22} color="#fff" />
               </TouchableOpacity>
             </View>
           </>}
 
           {/* Caption */}
-          <Text style={[s.postLabel, { marginTop: 28 }]}>CAPTION</Text>
+          <Text style={[s.postLabel, { marginTop: 28 }]}>LÉGENDE</Text>
           <TextInput
             style={s.postCaptionInput}
             placeholder="Décris ta séance, ton ressenti..."
@@ -195,7 +205,7 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
         </View>
       </ScrollView>
 
-      <View style={s.ctaContainer}>
+      <View style={[s.ctaContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
         <TouchableOpacity
           style={[s.cta, (!obj || publishing || uploadingPhoto) && s.btnDisabled]}
           onPress={!obj || publishing || uploadingPhoto ? undefined : handlePublish}>

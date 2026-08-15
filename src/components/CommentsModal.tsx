@@ -49,9 +49,11 @@ export function CommentsModal({ visible, updateId, currentUserId, onClose, onCou
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={s.modalContainer}>
           <View style={s.modalHeader}>
-            <TouchableOpacity onPress={onClose}><Text style={s.modalCancel}>← Fermer</Text></TouchableOpacity>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Text style={s.modalCancel}>Fermer</Text>
+            </TouchableOpacity>
             <Text style={s.modalTitle}>Commentaires</Text>
-            <View style={{ width: 60 }} />
+            <View style={{ width: 46 }} />
           </View>
           {loading ? (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#fff" /></View>
@@ -77,8 +79,13 @@ export function CommentsModal({ visible, updateId, currentUserId, onClose, onCou
           )}
           <View style={s.commentInputRow}>
             <TextInput style={s.commentInput} placeholder="Écris un commentaire..." placeholderTextColor="#666" value={newComment} onChangeText={setNewComment} multiline maxLength={500} />
-            <TouchableOpacity style={[s.sendBtn, (!newComment.trim() || sending) && s.sendBtnDisabled]} onPress={sending ? undefined : handleSend}>
-              {sending ? <ActivityIndicator color="#000" size="small" /> : <Text style={s.sendBtnText}>→</Text>}
+            <TouchableOpacity
+              style={[s.sendBtn, (!newComment.trim() || sending) && s.sendBtnDisabled]}
+              onPress={sending || !newComment.trim() ? undefined : handleSend}
+            >
+              {sending
+                ? <ActivityIndicator color="#000" size="small" />
+                : <Ionicons name="arrow-up" size={18} color={!newComment.trim() ? '#666' : '#000'} />}
             </TouchableOpacity>
           </View>
         </View>

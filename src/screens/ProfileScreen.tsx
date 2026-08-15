@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
 import { uploadImage, signOne } from '../lib/storage';
 import { Objective } from '../lib/types';
-import { HEATMAP_MAX_DAYS, daysFor, dayKeysFor } from '../constants';
+import { HEATMAP_MAX_DAYS, daysFor, dayKeysFor, navClearance } from '../constants';
 import { s } from '../styles';
 import { ProfileSkeleton } from '../components/Skeleton';
 
 export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose: () => void; streak: number; onCreateObjective: () => void }) {
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<any>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [activityByObj, setActivityByObj] = useState<Record<string, Set<string>>>({});
@@ -241,7 +243,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
           <TouchableOpacity style={s.dangerBtn} onPress={deleting ? undefined : handleDeleteAccount}>
             {deleting ? <ActivityIndicator color="#ff3b30" size="small" /> : <Text style={s.dangerBtnText}>Supprimer mon compte</Text>}
           </TouchableOpacity>
-          <View style={{ height: 60 }} />
+          {/* Sans cette réserve, "Supprimer mon compte" finit sous la barre de nav. */}
+          <View style={{ height: navClearance(insets.bottom) }} />
         </ScrollView>
       )}
     </View>

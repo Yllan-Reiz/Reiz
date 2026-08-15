@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, FlatList, Image, Alert, ActivityIndicator, Animated, Pressable, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, FlatList, Image, Alert, ActivityIndicator, Animated, Easing, Pressable, RefreshControl, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { NAV_BOTTOM_MIN, navClearance } from '../constants';
 import { supabase } from '../lib/supabase';
 import { calculateStreak, frError } from '../lib/helpers';
 import { signMany } from '../lib/storage';
@@ -11,6 +13,7 @@ import { s, F } from '../styles';
 import { FlameStreak } from '../components/FlameStreak';
 import { FeedCard } from '../components/FeedCard';
 import { NavTab } from '../components/NavTab';
+import { GlassSurface, LIQUID_GLASS } from '../components/GlassSurface';
 import { CreateObjectiveModal } from '../components/CreateObjectiveModal';
 import { FeedSkeleton } from '../components/Skeleton';
 import { FriendsTab } from './FriendsTab';
@@ -35,11 +38,64 @@ function StepMarker({ done, step }: { done: boolean; step: number }) {
   );
 }
 
+// Pastille de verre de l'onglet actif. Elle glisse d'un onglet à l'autre en
+// s'étirant puis en reprenant sa forme : c'est ce qui donne l'impression de liquide.
+function GlassBubble({ visible, pillWidth, anim, icon }: {
+  visible: boolean;
+  pillWidth: number;
+  anim: Animated.Value;
+  icon: any;
+}) {
+  if (!visible) return null;
+  const slot = (pillWidth - 12) / 2;
+  const bubbleSize = 48;
+  const translateX = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [6 + slot / 2 - bubbleSize / 2, 6 + slot + slot / 2 - bubbleSize / 2],
+  });
+  // Mi-parcours : la pastille s'allonge un peu et s'aplatit — volume conservé.
+  const scaleX = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1], extrapolate: 'clamp' });
+  const scaleY = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0.9, 1], extrapolate: 'clamp' });
+  // Seul le verre se déforme : l'icône reste nette, sinon elle a l'air étirée.
+  return (
+    <Animated.View pointerEvents="none" style={[s.navActiveBubble, { transform: [{ translateX }] }]}>
+      <Animated.View style={[StyleSheet.absoluteFillObject, { transform: [{ scaleX }, { scaleY }] }]}>
+        {LIQUID_GLASS ? (
+          <GlassSurface radius={24} variant="clear" tintColor="rgba(255,255,255,0.18)" style={StyleSheet.absoluteFillObject} />
+        ) : (
+          <View style={s.navActiveBubbleGlass} />
+        )}
+      </Animated.View>
+      <Ionicons name={icon} size={22} color="#fff" />
+    </Animated.View>
+  );
+}
+
+// Bouton "+" : il s'enfonce et rebondit, comme les contrôles en verre d'iOS 26.
+function PostButton({ onPress }: { onPress: () => void }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const spring = (toValue: number) =>
+    Animated.spring(scale, { toValue, useNativeDriver: true, friction: 5, tension: 220 }).start();
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => { spring(0.88); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); }}
+      onPressOut={() => spring(1)}
+    >
+      <Animated.View style={[s.navPostStandalone, { transform: [{ scale }] }]}>
+        <Ionicons name="add" size={30} color="#000" />
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 export function Main({ onPost, navIntent, onNavIntentHandled }: {
   onPost: () => void;
   navIntent?: string | null;
   onNavIntentHandled?: () => void;
 }) {
+  const insets = useSafeAreaInsets();
+  const bottomPad = navClearance(insets.bottom);
   const [tab, setTab] = useState('feed');
   const [userId, setUserId] = useState<string | null>(null);
   const [updates, setUpdates] = useState<Update[]>([]);
@@ -189,13 +245,26 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   const isLeftActive = tab === 'feed' || tab === 'objectives';
   const isRightActive = tab === 'friends' || tab === 'profile';
 
+  // Fondu-montée du contenu à chaque changement d'onglet : sans ça, l'écran
+  // change d'un coup et la navigation paraît saccadée.
+  const tabFade = useRef(new Animated.Value(1)).current;
+  const firstRender = useRef(true);
+
   useEffect(() => {
     const target = tab === 'feed' || tab === 'friends' ? 0 : 1;
     const anim = isLeftActive ? leftPillAnim : isRightActive ? rightPillAnim : null;
     if (anim) {
       Animated.spring(anim, { toValue: target, useNativeDriver: true, friction: 7, tension: 70 }).start();
     }
-    Haptics.selectionAsync().catch(() => {});
+    // Pas de vibration ni d'animation au tout premier rendu : l'utilisateur
+    // n'a rien touché, il vient juste d'ouvrir l'app.
+    if (firstRender.current) {
+      firstRender.current = false;
+    } else {
+      Haptics.selectionAsync().catch(() => {});
+      tabFade.setValue(0);
+      Animated.timing(tabFade, { toValue: 1, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    }
     fetchPendingCount();
     fetchFriendCount();
   }, [tab]);
@@ -244,7 +313,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
           </Text>
           <Text style={{ color: '#777', fontSize: 12, marginTop: 1 }}>Ce que ton cercle va suivre chaque jour</Text>
         </View>
-        {!hasObjective && <Text style={{ color: '#fff', fontSize: 24, marginLeft: 8 }}>›</Text>}
+        {!hasObjective && <Ionicons name="chevron-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />}
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -259,7 +328,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
           </Text>
           <Text style={{ color: '#777', fontSize: 12, marginTop: 1 }}>Reiz ne marche que si tes proches te regardent</Text>
         </View>
-        {!hasFriend && <Text style={{ color: '#fff', fontSize: 24, marginLeft: 8 }}>›</Text>}
+        {!hasFriend && <Ionicons name="chevron-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />}
       </TouchableOpacity>
     </View>
   );
@@ -280,11 +349,18 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     <View style={s.container}>
       <CreateObjectiveModal visible={showCreateModal} onClose={() => setShowCreateModal(false)} onCreated={() => { setShowCreateModal(false); fetchObjectives(true); }} />
 
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: insets.top + 6 }]}>
         <Image source={require('../../assets/ecriture-reiz-blanc.png')} style={s.headerLogo} resizeMode="contain" />
         <FlameStreak streak={streak} />
       </View>
 
+      <Animated.View
+        style={{
+          flex: 1,
+          opacity: tabFade,
+          transform: [{ translateY: tabFade.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+        }}
+      >
       {tab === 'feed' && (
         <View style={{ flex: 1 }}>
           <FlatList
@@ -295,6 +371,14 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1a1a1a" />}
             onEndReached={fetchMore}
             onEndReachedThreshold={0.6}
+            // Cartes photo lourdes : on limite ce qui est monté et gardé vivant,
+            // sinon le scroll accroche au bout de quelques dizaines de posts.
+            initialNumToRender={4}
+            maxToRenderPerBatch={5}
+            windowSize={7}
+            // Android seulement : sur iOS, le détachement des vues hors écran fait
+            // parfois apparaître des cartes vides quand elles ont des calques absolus.
+            removeClippedSubviews={Platform.OS === 'android'}
             ListHeaderComponent={needsActivation ? activationHeader : postCTA}
             ListEmptyComponent={
               loadingFeed ? (
@@ -307,7 +391,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               )
             }
             ListFooterComponent={
-              <View style={{ height: 110, alignItems: 'center', paddingTop: 10 }}>
+              <View style={{ height: bottomPad, alignItems: 'center', paddingTop: 10 }}>
                 {loadingMore ? <ActivityIndicator color="#fff" /> : null}
               </View>
             }
@@ -335,7 +419,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             <ActivityIndicator color="#fff" />
           </View>
         ) : objectives.length === 0 ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingBottom: 82 }}>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingBottom: bottomPad }}>
             <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold, marginBottom: 20 }}>Aucun objectif pour l'instant</Text>
             <TouchableOpacity style={s.emptyStateBtn} onPress={() => setShowCreateModal(true)}>
               <Text style={s.emptyStateBtnText}>+ Ajouter un objectif</Text>
@@ -393,7 +477,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
           <TouchableOpacity style={s.addObjBtn} onPress={() => setShowCreateModal(true)}>
             <Text style={s.addObjBtnText}>+ Ajouter un objectif</Text>
           </TouchableOpacity>
-          <View style={{ height: 110 }} />
+          <View style={{ height: bottomPad }} />
         </ScrollView>
         )
       )}
@@ -407,57 +491,34 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
           onCreateObjective={() => setTab('objectives')}
         />
       )}
+      </Animated.View>
 
-      <View style={s.bottomNavSplit}>
+      <View style={[s.bottomNavSplit, { bottom: Math.max(insets.bottom, NAV_BOTTOM_MIN) }]}>
         {/* === Pilule gauche : Feed + Objectifs === */}
         <View style={s.navPill} onLayout={e => setLeftPillWidth(e.nativeEvent.layout.width)}>
-          <View style={s.bottomNavGlass} />
-          {isLeftActive && leftPillWidth > 0 && (() => {
-            const innerW = leftPillWidth - 12;
-            const slot = innerW / 2;
-            const bubbleSize = 48;
-            const translateX = leftPillAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [
-                6 + slot * 0 + slot / 2 - bubbleSize / 2,
-                6 + slot * 1 + slot / 2 - bubbleSize / 2,
-              ],
-            });
-            return (
-              <Animated.View pointerEvents="none" style={[s.navActiveBubble, { transform: [{ translateX }] }]}>
-                <Ionicons name={tab === 'feed' ? 'home' : 'apps'} size={22} color="#fff" />
-              </Animated.View>
-            );
-          })()}
+          <GlassSurface radius={36} style={s.bottomNavGlass} pointerEvents="none" />
+          <GlassBubble
+            visible={isLeftActive && leftPillWidth > 0}
+            pillWidth={leftPillWidth}
+            anim={leftPillAnim}
+            icon={tab === 'feed' ? 'home' : 'apps'}
+          />
           <NavTab icon="home" active={tab === 'feed'} onPress={() => setTab('feed')} />
           <NavTab icon="apps" active={tab === 'objectives'} onPress={() => setTab('objectives')} />
         </View>
 
         {/* === Bouton + central, isolé === */}
-        <TouchableOpacity style={s.navPostStandalone} onPress={onPost} activeOpacity={0.85}>
-          <Text style={s.navPostBtnText}>+</Text>
-        </TouchableOpacity>
+        <PostButton onPress={onPost} />
 
         {/* === Pilule droite : Amis + Profil === */}
         <View style={s.navPill} onLayout={e => setRightPillWidth(e.nativeEvent.layout.width)}>
-          <View style={s.bottomNavGlass} />
-          {isRightActive && rightPillWidth > 0 && (() => {
-            const innerW = rightPillWidth - 12;
-            const slot = innerW / 2;
-            const bubbleSize = 48;
-            const translateX = rightPillAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [
-                6 + slot * 0 + slot / 2 - bubbleSize / 2,
-                6 + slot * 1 + slot / 2 - bubbleSize / 2,
-              ],
-            });
-            return (
-              <Animated.View pointerEvents="none" style={[s.navActiveBubble, { transform: [{ translateX }] }]}>
-                <Ionicons name={tab === 'friends' ? 'person-add' : 'person'} size={22} color="#fff" />
-              </Animated.View>
-            );
-          })()}
+          <GlassSurface radius={36} style={s.bottomNavGlass} pointerEvents="none" />
+          <GlassBubble
+            visible={isRightActive && rightPillWidth > 0}
+            pillWidth={rightPillWidth}
+            anim={rightPillAnim}
+            icon={tab === 'friends' ? 'person-add' : 'person'}
+          />
           <NavTab icon="person-add" active={tab === 'friends'} onPress={() => setTab('friends')} badge={pendingCount} />
           <NavTab icon="person" active={tab === 'profile'} onPress={() => setTab('profile')} />
         </View>

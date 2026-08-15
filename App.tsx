@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Linking } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import { useFonts, Inter_300Light, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, Inter_900Black } from '@expo-google-fonts/inter';
 import { supabase } from './src/lib/supabase';
@@ -14,7 +15,10 @@ import { PostScreen } from './src/screens/PostScreen';
 export default function App() {
   return (
     <ErrorBoundary>
-      <AppInner />
+      {/* Fournit les encoches/home indicator réels de l'appareil à tous les écrans */}
+      <SafeAreaProvider>
+        <AppInner />
+      </SafeAreaProvider>
     </ErrorBoundary>
   );
 }

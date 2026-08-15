@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { View, Animated } from 'react-native';
+import { GUTTER } from '../constants';
 import { s } from '../styles';
 
 // Bloc gris qui "respire" — remplace les spinners pour un chargement plus doux.
@@ -23,7 +24,8 @@ export function FeedSkeleton() {
     <>
       {[0, 1].map(i => (
         <View key={i} style={s.skeletonCard}>
-          <Pulse style={{ width: '100%', height: 260, borderRadius: 0 }} />
+          {/* Même hauteur que s.feedPhoto : sinon la carte saute quand la vraie photo arrive. */}
+          <Pulse style={{ width: '100%', height: 360, borderRadius: 0 }} />
           <View style={{ padding: 14, gap: 10 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Pulse style={{ width: 40, height: 40, borderRadius: 20 }} />
@@ -42,16 +44,17 @@ export function FeedSkeleton() {
 
 export function ProfileSkeleton() {
   return (
-    <View style={{ paddingHorizontal: 12, paddingTop: 32 }}>
+    // Gouttière et rayons alignés sur les vraies cartes (GUTTER, rayon 20).
+    <View style={{ paddingHorizontal: GUTTER, paddingTop: 32 }}>
       <View style={{ alignItems: 'center', gap: 12, marginBottom: 28 }}>
         <Pulse style={{ width: 88, height: 88, borderRadius: 44 }} />
         <Pulse style={{ width: 140, height: 16 }} />
         <Pulse style={{ width: 90, height: 11 }} />
       </View>
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-        {[0, 1, 2].map(i => <Pulse key={i} style={{ flex: 1, height: 70, borderRadius: 18 }} />)}
+        {[0, 1, 2].map(i => <Pulse key={i} style={{ flex: 1, height: 70, borderRadius: 20 }} />)}
       </View>
-      {[0, 1].map(i => <Pulse key={i} style={{ width: '100%', height: 110, borderRadius: 18, marginBottom: 10 }} />)}
+      {[0, 1].map(i => <Pulse key={i} style={{ width: '100%', height: 110, borderRadius: 20, marginBottom: 10 }} />)}
     </View>
   );
 }

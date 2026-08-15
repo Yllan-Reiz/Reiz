@@ -23,6 +23,17 @@ export const DURATION_OPTIONS: { label: string; value: number | null }[] = [
   { label: '∞', value: null },
 ];
 
+// === Mise en page ===
+// Une seule gouttière pour tout l'écran : en-tête, contenu et barre de nav
+// tombent sur le même axe vertical. Toute valeur en dur ailleurs = désalignement.
+export const GUTTER = 16;
+export const NAV_HEIGHT = 64;      // hauteur des pilules de nav
+export const NAV_BOTTOM_MIN = 20;  // marge sous la barre quand il n'y a pas de home indicator
+
+/** Espace à réserver en bas d'une liste pour que rien ne finisse sous la barre de nav. */
+export const navClearance = (bottomInset: number) =>
+  NAV_HEIGHT + Math.max(bottomInset, NAV_BOTTOM_MIN) + 24;
+
 export const HEATMAP_DEFAULT_DAYS = 30; // pour les objectifs ∞ (durée indéfinie)
 export const HEATMAP_MAX_DAYS = 90;     // plafond visuel pour ne pas exploser l'écran
 

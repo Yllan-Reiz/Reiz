@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, RefreshControl, Share } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
 import { signMany } from '../lib/storage';
 import { Friend, PendingRequest } from '../lib/types';
-import { LANDING_URL, inviteUrl } from '../constants';
+import { LANDING_URL, inviteUrl, GUTTER, navClearance } from '../constants';
 import { s, F } from '../styles';
 
 export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (userId: string) => void; onPendingCount?: (n: number) => void }) {
+  const insets = useSafeAreaInsets();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pending, setPending] = useState<PendingRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -187,7 +189,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     <ScrollView
       style={s.feed}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 110 }}
+      contentContainerStyle={{ paddingBottom: navClearance(insets.bottom) }}
       refreshControl={
         <RefreshControl
           refreshing={refreshingFriends}
@@ -216,17 +218,34 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
         <Ionicons name="search" size={16} color="#666" />
         <TextInput style={s.searchInput} placeholder="Prénom ou @pseudo..." placeholderTextColor="#666" value={searchQuery} onChangeText={handleSearch} autoCapitalize="none" maxLength={40} />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => { setSearchQuery(''); setSearchResults([]); }}>
+          <TouchableOpacity
+            onPress={() => { setSearchQuery(''); setSearchResults([]); }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <Ionicons name="close" size={18} color="#777" />
           </TouchableOpacity>
         )}
       </View>
 
+      {/* Recherche en cours / sans résultat : sans ces deux états, taper un nom
+          inconnu ne renvoyait strictement rien à l'écran. */}
+      {searchQuery.trim().length >= 2 && searchResults.length === 0 && (
+        <View style={{ paddingVertical: 18, alignItems: 'center', gap: 4 }}>
+          {searching ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>Personne à ce nom</Text>
+              <Text style={{ color: '#666', fontSize: 12, textAlign: 'center' }}>Vérifie l'orthographe, ou invite-le avec ton lien</Text>
+            </>
+          )}
+        </View>
+      )}
+
       {/* Résultats de recherche */}
       {searchResults.length > 0 && (
         <View style={{ marginBottom: 8 }}>
           <Text style={s.sectionTitle}>RÉSULTATS</Text>
-          {searching && <ActivityIndicator color="#fff" style={{ marginBottom: 10 }} />}
           {searchResults.map((u) => (
             <TouchableOpacity key={u.id} style={s.friendRow} onPress={() => onViewProfile(u.id)} activeOpacity={0.8}>
               <RowAvatar url={u.avatar_url} name={u.full_name} />
@@ -258,10 +277,11 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
                 <Text style={s.friendRowSub}>@{p.username}</Text>
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity style={s.acceptBtn} onPress={() => acceptRequest(p.friendship_id)}>
+                {/* Cibles de 36px : le hitSlop les ramène au minimum tactile de 44. */}
+                <TouchableOpacity style={s.acceptBtn} onPress={() => acceptRequest(p.friendship_id)} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
                   <Ionicons name="checkmark" size={18} color="#000" />
                 </TouchableOpacity>
-                <TouchableOpacity style={s.declineBtn} onPress={() => declineRequest(p.friendship_id)}>
+                <TouchableOpacity style={s.declineBtn} onPress={() => declineRequest(p.friendship_id)} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
                   <Ionicons name="close" size={16} color="#888" />
                 </TouchableOpacity>
               </View>
@@ -274,7 +294,9 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       {suggestions.length > 0 && (
         <View style={{ marginBottom: 8 }}>
           <Text style={s.sectionTitle}>MÊME OBJECTIF</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.suggestScroll} contentContainerStyle={{ gap: 12 }}>
+          {/* La liste déborde jusqu'aux bords de l'écran (marginHorizontal négatif) :
+              le padding interne la remet dans la gouttière. */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.suggestScroll} contentContainerStyle={{ gap: 12, paddingHorizontal: GUTTER }}>
             {suggestions.map((u) => (
               <TouchableOpacity key={u.id} style={s.suggestCard} onPress={() => onViewProfile(u.id)} activeOpacity={0.8}>
                 <SuggestAvatar url={u.avatar_url} name={u.full_name} />

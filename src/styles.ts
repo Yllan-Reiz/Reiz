@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { ITEM_H } from './constants';
+import { ITEM_H, GUTTER } from './constants';
 
 // Typographie : Inter (chargée dans App.tsx). Une graisse = une variante précise,
 // car fontWeight + police custom est peu fiable sur Android.
@@ -49,18 +49,22 @@ export const s = StyleSheet.create({
   subtext: { fontSize: 14, color: '#999', lineHeight: 22, marginBottom: 28, fontFamily: F.regular },
   inputBlock: { marginBottom: 12 },
   inputLabel: { fontSize: 10, color: '#888', letterSpacing: 1.5, fontFamily: F.bold, marginBottom: 6 },
+  // Même label, mais isolé entre deux contrôles : il a besoin d'air au-dessus.
+  inputLabelSpaced: { marginTop: 22 },
   inputField: { backgroundColor: '#1a1a1a', borderWidth: 1.5, borderColor: '#2a2a2a', borderRadius: 14, padding: 14, fontSize: 14, color: '#fff', fontFamily: F.regular },
   obBackBtn: { paddingVertical: 14, alignItems: 'center' },
   obBackText: { fontSize: 13, color: '#888' },
   legal: { fontSize: 11, color: '#777', textAlign: 'center', marginTop: 12 },
   legalLink: { color: '#888', fontFamily: F.bold },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 58, paddingBottom: 12 },
+  // paddingTop vient de l'encoche (useSafeAreaInsets), jamais d'une valeur en dur :
+  // 58px était juste sur un iPhone à Dynamic Island et faux partout ailleurs.
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: GUTTER, paddingBottom: 12 },
   headerLogo: { width: 72, height: 26 },
   headerTitle: { fontSize: 17, fontFamily: F.extrabold, color: '#fff' },
   streakBadge: { backgroundColor: '#1e1e1e', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: '#2a2a2a', flexDirection: 'row', alignItems: 'center', gap: 3 },
   streakFlame: { fontFamily: F.bold },
   streakText: { fontSize: 12, color: '#fff', fontFamily: F.bold },
-  feed: { flex: 1, paddingHorizontal: 12, paddingTop: 8 },
+  feed: { flex: 1, paddingHorizontal: GUTTER, paddingTop: 8 },
   feedTopFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 60 },
   myUpdate: { backgroundColor: '#111', borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   myUpdateInfo: { flex: 1 },
@@ -69,7 +73,8 @@ export const s = StyleSheet.create({
   postedBadge: { backgroundColor: '#fff', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
   postedBadgeText: { fontSize: 12, fontFamily: F.extrabold, color: '#000' },
   feedCard: { backgroundColor: '#111', borderRadius: 20, marginBottom: 16, overflow: 'hidden' },
-  feedPhotoWrap: { position: 'relative' },
+  // Fond posé sous la photo : le fondu part d'une surface, pas d'un trou noir.
+  feedPhotoWrap: { position: 'relative', backgroundColor: '#141414' },
   feedPhoto: { width: '100%', height: 360 },
   feedOverlayTop: { position: 'absolute', top: 0, left: 0, right: 0, paddingBottom: 40 },
   feedOverlayHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
@@ -86,7 +91,6 @@ export const s = StyleSheet.create({
   cardName: { fontSize: 14, fontFamily: F.bold, color: '#fff' },
   cardTime: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
   cardMenuBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  cardMenuText: { fontSize: 18, color: 'rgba(255,255,255,0.7)', fontFamily: F.extrabold, lineHeight: 20 },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   progressBg: { flex: 1, height: 2, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2 },
   progressFill: { height: 2, backgroundColor: '#fff', borderRadius: 2 },
@@ -116,11 +120,11 @@ export const s = StyleSheet.create({
   commentInput: { flex: 1, backgroundColor: '#1a1a1a', borderWidth: 1.5, borderColor: '#2a2a2a', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, color: '#fff', maxHeight: 80, fontFamily: F.regular },
   sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   sendBtnDisabled: { backgroundColor: '#222' },
-  sendBtnText: { fontSize: 18, color: '#000', fontFamily: F.extrabold },
   searchBarActive: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#111', borderRadius: 20, padding: 14, marginBottom: 16 },
   searchIcon: { fontSize: 14 },
   searchInput: { flex: 1, fontSize: 15, color: '#fff', fontFamily: F.regular },
-  sectionTitle: { fontSize: 11, color: '#777', fontFamily: F.bold, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 },
+  // Plus d'air au-dessus d'un titre qu'en dessous : le titre appartient à ce qui suit.
+  sectionTitle: { fontSize: 11, color: '#777', fontFamily: F.bold, textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 22, marginBottom: 10 },
   friendRow: { backgroundColor: '#111', borderRadius: 20, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   friendRowAv: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#1e1e1e', alignItems: 'center', justifyContent: 'center' },
   friendRowAvImg: { width: 46, height: 46, borderRadius: 23 },
@@ -160,9 +164,10 @@ export const s = StyleSheet.create({
   // Layout nav : 2 pilules + bouton "+" isolé au milieu
   bottomNavSplit: {
     position: 'absolute',
-    bottom: 24,
-    left: 16,
-    right: 16,
+    // `bottom` est posé en ligne depuis l'inset bas : sinon la barre passe
+    // sous le home indicator des iPhone récents.
+    left: GUTTER,
+    right: GUTTER,
     height: 64,
     flexDirection: 'row',
     alignItems: 'center',
@@ -196,45 +201,50 @@ export const s = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 0 },
   },
-  // Couche "glass" simulée (semi-transparente). Pas de blur natif → on compense avec un alpha plus élevé.
+  // Couche verre de la barre : le rendu (Liquid Glass natif ou blur + reflet)
+  // est géré par <GlassSurface />, ici on ne fait que la positionner.
   bottomNavGlass: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 36,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
-    backgroundColor: 'rgba(20,20,20,0.75)',
   },
   navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', height: 64, gap: 2 },
   // Badge rouge (demandes d'amis en attente) — seul rouge de l'app, code universel "notification"
   navBadge: { position: 'absolute', top: 12, right: '50%' as any, marginRight: -22, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#ff3b30', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, zIndex: 3 },
   navBadgeText: { color: '#fff', fontSize: 9, fontFamily: F.extrabold },
-  // Cercle qui reste DANS la barre (centré verticalement). Position horizontale animée via translateX.
+  // Pastille de verre qui reste DANS la barre (centrée verticalement).
+  // Position horizontale animée via translateX + étirement (scaleX) pendant le trajet.
   navActiveBubble: {
     position: 'absolute',
     top: 8,            // (barre 64 - bulle 48) / 2 → centré verticalement
     left: 0,
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.1)', // léger pop sur le glass dark
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
   },
-  navPostBtnText: { fontSize: 30, color: '#000', fontFamily: F.light, lineHeight: 36 },
+  // Verre "clear" par-dessus le verre de la barre : la pastille doit rester lisible
+  // même quand le Liquid Glass natif n'est pas dispo.
+  navActiveBubbleGlass: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+    borderRadius: 24,
+  },
   visToggle: { flexDirection: 'row', backgroundColor: '#141414', borderWidth: 1, borderColor: '#222', borderRadius: 18, overflow: 'hidden', marginBottom: 4 },
   visOpt: { flex: 1, paddingVertical: 12, alignItems: 'center', margin: 4, borderRadius: 14 },
   visOptActive: { backgroundColor: '#fff' },
   visOptText: { fontSize: 12, fontFamily: F.bold, color: '#888' },
   visOptTextActive: { color: '#000' },
-  ctaContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, paddingBottom: 36, backgroundColor: '#0a0a0a' },
+  // paddingBottom posé en ligne depuis l'inset bas (home indicator).
+  ctaContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: GUTTER, backgroundColor: '#0a0a0a' },
   cta: { width: '100%', backgroundColor: '#fff', padding: 16, borderRadius: 18, alignItems: 'center' },
   ctaText: { fontSize: 16, fontFamily: F.extrabold, color: '#000' },
   backBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#2a2a2a', alignItems: 'center', justifyContent: 'center' },
-  backText: { fontSize: 18, color: '#888' },
   modalContainer: { flex: 1, backgroundColor: '#0a0a0a' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 56, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#1a1a1a' },
+  // Feuille modale (pageSheet) : elle s'ouvre déjà sous la barre d'état, 56px de
+  // padding haut creusaient un vide inutile.
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#1a1a1a' },
   modalTitle: { fontSize: 16, fontFamily: F.extrabold, color: '#fff' },
   modalCancel: { fontSize: 14, color: '#888', fontFamily: F.semibold },
   modalSave: { fontSize: 14, color: '#fff', fontFamily: F.extrabold },
@@ -296,7 +306,6 @@ export const s = StyleSheet.create({
   postObjTitleActive: { color: '#fff' },
   postProgressWrap: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: '#111', borderRadius: 20, padding: 16 },
   postProgressBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#1e1e1e', alignItems: 'center', justifyContent: 'center' },
-  postProgressBtnText: { fontSize: 22, color: '#fff', fontFamily: F.light },
   postProgressCenter: { flex: 1, alignItems: 'center', gap: 4 },
   postProgressPct: { fontSize: 32, fontFamily: F.black, color: '#fff', letterSpacing: -1 },
   postProgressVal: { fontSize: 12, color: '#888' },

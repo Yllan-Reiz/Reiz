@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
+import { useState, useEffect, useRef, ReactNode } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Image, Alert, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -9,7 +9,35 @@ import { Update, FeedMeta } from '../lib/types';
 import { ALL_REACTION_EMOJIS } from '../constants';
 import { s } from '../styles';
 import { CommentsModal } from './CommentsModal';
+import { FadeInImage } from './FadeInImage';
 import { FloatingEmoji, nextFloatId } from './FloatingEmoji';
+
+// Ouverture/fermeture en fondu-montée. Le contenu reste monté le temps de la
+// sortie, sinon le panneau disparaît d'un coup sec.
+function Reveal({ visible, children }: { visible: boolean; children: ReactNode }) {
+  const [mounted, setMounted] = useState(visible);
+  const anim = useRef(new Animated.Value(visible ? 1 : 0)).current;
+  useEffect(() => {
+    if (visible) setMounted(true);
+    Animated.timing(anim, {
+      toValue: visible ? 1 : 0,
+      duration: visible ? 200 : 130,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({ finished }) => { if (finished && !visible) setMounted(false); });
+  }, [visible]);
+  if (!mounted) return null;
+  return (
+    <Animated.View
+      style={{
+        opacity: anim,
+        transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+}
 
 // Les réactions et le compteur de commentaires arrivent pré-chargés via `meta`
 // (chargés en lot par le feed) : zéro requête au montage de la carte.
@@ -134,7 +162,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
     : <View style={s.av}><Text style={s.avText}>{initial}</Text></View>;
   const MenuBtn = () => (
     <TouchableOpacity style={s.cardMenuBtn} onPress={openMenu} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-      <Text style={s.cardMenuText}>⋯</Text>
+      <Ionicons name="ellipsis-horizontal" size={18} color="rgba(255,255,255,0.7)" />
     </TouchableOpacity>
   );
   const activeReactions = Object.entries(reactions).filter(([_, count]) => count > 0);
@@ -161,7 +189,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
       {/* Photo hero */}
       {u.photo_url ? (
         <View style={s.feedPhotoWrap}>
-          <Image source={{ uri: u.photo_url }} style={s.feedPhoto} resizeMode="cover" />
+          <FadeInImage uri={u.photo_url} style={s.feedPhoto} />
 
           {/* Header superposé en haut */}
           <LinearGradient colors={['rgba(0,0,0,0.6)', 'transparent']} style={s.feedOverlayTop}>
@@ -251,7 +279,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
       )}
 
       {/* Emoji picker */}
-      {showEmojiPicker && (
+      <Reveal visible={showEmojiPicker}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.emojiPickerRow} contentContainerStyle={{ gap: 6, paddingHorizontal: 14, paddingVertical: 10 }}>
           {ALL_REACTION_EMOJIS.map(emoji => (
             <TouchableOpacity key={emoji} style={[s.emojiPickerItem, myReactions.includes(emoji) && s.emojiPickerItemActive]} onPress={() => toggleReaction(emoji)}>
@@ -259,7 +287,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
             </TouchableOpacity>
           ))}
         </ScrollView>
-      )}
+      </Reveal>
     </View>
   );
 }

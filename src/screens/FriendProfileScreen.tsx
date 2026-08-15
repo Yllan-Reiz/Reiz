@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { calculateStreak, timeAgo, frError } from '../lib/helpers';
 import { signOne, signMany } from '../lib/storage';
@@ -7,6 +9,7 @@ import { Update, Objective } from '../lib/types';
 import { s } from '../styles';
 
 export function FriendProfileScreen({ userId, onClose }: { userId: string; onClose: () => void }) {
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<any>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [recentUpdates, setRecentUpdates] = useState<Update[]>([]);
@@ -93,10 +96,14 @@ export function FriendProfileScreen({ userId, onClose }: { userId: string; onClo
 
   return (
     <View style={s.container}>
-      <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={onClose}><Text style={s.backText}>←</Text></TouchableOpacity>
-        <Text style={s.headerTitle}>{profile?.full_name || 'Profil'}</Text>
-        <TouchableOpacity style={s.backBtn} onPress={openMenu}><Text style={s.backText}>⋯</Text></TouchableOpacity>
+      <View style={[s.header, { paddingTop: insets.top + 6 }]}>
+        <TouchableOpacity style={s.backBtn} onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="chevron-back" size={20} color="#888" />
+        </TouchableOpacity>
+        <Text style={s.headerTitle} numberOfLines={1}>{profile?.full_name || 'Profil'}</Text>
+        <TouchableOpacity style={s.backBtn} onPress={openMenu} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="ellipsis-horizontal" size={18} color="#888" />
+        </TouchableOpacity>
       </View>
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#fff" /></View>
@@ -147,7 +154,7 @@ export function FriendProfileScreen({ userId, onClose }: { userId: string; onClo
               <View style={s.profileProgressBadge}><Text style={s.profileProgressBadgeText}>{u.progress_value || 0}%</Text></View>
             </View>
           ))}
-          <View style={{ height: 80 }} />
+          <View style={{ height: 40 + insets.bottom }} />
         </ScrollView>
       )}
     </View>

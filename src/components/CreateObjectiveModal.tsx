@@ -58,7 +58,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
             <TextInput style={s.inputField} placeholder="Ex: Courir 10 km, Lire 12 livres..." placeholderTextColor="#666" value={title} onChangeText={setTitle} autoCapitalize="sentences" maxLength={80} />
           </View>
 
-          <Text style={s.inputLabel}>EMOJI</Text>
+          <Text style={[s.inputLabel, s.inputLabelSpaced]}>EMOJI</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.emojiRow} contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }}>
             {EMOJI_LIST.map(e => (
               <TouchableOpacity
@@ -76,9 +76,9 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
             <TextInput style={s.inputField} placeholder="Ex: 10, 100, 12..." placeholderTextColor="#666" value={targetValue} onChangeText={setTargetValue} keyboardType="numeric" maxLength={9} />
           </View>
 
-          <Text style={s.inputLabel}>UNITÉ</Text>
+          <Text style={[s.inputLabel, s.inputLabelSpaced]}>UNITÉ</Text>
           <WheelPicker selected={unit} onSelect={setUnit} />
-          <Text style={s.inputLabel}>DURÉE D'ENGAGEMENT</Text>
+          <Text style={[s.inputLabel, s.inputLabelSpaced]}>DURÉE D'ENGAGEMENT</Text>
           <View style={s.durationRow}>
             {DURATION_OPTIONS.map(opt => {
               const active = duration === opt.value;
@@ -94,7 +94,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
             })}
           </View>
 
-          <Text style={s.inputLabel}>VISIBILITÉ</Text>
+          <Text style={[s.inputLabel, s.inputLabelSpaced]}>VISIBILITÉ</Text>
           <View style={s.visToggle}>
             {[{ key: 'public', label: 'Public' }, { key: 'friends', label: 'Amis' }, { key: 'private', label: 'Privé' }].map(v => (
               <TouchableOpacity key={v.key} style={[s.visOpt, visibility === v.key && s.visOptActive]} onPress={() => setVisibility(v.key)}>
