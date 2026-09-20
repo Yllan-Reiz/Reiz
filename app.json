@@ -12,7 +12,8 @@
       "bundleIdentifier": "com.yllan.reiz",
       "infoPlist": {
         "NSCameraUsageDescription": "Reiz utilise l'appareil photo pour publier ta progression et ta photo de profil.",
-        "NSPhotoLibraryUsageDescription": "Reiz accède à ta galerie pour publier ta progression et ta photo de profil."
+        "NSPhotoLibraryUsageDescription": "Reiz accède à ta galerie pour publier ta progression et ta photo de profil.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
