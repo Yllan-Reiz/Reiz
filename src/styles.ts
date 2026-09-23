@@ -255,6 +255,10 @@ export const s = StyleSheet.create({
   wheelItem: { height: ITEM_H, alignItems: 'center', justifyContent: 'center' },
   wheelItemText: { fontSize: 16, color: '#777', fontFamily: F.semibold },
   wheelItemTextActive: { color: '#fff', fontSize: 18, fontFamily: F.extrabold },
+  // Barre de réglages du profil : la roue dentée en haut à droite, comme sur les
+  // réseaux sociaux, remplace les boutons de compte qui traînaient en bas de page.
+  profileTopBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingTop: 4 },
+  profileSettingsBtn: { padding: 6 },
   profileHero: { alignItems: 'center', paddingVertical: 24, marginBottom: 8 },
   profileAvatarWrap: { width: 88, height: 88, borderRadius: 44, marginBottom: 12, position: 'relative' },
   profileAvatar: { width: 88, height: 88, borderRadius: 44, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
@@ -328,11 +332,19 @@ export const s = StyleSheet.create({
   heatCellActive: { backgroundColor: '#fff' },
   // Card objectif unifiée (profil) — progression + heatmap
   objCardProfile: { backgroundColor: '#111', borderRadius: 20, padding: 16, marginBottom: 10, gap: 10 },
-  objCardProfileHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  objCardProfileHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   objCardProfileTitle: { flex: 1, fontSize: 15, fontFamily: F.bold, color: '#fff', marginRight: 8 },
   objCardProfilePct: { fontSize: 15, fontFamily: F.black, color: '#fff' },
   objCardProfileFoot: { fontSize: 11, color: '#888', fontFamily: F.semibold, textAlign: 'right', marginTop: -2 },
   // Sélecteur de durée d'engagement
+  // Repli des réglages avancés : la création d'objectif tient en un nom + un emoji,
+  // tout le reste (cible, unité, durée, visibilité) a des valeurs par défaut qui marchent.
+  targetRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  targetInput: { width: 84, textAlign: 'center' },
+  fieldHint: { fontSize: 12, color: '#777', marginTop: 8 },
+  optionsToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingVertical: 14 },
+  optionsToggleText: { fontSize: 13, fontFamily: F.bold, color: '#888' },
+  optionsToggleChevron: { fontSize: 10, color: '#888' },
   durationRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   durationPill: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 100, backgroundColor: '#141414', borderWidth: 1.5, borderColor: '#222' },
   durationPillActive: { backgroundColor: '#fff', borderColor: '#fff' },

@@ -3,32 +3,38 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator,
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
-import { DURATION_OPTIONS, EMOJI_LIST } from '../constants';
+import { DURATION_OPTIONS, EMOJI_LIST, QUICK_UNITS } from '../constants';
 import { s } from '../styles';
 import { WheelPicker } from './WheelPicker';
 
 export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible: boolean; onClose: () => void; onCreated: () => void }) {
   const [title, setTitle] = useState('');
   const [emoji, setEmoji] = useState('🎯');
-  const [unit, setUnit] = useState('%');
+  const [unit, setUnit] = useState('séances');
   const [targetValue, setTargetValue] = useState('');
   const [visibility, setVisibility] = useState('public');
-  const [duration, setDuration] = useState<number | null>(21); // par défaut 21j
+  const [duration, setDuration] = useState<number | null>(null); // sans date de fin par défaut
+  const [showOptions, setShowOptions] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const reset = () => { setTitle(''); setEmoji('🎯'); setUnit('%'); setTargetValue(''); setVisibility('public'); setDuration(21); };
+  const reset = () => { setTitle(''); setEmoji('🎯'); setUnit('séances'); setTargetValue(''); setVisibility('public'); setDuration(null); setShowOptions(false); };
+
+  // Sans chiffre, l'objectif se suit en pourcentage : 100 % = terminé.
+  const hasTarget = targetValue.trim() !== '';
+  const finalUnit = hasTarget ? unit : '%';
+  const finalTarget = hasTarget ? Number(targetValue) : 100;
 
   const handleCreate = async () => {
     if (!title.trim()) { Alert.alert('Erreur', 'Donne un nom à ton objectif !'); return; }
-    const target = Number(targetValue);
-    if (!targetValue || isNaN(target) || target <= 0) { Alert.alert('Erreur', 'Entre une valeur cible supérieure à 0.'); return; }
+    const target = finalTarget;
+    if (isNaN(target) || target <= 0) { Alert.alert('Erreur', 'Le nombre doit être supérieur à 0.'); return; }
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSaving(false); Alert.alert('Erreur', 'Tu dois être connecté.'); return; }
     const { error } = await supabase.from('objectives').insert({
       user_id: user.id, title: title.trim(), emoji,
       target_value: target, current_value: 0,
-      unit: unit, visibility,
+      unit: finalUnit, visibility,
       duration_days: duration,
     });
     setSaving(false);
@@ -72,36 +78,76 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
           </ScrollView>
 
           <View style={s.inputBlock}>
-            <Text style={s.inputLabel}>VALEUR CIBLE</Text>
-            <TextInput style={s.inputField} placeholder="Ex: 10, 100, 12..." placeholderTextColor="#666" value={targetValue} onChangeText={setTargetValue} keyboardType="numeric" maxLength={9} />
+            <Text style={s.inputLabel}>COMBIEN ? (FACULTATIF)</Text>
+            <View style={s.targetRow}>
+              <TextInput
+                style={[s.inputField, s.targetInput]}
+                placeholder="4"
+                placeholderTextColor="#666"
+                value={targetValue}
+                onChangeText={setTargetValue}
+                keyboardType="numeric"
+                maxLength={6}
+              />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                {QUICK_UNITS.map(u => (
+                  <TouchableOpacity
+                    key={u}
+                    style={[s.durationPill, hasTarget && unit === u && s.durationPillActive]}
+                    onPress={() => { Haptics.selectionAsync().catch(() => {}); setUnit(u); }}
+                  >
+                    <Text style={[s.durationPillText, hasTarget && unit === u && s.durationPillTextActive]}>{u}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+            <Text style={s.fieldHint}>
+              {hasTarget
+                ? `Tu avanceras ${targetValue} ${unit} à cocher, une par une.`
+                : 'Sans chiffre, tu suivras ta progression en pourcentage.'}
+            </Text>
           </View>
 
-          <Text style={[s.inputLabel, s.inputLabelSpaced]}>UNITÉ</Text>
-          <WheelPicker selected={unit} onSelect={setUnit} />
-          <Text style={[s.inputLabel, s.inputLabelSpaced]}>DURÉE D'ENGAGEMENT</Text>
-          <View style={s.durationRow}>
-            {DURATION_OPTIONS.map(opt => {
-              const active = duration === opt.value;
-              return (
-                <TouchableOpacity
-                  key={opt.label}
-                  style={[s.durationPill, active && s.durationPillActive]}
-                  onPress={() => { Haptics.selectionAsync().catch(() => {}); setDuration(opt.value); }}
-                >
-                  <Text style={[s.durationPillText, active && s.durationPillTextActive]}>{opt.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <TouchableOpacity
+            style={s.optionsToggle}
+            onPress={() => { Haptics.selectionAsync().catch(() => {}); setShowOptions(v => !v); }}
+          >
+            <Text style={s.optionsToggleText}>
+              {showOptions ? 'Masquer les options' : 'Options (autre unité, durée, visibilité)'}
+            </Text>
+            <Text style={s.optionsToggleChevron}>{showOptions ? '▲' : '▼'}</Text>
+          </TouchableOpacity>
 
-          <Text style={[s.inputLabel, s.inputLabelSpaced]}>VISIBILITÉ</Text>
-          <View style={s.visToggle}>
-            {[{ key: 'public', label: 'Public' }, { key: 'friends', label: 'Amis' }, { key: 'private', label: 'Privé' }].map(v => (
-              <TouchableOpacity key={v.key} style={[s.visOpt, visibility === v.key && s.visOptActive]} onPress={() => setVisibility(v.key)}>
-                <Text style={[s.visOptText, visibility === v.key && s.visOptTextActive]}>{v.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {showOptions && (
+            <>
+              <Text style={[s.inputLabel, s.inputLabelSpaced]}>AUTRE UNITÉ</Text>
+              <WheelPicker selected={unit} onSelect={setUnit} />
+              <Text style={[s.inputLabel, s.inputLabelSpaced]}>DURÉE</Text>
+              <View style={s.durationRow}>
+                {DURATION_OPTIONS.map(opt => {
+                  const active = duration === opt.value;
+                  return (
+                    <TouchableOpacity
+                      key={opt.label}
+                      style={[s.durationPill, active && s.durationPillActive]}
+                      onPress={() => { Haptics.selectionAsync().catch(() => {}); setDuration(opt.value); }}
+                    >
+                      <Text style={[s.durationPillText, active && s.durationPillTextActive]}>{opt.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text style={[s.inputLabel, s.inputLabelSpaced]}>VISIBILITÉ</Text>
+              <View style={s.visToggle}>
+                {[{ key: 'public', label: 'Public' }, { key: 'friends', label: 'Amis' }, { key: 'private', label: 'Privé' }].map(v => (
+                  <TouchableOpacity key={v.key} style={[s.visOpt, visibility === v.key && s.visOptActive]} onPress={() => setVisibility(v.key)}>
+                    <Text style={[s.visOptText, visibility === v.key && s.visOptTextActive]}>{v.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
           <View style={{ height: 60 }} />
         </ScrollView>
       </KeyboardAvoidingView>

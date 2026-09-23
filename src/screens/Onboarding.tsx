@@ -90,7 +90,7 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
         <Text style={s.subtext}>Connecte-toi pour reprendre ta progression.</Text>
         <View style={s.inputBlock}>
           <Text style={s.inputLabel}>EMAIL</Text>
-          <TextInput style={s.inputField} placeholder="yllan@reiz.app" placeholderTextColor="#666" value={loginEmail} onChangeText={setLoginEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
+          <TextInput style={s.inputField} placeholder="ton@email.com" placeholderTextColor="#666" value={loginEmail} onChangeText={setLoginEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
         </View>
         <View style={s.inputBlock}>
           <Text style={s.inputLabel}>MOT DE PASSE</Text>
@@ -197,11 +197,11 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
           <Text style={s.subtext}>Ton parcours commence maintenant.</Text>
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>PRÉNOM</Text>
-            <TextInput style={s.inputField} placeholder="Yllan" placeholderTextColor="#666" value={name} onChangeText={setName} autoCapitalize="words" maxLength={40} />
+            <TextInput style={s.inputField} placeholder="Ton prénom" placeholderTextColor="#666" value={name} onChangeText={setName} autoCapitalize="words" maxLength={40} />
           </View>
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>EMAIL</Text>
-            <TextInput style={s.inputField} placeholder="yllan@reiz.app" placeholderTextColor="#666" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
+            <TextInput style={s.inputField} placeholder="ton@email.com" placeholderTextColor="#666" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
           </View>
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>MOT DE PASSE</Text>

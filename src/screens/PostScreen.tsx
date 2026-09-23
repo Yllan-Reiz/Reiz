@@ -15,7 +15,7 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
   const [selectedObj, setSelectedObj] = useState(0);
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [loadingObj, setLoadingObj] = useState(true);
-  const [progress, setProgress] = useState(0);
+  const [value, setValue] = useState(0);
   const [caption, setCaption] = useState('');
   const [publishing, setPublishing] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -34,12 +34,26 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
 
   const obj = objectives[selectedObj];
 
+  // Un objectif chiffré (4 séances, 10 km...) se compte dans son unité, pas en
+  // pourcentage : `value` est toujours la vraie valeur, le pourcentage n'en est
+  // que la conséquence. Les objectifs en % gardent l'ancien pas de 5.
+  const isPercent = !obj || obj.unit === '%';
+  const target = obj?.target_value ?? 100;
+  const step = isPercent ? 5 : 1;
+  const pct = isPercent
+    ? Math.round(value)
+    : (target > 0 ? Math.min(Math.round((value / target) * 100), 100) : 0);
+
   // Le compteur démarre sur la progression actuelle de l'objectif sélectionné :
   // publier sans toucher au compteur ne doit jamais faire reculer la progression.
   useEffect(() => {
     if (!obj) return;
-    const pct = obj.target_value > 0 ? Math.min(Math.round((obj.current_value / obj.target_value) * 100), 100) : 0;
-    setProgress(pct);
+    if (obj.unit === '%') {
+      const p = obj.target_value > 0 ? Math.min(Math.round((obj.current_value / obj.target_value) * 100), 100) : 0;
+      setValue(p);
+    } else {
+      setValue(obj.current_value || 0);
+    }
   }, [selectedObj, objectives]);
 
   const handlePickPhoto = async () => {
@@ -84,12 +98,15 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
     let photoUrl: string | null = null;
     if (photoUri) photoUrl = await uploadPhoto(photoUri, user.id);
     // progress_value = pourcentage (0-100), c'est ce que le feed affiche.
-    // current_value = valeur absolue dans l'unité de l'objectif (km, livres...), affichée sur le profil.
-    const absoluteValue = Math.round((progress / 100) * obj.target_value * 10) / 10;
+    // current_value = valeur absolue dans l'unité de l'objectif (séances, km...),
+    // affichée partout ailleurs. Les deux sont calculées à partir du même compteur.
+    const absoluteValue = isPercent
+      ? Math.round((value / 100) * obj.target_value * 10) / 10
+      : value;
     const { error } = await supabase.from('updates').insert({
       user_id: user.id, objective_id: obj.id,
       caption: caption || obj.title,
-      progress_value: progress,
+      progress_value: pct,
       photo_url: photoUrl,
     });
     if (!error) {
@@ -159,32 +176,32 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
             <View style={s.postProgressWrap}>
               <TouchableOpacity
                 style={s.postProgressBtn}
-                onPress={() => { Haptics.selectionAsync().catch(() => {}); setProgress(p => Math.max(0, p - 5)); }}
+                onPress={() => { Haptics.selectionAsync().catch(() => {}); setValue(v => Math.max(0, v - step)); }}
               >
                 <Ionicons name="remove" size={22} color="#fff" />
               </TouchableOpacity>
               <View style={s.postProgressCenter}>
-                {obj.unit === '%' ? (
+                {isPercent ? (
                   <>
-                    <Text style={s.postProgressPct}>{progress}%</Text>
+                    <Text style={s.postProgressPct}>{pct}%</Text>
                     <Text style={s.postProgressVal}>objectif {obj.target_value}%</Text>
                   </>
                 ) : (
                   <>
                     <Text style={s.postProgressPct}>
-                      {Math.round((progress / 100) * obj.target_value * 10) / 10}
+                      {value}
                       <Text style={{ fontSize: 16, color: '#888', fontFamily: F.bold }}> {obj.unit}</Text>
                     </Text>
-                    <Text style={s.postProgressVal}>{progress}% · objectif {obj.target_value} {obj.unit}</Text>
+                    <Text style={s.postProgressVal}>sur {obj.target_value} {obj.unit} · {pct}%</Text>
                   </>
                 )}
                 <View style={s.postProgressBar}>
-                  <View style={[s.postProgressFill, { width: `${progress}%` as any }]} />
+                  <View style={[s.postProgressFill, { width: `${pct}%` as any }]} />
                 </View>
               </View>
               <TouchableOpacity
                 style={s.postProgressBtn}
-                onPress={() => { Haptics.selectionAsync().catch(() => {}); setProgress(p => Math.min(100, p + 5)); }}
+                onPress={() => { Haptics.selectionAsync().catch(() => {}); setValue(v => isPercent ? Math.min(100, v + step) : Math.min(target, v + step)); }}
               >
                 <Ionicons name="add" size={22} color="#fff" />
               </TouchableOpacity>

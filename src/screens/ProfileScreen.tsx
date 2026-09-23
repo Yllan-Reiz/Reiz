@@ -110,6 +110,35 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
     setUploadingAvatar(false);
   };
 
+  // Suppression d'un objectif : la base efface en cascade les publications
+  // rattachées, d'où l'avertissement explicite dans la confirmation.
+  const handleDeleteObjective = (o: Objective) => {
+    Alert.alert(
+      `Supprimer "${o.title}" ?`,
+      'Cet objectif et toutes les publications qui y sont rattachées seront effacés. Cette action est irréversible.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer', style: 'destructive',
+          onPress: async () => {
+            const { error } = await supabase.from('objectives').delete().eq('id', o.id);
+            if (error) { Alert.alert('Erreur', frError(error)); return; }
+            setObjectives(prev => prev.filter(x => x.id !== o.id));
+          },
+        },
+      ]
+    );
+  };
+
+  const openSettings = () => {
+    Alert.alert('Paramètres', undefined, [
+      { text: 'Modifier mon nom', onPress: () => setEditingName(true) },
+      { text: 'Se déconnecter', onPress: handleSignOut },
+      { text: 'Supprimer mon compte', style: 'destructive', onPress: handleDeleteAccount },
+      { text: 'Annuler', style: 'cancel' },
+    ]);
+  };
+
   const handleSignOut = async () => {
     Alert.alert('Déconnexion', 'Tu veux vraiment te déconnecter ?', [
       { text: 'Annuler', style: 'cancel' },
@@ -159,6 +188,17 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
             />
           }
         >
+          <View style={s.profileTopBar}>
+            <TouchableOpacity
+              style={s.profileSettingsBtn}
+              onPress={openSettings}
+              accessibilityLabel="Paramètres"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="settings-outline" size={20} color="#888" />
+            </TouchableOpacity>
+          </View>
+
           <View style={s.profileHero}>
             <TouchableOpacity style={s.profileAvatarWrap} onPress={handlePickAvatar} activeOpacity={0.8}>
               {avatarUrl
@@ -221,6 +261,13 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
                     <View style={s.objCardProfileHead}>
                       <Text style={s.objCardProfileTitle} numberOfLines={1}>{o.emoji} {o.title}</Text>
                       <Text style={s.objCardProfilePct}>{pct}%</Text>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteObjective(o)}
+                        accessibilityLabel={`Options de l'objectif ${o.title}`}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Ionicons name="ellipsis-horizontal" size={18} color="#777" />
+                      </TouchableOpacity>
                     </View>
                     <View style={s.progressBg}><View style={[s.progressFill, { width: `${pct}%` as any }]} /></View>
                     <View style={s.heatGrid}>
@@ -237,12 +284,9 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
             </>
           )}
 
-          <TouchableOpacity style={s.signOutBtn} onPress={handleSignOut}>
-            <Text style={s.signOutBtnText}>Se déconnecter</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.dangerBtn} onPress={deleting ? undefined : handleDeleteAccount}>
-            {deleting ? <ActivityIndicator color="#ff3b30" size="small" /> : <Text style={s.dangerBtnText}>Supprimer mon compte</Text>}
-          </TouchableOpacity>
+          {/* Déconnexion et suppression de compte vivent désormais dans le menu
+              de la roue dentée, en haut à droite. */}
+          {deleting && <ActivityIndicator color="#ff3b30" size="small" style={{ marginTop: 16 }} />}
           {/* Sans cette réserve, "Supprimer mon compte" finit sous la barre de nav. */}
           <View style={{ height: navClearance(insets.bottom) }} />
         </ScrollView>

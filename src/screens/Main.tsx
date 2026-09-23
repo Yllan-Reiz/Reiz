@@ -148,7 +148,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     const circleIds = [uid, ...(fr || []).map(f => (f.requester_id === uid ? f.receiver_id : f.requester_id))];
     const { data, error } = await supabase
       .from('updates')
-      .select('id, caption, progress_value, created_at, photo_url, user_id, objectives(visibility), users(full_name, username, avatar_url)')
+      .select('id, caption, progress_value, created_at, photo_url, user_id, objectives(visibility, unit, target_value), users(full_name, username, avatar_url)')
       .in('user_id', circleIds)
       .order('created_at', { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1);

@@ -37,7 +37,7 @@ export function Splash({ onNext }: { onNext: () => void }) {
           </View>
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>EMAIL</Text>
-            <TextInput style={s.inputField} placeholder="yllan@reiz.app" placeholderTextColor="#666" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
+            <TextInput style={s.inputField} placeholder="ton@email.com" placeholderTextColor="#666" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
           </View>
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>MOT DE PASSE</Text>

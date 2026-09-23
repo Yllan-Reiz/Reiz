@@ -48,6 +48,16 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
   onDeleted?: () => void;
   onBlocked?: () => void;
 }) {
+  // Le fil parle la même langue que le reste de l'app : un objectif chiffré
+  // s'affiche en séances (ou en km, en reps...), le pourcentage ne reste que
+  // pour les objectifs suivis en %.
+  const pctValue = Math.min(u.progress_value || 0, 100);
+  const objUnit = u.objectives?.unit;
+  const objTarget = u.objectives?.target_value;
+  const progressLabel = objUnit && objUnit !== '%' && objTarget
+    ? `${Math.round((pctValue / 100) * objTarget * 10) / 10} / ${objTarget} ${objUnit}`
+    : `${pctValue}%`;
+
   const [reactions, setReactions] = useState<{ [emoji: string]: number }>(meta?.reactions || {});
   const [myReactions, setMyReactions] = useState<string[]>(meta?.mine || []);
   const [commentCount, setCommentCount] = useState(meta?.commentCount || 0);
@@ -208,9 +218,9 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
             {/* Barre de progression */}
             <View style={s.feedOverlayProgress}>
               <View style={s.progressBg}>
-                <View style={[s.progressFill, { width: `${Math.min(u.progress_value || 0, 100)}%` as any }]} />
+                <View style={[s.progressFill, { width: `${pctValue}%` as any }]} />
               </View>
-              <Text style={s.progressLabelOverlay}>{u.progress_value || 0}%</Text>
+              <Text style={s.progressLabelOverlay}>{progressLabel}</Text>
             </View>
 
             {/* Caption */}
@@ -252,8 +262,8 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
           </View>
           {u.caption ? <Text style={s.feedNoPhotoCaption}>{u.caption}</Text> : null}
           <View style={s.progressRow}>
-            <View style={s.progressBg}><View style={[s.progressFill, { width: `${Math.min(u.progress_value || 0, 100)}%` as any }]} /></View>
-            <Text style={s.progressLabel}>{u.progress_value || 0}%</Text>
+            <View style={s.progressBg}><View style={[s.progressFill, { width: `${pctValue}%` as any }]} /></View>
+            <Text style={s.progressLabel}>{progressLabel}</Text>
           </View>
           {/* Réactions + actions pour post sans photo */}
           {activeReactions.length > 0 && (

@@ -11,6 +11,9 @@ export const EMOJI_LIST =['🎯','💪','🏃','📚','🧘','🚀','🏋️','�
 
 export const ALL_REACTION_EMOJIS = ['❤️','🔥','💪','👏','😮','🎯','⚡','🙌','💯','🏆','✨','🚀','😂','🥹','😍','🤩','😎','💀','😭','😅','🤯','🥳','👍','🫶','❤️‍🔥','💥','🧠','👀','🏃','🚴','🏊','🧘','🏋️','🥊','🏅','🥇','💧','🍎','🥑','🍌','🎉','🌟','💫'];
 
+// Unités proposées en un tap à la création d'un objectif. La roue complète
+// (UNITS) reste disponible derrière « Options ».
+export const QUICK_UNITS = ['séances', 'fois', 'km', 'min', 'reps', 'pas'];
 export const UNITS = ['%', 'km', 'm', 'kg', 'lbs', 'min', 'h', 'x', 'reps', 'séances', 'cal', 'pas', 'fois'];
 export const ITEM_H = 44;
 
