@@ -20,10 +20,30 @@ function toPath(stored: string): string {
   return stored.slice(i + marker.length).split('?')[0];
 }
 
+/**
+ * Une publication peut porter une photo ou une vidéo, dans la même colonne
+ * `photo_url` : c'est l'extension du fichier qui dit laquelle. Pas de colonne
+ * en plus, donc aucun changement de base pour les vidéos.
+ * Marche aussi sur une URL signée (l'extension est avant le « ? »).
+ */
+export function isVideo(stored?: string | null): boolean {
+  return !!stored && /\.(mp4|mov|m4v)(\?|$)/i.test(stored);
+}
+
 /** Envoie une image et renvoie son chemin de stockage (à enregistrer en base). */
 export async function uploadImage(
   path: string,
   uri: string,
+  upsert = false
+): Promise<{ path: string | null; error: { message?: string } | null }> {
+  return uploadFile(path, uri, 'image/jpeg', upsert);
+}
+
+/** Envoie un fichier quelconque (photo ou vidéo) et renvoie son chemin de stockage. */
+export async function uploadFile(
+  path: string,
+  uri: string,
+  contentType: string,
   upsert = false
 ): Promise<{ path: string | null; error: { message?: string } | null }> {
   try {
@@ -31,7 +51,7 @@ export async function uploadImage(
     const arrayBuffer = await response.arrayBuffer();
     const { error } = await supabase.storage
       .from(BUCKET)
-      .upload(path, arrayBuffer, { contentType: 'image/jpeg', upsert });
+      .upload(path, arrayBuffer, { contentType, upsert });
     if (error) return { path: null, error };
     return { path, error: null };
   } catch (e: any) {

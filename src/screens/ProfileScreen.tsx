@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, RefreshControl, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -10,8 +10,14 @@ import { Objective } from '../lib/types';
 import { HEATMAP_MAX_DAYS, daysFor, dayKeysFor, navClearance } from '../constants';
 import { s } from '../styles';
 import { ProfileSkeleton } from '../components/Skeleton';
+import { BadgesStrip, PinnedRow, PostsGrid, computeBadges, isCompleted } from '../components/ProfileSections';
+import { PostViewer } from '../components/PostViewer';
+import { ProfileTags } from '../components/ProfileTags';
+import { PeopleListModal } from '../components/PeopleListModal';
+import { loadProfilePosts, loadPost } from '../lib/posts';
+import { Update, FeedMeta } from '../lib/types';
 
-export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose: () => void; streak: number; onCreateObjective: () => void }) {
+export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfile }: { onClose: () => void; streak: number; onCreateObjective: () => void; onViewProfile?: (id: string) => void }) {
   const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<any>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
@@ -25,6 +31,14 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [refreshingProfile, setRefreshingProfile] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editingBio, setEditingBio] = useState(false);
+  const [newBio, setNewBio] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
+  // Tous tes posts : badges, épinglés et grille d'historique.
+  const [posts, setPosts] = useState<Update[]>([]);
+  const [viewing, setViewing] = useState<{ u: Update; meta: FeedMeta } | null>(null);
+  // Fenêtre « Amis » (liste cliquable) ou « Cercle proche » (étoiles).
+  const [peopleMode, setPeopleMode] = useState<'friends' | 'close' | null>(null);
 
   useEffect(() => { loadProfile(); }, []);
 
@@ -33,15 +47,19 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
     const sinceISO = new Date(Date.now() - HEATMAP_MAX_DAYS * 24 * 60 * 60 * 1000).toISOString();
-    const [profileRes, objRes, updatesRes, friendsRes] = await Promise.all([
-      supabase.from('users').select('full_name, username, created_at, avatar_url').eq('id', user.id).single(),
-      supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility, duration_days').eq('user_id', user.id).order('created_at', { ascending: false }),
+    setUserId(user.id);
+    const [profileRes, objRes, updatesRes, friendsRes, allPosts] = await Promise.all([
+      supabase.from('users').select('full_name, username, created_at, avatar_url, bio').eq('id', user.id).single(),
+      supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility, duration_days, is_completed').eq('user_id', user.id).order('created_at', { ascending: false }),
       supabase.from('updates').select('objective_id, created_at').eq('user_id', user.id).gte('created_at', sinceISO),
-      supabase.from('friendships').select('id').or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`).eq('status', 'accepted'),
+      supabase.from('friendships').select('requester_id, receiver_id').or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`).eq('status', 'accepted'),
+      loadProfilePosts(user.id),
     ]);
+    setPosts(allPosts);
     if (profileRes.data) {
       setProfile(profileRes.data);
       setNewName(profileRes.data.full_name);
+      setNewBio(profileRes.data.bio || '');
       setAvatarUrl(await signOne(profileRes.data.avatar_url));
     }
     if (objRes.data) setObjectives(objRes.data as Objective[]);
@@ -55,7 +73,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
       });
       setActivityByObj(map);
     }
-    if (friendsRes.data) setFriendCount(friendsRes.data.length);
+    // Personnes distinctes, pas lignes : une amitié en double ne compte qu'une fois.
+    if (friendsRes.data) setFriendCount(new Set(friendsRes.data.map(f => (f.requester_id === user.id ? f.receiver_id : f.requester_id))).size);
     setLoading(false);
   };
 
@@ -66,6 +85,23 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
     if (!user) { setSaving(false); return; }
     await supabase.from('users').update({ full_name: newName.trim() }).eq('id', user.id);
     setSaving(false); setEditingName(false); loadProfile();
+  };
+
+  const openPost = async (p: Update) => {
+    const res = await loadPost(p.id, userId);
+    if (res) setViewing(res);
+  };
+
+  const handleSaveBio = async () => {
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSaving(false); return; }
+    const bio = newBio.trim();
+    const { error } = await supabase.from('users').update({ bio: bio || null }).eq('id', user.id);
+    setSaving(false);
+    if (error) { Alert.alert('Erreur', frError(error)); return; }
+    setEditingBio(false);
+    setProfile((p: any) => ({ ...p, bio: bio || null }));
   };
 
   const handlePickAvatar = async () => {
@@ -112,6 +148,24 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
 
   // Suppression d'un objectif : la base efface en cascade les publications
   // rattachées, d'où l'avertissement explicite dans la confirmation.
+  const setVisibility = async (o: Objective, visibility: string) => {
+    const { error } = await supabase.from('objectives').update({ visibility }).eq('id', o.id);
+    if (error) { Alert.alert('Erreur', frError(error)); return; }
+    setObjectives(prev => prev.map(x => (x.id === o.id ? { ...x, visibility } : x)));
+  };
+
+  const VIS_LABEL: Record<string, string> = { friends: 'Mon cercle', close: 'Cercle proche', private: 'Moi seul', public: 'Public' };
+  const openObjectiveMenu = (o: Objective) => {
+    const mark = (v: string) => (o.visibility === v ? '✓ ' : '');
+    Alert.alert(`${o.emoji} ${o.title}`, `Visible par : ${VIS_LABEL[o.visibility] || o.visibility}`, [
+      { text: `${mark('friends')}Visible par mon cercle`, onPress: () => setVisibility(o, 'friends') },
+      { text: `${mark('close')}Visible par mon cercle proche`, onPress: () => setVisibility(o, 'close') },
+      { text: `${mark('private')}Moi seul`, onPress: () => setVisibility(o, 'private') },
+      { text: "Supprimer l'objectif", style: 'destructive', onPress: () => handleDeleteObjective(o) },
+      { text: 'Annuler', style: 'cancel' },
+    ]);
+  };
+
   const handleDeleteObjective = (o: Objective) => {
     Alert.alert(
       `Supprimer "${o.title}" ?`,
@@ -133,6 +187,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
   const openSettings = () => {
     Alert.alert('Paramètres', undefined, [
       { text: 'Modifier mon nom', onPress: () => setEditingName(true) },
+      { text: 'Modifier ma bio', onPress: () => setEditingBio(true) },
+      { text: 'Mon cercle proche', onPress: () => setPeopleMode('close') },
       { text: 'Se déconnecter', onPress: handleSignOut },
       { text: 'Supprimer mon compte', style: 'destructive', onPress: handleDeleteAccount },
       { text: 'Annuler', style: 'cancel' },
@@ -229,14 +285,49 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
               </TouchableOpacity>
             )}
             <Text style={s.profileUsername}>@{profile?.username}</Text>
+            {editingBio ? (
+              <View style={[s.profileNameEdit, { marginTop: 10 }]}>
+                <TextInput
+                  style={[s.profileNameInput, { fontSize: 14, minHeight: 60, textAlignVertical: 'top' }]}
+                  value={newBio}
+                  onChangeText={setNewBio}
+                  autoFocus
+                  multiline
+                  maxLength={150}
+                  placeholder="Ce que tu vises, ce qui te motive..."
+                  placeholderTextColor="#666"
+                />
+                <Text style={{ color: '#666', fontSize: 11, alignSelf: 'flex-end' }}>{newBio.length}/150</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity style={s.profileSaveBtn} onPress={saving ? undefined : handleSaveBio}>
+                    {saving ? <ActivityIndicator color="#000" size="small" /> : <Text style={s.profileSaveBtnText}>Sauvegarder</Text>}
+                  </TouchableOpacity>
+                  <TouchableOpacity style={s.profileCancelBtn} onPress={() => { setEditingBio(false); setNewBio(profile?.bio || ''); }}>
+                    <Text style={s.profileCancelBtnText}>Annuler</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity onPress={() => setEditingBio(true)} style={{ marginTop: 8, paddingHorizontal: 24 }}>
+                {profile?.bio
+                  ? <Text style={s.profileBio}>{profile.bio}</Text>
+                  : <Text style={[s.profileBio, { color: '#666' }]}>+ Ajoute une bio</Text>}
+              </TouchableOpacity>
+            )}
             <Text style={s.profileMember}>Membre depuis {memberSince}</Text>
           </View>
 
           <View style={s.statsRow}>
             <View style={s.statPill}><Text style={s.statVal}>{streak}j</Text><Text style={s.statLbl}>Streak</Text></View>
-            <View style={s.statPill}><Text style={s.statVal}>{objectives.length}</Text><Text style={s.statLbl}>Objectifs</Text></View>
-            <View style={s.statPill}><Text style={s.statVal}>{friendCount}</Text><Text style={s.statLbl}>Amis</Text></View>
+            <View style={s.statPill}><Text style={s.statVal}>{posts.length}</Text><Text style={s.statLbl}>Posts</Text></View>
+            <TouchableOpacity style={s.statPill} onPress={() => setPeopleMode('friends')} activeOpacity={0.75} accessibilityLabel="Voir mes amis">
+              <Text style={s.statVal}>{friendCount}</Text><Text style={s.statLbl}>{friendCount > 1 ? 'Amis' : 'Ami'}</Text>
+            </TouchableOpacity>
           </View>
+
+          {userId && <ProfileTags userId={userId} currentUserId={userId} own />}
+          <BadgesStrip badges={computeBadges(posts, objectives)} own />
+          <PinnedRow posts={posts} onOpen={openPost} />
 
           {objectives.length === 0 ? (
             <View style={s.emptyState}>
@@ -248,8 +339,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
             </View>
           ) : (
             <>
-              <Text style={s.sectionTitle}>MES OBJECTIFS</Text>
-              {objectives.map((o) => {
+              {objectives.some(o => !isCompleted(o)) && <Text style={s.sectionTitle}>EN COURS</Text>}
+              {objectives.filter(o => !isCompleted(o)).map((o) => {
                 const set = activityByObj[o.id] || new Set<string>();
                 const nbDays = daysFor(o);
                 const dayKeys = dayKeysFor(nbDays);
@@ -262,7 +353,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
                       <Text style={s.objCardProfileTitle} numberOfLines={1}>{o.emoji} {o.title}</Text>
                       <Text style={s.objCardProfilePct}>{pct}%</Text>
                       <TouchableOpacity
-                        onPress={() => handleDeleteObjective(o)}
+                        onPress={() => openObjectiveMenu(o)}
                         accessibilityLabel={`Options de l'objectif ${o.title}`}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       >
@@ -284,6 +375,24 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
             </>
           )}
 
+          {objectives.some(isCompleted) && (
+            <>
+              <Text style={s.sectionTitle}>RÉUSSIS</Text>
+              {objectives.filter(isCompleted).map(o => (
+                <View key={o.id} style={s.profileObjRow}>
+                  <Text style={s.profileObjEmoji}>{o.emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.profileObjName}>{o.title}</Text>
+                    <Text style={{ color: '#888', fontSize: 11 }}>{o.target_value} {o.unit} atteints</Text>
+                  </View>
+                  <Text style={{ fontSize: 20 }}>🏆</Text>
+                </View>
+              ))}
+            </>
+          )}
+
+          <PostsGrid posts={posts} onOpen={openPost} emptyText="Tes publications apparaîtront ici." />
+
           {/* Déconnexion et suppression de compte vivent désormais dans le menu
               de la roue dentée, en haut à droite. */}
           {deleting && <ActivityIndicator color="#ff3b30" size="small" style={{ marginTop: 16 }} />}
@@ -291,6 +400,26 @@ export function ProfileScreen({ onClose, streak, onCreateObjective }: { onClose:
           <View style={{ height: navClearance(insets.bottom) }} />
         </ScrollView>
       )}
+      {userId && (
+        <PeopleListModal
+          visible={!!peopleMode}
+          mode={peopleMode || 'friends'}
+          userId={userId}
+          currentUserId={userId}
+          onClose={() => setPeopleMode(null)}
+          onOpenProfile={(id) => { setPeopleMode(null); onViewProfile?.(id); }}
+        />
+      )}
+      <Modal visible={!!viewing} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setViewing(null)}>
+        {viewing && (
+          <PostViewer
+            post={viewing}
+            currentUserId={userId}
+            onClose={() => setViewing(null)}
+            onChanged={() => loadProfile(true)}
+          />
+        )}
+      </Modal>
     </View>
   );
 }

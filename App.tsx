@@ -29,6 +29,8 @@ function AppInner() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   // Onglet à ouvrir quand l'utilisateur tape une notification push
   const [navIntent, setNavIntent] = useState<string | null>(null);
+  // Ami à identifier d'office quand on répond à une séance en duo.
+  const [postDuoWith, setPostDuoWith] = useState<string | null>(null);
   const notifListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
   const registeredUserId = useRef<string | null>(null);
@@ -87,7 +89,7 @@ function AppInner() {
   if (checkingAuth || !fontsLoaded) return null;
   if (screen === 'splash') return <Splash onNext={() => setScreen('onboarding')} />;
   if (screen === 'onboarding') return <Onboarding onNext={() => setScreen('main')} />;
-  if (screen === 'main') return <Main onPost={() => setScreen('post')} navIntent={navIntent} onNavIntentHandled={() => setNavIntent(null)} />;
-  if (screen === 'post') return <PostScreen onBack={() => setScreen('main')} onPublish={() => setScreen('main')} />;
+  if (screen === 'main') return <Main onPost={(opts) => { setPostDuoWith(opts?.duoWith ?? null); setScreen('post'); }} navIntent={navIntent} onNavIntentHandled={() => setNavIntent(null)} />;
+  if (screen === 'post') return <PostScreen duoWith={postDuoWith} onBack={() => setScreen('main')} onPublish={() => setScreen('main')} />;
   return null;
 }

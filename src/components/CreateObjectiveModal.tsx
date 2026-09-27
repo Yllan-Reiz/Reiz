@@ -12,12 +12,12 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
   const [emoji, setEmoji] = useState('🎯');
   const [unit, setUnit] = useState('séances');
   const [targetValue, setTargetValue] = useState('');
-  const [visibility, setVisibility] = useState('public');
+  const [visibility, setVisibility] = useState('friends');
   const [duration, setDuration] = useState<number | null>(null); // sans date de fin par défaut
   const [showOptions, setShowOptions] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const reset = () => { setTitle(''); setEmoji('🎯'); setUnit('séances'); setTargetValue(''); setVisibility('public'); setDuration(null); setShowOptions(false); };
+  const reset = () => { setTitle(''); setEmoji('🎯'); setUnit('séances'); setTargetValue(''); setVisibility('friends'); setDuration(null); setShowOptions(false); };
 
   // Sans chiffre, l'objectif se suit en pourcentage : 100 % = terminé.
   const hasTarget = targetValue.trim() !== '';
@@ -140,7 +140,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
 
               <Text style={[s.inputLabel, s.inputLabelSpaced]}>VISIBILITÉ</Text>
               <View style={s.visToggle}>
-                {[{ key: 'public', label: 'Public' }, { key: 'friends', label: 'Amis' }, { key: 'private', label: 'Privé' }].map(v => (
+                {[{ key: 'friends', label: 'Mon cercle' }, { key: 'close', label: 'Cercle proche' }, { key: 'private', label: 'Privé' }, { key: 'public', label: 'Public' }].map(v => (
                   <TouchableOpacity key={v.key} style={[s.visOpt, visibility === v.key && s.visOptActive]} onPress={() => setVisibility(v.key)}>
                     <Text style={[s.visOptText, visibility === v.key && s.visOptTextActive]}>{v.label}</Text>
                   </TouchableOpacity>

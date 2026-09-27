@@ -10,6 +10,9 @@ import { ALL_REACTION_EMOJIS } from '../constants';
 import { s } from '../styles';
 import { CommentsModal } from './CommentsModal';
 import { FadeInImage } from './FadeInImage';
+import { FeedVideo } from './FeedVideo';
+import { isVideo } from '../lib/storage';
+import { togglePin } from '../lib/posts';
 import { FloatingEmoji, nextFloatId } from './FloatingEmoji';
 
 // Ouverture/fermeture en fondu-montée. Le contenu reste monté le temps de la
@@ -41,12 +44,20 @@ function Reveal({ visible, children }: { visible: boolean; children: ReactNode }
 
 // Les réactions et le compteur de commentaires arrivent pré-chargés via `meta`
 // (chargés en lot par le feed) : zéro requête au montage de la carte.
-export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
+export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, onPinChanged, onDuoReply }: {
   u: Update;
   meta?: FeedMeta;
   currentUserId: string | null;
   onDeleted?: () => void;
   onBlocked?: () => void;
+  // Depuis le fil d'activité : un commentaire reçu ouvre directement la discussion.
+  openCommentsOnMount?: boolean;
+  // Carte la plus visible à l'écran : seule sa vidéo joue.
+  isActive?: boolean;
+  // Appelé après épinglage / désépinglage, pour que le profil se mette à jour.
+  onPinChanged?: () => void;
+  // Séance en duo : l'ami identifié publie la sienne, avec l'auteur identifié en retour.
+  onDuoReply?: (authorId: string) => void;
 }) {
   // Le fil parle la même langue que le reste de l'app : un objectif chiffré
   // s'affiche en séances (ou en km, en reps...), le pourcentage ne reste que
@@ -62,7 +73,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
   const [myReactions, setMyReactions] = useState<string[]>(meta?.mine || []);
   const [commentCount, setCommentCount] = useState(meta?.commentCount || 0);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(!!openCommentsOnMount);
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: number; emoji: string }[]>([]);
 
   // Resynchronise quand le feed est rafraîchi (pull-to-refresh)
@@ -100,6 +111,12 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
   };
 
   const uname = u.users?.full_name || 'Utilisateur';
+  const duoNames = (u.with_users || []).map(w => w.full_name);
+  const duoLabel = duoNames.length === 0 ? null
+    : duoNames.length === 1 ? duoNames[0]
+    : `${duoNames.slice(0, -1).join(', ')} et ${duoNames[duoNames.length - 1]}`;
+  const canDuoReply = !!onDuoReply && !!currentUserId && !!u.user_id && u.user_id !== currentUserId
+    && (u.with_user_ids || []).includes(currentUserId);
   const isMine = !!currentUserId && u.user_id === currentUserId;
 
   const deletePost = () => {
@@ -150,9 +167,22 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
     ]);
   };
 
+  const [pinned, setPinned] = useState(!!u.pinned_at);
+  useEffect(() => { setPinned(!!u.pinned_at); }, [u.pinned_at]);
+
+  const pinPost = async () => {
+    if (!currentUserId) return;
+    const err = await togglePin({ ...u, pinned_at: pinned ? 'x' : null }, currentUserId);
+    if (err) { Alert.alert('Épinglés', err); return; }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setPinned(p => !p);
+    onPinChanged?.();
+  };
+
   const openMenu = () => {
     if (isMine) {
       Alert.alert('Ton post', undefined, [
+        { text: pinned ? 'Retirer des épinglés' : 'Épingler sur mon profil', onPress: pinPost },
         { text: 'Supprimer le post', style: 'destructive', onPress: deletePost },
         { text: 'Annuler', style: 'cancel' },
       ]);
@@ -182,6 +212,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
       <CommentsModal
         visible={showComments}
         updateId={u.id}
+        postOwnerId={u.user_id}
         currentUserId={currentUserId}
         onClose={() => setShowComments(false)}
         onCountChange={setCommentCount}
@@ -199,14 +230,18 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
       {/* Photo hero */}
       {u.photo_url ? (
         <View style={s.feedPhotoWrap}>
-          <FadeInImage uri={u.photo_url} style={s.feedPhoto} />
+          {isVideo(u.photo_url)
+            ? <FeedVideo uri={u.photo_url} active={isActive} style={s.feedPhoto} />
+            : <FadeInImage uri={u.photo_url} style={s.feedPhoto} />}
 
           {/* Header superposé en haut */}
-          <LinearGradient colors={['rgba(0,0,0,0.6)', 'transparent']} style={s.feedOverlayTop}>
+          <LinearGradient colors={['rgba(0,0,0,0.6)', 'transparent']} style={s.feedOverlayTop} pointerEvents="box-none">
             <View style={s.feedOverlayHeader}>
               <Avatar />
               <View style={s.cardMeta}>
                 <Text style={s.cardName}>{uname}</Text>
+                {duoLabel ? <Text style={s.cardDuo} numberOfLines={1}>🤝 avec {duoLabel}</Text> : null}
+                {u.objectives?.visibility === 'close' ? <Text style={s.cardClose}>★ Cercle proche</Text> : null}
                 <Text style={s.cardTime}>{timeAgo(u.created_at)}</Text>
               </View>
               <MenuBtn />
@@ -214,7 +249,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
           </LinearGradient>
 
           {/* Fondu + réactions + actions en bas */}
-          <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} style={s.feedOverlayBottom}>
+          <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} style={s.feedOverlayBottom} pointerEvents="box-none">
             {/* Barre de progression */}
             <View style={s.feedOverlayProgress}>
               <View style={s.progressBg}>
@@ -247,6 +282,11 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
                 <Ionicons name="chatbubble-outline" size={16} color="#888" />
                 <Text style={s.actionText}>{commentCount > 0 ? `${commentCount}` : 'Commenter'}</Text>
               </TouchableOpacity>
+              {canDuoReply && (
+                <TouchableOpacity style={[s.actionBtn, s.actionBtnDuo]} onPress={() => onDuoReply!(u.user_id!)}>
+                  <Text style={s.actionTextDuo}>🤝 Poster la mienne</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </LinearGradient>
         </View>
@@ -256,7 +296,9 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
             <Avatar />
             <View style={s.cardMeta}>
               <Text style={s.cardName}>{uname}</Text>
-              <Text style={s.cardTime}>{timeAgo(u.created_at)}</Text>
+              {duoLabel ? <Text style={s.cardDuo} numberOfLines={1}>🤝 avec {duoLabel}</Text> : null}
+                {u.objectives?.visibility === 'close' ? <Text style={s.cardClose}>★ Cercle proche</Text> : null}
+                <Text style={s.cardTime}>{timeAgo(u.created_at)}</Text>
             </View>
             <MenuBtn />
           </View>
@@ -284,6 +326,11 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked }: {
               <Ionicons name="chatbubble-outline" size={16} color="#888" />
               <Text style={s.actionText}>{commentCount > 0 ? `${commentCount}` : 'Commenter'}</Text>
             </TouchableOpacity>
+            {canDuoReply && (
+              <TouchableOpacity style={[s.actionBtn, s.actionBtnDuo]} onPress={() => onDuoReply!(u.user_id!)}>
+                <Text style={s.actionTextDuo}>🤝 Poster la mienne</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}

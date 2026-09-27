@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, FlatList, Image, Alert, ActivityIndicator, Animated, Easing, Pressable, RefreshControl, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, FlatList, Image, Alert, ActivityIndicator, Animated, Easing, Pressable, RefreshControl, StyleSheet, Platform, AppState } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,8 +19,11 @@ import { FeedSkeleton } from '../components/Skeleton';
 import { FriendsTab } from './FriendsTab';
 import { ProfileScreen } from './ProfileScreen';
 import { FriendProfileScreen } from './FriendProfileScreen';
+import { ActivityScreen } from './ActivityScreen';
+import { attachDuoNames } from '../lib/posts';
 
 const PAGE_SIZE = 20;
+const FEED_WINDOW_HOURS = 24;
 
 // Puce d'étape de la carte d'activation : coché une fois l'étape faite, numérotée sinon.
 function StepMarker({ done, step }: { done: boolean; step: number }) {
@@ -90,7 +93,8 @@ function PostButton({ onPress }: { onPress: () => void }) {
 }
 
 export function Main({ onPost, navIntent, onNavIntentHandled }: {
-  onPost: () => void;
+  // duoWith : ouvre la publication avec cet ami déjà identifié (réponse à un duo).
+  onPost: (opts?: { duoWith?: string }) => void;
   navIntent?: string | null;
   onNavIntentHandled?: () => void;
 }) {
@@ -107,20 +111,44 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   const [hasMore, setHasMore] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [streak, setStreak] = useState(0);
-  const [viewingFriendId, setViewingFriendId] = useState<string | null>(null);
+  // Pile de profils ouverts : depuis le profil d'un ami, on peut ouvrir celui
+  // d'un de ses amis, et « retour » revient au précédent.
+  const [profileStack, setProfileStack] = useState<string[]>([]);
+  const viewingFriendId = profileStack.length ? profileStack[profileStack.length - 1] : null;
+  const openProfile = (id: string) => {
+    if (id === userId) { setProfileStack([]); setShowActivity(false); setTab('profile'); return; }
+    setProfileStack(st => [...st, id]);
+  };
   const [refreshing, setRefreshing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  // Fil d'activité (cœur en haut à droite) et nombre d'éléments non lus.
+  const [showActivity, setShowActivity] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   // Nb d'amis acceptés — sert à savoir si le nouvel utilisateur a déjà lancé son cercle.
   // null = pas encore chargé (évite d'afficher la carte d'activation par erreur).
   const [friendCount, setFriendCount] = useState<number | null>(null);
   // Offset réel en base (avant filtrage des posts privés) pour une pagination exacte
   const dbOffset = useRef(0);
+  // Carte la plus visible du fil : seule sa vidéo joue (les autres restent en pause).
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: { item: Update; isViewable: boolean }[] }) => {
+    const first = viewableItems.find(v => v.isViewable);
+    setActiveId(first ? first.item.id : null);
+  }).current;
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
 
   const fetchPendingCount = async (uid?: string | null) => {
     const id = uid ?? userId;
     if (!id) return;
     const { count } = await supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('receiver_id', id).eq('status', 'pending');
     setPendingCount(count || 0);
+  };
+
+  const fetchUnread = async (uid?: string | null) => {
+    const id = uid ?? userId;
+    if (!id) return;
+    const { count } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('recipient_id', id).is('read_at', null);
+    setUnreadCount(count || 0);
   };
 
   const fetchFriendCount = async (uid?: string | null) => {
@@ -146,10 +174,15 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`)
       .eq('status', 'accepted');
     const circleIds = [uid, ...(fr || []).map(f => (f.requester_id === uid ? f.receiver_id : f.requester_id))];
+    // Le fil repart de zéro toutes les 24 h (fenêtre glissante) : on ne voit que
+    // ce que le cercle a fait depuis hier à la même heure. L'historique complet
+    // reste dans les profils.
+    const since = new Date(Date.now() - FEED_WINDOW_HOURS * 3600 * 1000).toISOString();
     const { data, error } = await supabase
       .from('updates')
-      .select('id, caption, progress_value, created_at, photo_url, user_id, objectives(visibility, unit, target_value), users(full_name, username, avatar_url)')
+      .select('id, caption, progress_value, created_at, photo_url, user_id, pinned_at, with_user_ids, objectives(visibility, unit, target_value), users(full_name, username, avatar_url)')
       .in('user_id', circleIds)
+      .gte('created_at', since)
       .order('created_at', { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1);
     if (!error && data) {
@@ -168,6 +201,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         if (u.photo_url) u.photo_url = signed[u.photo_url] ?? undefined;
         if (u.users?.avatar_url) u.users.avatar_url = signed[u.users.avatar_url] ?? undefined;
       });
+      await attachDuoNames(visible);
 
       const ids = visible.map(u => u.id);
       const meta: Record<string, FeedMeta> = {};
@@ -211,6 +245,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     calculateStreak(userId).then(setStreak);
     fetchPendingCount();
     fetchFriendCount();
+    fetchUnread();
     await Promise.all([loadFeedPage(0, userId, true), fetchObjectives(true)]);
     setRefreshing(false);
   };
@@ -267,7 +302,14 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     }
     fetchPendingCount();
     fetchFriendCount();
+    fetchUnread();
   }, [tab]);
+
+  // Retour dans l'app (après une notif, par exemple) : on remet la pastille à jour.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', st => { if (st === 'active') fetchUnread(); });
+    return () => sub.remove();
+  }, [userId]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -277,6 +319,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       calculateStreak(user.id).then(setStreak);
       fetchPendingCount(user.id);
       fetchFriendCount(user.id);
+      fetchUnread(user.id);
     });
     fetchObjectives();
   }, []);
@@ -284,7 +327,9 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   // Deep link des notifications : taper une notif ouvre le bon onglet
   useEffect(() => {
     if (!navIntent) return;
-    setViewingFriendId(null);
+    setProfileStack([]);
+    // Les nouveaux push envoient « activity » : on ouvre directement le fil d'activité.
+    setShowActivity(navIntent === 'activity');
     setTab(navIntent === 'friend_request' ? 'friends' : 'feed');
     onNavIntentHandled?.();
   }, [navIntent]);
@@ -334,7 +379,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   );
 
   const postCTA = (
-    <TouchableOpacity style={s.myUpdate} onPress={onPost} activeOpacity={0.85}>
+    <TouchableOpacity style={s.myUpdate} onPress={() => onPost()} activeOpacity={0.85}>
       <View style={s.myUpdateInfo}>
         <Text style={s.myUpdateTitle}>Poste ta progression</Text>
         <Text style={s.myUpdateSub}>Ton cercle t'attend aujourd'hui</Text>
@@ -343,7 +388,18 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     </TouchableOpacity>
   );
 
-  if (viewingFriendId) return <FriendProfileScreen userId={viewingFriendId} onClose={() => setViewingFriendId(null)} />;
+  if (viewingFriendId) return <FriendProfileScreen key={viewingFriendId} userId={viewingFriendId} onClose={() => setProfileStack(st => st.slice(0, -1))} onOpenProfile={openProfile} />;
+  if (showActivity) {
+    return (
+      <ActivityScreen
+        currentUserId={userId}
+        onClose={() => { setShowActivity(false); setUnreadCount(0); }}
+        onViewProfile={openProfile}
+        onOpenFriends={() => { setShowActivity(false); setUnreadCount(0); setTab('friends'); }}
+        onDuoReply={(authorId) => onPost({ duoWith: authorId })}
+      />
+    );
+  }
 
   return (
     <View style={s.container}>
@@ -351,7 +407,20 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
 
       <View style={[s.header, { paddingTop: insets.top + 6 }]}>
         <Image source={require('../../assets/ecriture-reiz-blanc.png')} style={s.headerLogo} resizeMode="contain" />
-        <FlameStreak streak={streak} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <TouchableOpacity
+            onPress={() => setShowActivity(true)}
+            style={s.headerIconBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={unreadCount > 0 ? `Activité, ${unreadCount} nouveautés` : 'Activité'}
+          >
+            <Ionicons name={unreadCount > 0 ? 'heart' : 'heart-outline'} size={22} color="#fff" />
+            {unreadCount > 0 && (
+              <View style={s.headerBadge}><Text style={s.navBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text></View>
+            )}
+          </TouchableOpacity>
+          <FlameStreak streak={streak} />
+        </View>
       </View>
 
       <Animated.View
@@ -365,11 +434,14 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         <View style={{ flex: 1 }}>
           <FlatList
             style={s.feed}
+            contentContainerStyle={s.feedContent}
             data={updates}
             keyExtractor={(u) => u.id}
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1a1a1a" />}
             onEndReached={fetchMore}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={viewabilityConfig}
             onEndReachedThreshold={0.6}
             // Cartes photo lourdes : on limite ce qui est monté et gardé vivant,
             // sinon le scroll accroche au bout de quelques dizaines de posts.
@@ -385,14 +457,19 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 <FeedSkeleton />
               ) : (
                 <View style={{ paddingTop: 40, alignItems: 'center' }}>
-                  <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>Aucune mise à jour pour l'instant</Text>
-                  <Text style={{ color: '#777', marginTop: 4, fontSize: 12 }}>Sois le premier à publier.</Text>
+                  <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>Rien dans les dernières 24 h</Text>
+                  <Text style={{ color: '#777', marginTop: 4, fontSize: 12 }}>Sois le premier de ton cercle à publier aujourd'hui.</Text>
                 </View>
               )
             }
             ListFooterComponent={
               <View style={{ height: bottomPad, alignItems: 'center', paddingTop: 10 }}>
                 {loadingMore ? <ActivityIndicator color="#fff" /> : null}
+                {!loadingMore && !hasMore && updates.length > 0 ? (
+                  <Text style={{ color: '#666', fontSize: 12, textAlign: 'center', paddingHorizontal: 24 }}>
+                    Tu as tout vu pour aujourd'hui. Les posts plus anciens sont sur les profils.
+                  </Text>
+                ) : null}
               </View>
             }
             renderItem={({ item }) => (
@@ -400,6 +477,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 u={item}
                 meta={feedMeta[item.id]}
                 currentUserId={userId}
+                isActive={item.id === activeId}
+                onDuoReply={(authorId) => onPost({ duoWith: authorId })}
                 onDeleted={() => { setUpdates(prev => prev.filter(x => x.id !== item.id)); fetchObjectives(true); }}
                 onBlocked={() => userId && loadFeedPage(0, userId, true)}
               />
@@ -452,7 +531,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                     <Text style={s.objCardName} numberOfLines={1}>{o.emoji} {o.title}</Text>
                     <View style={[s.visBadge, o.visibility === 'public' && s.visBadgePublic]}>
                       <Text style={[s.visText, o.visibility === 'public' && s.visTextPublic]}>
-                        {o.visibility === 'public' ? 'Public' : o.visibility === 'friends' ? 'Amis' : 'Privé'}
+                        {o.visibility === 'public' ? 'Public' : o.visibility === 'friends' ? 'Cercle' : o.visibility === 'close' ? 'Proche' : 'Privé'}
                       </Text>
                     </View>
                   </View>
@@ -463,7 +542,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                     </View>
                     <Text style={s.objPct}>{pct}%</Text>
                   </View>
-                  <TouchableOpacity style={s.updateBtn} onPress={onPost}>
+                  <TouchableOpacity style={s.updateBtn} onPress={() => onPost()}>
                     <Text style={s.updateBtnText}>+ Mise à jour</Text>
                   </TouchableOpacity>
                 </Pressable>
@@ -482,10 +561,11 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         )
       )}
 
-      {tab === 'friends' && <FriendsTab onViewProfile={(id) => setViewingFriendId(id)} onPendingCount={setPendingCount} />}
+      {tab === 'friends' && <FriendsTab onViewProfile={openProfile} onPendingCount={setPendingCount} />}
 
       {tab === 'profile' && (
         <ProfileScreen
+          onViewProfile={openProfile}
           onClose={() => setTab('feed')}
           streak={streak}
           onCreateObjective={() => setTab('objectives')}
@@ -508,7 +588,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         </View>
 
         {/* === Bouton + central, isolé === */}
-        <PostButton onPress={onPost} />
+        <PostButton onPress={() => onPost()} />
 
         {/* === Pilule droite : Amis + Profil === */}
         <View style={s.navPill} onLayout={e => setRightPillWidth(e.nativeEvent.layout.width)}>

@@ -6,11 +6,26 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
-import { uploadImage } from '../lib/storage';
+import { uploadImage, uploadFile, signMany } from '../lib/storage';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { Objective } from '../lib/types';
 import { s, F } from '../styles';
 
-export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublish: () => void }) {
+// Vidéo de progression : 15 s max, comme une story. Au-delà, le fichier pèse
+// trop lourd pour la 4G et le fil devient une plateforme vidéo.
+const VIDEO_MAX_SEC = 15;
+const VIDEO_MAX_MB = 45;
+
+// Aperçu de la vidéo choisie, muet et en boucle.
+function VideoPreview({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, p => { p.loop = true; p.muted = true; p.play(); });
+  return <VideoView player={player} style={s.postPhotoImg} contentFit="cover" nativeControls={false} />;
+}
+
+// Séance en duo : 3 amis identifiés maximum (vérifié aussi côté serveur).
+const MAX_DUO = 3;
+
+export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void, onPublish: () => void, duoWith?: string | null }) {
   const insets = useSafeAreaInsets();
   const [selectedObj, setSelectedObj] = useState(0);
   const [objectives, setObjectives] = useState<Objective[]>([]);
@@ -19,6 +34,12 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
   const [caption, setCaption] = useState('');
   const [publishing, setPublishing] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
+  // Amis du cercle, pour « Avec qui ? ». Réponse à un duo : l'auteur est déjà coché.
+  const [friends, setFriends] = useState<{ id: string; full_name: string; avatar_url?: string | null }[]>([]);
+  const [withIds, setWithIds] = useState<string[]>(duoWith ? [duoWith] : []);
+  // Ton cercle proche : un objectif « Cercle proche » ne peut identifier que lui.
+  const [closeIds, setCloseIds] = useState<Set<string>>(new Set());
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
@@ -28,11 +49,41 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
       const { data, error } = await supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility').eq('user_id', user.id).order('created_at', { ascending: false });
       if (!error && data) setObjectives(data as Objective[]);
       setLoadingObj(false);
+
+      const { data: fr } = await supabase
+        .from('friendships')
+        .select('requester_id, receiver_id')
+        .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .eq('status', 'accepted');
+      const ids = (fr || []).map(f => (f.requester_id === user.id ? f.receiver_id : f.requester_id));
+      if (ids.length > 0) {
+        const { data: us } = await supabase.from('users').select('id, full_name, avatar_url').in('id', ids).order('full_name');
+        const list = (us || []) as { id: string; full_name: string; avatar_url?: string | null }[];
+        const signed = await signMany(list.map(u => u.avatar_url));
+        list.forEach(u => { if (u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });
+        // L'ami du duo en premier, pour qu'on le voie coché sans faire défiler.
+        if (duoWith) list.sort((a, b) => (a.id === duoWith ? -1 : b.id === duoWith ? 1 : 0));
+        setFriends(list);
+        const { data: cf } = await supabase.from('close_friends').select('friend_id').eq('owner_id', user.id);
+        setCloseIds(new Set((cf || []).map((c: any) => c.friend_id)));
+      }
     };
     load();
   }, []);
 
   const obj = objectives[selectedObj];
+  // Un objectif privé n'est visible que par soi : identifier quelqu'un n'aurait pas de sens.
+  const taggable = obj?.visibility === 'close' ? friends.filter(f => closeIds.has(f.id)) : friends;
+  const canTag = !!obj && obj.visibility !== 'private' && taggable.length > 0;
+
+  const toggleWith = (id: string) => {
+    Haptics.selectionAsync().catch(() => {});
+    setWithIds(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= MAX_DUO) { Alert.alert('Séance en duo', `${MAX_DUO} amis maximum.`); return prev; }
+      return [...prev, id];
+    });
+  };
 
   // Un objectif chiffré (4 séances, 10 km...) se compte dans son unité, pas en
   // pourcentage : `value` est toujours la vraie valeur, le pourcentage n'en est
@@ -56,15 +107,51 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
     }
   }, [selectedObj, objectives]);
 
+  // Garde un média choisi (photo ou vidéo) après vérification de la durée et du poids.
+  const acceptAsset = (asset: ImagePicker.ImagePickerAsset) => {
+    if (asset.type === 'video') {
+      if (asset.duration && asset.duration > (VIDEO_MAX_SEC + 0.5) * 1000) {
+        Alert.alert('Vidéo trop longue', `${VIDEO_MAX_SEC} secondes maximum. Coupe-la puis réessaie.`);
+        return;
+      }
+      if (asset.fileSize && asset.fileSize > VIDEO_MAX_MB * 1024 * 1024) {
+        Alert.alert('Vidéo trop lourde', 'Essaie une vidéo plus courte ou filme directement depuis Reiz.');
+        return;
+      }
+      setMediaType('video');
+    } else {
+      setMediaType('image');
+    }
+    setPhotoUri(asset.uri);
+  };
+
   const handlePickPhoto = async () => {
-    Alert.alert('Ajouter une photo', 'Choisis une option', [
+    const needCamera = async () => {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la caméra dans les réglages.'); return false; }
+      return true;
+    };
+    Alert.alert('Photo ou vidéo', `Vidéo : ${VIDEO_MAX_SEC} secondes maximum`, [
       {
         text: 'Prendre une photo',
         onPress: async () => {
-          const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la caméra dans les réglages.'); return; }
+          if (!(await needCamera())) return;
           const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [4, 3] });
-          if (!result.canceled) setPhotoUri(result.assets[0].uri);
+          if (!result.canceled) acceptAsset(result.assets[0]);
+        }
+      },
+      {
+        text: 'Filmer une vidéo',
+        onPress: async () => {
+          if (!(await needCamera())) return;
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ['videos'],
+            videoMaxDuration: VIDEO_MAX_SEC,
+            // 720p suffit largement pour un écran de téléphone et divise le poids par ~4.
+            videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
+            videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium,
+          });
+          if (!result.canceled) acceptAsset(result.assets[0]);
         }
       },
       {
@@ -72,10 +159,19 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la galerie dans les réglages.'); return; }
-          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [4, 3] });
-          if (!result.canceled) setPhotoUri(result.assets[0].uri);
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images', 'videos'],
+            quality: 0.7,
+            // Sur iPhone, allowsEditing permet aussi de couper une vidéo trop longue.
+            allowsEditing: true,
+            aspect: [4, 3],
+            videoMaxDuration: VIDEO_MAX_SEC,
+            videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
+          });
+          if (!result.canceled) acceptAsset(result.assets[0]);
         }
       },
+      ...(photoUri ? [{ text: 'Retirer', style: 'destructive' as const, onPress: () => { setPhotoUri(null); setMediaType('image'); } }] : []),
       { text: 'Annuler', style: 'cancel' }
     ]);
   };
@@ -84,7 +180,11 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
   // sont signées au moment de l'affichage.
   const uploadPhoto = async (uri: string, userId: string): Promise<string | null> => {
     setUploadingPhoto(true);
-    const { path, error } = await uploadImage(`${userId}/${Date.now()}.jpg`, uri);
+    // L'extension du fichier sert à reconnaître une vidéo à l'affichage (voir isVideo).
+    const isMov = /\.mov$/i.test(uri);
+    const { path, error } = mediaType === 'video'
+      ? await uploadFile(`${userId}/${Date.now()}.${isMov ? 'mov' : 'mp4'}`, uri, isMov ? 'video/quicktime' : 'video/mp4')
+      : await uploadImage(`${userId}/${Date.now()}.jpg`, uri);
     setUploadingPhoto(false);
     if (error) { Alert.alert('Erreur upload', frError(error)); return null; }
     return path;
@@ -96,7 +196,11 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setPublishing(false); Alert.alert('Erreur', 'Tu dois être connecté.'); return; }
     let photoUrl: string | null = null;
-    if (photoUri) photoUrl = await uploadPhoto(photoUri, user.id);
+    if (photoUri) {
+      photoUrl = await uploadPhoto(photoUri, user.id);
+      // Échec d'envoi : on s'arrête là plutôt que de publier sans le média choisi.
+      if (!photoUrl) { setPublishing(false); return; }
+    }
     // progress_value = pourcentage (0-100), c'est ce que le feed affiche.
     // current_value = valeur absolue dans l'unité de l'objectif (séances, km...),
     // affichée partout ailleurs. Les deux sont calculées à partir du même compteur.
@@ -108,6 +212,8 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
       caption: caption || obj.title,
       progress_value: pct,
       photo_url: photoUrl,
+      // Seulement les amis encore autorisés (changement d'objectif après avoir coché).
+      with_user_ids: canTag ? withIds.filter(id => taggable.some(f => f.id === id)) : [],
     });
     if (!error) {
       await supabase.from('objectives').update({ current_value: absoluteValue }).eq('id', obj.id);
@@ -138,15 +244,16 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
         <TouchableOpacity style={s.postPhotoZone} onPress={handlePickPhoto} activeOpacity={0.85}>
           {photoUri
             ? <>
-                <Image source={{ uri: photoUri }} style={s.postPhotoImg} resizeMode="cover" />
+                {mediaType === 'video'
+                  ? <VideoPreview uri={photoUri} />
+                  : <Image source={{ uri: photoUri }} style={s.postPhotoImg} resizeMode="cover" />}
                 <View style={s.postPhotoChangeBadge}>
                   <Text style={s.postPhotoChangeText}>Changer</Text>
                 </View>
               </>
             : <View style={s.postPhotoEmpty}>
-                <Ionicons name="camera-outline" size={34} color="#666" />
-                <Text style={s.postPhotoEmptyText}>Ajoute une photo</Text>
-                <Text style={s.postPhotoEmptyHint}>Optionnel, mais fortement recommandé</Text>
+                <Text style={s.postPhotoEmptyText}>Ajoute une photo ou une vidéo</Text>
+                <Text style={s.postPhotoEmptyHint}>Vidéo : {VIDEO_MAX_SEC} secondes max</Text>
               </View>
           }
         </TouchableOpacity>
@@ -169,6 +276,36 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
                   ))}
                 </ScrollView>
           }
+
+          {/* Avec qui ? (séance en duo) */}
+          {canTag && <>
+            <Text style={[s.postLabel, { marginTop: 28 }]}>AVEC QUI ? (FACULTATIF)</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ gap: 14, paddingHorizontal: 20 }}>
+              {taggable.map(f => {
+                const on = withIds.includes(f.id);
+                return (
+                  <TouchableOpacity key={f.id} onPress={() => toggleWith(f.id)} activeOpacity={0.8} style={{ alignItems: 'center', width: 60 }} accessibilityLabel={`${on ? 'Retirer' : 'Identifier'} ${f.full_name}`}>
+                    <View style={{ width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: on ? '#fff' : 'transparent', padding: 2 }}>
+                      {f.avatar_url
+                        ? <Image source={{ uri: f.avatar_url }} style={{ width: '100%', height: '100%', borderRadius: 24 }} />
+                        : <View style={{ flex: 1, borderRadius: 24, backgroundColor: '#2a2a2a', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontFamily: F.bold }}>{f.full_name.charAt(0).toUpperCase()}</Text></View>}
+                      {on && (
+                        <View style={{ position: 'absolute', right: -2, bottom: -2, width: 18, height: 18, borderRadius: 9, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+                          <Ionicons name="checkmark" size={12} color="#000" />
+                        </View>
+                      )}
+                    </View>
+                    <Text numberOfLines={1} style={{ color: on ? '#fff' : '#888', fontSize: 11, fontFamily: F.semibold, marginTop: 5 }}>{f.full_name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            {withIds.length > 0 && (
+              <Text style={{ color: '#777', fontSize: 12, marginTop: 8 }}>
+                Ils seront prévenus et pourront poster leur séance en duo avec toi.
+              </Text>
+            )}
+          </>}
 
           {/* Progression */}
           {obj && <>
@@ -227,7 +364,10 @@ export function PostScreen({ onBack, onPublish }: { onBack: () => void, onPublis
           style={[s.cta, (!obj || publishing || uploadingPhoto) && s.btnDisabled]}
           onPress={!obj || publishing || uploadingPhoto ? undefined : handlePublish}>
           {publishing || uploadingPhoto
-            ? <ActivityIndicator color="#000" />
+            ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <ActivityIndicator color="#000" />
+                {uploadingPhoto && mediaType === 'video' && <Text style={s.ctaText}>Envoi de la vidéo...</Text>}
+              </View>
             : <Text style={s.ctaText}>Publier</Text>}
         </TouchableOpacity>
       </View>
