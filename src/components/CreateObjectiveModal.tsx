@@ -45,7 +45,10 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={s.modalContainer} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      {/* Même correctif que les commentaires : dans une feuille (pageSheet),
+          KeyboardAvoidingView calcule mal et le clavier cachait « Combien ? ».
+          Sur iOS, la ScrollView gère le clavier elle-même. */}
+      <KeyboardAvoidingView style={s.modalContainer} behavior="height" enabled={Platform.OS === 'android'}>
         <View style={s.modalHeader}>
           <TouchableOpacity onPress={() => { reset(); onClose(); }}><Text style={s.modalCancel}>Annuler</Text></TouchableOpacity>
           <Text style={s.modalTitle}>Nouvel objectif</Text>
@@ -58,6 +61,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
         >
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>NOM DE L'OBJECTIF</Text>

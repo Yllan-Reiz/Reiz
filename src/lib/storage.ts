@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, SUPABASE_ANON_KEY } from './supabase';
 
 // Le bucket "updates" est privé : les fichiers ne sont accessibles que via une
 // URL signée, valable un temps limité. On stocke donc en base le CHEMIN du
@@ -54,6 +54,37 @@ export async function uploadFile(
       .upload(path, arrayBuffer, { contentType, upsert });
     if (error) return { path: null, error };
     return { path, error: null };
+  } catch (e: any) {
+    return { path: null, error: e };
+  }
+}
+
+/**
+ * Envoi d'une vidéo. On ne passe PAS par fetch(uri).arrayBuffer() comme pour
+ * les photos : ça recopie tout le fichier dans la mémoire JavaScript, et sur
+ * Android une vidéo de 20 à 60 Mo plantait avant même de partir (27/09/2026).
+ * Ici, le serveur fournit une adresse d'envoi à usage unique et on lui envoie
+ * un Blob : React Native le garde côté natif et l'envoie depuis le disque.
+ * (Une première version passait par expo-file-system : sa version native,
+ * plus récente que celle d'Expo, faisait planter Android au lancement.)
+ */
+export async function uploadVideo(
+  path: string,
+  uri: string,
+  contentType: string
+): Promise<{ path: string | null; error: { message?: string } | null }> {
+  try {
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(path);
+    if (error || !data) return { path: null, error: error || { message: "Pas d'adresse d'envoi" } };
+    const file = await (await fetch(uri)).blob();
+    const res = await fetch(data.signedUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': contentType, 'x-upsert': 'false', apikey: SUPABASE_ANON_KEY },
+      body: file,
+    });
+    if (res.ok) return { path, error: null };
+    const body = await res.text().catch(() => '');
+    return { path: null, error: { message: `HTTP ${res.status} ${body.slice(0, 160)}` } };
   } catch (e: any) {
     return { path: null, error: e };
   }

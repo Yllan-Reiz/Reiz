@@ -6,7 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
-import { uploadImage, uploadFile, signMany } from '../lib/storage';
+import { uploadImage, uploadVideo, signMany } from '../lib/storage';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Objective } from '../lib/types';
 import { s, F } from '../styles';
@@ -183,10 +183,18 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
     // L'extension du fichier sert à reconnaître une vidéo à l'affichage (voir isVideo).
     const isMov = /\.mov$/i.test(uri);
     const { path, error } = mediaType === 'video'
-      ? await uploadFile(`${userId}/${Date.now()}.${isMov ? 'mov' : 'mp4'}`, uri, isMov ? 'video/quicktime' : 'video/mp4')
+      ? await uploadVideo(`${userId}/${Date.now()}.${isMov ? 'mov' : 'mp4'}`, uri, isMov ? 'video/quicktime' : 'video/mp4')
       : await uploadImage(`${userId}/${Date.now()}.jpg`, uri);
     setUploadingPhoto(false);
-    if (error) { Alert.alert('Erreur upload', frError(error)); return null; }
+    if (error) {
+      // Message précis pour les vidéos : « trop lourde » se corrige, « réessaie » non.
+      const tooBig = /413|too large|exceeded the maximum/i.test(error.message || '');
+      Alert.alert(
+        mediaType === 'video' ? "La vidéo n'a pas pu partir" : 'Erreur upload',
+        tooBig ? 'Vidéo trop lourde (50 Mo max). Filme un peu plus court ou en qualité réduite.' : frError(error),
+      );
+      return null;
+    }
     return path;
   };
 
@@ -230,7 +238,12 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
   };
 
   return (
-    <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    // Clavier : sur iPhone, KeyboardAvoidingView remontait le bouton « Publier »
+    // (fixé en bas) pile sur le champ Légende, sans faire défiler jusqu'au champ.
+    // On le coupe sur iOS et on laisse la ScrollView gérer le clavier elle-même
+    // (automaticallyAdjustKeyboardInsets) : le champ touché reste visible, le
+    // bouton reste sous le clavier. Android garde l'ancien comportement.
+    <KeyboardAvoidingView style={s.container} behavior="height" enabled={Platform.OS === 'android'}>
       <View style={[s.header, { paddingTop: insets.top + 6 }]}>
         <TouchableOpacity style={s.backBtn} onPress={onBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Ionicons name="chevron-back" size={20} color="#888" />
@@ -239,7 +252,13 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
         <View style={{ width: 34 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
+        automaticallyAdjustKeyboardInsets
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Photo */}
         <TouchableOpacity style={s.postPhotoZone} onPress={handlePickPhoto} activeOpacity={0.85}>
           {photoUri
