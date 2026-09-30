@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Reiz reel 01</title>
+<style>
+  @font-face { font-family: Inter; font-weight: 400; src: url(fonts/Inter_400Regular.ttf); }
+  @font-face { font-family: Inter; font-weight: 600; src: url(fonts/Inter_600SemiBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 800; src: url(fonts/Inter_800ExtraBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 900; src: url(fonts/Inter_900Black.ttf); }
+  :root { --bg: #0a0a0a; --card: #141414; --line: #2a2a2a; --track: #222; --muted: #999; --dim: #8a8a8a; --green: #fff; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
+  body { font-family: Inter, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; position: relative; }
+
+  /* zone sûre Reels : x 90 à 850, y 230 à 1440 */
+  .scene { position: absolute; left: 90px; top: 0; width: 760px; height: 1920px; opacity: 0; }
+  .stack { position: absolute; left: 0; right: 0; top: 330px; }
+  h1 { font-weight: 900; letter-spacing: -.045em; line-height: .98; }
+  .t120 { font-size: 120px; }
+  .t96 { font-size: 96px; }
+  .t84 { font-size: 84px; line-height: 1.02; }
+  .g { color: var(--green); }
+  .w { display: inline-block; will-change: transform, opacity; }
+
+  /* 1 */
+  .bar { position: relative; height: 18px; border-radius: 9px; background: var(--track); margin-top: 90px; }
+  .bar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 9px; background: #fff; }
+  .bar em { position: absolute; top: 50%; width: 46px; height: 46px; border-radius: 50%; background: var(--bg); border: 7px solid #fff; transform: translate(-50%, -50%); }
+  .lbl { display: flex; justify-content: space-between; margin-top: 30px; font-size: 34px; font-weight: 600; color: var(--dim); }
+
+  /* cartes appli */
+  .card { background: var(--card); border: 2px solid var(--line); border-radius: 40px; padding: 38px 42px; }
+  .row { display: flex; align-items: center; gap: 26px; }
+  .av { width: 92px; height: 92px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 40px; font-weight: 800; color: #000; }
+  .name { font-size: 38px; font-weight: 800; }
+  .meta { font-size: 30px; color: var(--dim); margin-top: 4px; }
+  .msg { font-size: 42px; line-height: 1.32; margin-top: 24px; color: #e6e6e6; }
+
+  .proof { border-radius: 40px; overflow: hidden; border: 2px solid var(--line); background: var(--card); margin-top: 70px; }
+  .proof img { display: block; width: 100%; height: 520px; object-fit: cover; object-position: 50% 62%; }
+  .proof .foot { padding: 32px 40px; }
+  .proof .top { display: flex; justify-content: space-between; font-size: 36px; font-weight: 700; }
+  .dots { display: flex; gap: 16px; margin-top: 26px; }
+  .dots i { flex: 1; height: 22px; border-radius: 11px; background: var(--track); }
+
+  .avs { display: flex; margin-top: 90px; }
+  .avs .av { width: 150px; height: 150px; font-size: 62px; border: 8px solid var(--bg); margin-right: -26px; box-shadow: 0 0 0 5px var(--green); }
+  .seen { font-size: 40px; color: var(--muted); margin-top: 56px; }
+  .seen b { color: #fff; }
+
+  .logo { width: 430px; display: block; }
+  .kw { display: inline-block; white-space: nowrap; font-size: 46px; font-weight: 900; letter-spacing: .03em; color: #000; background: var(--green); border-radius: 26px; padding: 18px 34px; }
+  .small { font-size: 42px; color: var(--muted); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- 1  0 à 2,4 s : accroche -->
+<div class="scene" id="s1"><div class="stack" style="top: 470px">
+  <h1 class="t120"><span class="w">La</span> <span class="w">motivation</span> <span class="w">dure</span> <span class="w g">3 semaines.</span></h1>
+  <div class="bar"><span id="b1"></span><em id="d1"></em></div>
+  <div class="lbl"><span>semaine 1</span><span>semaine 3</span></div>
+</div></div>
+
+<!-- 2  2,4 à 4,4 s -->
+<div class="scene" id="s2"><div class="stack" style="top: 590px">
+  <h1 class="t120"><span class="w">Tes potes,</span></h1>
+  <h1 style="font-size: 260px; margin-top: 10px" class="g"><span class="w">3 ans.</span></h1>
+</div></div>
+
+<!-- 3  4,4 à 7,6 s -->
+<div class="scene" id="s3"><div class="stack" style="top: 380px">
+  <h1 class="t84">Parce qu'eux remarquent quand tu lâches.</h1>
+  <div class="card c" style="margin-top: 80px">
+    <div class="row"><div class="av" style="background:#f5c26b">N</div><div><div class="name">Nathan</div><div class="meta">a commenté ton objectif</div></div></div>
+    <div class="msg">T'étais pas à la salle hier ? 👀</div>
+  </div>
+  <div class="card c" style="margin-top: 28px">
+    <div class="row"><div class="av" style="background:#8fb8ff">S</div><div><div class="name">Sarah</div><div class="meta">a posté sa séance</div></div></div>
+    <div class="msg">Moi j'y suis allée 💪</div>
+  </div>
+</div></div>
+
+<!-- 4  7,6 à 10,6 s -->
+<div class="scene" id="s4"><div class="stack" style="top: 330px">
+  <h1 class="t84">Sur Reiz, tu postes ta séance.</h1>
+  <div class="proof">
+    <img src="assets/photo-seance.jpg" alt="">
+    <div class="foot">
+      <div class="top"><span>💪 Aller à la salle</span><span class="g" id="cnt">1 séance sur 4</span></div>
+      <div class="dots"><i></i><i></i><i></i><i></i></div>
+    </div>
+  </div>
+</div></div>
+
+<!-- 5  10,6 à 12,5 s -->
+<div class="scene" id="s5"><div class="stack" style="top: 560px">
+  <h1 class="t96" style="font-size: 86px; white-space: nowrap">Ton cercle la voit.</h1>
+  <div class="avs">
+    <div class="av" style="background:#f5c26b">N</div>
+    <div class="av" style="background:#8fb8ff">S</div>
+    <div class="av" style="background:#ff9ec4">I</div>
+    <div class="av" style="background:#b9a4ff">H</div>
+    <div class="av" style="background:#7fe0d0">M</div>
+  </div>
+  <div class="seen">👀 Vue par <b>Nathan</b>, <b>Sarah</b> et 3 autres</div>
+</div></div>
+
+<!-- 6  12,5 à 14,5 s : fin et boucle -->
+<div class="scene" id="s6"><div class="stack" style="top: 540px">
+  <div class="small">Oublie la motivation.</div>
+  <img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz" style="margin-top: 60px">
+  <div style="margin-top: 110px" class="small">Le 10 octobre sur iPhone</div>
+  <div style="margin-top: 26px"><span class="kw">Abonne-toi pour la sortie</span></div>
+</div></div>
+
+<script>
+const DUR = 16;
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const cl = x => Math.max(0, Math.min(1, x));
+const seg = (t, a, b) => cl((t - a) / (b - a));
+const out3 = x => 1 - Math.pow(1 - x, 3);
+const back = x => { const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+
+const SC = [['s1', 0, 2.4], ['s2', 2.4, 4.4], ['s3', 4.4, 7.6], ['s4', 7.6, 10.6], ['s5', 10.6, 12.5], ['s6', 12.5, DUR + 1]];
+
+// entrée rapide + sortie rapide de chaque plan
+function scene(t, id, a, b) {
+  const el = $('#' + id);
+  const inn = id === 's1' ? 1 : out3(seg(t, a, a + .28));
+  const exit = out3(seg(t, b - .2, b));
+  el.style.opacity = t < a || t >= b ? 0 : inn * (1 - exit);
+  el.style.transform = `translateY(${(1 - inn) * 60 - exit * 50}px)`;
+  return t >= a && t < b;
+}
+function pop(el, t, a, d = .35, dy = 40) {
+  const k = seg(t, a, a + d);
+  el.style.opacity = cl(k * 2.5);
+  el.style.transform = `translateY(${(1 - back(k)) * dy}px) scale(${.92 + .08 * back(k)})`;
+}
+
+function render(t) {
+  // 1 : l'accroche est là dès l'image 1, les mots se posent vite, la barre avance puis cale
+  if (scene(t, ...SC[0])) {
+    $$('#s1 .w').forEach((w, i) => { const k = back(seg(t, i * .1 - .1, i * .1 + .25)); w.style.transform = `translateY(${(1 - k) * 30}px)`; w.style.opacity = cl(.8 + k); });
+    const f = out3(seg(t, 0, 1.3)) * 31;
+    $('#b1').style.width = f + '%'; $('#d1').style.left = f + '%';
+    const stall = seg(t, 1.35, 1.7);
+    $('#b1').style.background = `rgb(${255 - stall * 180},${255 - stall * 180},${255 - stall * 180})`;
+    $('#d1').style.borderColor = $('#b1').style.background;
+    $('#d1').style.transform = `translate(calc(-50% + ${Math.sin(t * 60) * 5 * stall * (1 - seg(t, 1.7, 2.1))}px), -50%)`;
+  }
+  // 2 : réponse
+  if (scene(t, ...SC[1])) {
+    const w = $$('#s2 .w');
+    pop(w[0], t, 2.45, .3, 30);
+    const k = seg(t, 2.85, 3.3);
+    w[1].style.opacity = cl(k * 3);
+    w[1].style.transform = `scale(${.6 + .4 * back(k)})`;
+    w[1].style.transformOrigin = 'left center';
+  }
+  // 3 : les notifications tombent
+  if (scene(t, ...SC[2])) {
+    const c = $$('#s3 .c');
+    pop(c[0], t, 5.0, .4, -80);
+    pop(c[1], t, 5.9, .4, -80);
+  }
+  // 4 : la séance se remplit
+  if (scene(t, ...SC[3])) {
+    const img = $('#s4 img');
+    img.style.transform = `scale(${1.12 - .08 * seg(t, 7.6, 10.6)})`;
+    const d = $$('#s4 .dots i'); const T = [8.2, 8.7, 9.2];
+    let n = 0;
+    d.forEach((el, i) => { const on = i < 3 && t >= T[i]; if (on) n = i + 1; el.style.background = on ? 'var(--green)' : 'var(--track)'; el.style.transform = on ? `scaleY(${1 + .5 * (1 - seg(t, T[i], T[i] + .25))})` : ''; });
+    $('#cnt').textContent = `${Math.max(1, n)} séance${n > 1 ? 's' : ''} sur 4`;
+    $('#cnt').style.opacity = n ? 1 : 0;
+  }
+  // 5 : le cercle apparaît
+  if (scene(t, ...SC[4])) {
+    $$('#s5 .avs .av').forEach((a, i) => pop(a, t, 10.8 + i * .12, .35, 50));
+    pop($('#s5 .seen'), t, 11.6, .3, 20);
+  }
+  // 6 : fin, la dernière ligne rappelle le mot de l'accroche
+  if (scene(t, ...SC[5])) {
+    pop($('#s6 .logo'), t, 12.7, .4, 30);
+    const kw = $('#s6 .kw'); pop(kw, t, 13.1, .4, 30);
+  }
+}
+window.render = render;
+Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => {}))]).then(() => { render(Number(new URLSearchParams(location.search).get('t') || 0)); window.__ready = true; });
+</script>
+</body>
+</html>

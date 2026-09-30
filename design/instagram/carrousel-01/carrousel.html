@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Reiz carrousel 01</title>
+<style>
+  @font-face { font-family: Inter; font-weight: 400; src: url(fonts/Inter_400Regular.ttf); }
+  @font-face { font-family: Inter; font-weight: 600; src: url(fonts/Inter_600SemiBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 800; src: url(fonts/Inter_800ExtraBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 900; src: url(fonts/Inter_900Black.ttf); }
+
+  :root {
+    --bg: #0a0a0a;
+    --card: #141414;
+    --line: #2a2a2a;
+    --track: #222;
+    --text: #fff;
+    --muted: #999;
+    --dim: #8a8a8a;
+    --green: #3ddc84;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #000; }
+  body { font-family: Inter, sans-serif; color: var(--text); -webkit-font-smoothing: antialiased; }
+  body.single { width: 1080px; height: 1350px; overflow: hidden; }
+  body:not(.single) { display: grid; gap: 40px; padding: 40px; justify-content: center; }
+
+  .slide {
+    position: relative; width: 1080px; height: 1350px; overflow: hidden;
+    background: var(--bg);
+    padding: 120px;
+    display: flex; flex-direction: column;
+  }
+  body.single .slide:not(.on) { display: none; }
+
+  /* entête et pied communs */
+  .top { display: flex; align-items: center; justify-content: space-between; height: 44px; }
+  .logo { height: 40px; }
+  .count { font-size: 30px; font-weight: 600; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .bars { display: flex; gap: 10px; margin-top: auto; }
+  .bars i { flex: 1; height: 6px; border-radius: 3px; background: var(--track); }
+  .bars i.on { background: var(--text); }
+  .body { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 40px 0; }
+
+  /* typo */
+  .kicker { font-size: 30px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--green); margin-bottom: 36px; }
+  h1 { font-weight: 900; letter-spacing: -.045em; line-height: .98; }
+  .xl { font-size: 124px; }
+  .l { font-size: 96px; }
+  .m { font-size: 80px; line-height: 1.04; }
+  p.sub { font-size: 44px; line-height: 1.38; color: var(--muted); margin-top: 40px; font-weight: 400; letter-spacing: -.01em; }
+  p.sub b { color: var(--text); font-weight: 600; }
+  .g { color: var(--green); }
+  .dimtxt { color: var(--dim); }
+
+  /* 1. couverture : la ligne qui cale */
+  .stall { margin-top: 80px; position: relative; height: 16px; border-radius: 8px; background: var(--track); }
+  .stall span { position: absolute; left: 0; top: 0; bottom: 0; width: 31%; border-radius: 8px; background: var(--text); }
+  .stall em { position: absolute; left: 31%; top: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border-radius: 50%; background: var(--bg); border: 6px solid var(--text); }
+  .stall-lbl { display: flex; justify-content: space-between; margin-top: 28px; font-size: 30px; font-weight: 600; color: var(--dim); }
+  .swipe { font-size: 32px; font-weight: 600; color: var(--muted); margin-bottom: 40px; }
+
+  /* cartes façon appli */
+  .card { background: var(--card); border: 2px solid var(--line); border-radius: 36px; padding: 36px 40px; }
+  .row { display: flex; align-items: center; gap: 24px; }
+  .av { width: 84px; height: 84px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 36px; font-weight: 800; color: #000; }
+  .name { font-size: 34px; font-weight: 800; }
+  .meta { font-size: 28px; color: var(--dim); margin-top: 4px; }
+  .msg { font-size: 38px; line-height: 1.35; margin-top: 22px; color: #ddd; }
+
+  /* 4. preuve photo */
+  .proof { margin-top: 56px; border-radius: 36px; overflow: hidden; border: 2px solid var(--line); background: var(--card); }
+  .proof img { display: block; width: 100%; height: 400px; object-fit: cover; object-position: 50% 62%; }
+  .proof .foot { padding: 28px 36px; display: flex; justify-content: space-between; align-items: center; font-size: 32px; font-weight: 600; }
+
+  /* 5. séances vs pourcent */
+  .versus { margin-top: 64px; display: grid; gap: 28px; }
+  .versus .card { padding: 40px; }
+  .bad { font-size: 88px; font-weight: 900; letter-spacing: -.04em; color: #444; text-decoration: line-through; text-decoration-thickness: 8px; text-decoration-color: #444; }
+  .good { font-size: 64px; font-weight: 900; letter-spacing: -.035em; }
+  .dots { display: flex; gap: 16px; margin-top: 28px; }
+  .dots i { flex: 1; height: 20px; border-radius: 10px; background: var(--track); }
+  .dots i.on { background: var(--green); }
+
+  /* 6. cercles */
+  .circles { margin-top: 64px; display: grid; gap: 24px; }
+  .chip { display: flex; align-items: center; justify-content: space-between; padding: 34px 40px; border-radius: 32px; font-size: 40px; font-weight: 800; border: 2px solid var(--line); background: var(--card); }
+  .chip small { font-size: 30px; font-weight: 400; color: var(--muted); }
+  .chip.close { border-color: var(--green); background: rgba(61, 220, 132, .08); }
+  .chip.close .star { color: var(--green); margin-right: 18px; }
+
+  /* 7. récap */
+  .recap { list-style: none; margin-top: 56px; display: grid; gap: 0; }
+  .recap li { display: flex; gap: 36px; align-items: baseline; padding: 34px 0; border-top: 2px solid var(--line); font-size: 54px; font-weight: 800; letter-spacing: -.025em; }
+  .recap li:last-child { border-bottom: 2px solid var(--line); }
+  .recap li b { color: var(--green); font-weight: 900; font-size: 54px; width: 44px; flex: none; }
+
+  /* 8. action */
+  .cta-box { margin-top: 64px; border: 3px dashed var(--line); border-radius: 36px; padding: 40px; display: flex; align-items: center; gap: 28px; }
+  .cta-box .kw { font-size: 44px; font-weight: 900; letter-spacing: .04em; color: #000; background: var(--green); border-radius: 20px; padding: 14px 26px; }
+  .cta-box span { font-size: 34px; color: var(--muted); line-height: 1.35; }
+  .big-logo { height: 76px; margin-top: 72px; align-self: flex-start; }
+</style>
+</head>
+<body>
+
+<!-- 1 COUVERTURE -->
+<section class="slide" data-n="1">
+  <div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div>
+  <div class="body">
+    <h1 class="xl">Pourquoi tu <span class="g">lâches</span> tes objectifs</h1>
+    <p class="sub">Et ce qui m'a fait tenir.</p>
+    <div class="stall"><span></span><em></em></div>
+    <div class="stall-lbl"><span>1er janvier</span><span>fin janvier</span></div>
+  </div>
+  <div class="swipe">Glisse →</div>
+  <div class="bars"></div>
+</section>
+
+<!-- 2 L'ENJEU -->
+<section class="slide" data-n="2">
+  <div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div>
+  <div class="body">
+    <h1 class="l">Seul, personne ne remarque quand tu arrêtes.</h1>
+    <h1 class="l g" style="margin-top: 48px">Même pas toi.</h1>
+  </div>
+  <div class="bars"></div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-n="3">
+  <div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div>
+  <div class="body">
+    <div class="kicker">01</div>
+    <h1 class="m">Personne ne te regarde</h1>
+    <p class="sub">Une appli de notes ne dit rien quand tu sautes une séance. <b>Tes amis, si.</b></p>
+    <div class="card" style="margin-top: 56px">
+      <div class="row">
+        <div class="av" style="background:#f5c26b">N</div>
+        <div><div class="name">Nathan</div><div class="meta">a commenté ton objectif</div></div>
+      </div>
+      <div class="msg">T'étais pas à la salle hier ? 👀</div>
+    </div>
+  </div>
+  <div class="bars"></div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-n="4">
+  <div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div>
+  <div class="body">
+    <div class="kicker">02</div>
+    <h1 class="m">Montre la preuve</h1>
+    <p class="sub">Une photo de ta séance vaut plus que dix bonnes résolutions.</p>
+    <div class="proof">
+      <img src="assets/photo-seance.jpg" alt="">
+      <div class="foot"><span>💪 Aller à la salle</span><span class="g">3 séances sur 4</span></div>
+    </div>
+  </div>
+  <div class="bars"></div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-n="5">
+  <div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div>
+  <div class="body">
+    <div class="kicker">03</div>
+    <h1 class="m">Compte en séances</h1>
+    <p class="sub">« 3 séances sur 4 », ça parle. « 75 % », ça ne motive personne.</p>
+    <div class="versus">
+      <div class="card"><div class="bad">75 %</div></div>
+      <div class="card">
+        <div class="good">3 séances <span class="dimtxt">sur 4</span></div>
+        <div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+      </div>
+    </div>
+  </div>
+  <div class="bars"></div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-n="6">
+  <div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div>
+  <div class="body">
+    <div class="kicker">04</div>
+    <h1 class="m">Choisis qui te voit</h1>
+    <p class="sub">Ton cercle proche pour le perso, tes amis pour le reste.</p>
+    <div class="circles">
+      <div class="chip close"><span><span class="star">★</span>Cercle proche</span><small>Perdre 5 kg</small></div>
+      <div class="chip"><span>Mes amis</span><small>Salle 4 fois / semaine</small></div>
+    </div>
+  </div>
+  <div class="bars"></div>
+</section>
+
+<!-- 7 RÉCAP -->
+<section class="slide" data-n="7">
+  <div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div>
+  <div class="body">
+    <div class="kicker">Récap</div>
+    <h1 class="m">Reiz fait les 4 pour toi</h1>
+    <ol class="recap">
+      <li><b>1</b>Un cercle qui te voit</li>
+      <li><b>2</b>Une preuve à chaque séance</li>
+      <li><b>3</b>Des chiffres concrets</li>
+      <li><b>4</b>Le bon public</li>
+    </ol>
+  </div>
+  <div class="bars"></div>
+</section>
+
+<!-- 8 ACTION -->
+<section class="slide" data-n="8">
+  <div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div>
+  <div class="body">
+    <div class="kicker">Bientôt sur l'App Store</div>
+    <h1 class="xl"><span class="g">Abonne-toi</span> pour la sortie</h1>
+    <p class="sub"><b>Reiz</b> arrive sur iPhone. Sois là le jour J.</p>
+    <img class="big-logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  </div>
+  <div class="bars"></div>
+</section>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  const total = slides.length;
+  slides.forEach((s, i) => {
+    s.querySelector('.count').textContent = `${i + 1}/${total}`;
+    s.querySelector('.bars').innerHTML = slides.map((_, j) => `<i class="${j <= i ? 'on' : ''}"></i>`).join('');
+  });
+  const n = new URLSearchParams(location.search).get('s');
+  if (n) {
+    document.body.classList.add('single');
+    slides[n - 1].classList.add('on');
+  }
+</script>
+</body>
+</html>

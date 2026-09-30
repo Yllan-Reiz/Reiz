@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Reiz profil</title>
+<style>
+  @font-face { font-family: Inter; font-weight: 600; src: url(fonts/Inter_600SemiBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 800; src: url(fonts/Inter_800ExtraBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 900; src: url(fonts/Inter_900Black.ttf); }
+  :root { --bg: #0a0a0a; --card: #141414; --line: #2a2a2a; --muted: #999; --green: #fff; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #000; }
+  body { font-family: Inter, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+  body.single { overflow: hidden; }
+  body.single > section:not(.on) { display: none; }
+  body:not(.single) { display: flex; flex-wrap: wrap; gap: 30px; padding: 30px; }
+
+  /* couvertures « à la une » : 1080x1920, Instagram garde le cercle central */
+  .hl { position: relative; width: 1080px; height: 1920px; background: var(--bg); display: grid; place-items: center; }
+  .hl .disc { width: 640px; height: 640px; border-radius: 50%; background: var(--card); border: 6px solid var(--line); display: grid; place-items: center; }
+  .hl svg { width: 300px; height: 300px; stroke: var(--green); stroke-width: 5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .hl img.b { width: 470px; }
+
+  /* bannière : 3 publications épinglées de 1080x1350 côte à côte */
+  .ban { position: relative; width: 3240px; height: 1350px; background: var(--bg); overflow: hidden; }
+  .ban .line { position: absolute; left: 0; right: 0; top: 890px; height: 10px; background: linear-gradient(90deg, #222 0%, #222 12%, #fff 40%, var(--green) 70%, var(--green) 100%); border-radius: 5px; }
+  .ban .dot { position: absolute; top: 895px; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: var(--bg); border: 8px solid var(--green); }
+  .ban h1 { position: absolute; font-weight: 900; letter-spacing: -.045em; line-height: .98; }
+  .ban .logo { position: absolute; left: 1620px; top: 420px; transform: translateX(-50%); width: 820px; }
+  .ban small { position: absolute; font-size: 44px; font-weight: 600; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<section class="hl" id="hl-appli"><div class="disc">
+  <svg viewBox="0 0 100 100"><rect x="30" y="12" width="40" height="76" rx="9"/><path d="M44 20h12"/><circle cx="50" cy="78" r="2.5"/></svg>
+</div></section>
+<section class="hl" id="hl-badges"><div class="disc"><img class="b" src="assets/premier-pas.png" alt=""></div></section>
+<section class="hl" id="hl-cercle"><div class="disc">
+  <svg viewBox="0 0 100 100"><circle cx="50" cy="36" r="11"/><path d="M30 76c2-12 10-19 20-19s18 7 20 19"/><circle cx="24" cy="44" r="8"/><path d="M10 74c1-8 6-13 13-14"/><circle cx="76" cy="44" r="8"/><path d="M90 74c-1-8-6-13-13-14"/></svg>
+</div></section>
+<section class="hl" id="hl-nouveau"><div class="disc">
+  <svg viewBox="0 0 100 100"><path d="M50 14l7 22 22 7-22 7-7 22-7-22-22-7 22-7z"/><path d="M78 66l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/></svg>
+</div></section>
+<section class="hl" id="hl-sortie"><div class="disc">
+  <svg viewBox="0 0 100 100"><rect x="16" y="22" width="68" height="62" rx="10"/><path d="M16 40h68M34 14v14M66 14v14"/><path d="M38 62l9 9 17-18"/></svg>
+</div></section>
+
+<section class="ban" id="banniere">
+  <div class="line"></div>
+  <div class="dot" style="left: 2900px"></div>
+  <h1 style="left: 120px; top: 380px; font-size: 150px">Tu postes<br>ta séance.</h1>
+  <small style="left: 124px; top: 960px">semaine 1</small>
+  <img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <small style="left: 1620px; top: 960px; transform: translateX(-50%); white-space: nowrap">Le sport entre potes</small>
+  <h1 style="left: 2280px; top: 380px; font-size: 150px">Ton cercle<br><span style="color: var(--green)">la voit.</span></h1>
+  <small style="left: 2780px; top: 960px">semaine 12</small>
+</section>
+
+<script>
+  const f = new URLSearchParams(location.search).get('f');
+  if (f) { document.body.classList.add('single'); document.getElementById(f).classList.add('on'); }
+</script>
+</body>
+</html>

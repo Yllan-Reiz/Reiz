@@ -45,3 +45,40 @@ export async function calculateStreak(userId: string): Promise<number> {
   }
   return streak;
 }
+
+// Lit le chiffre et l'unité dans le nom d'un objectif : « 170kg au bench » donne
+// 170 kg, « Aller à la salle 4 fois » donne 4 fois. Sert à proposer l'unité toute
+// seule à la création, et à sortir du pourcentage les objectifs créés sans chiffre.
+const GOAL_UNITS: [RegExp, string][] = [
+  [/^(kg|kilos?|kilogrammes?)$/, 'kg'],
+  [/^(km|kilom[eè]tres?)$/, 'km'],
+  [/^s[ée]ances?$/, 'séances'],
+  [/^(fois|x)$/, 'fois'],
+  [/^(min|mins|minutes?)$/, 'min'],
+  [/^(reps?|r[ée]p[ée]titions?|pompes|tractions|squats|abdos)$/, 'reps'],
+  [/^pas$/, 'pas'],
+  [/^(h|heures?)$/, 'h'],
+  [/^(lbs?|livres)$/, 'lbs'],
+  [/^(cal|kcal|calories?)$/, 'cal'],
+];
+export function parseGoal(title: string): { target: number; unit: string } | null {
+  const re = /(\d+(?:[.,]\d+)?)\s*([a-zA-ZÀ-ÿ]+)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(title))) {
+    const word = m[2].toLowerCase();
+    const hit = GOAL_UNITS.find(([r]) => r.test(word));
+    const target = Number(m[1].replace(',', '.'));
+    if (hit && target > 0) return { target, unit: hit[1] };
+  }
+  return null;
+}
+
+// Ancien objectif suivi en % dont le nom contient le chiffre : on l'affiche dans
+// sa vraie unité, la progression acquise est convertie. Rien n'est écrit en base
+// ici ; la publication suivante enregistre l'unité pour de bon.
+export function inUnit<T extends { title?: string; unit?: string; target_value?: number; current_value?: number }>(o: T): T {
+  const g = o.unit === '%' && o.title ? parseGoal(o.title) : null;
+  if (!g) return o;
+  const done = o.target_value && o.target_value > 0 ? Math.min((o.current_value || 0) / o.target_value, 1) : 0;
+  return { ...o, unit: g.unit, target_value: g.target, current_value: Math.round(done * g.target * 10) / 10 };
+}

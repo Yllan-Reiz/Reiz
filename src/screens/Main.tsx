@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, FlatList, Image, Alert, ActivityIndicator, Animated, Easing, Pressable, RefreshControl, StyleSheet, Platform, AppState } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { NAV_BOTTOM_MIN, navClearance } from '../constants';
 import { supabase } from '../lib/supabase';
-import { calculateStreak, frError } from '../lib/helpers';
+import { calculateStreak, frError, inUnit } from '../lib/helpers';
 import { signMany } from '../lib/storage';
 import { Update, Objective, FeedMeta } from '../lib/types';
 import { s, F } from '../styles';
@@ -20,7 +20,8 @@ import { FriendsTab } from './FriendsTab';
 import { ProfileScreen } from './ProfileScreen';
 import { FriendProfileScreen } from './FriendProfileScreen';
 import { ActivityScreen } from './ActivityScreen';
-import { attachDuoNames } from '../lib/posts';
+import { changelogUnseen } from '../lib/changelog';
+import { attachDuoNames, attachReactors } from '../lib/posts';
 
 const PAGE_SIZE = 20;
 const FEED_WINDOW_HOURS = 24;
@@ -103,6 +104,17 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   const [tab, setTab] = useState('feed');
   const [userId, setUserId] = useState<string | null>(null);
   const [updates, setUpdates] = useState<Update[]>([]);
+  // Duos auxquels j'ai déjà répondu : un de mes posts identifie l'auteur, publié après le sien.
+  const duoDone = useMemo(() => {
+    const done = new Set<string>();
+    if (!userId) return done;
+    const mine = updates.filter(q => q.user_id === userId);
+    updates.forEach(p => {
+      if (p.user_id === userId || !(p.with_user_ids || []).includes(userId)) return;
+      if (mine.some(q => (q.with_user_ids || []).includes(p.user_id!) && q.created_at > p.created_at)) done.add(p.id);
+    });
+    return done;
+  }, [updates, userId]);
   const [feedMeta, setFeedMeta] = useState<Record<string, FeedMeta>>({});
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [loadingFeed, setLoadingFeed] = useState(true);
@@ -148,7 +160,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     const id = uid ?? userId;
     if (!id) return;
     const { count } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('recipient_id', id).is('read_at', null);
-    setUnreadCount(count || 0);
+    // Les nouveautés de la version comptent pour une notification tant qu'elles n'ont pas été vues.
+    setUnreadCount((count || 0) + ((await changelogUnseen()) ? 1 : 0));
   };
 
   const fetchFriendCount = async (uid?: string | null) => {
@@ -180,7 +193,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     const since = new Date(Date.now() - FEED_WINDOW_HOURS * 3600 * 1000).toISOString();
     const { data, error } = await supabase
       .from('updates')
-      .select('id, caption, progress_value, created_at, photo_url, user_id, pinned_at, with_user_ids, objectives(visibility, unit, target_value), users(full_name, username, avatar_url)')
+      .select('id, caption, progress_value, created_at, photo_url, user_id, pinned_at, with_user_ids, objectives(visibility, unit, target_value, title, emoji), users(full_name, username, avatar_url)')
       .in('user_id', circleIds)
       .gte('created_at', since)
       .order('created_at', { ascending: false })
@@ -208,7 +221,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       ids.forEach(id => { meta[id] = { reactions: {}, mine: [], commentCount: 0 }; });
       if (ids.length > 0) {
         const [rRes, cRes] = await Promise.all([
-          supabase.from('reactions').select('update_id, type, user_id').in('update_id', ids),
+          supabase.from('reactions').select('update_id, type, user_id, created_at').in('update_id', ids),
           supabase.from('comments').select('update_id').in('update_id', ids),
         ]);
         (rRes.data || []).forEach((r: any) => {
@@ -217,6 +230,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
           if (r.user_id === uid) m.mine.push(r.type);
         });
         (cRes.data || []).forEach((c: any) => { const m = meta[c.update_id]; if (m) m.commentCount++; });
+        await attachReactors(rRes.data || [], meta);
       }
       if (offset === 0) { setUpdates(visible); setFeedMeta(meta); }
       else { setUpdates(prev => [...prev, ...visible]); setFeedMeta(prev => ({ ...prev, ...meta })); }
@@ -235,7 +249,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoadingObj(false); return; }
     const { data, error } = await supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility').eq('user_id', user.id).order('created_at', { ascending: false });
-    if (!error && data) setObjectives(data as Objective[]);
+    if (!error && data) setObjectives((data as Objective[]).map(inUnit));
     setLoadingObj(false);
   };
 
@@ -479,6 +493,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 currentUserId={userId}
                 isActive={item.id === activeId}
                 onDuoReply={(authorId) => onPost({ duoWith: authorId })}
+                onOpenProfile={openProfile}
+                duoDone={duoDone.has(item.id)}
                 onDeleted={() => { setUpdates(prev => prev.filter(x => x.id !== item.id)); fetchObjectives(true); }}
                 onBlocked={() => userId && loadFeedPage(0, userId, true)}
               />
@@ -535,12 +551,12 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                       </Text>
                     </View>
                   </View>
-                  <Text style={s.objCardSub}>{o.current_value} {o.unit} sur {o.target_value}</Text>
+                  <Text style={s.objCardSub}>{o.unit === '%' ? `${pct} %` : `${o.current_value} ${o.unit} sur ${o.target_value} ${o.unit}`}</Text>
                   <View style={s.objProgressRow}>
                     <View style={s.objProgressBg}>
                       <View style={[s.objProgressFill, { width: `${pct}%` as any }]} />
                     </View>
-                    <Text style={s.objPct}>{pct}%</Text>
+                    <Text style={s.objPct}>{o.unit === '%' ? `${pct}%` : `${o.current_value}/${o.target_value}`}</Text>
                   </View>
                   <TouchableOpacity style={s.updateBtn} onPress={() => onPost()}>
                     <Text style={s.updateBtnText}>+ Mise à jour</Text>

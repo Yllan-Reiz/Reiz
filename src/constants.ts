@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 // Landing officielle (Netlify) — utilisée par le lien CGU et les invitations.
 export const LANDING_URL = 'https://reiz-landing.netlify.app';
 export const CGU_URL = `${LANDING_URL}/cgu.html`;
@@ -7,14 +8,14 @@ export const PRIVACY_URL = `${LANDING_URL}/confidentialite.html`;
 // Le ?ref=pseudo permet d'auto-envoyer la demande d'ami au parrain à l'inscription.
 export const inviteUrl = (username: string) => `${LANDING_URL}/invite.html?ref=${encodeURIComponent(username)}`;
 
-export const EMOJI_LIST =['🎯','💪','🏃','📚','🧘','🚀','🏋️','🏦','💰','❤️','🎵','🎨','✍️','🧠','🌍','🏊','🚴','⚽','🎾','🍎','😴','💼','📈','🔥'];
+export const EMOJI_LIST =['🎯','💪','🏋️','🏃','🚴','🏊','🥊','⚽','🏀','🎾','🧗','🤸','🥇','🔥','⚡','🚀','❤️','🍎','💧','😴'];
 
 export const ALL_REACTION_EMOJIS = ['❤️','🔥','💪','👏','😮','🎯','⚡','🙌','💯','🏆','✨','🚀','😂','🥹','😍','🤩','😎','💀','😭','😅','🤯','🥳','👍','🫶','❤️‍🔥','💥','🧠','👀','🏃','🚴','🏊','🧘','🏋️','🥊','🏅','🥇','💧','🍎','🥑','🍌','🎉','🌟','💫'];
 
 // Unités proposées en un tap à la création d'un objectif. La roue complète
 // (UNITS) reste disponible derrière « Options ».
-export const QUICK_UNITS = ['séances', 'fois', 'km', 'min', 'reps', 'pas'];
-export const UNITS = ['%', 'km', 'm', 'kg', 'lbs', 'min', 'h', 'x', 'reps', 'séances', 'cal', 'pas', 'fois'];
+export const QUICK_UNITS = ['séances', 'kg', 'km', 'fois', 'min', 'reps', 'pas'];
+export const UNITS = ['km', 'm', 'kg', 'lbs', 'min', 'h', 'x', 'reps', 'séances', 'cal', 'pas', 'fois'];
 export const ITEM_H = 44;
 
 export const DURATION_OPTIONS: { label: string; value: number | null }[] = [
@@ -56,3 +57,6 @@ export function dayKeysFor(nbDays: number): string[] {
   }
   return keys;
 }
+
+// Version affichée dans les paramètres (vient de app.json, jamais saisie à la main).
+export const APP_VERSION = `${Constants.expoConfig?.version ?? '?'} (${Constants.expoConfig?.extra?.buildTag ?? 'dev'})`;

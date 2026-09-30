@@ -1,7 +1,24 @@
-# Fiche App Store Connect — Reiz
+# Fiche App Store Connect : Reiz
 
-Document de travail : chaque bloc est prêt à copier-coller dans le champ correspondant.
-Les limites de caractères d'Apple sont indiquées, le compte actuel est entre parenthèses.
+Sortie visée : **samedi 10 octobre 2026**, en publication manuelle.
+Date limite de soumission : **lundi 5 octobre au soir** (mardi 6 au plus tard).
+Mis à jour le 30 septembre 2026.
+
+Chaque bloc est prêt à copier-coller dans le champ correspondant.
+
+---
+
+## Calendrier
+
+| Quand | Quoi |
+|---|---|
+| Mer. 30/09 au ven. 02/10 | Compte de démo rempli, captures d'écran, nom de la fiche, build 6 |
+| Sam. 03/10 et dim. 04/10 | Build 6 testé sur ton iPhone via TestFlight, fiche complétée |
+| Lun. 05/10 | Soumission à la validation, option « Publier manuellement cette version » |
+| Mar. 06/10 au ven. 09/10 | Marge pour un refus : corriger, resoumettre |
+| Sam. 10/10 | Bouton « Publier cette version », puis lien App Store en bio Instagram et sur la landing |
+
+Après avoir appuyé sur le bouton, l'app met jusqu'à 24 h à apparaître partout. Pour une sortie le 10 au matin, appuie le 9 au soir.
 
 ---
 
@@ -9,29 +26,29 @@ Les limites de caractères d'Apple sont indiquées, le compte actuel est entre p
 
 | Champ | Valeur |
 |---|---|
-| Nom (30 max) | `Reiz` |
-| Sous-titre (30 max) | `Tes objectifs, ton cercle` (25) |
+| Nom (30 max) | `Reiz : objectifs entre amis` (27) |
+| Sous-titre (30 max) | `Ton cercle te regarde` (21) |
 | Catégorie principale | Forme et santé |
 | Catégorie secondaire | Réseaux sociaux |
 | Langue principale | Français |
 | Prix | Gratuit |
 | Bundle ID | `com.yllan.reiz` |
+| URL d'assistance | `https://reiz-landing.netlify.app` |
+| URL marketing | `https://reiz-landing.netlify.app` |
+| URL de confidentialité | `https://reiz-landing.netlify.app/confidentialite.html` |
+| Copyright | `2026 Yllan Karsenty` |
 
-Le sous-titre s'affiche sous le nom dans les résultats de recherche. Il est indexé
-par l'App Store, au même titre que le nom et les mots-clés.
+Le nom « Reiz » seul est déjà pris sur l'App Store : la fiche s'appelle encore « Reiz (25dc8e) ». Elle se renomme dans App Store Connect, Informations sur l'app, champ Nom. Le nom sous l'icône reste « Reiz ». Si « Reiz : objectifs entre amis » est refusé, solutions de repli : `Reiz : ton cercle te regarde`, `Reiz, objectifs en cercle`.
 
 ---
 
 ## Texte promotionnel (170 max)
 
-Modifiable à tout moment sans repasser en validation. À utiliser pour les annonces.
+Modifiable à tout moment sans repasser en validation.
 
 ```
-Reiz sort enfin. Choisis ton objectif, invite tes proches, et laisse leur regard
-faire ce que la motivation seule n'arrive pas à tenir.
+Choisis ton objectif, invite tes proches, poste ta séance. Leur regard fait ce que la motivation seule n'arrive pas à tenir.
 ```
-
-(148 caractères)
 
 ---
 
@@ -40,10 +57,7 @@ faire ce que la motivation seule n'arrive pas à tenir.
 ```
 La discipline seul, ça ne tient pas.
 
-Les applications de sport te demandent d'être motivé tout seul. Reiz fait
-l'inverse : elle met ton entourage dans la boucle. Tu choisis un objectif, tu
-invites les personnes qui comptent, et chacun voit la progression de l'autre,
-chaque jour.
+Les applications de sport te demandent d'être motivé tout seul. Reiz fait l'inverse : elle met ton entourage dans la boucle. Tu choisis un objectif, tu invites les personnes qui comptent, et chacun voit la progression de l'autre, jour après jour.
 
 Quand quelqu'un que tu respectes regarde, tu te lèves.
 
@@ -51,50 +65,48 @@ Quand quelqu'un que tu respectes regarde, tu te lèves.
 COMMENT ÇA MARCHE
 
 1. Fixe ton objectif
-Courir 10 km, 30 séances de sport, perdre 5 kg, méditer chaque matin. Tu choisis
-l'unité qui te parle et la durée sur laquelle tu t'engages.
+Aller à la salle 4 fois par semaine, soulever 170 kg au développé couché, courir 10 km. Un nom, un emoji, et si tu veux un chiffre : séances, km, minutes, répétitions.
 
 2. Invite ton cercle
-Trois proches suffisent. Pas des inconnus, pas des abonnés : les gens dont
-l'avis compte vraiment pour toi.
+Quelques proches suffisent. Pas des inconnus, pas des abonnés : les gens dont l'avis compte vraiment pour toi.
 
 3. Poste ta progression
-Une photo, un pourcentage, deux mots. Ton cercle voit où tu en es et te répond.
+Une photo ou une vidéo de 15 secondes, ta séance du jour, deux mots. Ton cercle voit où tu en es et te répond.
 
 
 CE QUE TU TROUVES DANS REIZ
 
 Un fil réservé à ton cercle
-Pas d'algorithme, pas d'inconnus, pas de recommandations. Uniquement les
-personnes que tu as choisies.
+Pas d'algorithme, pas de recommandations. Uniquement les personnes que tu as choisies, sur les dernières 24 heures.
+
+Des séances en duo
+Tu t'es entraîné avec un ami ? Identifie-le. Il peut poster sa version de la séance en un tap.
 
 Une série de jours qui compte
-Chaque jour où tu publies prolonge ta série. Elle s'arrête si tu t'arrêtes, et
-tes proches le voient aussi.
+Chaque jour où tu publies prolonge ta série. Elle s'arrête si tu t'arrêtes, et tes proches le voient aussi.
 
-Ton assiduité en un coup d'œil
-Chaque objectif affiche sa grille des jours tenus et des jours manqués, sur la
-durée que tu as fixée.
+Des badges qui se gagnent
+Premier pas, Régulier, Binôme, Inarrêtable : ton profil garde la trace de ce que tu as tenu.
 
-Réactions et commentaires
+Un profil qui te ressemble
+Tes posts épinglés, tes objectifs en cours et réussis, et des tags que tes amis peuvent valider.
+
+Réactions, commentaires, réponses
 Ton cercle réagit, t'encourage, te relance. C'est le moteur de l'app.
 
 
 LA CONFIDENTIALITÉ, PAR DÉFAUT
 
-Chaque objectif a sa visibilité : public, réservé à tes amis, ou strictement
-privé. Un objectif privé n'est visible que par toi, photos comprises.
+Chaque objectif a sa visibilité : ton cercle, ton cercle proche, public ou strictement privé. Un objectif privé n'est visible que par toi, photos et vidéos comprises.
 
-Tu peux bloquer un utilisateur, signaler un contenu, et supprimer ton compte et
-toutes tes données depuis l'app, à tout moment.
+Tu peux bloquer un utilisateur, signaler un contenu, et supprimer ton compte et toutes tes données depuis l'app, à tout moment.
 
 Reiz ne vend pas tes données et ne diffuse pas de publicité.
 
-
 Reiz est gratuit.
 
-Conditions d'utilisation : https://reizapp.netlify.app/cgu.html
-Confidentialité : https://reizapp.netlify.app/confidentialite.html
+Conditions d'utilisation : https://reiz-landing.netlify.app/cgu.html
+Confidentialité : https://reiz-landing.netlify.app/confidentialite.html
 ```
 
 ---
@@ -102,102 +114,138 @@ Confidentialité : https://reizapp.netlify.app/confidentialite.html
 ## Mots-clés (100 max, séparés par des virgules, sans espace)
 
 ```
-objectif,motivation,habitude,discipline,progression,defi,entrainement,amis,routine,suivi,serie
+motivation,habitude,discipline,progression,defi,sport,salle,musculation,running,routine,suivi,serie
 ```
 
-(94 caractères)
+(99 caractères. Aucun mot déjà présent dans le nom ou le sous-titre.)
 
-Trois règles respectées ici : aucun mot déjà présent dans le nom ou le
-sous-titre (Apple les indexe séparément, les répéter gaspille des caractères),
-aucun nom de concurrent, et pas de pluriels inutiles — l'App Store gère les
-variantes seul.
+---
+
+## Nouveautés de cette version
+
+Champ absent pour une toute première version. Rien à remplir.
 
 ---
 
 ## Notes pour l'examinateur
 
-C'est le champ le plus souvent bâclé, et une cause fréquente de rejet pour une
-app sociale : sans contenu ni amis, un examinateur voit un écran vide et conclut
-que l'app est incomplète.
+À coller dans Vérification de l'app, avec les identifiants dans les champs « Connexion requise ».
 
 ```
-Bonjour,
+Hello,
 
-Reiz est une application de suivi d'objectifs où la progression est partagée
-avec un cercle de proches choisis.
+Reiz is a goal-tracking app where progress is shared with a small circle of chosen friends. The interface is in French.
 
-COMPTE DE DÉMONSTRATION
-Email : [À COMPLÉTER]
-Mot de passe : [À COMPLÉTER]
+DEMO ACCOUNT
+Email: demo.apple@reiz.test
+Password: [À COMPLÉTER]
 
-Ce compte contient déjà des objectifs en cours, des publications et un ami
-accepté, afin que le fil et le profil soient représentatifs de l'expérience
-réelle dès la connexion.
+This account already has ongoing goals, posts and an accepted friend, so the feed and the profile show the real experience right after sign-in.
 
-FONCTIONNALITÉS DE MODÉRATION (guideline 1.2)
-- Signaler une publication : appui sur le menu « … » d'une carte du fil
-- Signaler ou bloquer un profil : menu « … » en haut du profil d'un utilisateur
-- Un utilisateur bloqué disparaît des deux côtés, immédiatement
+USER-GENERATED CONTENT (guideline 1.2)
+- Terms of use must be accepted at sign-up (links under the "Créer mon compte" button).
+- Report a post: "…" menu on any feed card, then "Signaler le post".
+- Report a comment: long press on the comment, then "Signaler".
+- Report or block a profile: "…" menu at the top of a user's profile.
+- A blocked user disappears on both sides immediately.
+- Reports are reviewed within 24 hours; offending content is removed and the account suspended.
+- Contact: reizapp.contact@gmail.com
 
-SUPPRESSION DE COMPTE (guideline 5.1.1)
-Onglet Profil, en bas : « Supprimer mon compte ». La suppression est immédiate
-et définitive : données, publications et photos sont effacées côté serveur.
+ACCOUNT DELETION (guideline 5.1.1)
+Profile tab, gear icon at the top right, "Supprimer mon compte". Deletion is immediate and permanent: data, posts, photos and videos are erased server-side.
+
+PERMISSIONS
+Camera, photo library and microphone are only used to post a progress photo or a short video, and a profile picture.
 
 NOTIFICATIONS
-Les notifications push signalent les réactions, commentaires, demandes d'ami et
-publications du cercle. Elles ne sont pas nécessaires pour évaluer l'app.
+Push notifications announce reactions, comments, friend requests and posts from the circle. They are not required to evaluate the app.
 
-Merci pour votre temps.
+Thank you for your time.
 ```
 
 ---
 
 ## Questionnaire App Privacy
 
-À remplir dans App Store Connect → Confidentialité de l'app. Réponses conformes
-à ce que l'app collecte réellement.
+App Store Connect, Confidentialité de l'app.
 
 **Collectez-vous des données ?** Oui
 
-| Donnée | Catégorie Apple | Usage | Liée à l'identité | Suivi publicitaire |
+| Donnée | Catégorie Apple | Usage | Liée à l'identité | Suivi |
 |---|---|---|---|---|
-| Email | Coordonnées → Adresse e-mail | Fonctionnement de l'app | Oui | Non |
-| Prénom, pseudo | Coordonnées → Nom | Fonctionnement de l'app | Oui | Non |
-| Photos publiées et de profil | Contenu utilisateur → Photos ou vidéos | Fonctionnement de l'app | Oui | Non |
-| Légendes, commentaires | Contenu utilisateur → Autre contenu | Fonctionnement de l'app | Oui | Non |
-| Jeton de notification | Identifiants → Identifiant d'appareil | Fonctionnement de l'app | Oui | Non |
+| Email | Coordonnées, Adresse e-mail | Fonctionnalité de l'app | Oui | Non |
+| Prénom, pseudo | Coordonnées, Nom | Fonctionnalité de l'app | Oui | Non |
+| Photos et vidéos publiées, photo de profil | Contenu utilisateur, Photos ou vidéos | Fonctionnalité de l'app | Oui | Non |
+| Son des vidéos | Contenu utilisateur, Données audio | Fonctionnalité de l'app | Oui | Non |
+| Légendes, commentaires, bio, tags | Contenu utilisateur, Autre contenu utilisateur | Fonctionnalité de l'app | Oui | Non |
+| Identifiant du compte | Identifiants, Identifiant utilisateur | Fonctionnalité de l'app | Oui | Non |
+| Jeton de notification | Identifiants, Identifiant de l'appareil | Fonctionnalité de l'app | Oui | Non |
 
-**Point important :** à la question « Utilisez-vous ces données à des fins de
-suivi ? », réponds **Non** partout. Reiz n'a ni régie publicitaire, ni outil
-d'analyse tiers. Répondre oui déclencherait l'obligation d'afficher la demande
-de pistage (App Tracking Transparency), que l'app n'implémente pas — et
-l'incohérence serait détectée.
+À « Utilisez-vous ces données à des fins de suivi ? », réponds **Non** partout : Reiz n'a ni régie publicitaire ni outil d'analyse tiers.
+
+---
+
+## Classification par âge
+
+Questionnaire d'Apple, réponses conformes à l'app :
+
+- Contenu généré par les utilisateurs : **Oui**
+- Messagerie ou discussion entre utilisateurs (commentaires) : **Oui**
+- Publicité : Non
+- Contrôle parental, vérification de l'âge : Non
+- Violence, contenu sexuel, alcool, jeux d'argent, thèmes médicaux : Aucun
+- Accès web sans restriction : Non
+
+Les CGU fixent l'âge minimum à 15 ans. Si Apple propose une tranche plus basse, choisis la tranche supérieure la plus proche (16+) dans « Remplacer par une tranche d'âge plus élevée ».
+
+---
+
+## Conformité à l'exportation
+
+Déjà réglée dans le build (`ITSAppUsesNonExemptEncryption = false`). Apple ne posera pas la question.
 
 ---
 
 ## Captures d'écran
 
-Formats obligatoires : iPhone 6.7 pouces (1290 × 2796) et 6.5 pouces
-(1242 × 2688). Cinq à six suffisent.
+Un seul format obligatoire : iPhone 6,9 pouces, **1320 x 2868** (ou 1290 x 2796). Apple réduit tout seul pour les autres tailles. Pas de captures iPad, l'app est réservée à l'iPhone. Entre 3 et 10 captures, 5 suffisent.
 
-Ordre suggéré, du plus parlant au plus fonctionnel :
+Ordre conseillé :
 
-1. Le fil avec des publications et des réactions — c'est le cœur du produit
-2. Un objectif avec sa grille d'assiduité remplie
-3. L'écran de publication avec photo et curseur de progression
-4. Le profil avec la série de jours et les statistiques
-5. L'onglet Amis avec quelques membres du cercle
+1. Le fil avec des posts et des réactions
+2. Un post en duo (« avec X ») ou une vidéo
+3. L'écran « Poste ta progression » avec une photo et le compteur de séances
+4. Le profil : série, badges, épinglés
+5. L'onglet Amis
 
-Prends-les sur un compte réellement rempli. Une capture de fil vide dessert
-l'app plus qu'elle ne l'explique.
+Les captures doivent montrer l'app réelle, sur un compte rempli, sans vraies photos de testeurs qui n'ont pas donné leur accord.
+
+---
+
+## Tarifs et disponibilité
+
+- Prix : Gratuit
+- Disponibilité : tous les pays, ou France seulement si tu préfères démarrer petit (modifiable ensuite)
+- Déclaration de commerçant (loi européenne DSA) : obligatoire pour être distribué dans l'Union européenne. App Store Connect, Entreprise, Conformité. Sans activité commerciale, choisis « non commerçant ».
 
 ---
 
 ## Avant de soumettre
 
-- [ ] Compte de démonstration créé, rempli, et identifiants reportés dans les notes
-- [ ] Captures d'écran aux deux formats
-- [ ] Questionnaire App Privacy complété
-- [ ] Classification par âge remplie (déclarer le contenu généré par les utilisateurs)
-- [ ] URLs d'assistance et de confidentialité renseignées
-- [ ] Build envoyé via EAS et sélectionné dans la version
+- [ ] Fiche renommée (le nom « Reiz (25dc8e) » ne doit pas partir en ligne)
+- [ ] Compte de démo rempli (au 30/09 : 0 objectif, 0 post, 0 ami) et mot de passe reporté
+- [ ] Politique de confidentialité à jour en ligne (version du 30/09, à redéployer)
+- [ ] Build 6 lancé, reçu sur TestFlight, testé sur iPhone
+- [ ] Build 6 sélectionné dans la version 1.0.0
+- [ ] 5 captures 6,9 pouces
+- [ ] App Privacy, classification par âge, déclaration DSA
+- [ ] Notes pour l'examinateur collées
+- [ ] Option « Publier manuellement cette version » cochée
+- [ ] Bouton « Ajouter pour vérification », puis « Soumettre »
+
+## Le jour de la sortie
+
+- [ ] Bouton « Publier cette version »
+- [ ] Landing : remplacer « Bientôt disponible » et la liste d'attente par le bouton App Store
+- [ ] Instagram : lien App Store en bio, passage à « Télécharge Reiz »
+- [ ] Message aux testeurs TestFlight : passer sur la version App Store

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
-import { frError } from '../lib/helpers';
+import { frError, parseGoal } from '../lib/helpers';
 import { DURATION_OPTIONS, EMOJI_LIST, QUICK_UNITS } from '../constants';
 import { s } from '../styles';
 import { WheelPicker } from './WheelPicker';
@@ -16,16 +16,27 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
   const [duration, setDuration] = useState<number | null>(null); // sans date de fin par défaut
   const [showOptions, setShowOptions] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Tant que « Combien ? » n'a pas été touché, il se remplit tout seul d'après le nom.
+  const [touched, setTouched] = useState(false);
 
-  const reset = () => { setTitle(''); setEmoji('🎯'); setUnit('séances'); setTargetValue(''); setVisibility('friends'); setDuration(null); setShowOptions(false); };
+  const onTitle = (text: string) => {
+    setTitle(text);
+    if (touched) return;
+    const g = parseGoal(text);
+    if (g) { setTargetValue(String(g.target).replace('.', ',')); setUnit(g.unit); }
+    else setTargetValue('');
+  };
 
-  // Sans chiffre, l'objectif se suit en pourcentage : 100 % = terminé.
+  const reset = () => { setTitle(''); setEmoji('🎯'); setUnit('séances'); setTargetValue(''); setVisibility('friends'); setDuration(null); setShowOptions(false); setTouched(false); };
+
+  // Un objectif se compte toujours dans son unité (kg, séances, km...), jamais en %.
   const hasTarget = targetValue.trim() !== '';
-  const finalUnit = hasTarget ? unit : '%';
-  const finalTarget = hasTarget ? Number(targetValue) : 100;
+  const finalUnit = unit;
+  const finalTarget = Number(targetValue.replace(',', '.'));
 
   const handleCreate = async () => {
     if (!title.trim()) { Alert.alert('Erreur', 'Donne un nom à ton objectif !'); return; }
+    if (!hasTarget) { Alert.alert('Il manque le chiffre', 'Indique combien tu vises : 170 kg, 4 séances, 10 km...'); return; }
     const target = finalTarget;
     if (isNaN(target) || target <= 0) { Alert.alert('Erreur', 'Le nombre doit être supérieur à 0.'); return; }
     setSaving(true);
@@ -65,7 +76,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
         >
           <View style={s.inputBlock}>
             <Text style={s.inputLabel}>NOM DE L'OBJECTIF</Text>
-            <TextInput style={s.inputField} placeholder="Ex: Courir 10 km, Lire 12 livres..." placeholderTextColor="#666" value={title} onChangeText={setTitle} autoCapitalize="sentences" maxLength={80} />
+            <TextInput style={s.inputField} placeholder="100 kg au bench, ou tu bluffes ?" placeholderTextColor="#666" value={title} onChangeText={onTitle} autoCapitalize="sentences" maxLength={80} />
           </View>
 
           <Text style={[s.inputLabel, s.inputLabelSpaced]}>EMOJI</Text>
@@ -82,15 +93,15 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
           </ScrollView>
 
           <View style={s.inputBlock}>
-            <Text style={s.inputLabel}>COMBIEN ? (FACULTATIF)</Text>
+            <Text style={s.inputLabel}>COMBIEN ?</Text>
             <View style={s.targetRow}>
               <TextInput
                 style={[s.inputField, s.targetInput]}
                 placeholder="4"
                 placeholderTextColor="#666"
                 value={targetValue}
-                onChangeText={setTargetValue}
-                keyboardType="numeric"
+                onChangeText={v => { setTouched(true); setTargetValue(v); }}
+                keyboardType="decimal-pad"
                 maxLength={6}
               />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
@@ -98,7 +109,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
                   <TouchableOpacity
                     key={u}
                     style={[s.durationPill, hasTarget && unit === u && s.durationPillActive]}
-                    onPress={() => { Haptics.selectionAsync().catch(() => {}); setUnit(u); }}
+                    onPress={() => { Haptics.selectionAsync().catch(() => {}); setTouched(true); setUnit(u); }}
                   >
                     <Text style={[s.durationPillText, hasTarget && unit === u && s.durationPillTextActive]}>{u}</Text>
                   </TouchableOpacity>
@@ -107,8 +118,8 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
             </View>
             <Text style={s.fieldHint}>
               {hasTarget
-                ? `Tu avanceras ${targetValue} ${unit} à cocher, une par une.`
-                : 'Sans chiffre, tu suivras ta progression en pourcentage.'}
+                ? `Tu posteras ta progression en ${unit}, jusqu'à ${targetValue}.`
+                : 'Le chiffre que tu vises et son unité : 170 kg, 4 séances, 10 km.'}
             </Text>
           </View>
 

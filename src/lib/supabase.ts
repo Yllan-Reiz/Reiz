@@ -2,7 +2,7 @@ import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://vpaizbtetwsnvbpmeuab.supabase.co';
+export const SUPABASE_URL = 'https://vpaizbtetwsnvbpmeuab.supabase.co';
 // Exportée pour les envois natifs (vidéos) qui passent hors du client supabase-js.
 export const SUPABASE_ANON_KEY = 'sb_publishable_dAHRrHfSQvNwm1LEpNw5Ww_EOTyejXT';
 

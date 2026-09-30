@@ -4,10 +4,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
-import { frError } from '../lib/helpers';
+import { frError, inUnit } from '../lib/helpers';
 import { uploadImage, signOne } from '../lib/storage';
 import { Objective } from '../lib/types';
-import { HEATMAP_MAX_DAYS, daysFor, dayKeysFor, navClearance } from '../constants';
+import { APP_VERSION, HEATMAP_MAX_DAYS, daysFor, dayKeysFor, navClearance } from '../constants';
 import { s } from '../styles';
 import { ProfileSkeleton } from '../components/Skeleton';
 import { BadgesStrip, PinnedRow, PostsGrid, computeBadges, isCompleted } from '../components/ProfileSections';
@@ -62,7 +62,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
       setNewBio(profileRes.data.bio || '');
       setAvatarUrl(await signOne(profileRes.data.avatar_url));
     }
-    if (objRes.data) setObjectives(objRes.data as Objective[]);
+    if (objRes.data) setObjectives((objRes.data as Objective[]).map(inUnit));
     if (updatesRes.data) {
       const map: Record<string, Set<string>> = {};
       (updatesRes.data as { objective_id: string; created_at: string }[]).forEach(u => {
@@ -185,7 +185,9 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   };
 
   const openSettings = () => {
-    Alert.alert('Paramètres', undefined, [
+    // La version s'affiche ici pour pouvoir vérifier, sur une capture d'écran,
+    // quelle version tourne réellement sur le téléphone d'un testeur.
+    Alert.alert('Paramètres', `Reiz ${APP_VERSION}`, [
       { text: 'Modifier mon nom', onPress: () => setEditingName(true) },
       { text: 'Modifier ma bio', onPress: () => setEditingBio(true) },
       { text: 'Mon cercle proche', onPress: () => setPeopleMode('close') },
@@ -351,7 +353,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
                   <View key={o.id} style={s.objCardProfile}>
                     <View style={s.objCardProfileHead}>
                       <Text style={s.objCardProfileTitle} numberOfLines={1}>{o.emoji} {o.title}</Text>
-                      <Text style={s.objCardProfilePct}>{pct}%</Text>
+                      <Text style={s.objCardProfilePct}>{o.unit === '%' ? `${pct}%` : `${String(o.current_value).replace('.', ',')} / ${String(o.target_value).replace('.', ',')} ${o.unit}`}</Text>
                       <TouchableOpacity
                         onPress={() => openObjectiveMenu(o)}
                         accessibilityLabel={`Options de l'objectif ${o.title}`}
@@ -367,7 +369,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
                       ))}
                     </View>
                     <Text style={s.objCardProfileFoot}>
-                      {doneCount} jours {isInfinite ? `sur les ${nbDays} derniers` : `sur ${nbDays}`}
+                      {doneCount} {doneCount > 1 ? 'jours' : 'jour'} {isInfinite ? `sur les ${nbDays} derniers` : `sur ${nbDays}`}
                     </Text>
                   </View>
                 );
@@ -417,6 +419,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
             currentUserId={userId}
             onClose={() => setViewing(null)}
             onChanged={() => loadProfile(true)}
+            onOpenProfile={(id) => { if (id === userId) return; setViewing(null); onViewProfile?.(id); }}
           />
         )}
       </Modal>

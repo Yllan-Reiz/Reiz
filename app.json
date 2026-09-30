@@ -47,7 +47,8 @@
     "extra": {
       "eas": {
         "projectId": "69071c24-329f-4426-b10b-8b5fbe280564"
-      }
+      },
+      "buildTag": "sortie"
     },
     "owner": "yllan"
   }

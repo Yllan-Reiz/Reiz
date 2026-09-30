@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
-import { calculateStreak, timeAgo, frError } from '../lib/helpers';
+import { calculateStreak, timeAgo, frError, inUnit } from '../lib/helpers';
 import { signOne } from '../lib/storage';
 import { Update, Objective, FeedMeta } from '../lib/types';
 import { BadgesStrip, PinnedRow, PostsGrid, computeBadges, isCompleted } from '../components/ProfileSections';
@@ -57,7 +57,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile }: { userId
         setProfile(profileRes.data);
         setAvatarUrl(await signOne(profileRes.data.avatar_url));
       }
-      if (objRes.data) setObjectives(objRes.data as Objective[]);
+      if (objRes.data) setObjectives((objRes.data as Objective[]).map(inUnit));
       setRecentUpdates(updatesRes.filter(u => u.objectives?.visibility !== 'private'));
       // friend_count (fonction serveur) donne le vrai total ; sans elle, la base
       // ne laisse compter que ta propre amitié avec cette personne.
@@ -216,7 +216,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile }: { userId
                 <View style={s.progressBg}><View style={[s.progressFill, { width: `${progressPct(o)}%` as any }]} /></View>
                 {o.unit !== '%' && <Text style={{ color: '#888', fontSize: 11 }}>{o.current_value} / {o.target_value} {o.unit}</Text>}
               </View>
-              <Text style={s.profileObjPct}>{progressPct(o)}%</Text>
+              {o.unit === '%' && <Text style={s.profileObjPct}>{progressPct(o)}%</Text>}
             </View>
           ))}
 
@@ -249,7 +249,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile }: { userId
         onOpenProfile={(id) => { setShowFriends(false); onOpenProfile?.(id); }}
       />
       <Modal visible={!!viewing} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setViewing(null)}>
-        {viewing && <PostViewer post={viewing} currentUserId={currentUserId} onClose={() => setViewing(null)} />}
+        {viewing && <PostViewer post={viewing} currentUserId={currentUserId} onClose={() => setViewing(null)} onOpenProfile={(id) => { if (id === userId) return; setViewing(null); onOpenProfile?.(id); }} />}
       </Modal>
     </View>
   );

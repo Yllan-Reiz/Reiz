@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Reiz stories 01</title>
+<style>
+  @font-face { font-family: Inter; font-weight: 400; src: url(fonts/Inter_400Regular.ttf); }
+  @font-face { font-family: Inter; font-weight: 600; src: url(fonts/Inter_600SemiBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 800; src: url(fonts/Inter_800ExtraBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 900; src: url(fonts/Inter_900Black.ttf); }
+  :root { --bg: #0a0a0a; --card: #141414; --line: #2a2a2a; --muted: #999; --dim: #8a8a8a; --green: #fff; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #000; }
+  body { font-family: Inter, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+  body.single { width: 1080px; height: 1920px; overflow: hidden; }
+  body:not(.single) { display: flex; flex-wrap: wrap; gap: 30px; padding: 30px; }
+  body.single .st:not(.on) { display: none; }
+
+  /* zone sûre story : y 250 à 1600 */
+  .st { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
+  .in { position: absolute; left: 100px; right: 100px; top: 280px; }
+  .logo { height: 46px; position: absolute; left: 100px; top: 250px; }
+  .kicker { font-size: 34px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--green); }
+  h1 { font-weight: 900; letter-spacing: -.045em; line-height: 1; margin-top: 34px; }
+  .t110 { font-size: 110px; }
+  .t96 { font-size: 96px; }
+  .sub { font-size: 44px; line-height: 1.35; color: var(--muted); margin-top: 36px; }
+  .g { color: var(--green); }
+  .glow { position: absolute; left: 540px; width: 1000px; height: 1000px; margin-left: -500px; border-radius: 50%; }
+  .hint { position: absolute; left: 0; right: 0; text-align: center; font-size: 36px; font-weight: 700; color: var(--dim); }
+  .badge { position: absolute; left: 540px; width: 620px; margin-left: -310px; }
+  .badge img { width: 100%; display: block; }
+  .big-logo { position: absolute; left: 540px; transform: translateX(-50%); width: 560px; }
+</style>
+</head>
+<body>
+
+<!-- 1 sondage -->
+<section class="st" id="sondage">
+  <img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <div class="in" style="top: 400px">
+    <div class="kicker">Question du jour</div>
+    <h1 class="t110">T'as déjà lâché la salle au bout de <span class="g">3 semaines</span> ?</h1>
+  </div>
+  <div class="hint" style="top: 1500px">Sois honnête 👇</div>
+</section>
+
+<!-- 2 devine le badge -->
+<section class="st" id="devine">
+  <img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <div class="glow" style="top: 380px; background: radial-gradient(circle, #ff7a2e40 0%, transparent 60%)"></div>
+  <div class="in" style="top: 360px">
+    <div class="kicker">Devine le badge</div>
+    <h1 class="t96">Tu le débloques comment ?</h1>
+  </div>
+  <div class="badge" style="top: 640px; filter: blur(34px) brightness(1.1)"><img src="assets/en-feu.png" alt=""></div>
+  <div class="hint" style="top: 1520px">Réponse demain 👀</div>
+</section>
+
+<!-- 3 réponse -->
+<section class="st" id="reponse">
+  <img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <div class="glow" style="top: 380px; background: radial-gradient(circle, #ff7a2e59 0%, transparent 60%)"></div>
+  <div class="in" style="top: 360px">
+    <div class="kicker">Réponse</div>
+    <h1 class="t110">En feu 🔥</h1>
+  </div>
+  <div class="badge" style="top: 560px"><img src="assets/en-feu.png" alt=""></div>
+  <div class="in" style="top: 1230px; text-align: center">
+    <div class="sub" style="color:#fff; font-weight: 700">Tu enchaînes les séances<br>sans t'arrêter.</div>
+    <div class="sub" style="margin-top: 20px">6 niveaux à débloquer sur Reiz.</div>
+  </div>
+</section>
+
+<!-- 4 curseur -->
+<section class="st" id="curseur">
+  <img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <div class="in" style="top: 420px">
+    <div class="kicker">Lundi matin</div>
+    <h1 class="t110">Ta motivation pour la salle, là, tout de suite ?</h1>
+  </div>
+  <div class="hint" style="top: 1500px">Glisse 👇</div>
+</section>
+
+<!-- 5 compte à rebours -->
+<section class="st" id="rebours">
+  <div class="glow" style="top: 300px; background: radial-gradient(circle, #ffffff1a 0%, transparent 60%)"></div>
+  <div class="in" style="top: 420px; text-align: center">
+    <div class="kicker">Le 10 octobre sur iPhone</div>
+  </div>
+  <img class="big-logo" style="top: 560px" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <div class="in" style="top: 820px; text-align: center">
+    <div class="sub" style="color:#fff; font-weight: 700; font-size: 52px">Tu postes ta séance.<br>Ton cercle la voit.</div>
+  </div>
+  <div class="hint" style="top: 1540px">Active le rappel pour la sortie 👆</div>
+</section>
+
+<script>
+  const f = new URLSearchParams(location.search).get('f');
+  if (f) { document.body.classList.add('single'); document.getElementById(f).classList.add('on'); }
+</script>
+</body>
+</html>

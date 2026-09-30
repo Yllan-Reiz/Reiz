@@ -22,13 +22,15 @@ function CommentAvatar({ name, url, small }: { name?: string; url?: string | nul
   );
 }
 
-export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, onClose, onCountChange }: {
+export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, onClose, onCountChange, onOpenProfile }: {
   visible: boolean;
   updateId: string;
   postOwnerId?: string;
   currentUserId: string | null;
   onClose: () => void;
   onCountChange?: (n: number) => void;
+  // Photo ou prénom d'un commentaire : ferme la discussion et ouvre le profil.
+  onOpenProfile?: (id: string) => void;
 }) {
   const insets = useSafeAreaInsets();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -161,35 +163,64 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
     inputRef.current?.focus();
   };
 
-  // Appui long : supprimer son commentaire, ou n'importe lequel sur son propre post.
+  // La table reports n'a pas de colonne commentaire : l'id part dans le motif.
+  const reportComment = async (c: Comment) => {
+    if (!currentUserId) return;
+    const { error } = await supabase.from('reports').insert({
+      reporter_id: currentUserId, reported_user_id: c.user_id, reason: `commentaire ${c.id}`,
+    });
+    if (error) Alert.alert('Erreur', frError(error));
+    else Alert.alert('Signalement envoyé', 'Ton signalement a bien été envoyé. Nous allons l\'examiner.');
+  };
+
+  // Appui long : supprimer son commentaire (ou n'importe lequel sur son propre post),
+  // signaler celui de quelqu'un d'autre.
   const onLongPress = (c: Comment) => {
-    const canDelete = c.user_id === currentUserId || postOwnerId === currentUserId;
-    if (!canDelete) return;
+    const isMine = c.user_id === currentUserId;
+    const canDelete = isMine || postOwnerId === currentUserId;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    Alert.alert('Supprimer ce commentaire ?', c.parent_id ? undefined : 'Les réponses seront aussi supprimées.', [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Supprimer', style: 'destructive',
-        onPress: async () => {
-          const { error } = await supabase.from('comments').delete().eq('id', c.id);
-          if (error) { Alert.alert('Erreur', frError(error)); return; }
-          fetchComments(true);
-        },
+    const remove = {
+      text: 'Supprimer', style: 'destructive' as const,
+      onPress: async () => {
+        const { error } = await supabase.from('comments').delete().eq('id', c.id);
+        if (error) { Alert.alert('Erreur', frError(error)); return; }
+        fetchComments(true);
       },
+    };
+    if (isMine) {
+      Alert.alert('Supprimer ce commentaire ?', c.parent_id ? undefined : 'Les réponses seront aussi supprimées.', [
+        { text: 'Annuler', style: 'cancel' },
+        remove,
+      ]);
+      return;
+    }
+    Alert.alert('Commentaire', undefined, [
+      { text: 'Signaler', onPress: () => reportComment(c) },
+      ...(canDelete ? [remove] : []),
+      { text: 'Annuler', style: 'cancel' as const },
     ]);
   };
 
   const roots = comments.filter(c => !c.parent_id);
   const repliesOf = (id: string) => comments.filter(c => c.parent_id === id);
 
+  const goProfile = (id?: string) => {
+    if (!id || !onOpenProfile) return;
+    Keyboard.dismiss();
+    onClose();
+    onOpenProfile(id);
+  };
+
   const renderComment = (c: Comment, isReply = false) => {
     const lk = likes[c.id] || { count: 0, mine: false };
     return (
       <Pressable key={c.id} onLongPress={() => onLongPress(c)} delayLongPress={350} style={[s.commentRow, isReply && { marginLeft: 44, marginBottom: 12 }]}>
-        <CommentAvatar name={c.users?.full_name} url={c.users?.avatar_url} small={isReply} />
+        <TouchableOpacity onPress={() => goProfile(c.user_id)} disabled={!onOpenProfile} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+          <CommentAvatar name={c.users?.full_name} url={c.users?.avatar_url} small={isReply} />
+        </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <View style={s.commentContent}>
-            <Text style={s.commentName}>{c.users?.full_name || 'Utilisateur'}</Text>
+            <Text style={s.commentName} onPress={onOpenProfile ? () => goProfile(c.user_id) : undefined} suppressHighlighting>{c.users?.full_name || 'Utilisateur'}</Text>
             <Text style={s.commentText}>{c.content}</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 5, paddingLeft: 4 }}>

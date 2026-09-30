@@ -9,6 +9,7 @@ import { ActivityItem, Update, FeedMeta } from '../lib/types';
 import { s, F } from '../styles';
 import { FeedCard } from '../components/FeedCard';
 import { loadPost } from '../lib/posts';
+import { CHANGELOG, changelogUnseen, markChangelogSeen } from '../lib/changelog';
 
 
 type Row = ActivityItem & {
@@ -57,6 +58,10 @@ export function ActivityScreen({ currentUserId, onClose, onViewProfile, onOpenFr
   const [refreshing, setRefreshing] = useState(false);
   const [openPost, setOpenPost] = useState<{ u: Update; meta: FeedMeta; comments: boolean } | null>(null);
   const [openingPost, setOpeningPost] = useState(false);
+  // Carte « Nouveautés » : dépliée tant qu'elle n'a pas été lue, repliée ensuite.
+  const [newsOpen, setNewsOpen] = useState(false);
+  const [newsUnseen, setNewsUnseen] = useState(false);
+  useEffect(() => { changelogUnseen().then(u => { setNewsUnseen(u); setNewsOpen(u); if (u) markChangelogSeen(); }); }, []);
 
   const load = async (silent = false) => {
     if (!currentUserId) return;
@@ -122,6 +127,7 @@ export function ActivityScreen({ currentUserId, onClose, onViewProfile, onOpenFr
             openCommentsOnMount={openPost.comments}
             isActive
             onDuoReply={onDuoReply}
+            onOpenProfile={onViewProfile}
             onDeleted={() => { setOpenPost(null); load(true); }}
             onBlocked={() => { setOpenPost(null); load(true); }}
           />
@@ -159,6 +165,29 @@ export function ActivityScreen({ currentUserId, onClose, onViewProfile, onOpenFr
           keyExtractor={(r, i) => (r.kind === 'section' ? `s-${r.title}` : r.n.id) + i}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 + insets.bottom }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(true); setRefreshing(false); }} tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1a1a1a" />}
+          ListHeaderComponent={
+            <TouchableOpacity activeOpacity={0.85} onPress={() => setNewsOpen(o => !o)} style={s.newsCard} accessibilityLabel="Nouveautés">
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={s.newsIcon}><Text style={{ fontSize: 18 }}>✨</Text></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.newsTitle}>{CHANGELOG.title}</Text>
+                  <Text style={s.newsSub}>{newsUnseen ? 'Nouvelle mise à jour' : `${CHANGELOG.items.length} changements`}</Text>
+                </View>
+                {newsUnseen && <View style={s.newsDot} />}
+                <Ionicons name={newsOpen ? 'chevron-up' : 'chevron-down'} size={18} color="#777" />
+              </View>
+              {newsOpen && (
+                <View style={{ marginTop: 14, gap: 12 }}>
+                  {CHANGELOG.items.map((it, i) => (
+                    <View key={i} style={{ flexDirection: 'row', gap: 10 }}>
+                      <Text style={{ fontSize: 16, width: 24 }}>{it.emoji}</Text>
+                      <Text style={s.newsItem}>{it.text}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </TouchableOpacity>
+          }
           ListEmptyComponent={
             <View style={{ paddingTop: 80, alignItems: 'center', paddingHorizontal: 32 }}>
               <Text style={{ color: '#aaa', fontSize: 15, fontFamily: F.bold }}>Rien pour l'instant</Text>

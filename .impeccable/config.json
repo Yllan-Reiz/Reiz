@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-09-30T07:49:00.470Z",
+        "reason": "Inter est la police de la marque Reiz, utilisée dans l'app (src/styles.ts) et toute la landing ; choix antérieur du projet, non confirmé explicitement par l'utilisateur dans cette session"
+      }
+    ]
+  }
+}

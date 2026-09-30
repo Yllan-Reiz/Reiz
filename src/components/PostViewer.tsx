@@ -7,11 +7,12 @@ import { FeedCard } from './FeedCard';
 
 // Un post ouvert en grand (depuis la grille du profil ou les épinglés),
 // avec ses réactions, ses commentaires et le menu « … » habituels.
-export function PostViewer({ post, currentUserId, onClose, onChanged }: {
+export function PostViewer({ post, currentUserId, onClose, onChanged, onOpenProfile }: {
   post: { u: Update; meta: FeedMeta };
   currentUserId: string | null;
   onClose: () => void;
   onChanged?: () => void;
+  onOpenProfile?: (id: string) => void;
 }) {
   const insets = useSafeAreaInsets();
   return (
@@ -30,6 +31,7 @@ export function PostViewer({ post, currentUserId, onClose, onChanged }: {
           currentUserId={currentUserId}
           isActive
           onPinChanged={onChanged}
+          onOpenProfile={onOpenProfile}
           onDeleted={() => { onChanged?.(); onClose(); }}
           onBlocked={() => { onChanged?.(); onClose(); }}
         />

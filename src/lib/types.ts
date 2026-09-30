@@ -1,4 +1,4 @@
-export type Update = { id: string; caption: string; progress_value: number; created_at: string; photo_url?: string; user_id?: string; pinned_at?: string | null; with_user_ids?: string[]; with_users?: { id: string; full_name: string }[]; objectives?: { visibility: string; unit?: string; target_value?: number; emoji?: string; title?: string } | null; users: any; };
+export type Update = { id: string; caption: string; progress_value: number; created_at: string; photo_url?: string; user_id?: string; pinned_at?: string | null; with_user_ids?: string[]; with_users?: { id: string; full_name: string; avatar_url?: string | null }[]; objectives?: { visibility: string; unit?: string; target_value?: number; emoji?: string; title?: string } | null; users: any; };
 export type Objective = { id: string; emoji: string; title: string; current_value: number; target_value: number; unit: string; visibility: string; duration_days?: number | null; };
 export type Comment = { id: string; content: string; created_at: string; user_id: string; parent_id?: string | null; users: any; };
 
@@ -14,4 +14,6 @@ export type PendingRequest = { id: string; full_name: string; username: string; 
 
 // Données agrégées d'un post (réactions + commentaires), chargées en lot par le feed
 // pour éviter une requête par carte.
-export type FeedMeta = { reactions: Record<string, number>; mine: string[]; commentCount: number };
+// Qui a réagi avec quoi, pour la pile de visages sur la photo (façon BeReal).
+export type Reactor = { user_id: string; emoji: string; name: string; avatar_url?: string | null };
+export type FeedMeta = { reactions: Record<string, number>; mine: string[]; commentCount: number; reactors?: Reactor[] };

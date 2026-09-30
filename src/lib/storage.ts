@@ -1,4 +1,6 @@
-import { supabase, SUPABASE_ANON_KEY } from './supabase';
+import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import { supabase, SUPABASE_ANON_KEY, SUPABASE_URL } from './supabase';
 
 // Le bucket "updates" est privé : les fichiers ne sont accessibles que via une
 // URL signée, valable un temps limité. On stocke donc en base le CHEMIN du
@@ -30,6 +32,103 @@ export function isVideo(stored?: string | null): boolean {
   return !!stored && /\.(mp4|mov|m4v)(\?|$)/i.test(stored);
 }
 
+/**
+ * Envoi par formulaire multipart, à la main : React Native lit le fichier sur
+ * le disque et l'envoie lui-même, sans jamais le charger dans la mémoire
+ * JavaScript.
+ *
+ * C'est le seul chemin fiable sur Android. Diagnostic du 29/09/2026 : les deux
+ * autres méthodes (fetch(uri).arrayBuffer() pour les photos, fetch(uri).blob()
+ * pour les vidéos) échouent là-bas en « Network request failed » dès que le
+ * fichier dépasse quelques mégas, ce que l'app traduisait par « Pas de
+ * connexion » alors que le réseau était bon. Preuve côté serveur : aucun .mp4
+ * (donc aucune vidéo Android) n'était jamais arrivé dans le bucket, uniquement
+ * des .mov et des .jpg venant d'iPhone.
+ */
+async function uploadViaFormData(
+  path: string,
+  uri: string,
+  contentType: string,
+  upsert: boolean
+): Promise<{ path: string | null; error: { message?: string } | null }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) return { path: null, error: { message: 'Session expirée. Reconnecte-toi et réessaie.' } };
+
+  const form = new FormData();
+  form.append('file', { uri, name: path.split('/').pop() || 'fichier', type: contentType } as any);
+
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+    method: 'POST',
+    // Pas de Content-Type imposé : fetch doit poser lui-même la frontière multipart.
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: SUPABASE_ANON_KEY,
+      'x-upsert': upsert ? 'true' : 'false',
+    },
+    body: form,
+  });
+  if (res.ok) return { path, error: null };
+  const body = await res.text().catch(() => '');
+  return { path: null, error: { message: `HTTP ${res.status} ${body.slice(0, 160)}` } };
+}
+
+/**
+ * Deuxième chemin Android : le module natif de fichiers lit et envoie le
+ * fichier lui-même, vers une adresse d'envoi à usage unique. Il ne dépend ni
+ * de FormData ni de la couche réseau JavaScript, donc il passe là où le premier
+ * chemin échoue (fichier que fetch n'arrive pas à ouvrir, par exemple).
+ */
+async function uploadViaFileSystem(
+  path: string,
+  uri: string,
+  contentType: string,
+  upsert: boolean
+): Promise<{ path: string | null; error: { message?: string } | null }> {
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(path);
+  if (error || !data) return { path: null, error: error || { message: "(B) pas d'adresse d'envoi" } };
+  const res = await FileSystem.uploadAsync(data.signedUrl, uri, {
+    httpMethod: 'PUT',
+    uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+    headers: {
+      'Content-Type': contentType,
+      'x-upsert': upsert ? 'true' : 'false',
+      apikey: SUPABASE_ANON_KEY,
+    },
+  });
+  if (res.status >= 200 && res.status < 300) return { path, error: null };
+  return { path: null, error: { message: `(B) HTTP ${res.status} ${(res.body || '').slice(0, 140)}` } };
+}
+
+/**
+ * Chemin d'envoi Android : on tente le formulaire multipart, puis le module
+ * natif de fichiers si le premier échoue. Chaque message d'erreur est préfixé
+ * par (A) ou (B) pour savoir, sur une simple capture d'écran, lequel des deux
+ * a parlé.
+ */
+async function uploadAndroid(
+  path: string,
+  uri: string,
+  contentType: string,
+  upsert: boolean
+): Promise<{ path: string | null; error: { message?: string } | null }> {
+  let first = '';
+  try {
+    const r = await uploadViaFormData(path, uri, contentType, upsert);
+    if (!r.error) return r;
+    first = r.error.message || 'échec';
+  } catch (e: any) {
+    first = e?.message || 'échec';
+  }
+  try {
+    const r = await uploadViaFileSystem(path, uri, contentType, upsert);
+    if (!r.error) return r;
+    return { path: null, error: { message: `(A) ${first} | ${r.error.message}` } };
+  } catch (e: any) {
+    return { path: null, error: { message: `(A) ${first} | (B) ${e?.message || 'échec'}` } };
+  }
+}
+
 /** Envoie une image et renvoie son chemin de stockage (à enregistrer en base). */
 export async function uploadImage(
   path: string,
@@ -46,6 +145,9 @@ export async function uploadFile(
   contentType: string,
   upsert = false
 ): Promise<{ path: string | null; error: { message?: string } | null }> {
+  // Android : envoi natif obligatoire (voir uploadViaFormData). iOS garde le
+  // chemin qui fonctionne déjà, on ne touche pas à ce qui marche.
+  if (Platform.OS === 'android') return uploadAndroid(path, uri, contentType, upsert);
   try {
     const response = await fetch(uri);
     const arrayBuffer = await response.arrayBuffer();
@@ -73,6 +175,7 @@ export async function uploadVideo(
   uri: string,
   contentType: string
 ): Promise<{ path: string | null; error: { message?: string } | null }> {
+  if (Platform.OS === 'android') return uploadAndroid(path, uri, contentType, false);
   try {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(path);
     if (error || !data) return { path: null, error: error || { message: "Pas d'adresse d'envoi" } };

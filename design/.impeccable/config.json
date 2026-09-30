@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "#d6d6dc on #ffffff",
+        "createdAt": "2026-09-29T14:32:24.065Z",
+        "reason": "Claude: fond réel de la page #0a0a0b (html/body var(--bg)), le scanner compare à #ffffff ; ces gris dépassent 7:1 sur le vrai fond"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "#a3a3ad on #ffffff",
+        "createdAt": "2026-09-29T14:32:24.104Z",
+        "reason": "Claude: fond réel de la page #0a0a0b (html/body var(--bg)), le scanner compare à #ffffff ; ces gris dépassent 7:1 sur le vrai fond"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "#8b8b95 on #ffffff",
+        "createdAt": "2026-09-29T14:32:24.138Z",
+        "reason": "Claude: fond réel de la page #0a0a0b (html/body var(--bg)), le scanner compare à #ffffff ; ces gris dépassent 7:1 sur le vrai fond"
+      }
+    ]
+  }
+}
