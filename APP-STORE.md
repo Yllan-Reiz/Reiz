@@ -2,7 +2,7 @@
 
 Sortie visée : **samedi 10 octobre 2026**, en publication manuelle.
 Date limite de soumission : **lundi 5 octobre au soir** (mardi 6 au plus tard).
-Mis à jour le 30 septembre 2026.
+Mis à jour le 3 octobre 2026 (build 8 : connexion Apple et Google, Réglages, profil refait, duo, partage en story).
 
 Chaque bloc est prêt à copier-coller dans le champ correspondant.
 
@@ -12,8 +12,8 @@ Chaque bloc est prêt à copier-coller dans le champ correspondant.
 
 | Quand | Quoi |
 |---|---|
-| Mer. 30/09 au ven. 02/10 | Compte de démo rempli, captures d'écran, nom de la fiche, build 6 |
-| Sam. 03/10 et dim. 04/10 | Build 6 testé sur ton iPhone via TestFlight, fiche complétée |
+| Sam. 03/10 | Build 8 lancé, page de confidentialité et CGU en ligne (fait le 03/10) |
+| Dim. 04/10 | Build 8 testé sur ton iPhone via TestFlight, captures d'écran, fiche complétée, compte de démo vérifié |
 | Lun. 05/10 | Soumission à la validation, option « Publier manuellement cette version » |
 | Mar. 06/10 au ven. 09/10 | Marge pour un refus : corriger, resoumettre |
 | Sam. 10/10 | Bouton « Publier cette version », puis lien App Store en bio Instagram et sur la landing |
@@ -73,6 +73,8 @@ Quelques proches suffisent. Pas des inconnus, pas des abonnés : les gens dont l
 3. Poste ta progression
 Une photo ou une vidéo de 15 secondes, ta séance du jour, deux mots. Ton cercle voit où tu en es et te répond.
 
+Tu peux créer ton compte avec Apple, avec Google ou avec ton email.
+
 
 CE QUE TU TROUVES DANS REIZ
 
@@ -80,7 +82,7 @@ Un fil réservé à ton cercle
 Pas d'algorithme, pas de recommandations. Uniquement les personnes que tu as choisies, sur les dernières 24 heures.
 
 Des séances en duo
-Tu t'es entraîné avec un ami ? Identifie-le. Il peut poster sa version de la séance en un tap.
+Tu t'es entraîné avec un ami ? Identifie-le. Si vous postez chacun votre séance à moins d'une heure d'écart, le duo est validé, et vous construisez ensemble une série de semaines d'affilée.
 
 Une série de jours qui compte
 Chaque jour où tu publies prolonge ta série. Elle s'arrête si tu t'arrêtes, et tes proches le voient aussi.
@@ -89,7 +91,10 @@ Des badges qui se gagnent
 Premier pas, Régulier, Binôme, Inarrêtable : ton profil garde la trace de ce que tu as tenu.
 
 Un profil qui te ressemble
-Tes posts épinglés, tes objectifs en cours et réussis, et des tags que tes amis peuvent valider.
+Ta photo en grand, ta série, tes badges, tes objectifs en cours en un coup d'œil, l'historique de tes séances et des tags que tes amis peuvent valider.
+
+Un visuel à partager en story
+Poste ta progression sur Instagram avec un visuel aux couleurs de Reiz. C'est toi qui décides de publier : Reiz ne publie jamais rien à ta place.
 
 Réactions, commentaires, réponses
 Ton cercle réagit, t'encourage, te relance. C'est le moteur de l'app.
@@ -99,7 +104,7 @@ LA CONFIDENTIALITÉ, PAR DÉFAUT
 
 Chaque objectif a sa visibilité : ton cercle, ton cercle proche, public ou strictement privé. Un objectif privé n'est visible que par toi, photos et vidéos comprises.
 
-Tu peux bloquer un utilisateur, signaler un contenu, et supprimer ton compte et toutes tes données depuis l'app, à tout moment.
+Tu peux bloquer un utilisateur, signaler une publication ou un commentaire, exporter tes données et supprimer ton compte avec toutes tes données depuis l'app, à tout moment. Les règles de la communauté sont lisibles dans les Réglages.
 
 Reiz ne vend pas tes données et ne diffuse pas de publicité.
 
@@ -136,26 +141,33 @@ Hello,
 
 Reiz is a goal-tracking app where progress is shared with a small circle of chosen friends. The interface is in French.
 
-DEMO ACCOUNT
-Email: demo.apple@reiz.test
+DEMO ACCOUNT (sign in with email and password, below the "Se connecter" link)
+Email: [À COMPLÉTER]
 Password: [À COMPLÉTER]
 
-This account already has ongoing goals, posts and an accepted friend, so the feed and the profile show the real experience right after sign-in.
+This account already has ongoing goals, posts and accepted friends, so the feed and the profile show the real experience right after sign-in.
+
+SIGN IN WITH APPLE (guideline 4.8)
+The app offers "Continue with Apple" next to "Continue with Google" on the welcome screen and at sign-up. Email sign-in is also available.
 
 USER-GENERATED CONTENT (guideline 1.2)
 - Terms of use must be accepted at sign-up (links under the "Créer mon compte" button).
 - Report a post: "…" menu on any feed card, then "Signaler le post".
 - Report a comment: long press on the comment, then "Signaler".
 - Report or block a profile: "…" menu at the top of a user's profile.
-- A blocked user disappears on both sides immediately.
+- A blocked user disappears on both sides immediately. The list of blocked users, with an unblock button, is in Settings, "Utilisateurs bloqués".
+- Terms of use, privacy policy and community rules can be read inside the app: Settings, "Légal".
 - Reports are reviewed within 24 hours; offending content is removed and the account suspended.
 - Contact: reizapp.contact@gmail.com
 
 ACCOUNT DELETION (guideline 5.1.1)
-Profile tab, gear icon at the top right, "Supprimer mon compte". Deletion is immediate and permanent: data, posts, photos and videos are erased server-side.
+Profile tab, gear icon at the top right (Settings), "Supprimer mon compte" in the "Session" section. Deletion is immediate and permanent: data, posts, photos and videos are erased server-side. Users can also export their data from Settings, "Exporter mes données".
 
 PERMISSIONS
-Camera, photo library and microphone are only used to post a progress photo or a short video, and a profile picture.
+Camera, photo library and microphone are only used to post a progress photo or a short video, and a profile picture. The app does not use location.
+
+INSTAGRAM STORY
+"Partager en story" (after publishing, or in the "..." menu of one's own post) builds an image and opens the standard iOS share sheet. Nothing is posted automatically.
 
 NOTIFICATIONS
 Push notifications announce reactions, comments, friend requests and posts from the circle. They are not required to evaluate the app.
@@ -180,6 +192,8 @@ App Store Connect, Confidentialité de l'app.
 | Légendes, commentaires, bio, tags | Contenu utilisateur, Autre contenu utilisateur | Fonctionnalité de l'app | Oui | Non |
 | Identifiant du compte | Identifiants, Identifiant utilisateur | Fonctionnalité de l'app | Oui | Non |
 | Jeton de notification | Identifiants, Identifiant de l'appareil | Fonctionnalité de l'app | Oui | Non |
+
+Connexion avec Apple ou Google : Reiz reçoit seulement l'email et le prénom, déjà déclarés ci-dessus. Aucune nouvelle ligne à ajouter.
 
 À « Utilisez-vous ces données à des fins de suivi ? », réponds **Non** partout : Reiz n'a ni régie publicitaire ni outil d'analyse tiers.
 
@@ -215,10 +229,10 @@ Ordre conseillé :
 1. Le fil avec des posts et des réactions
 2. Un post en duo (« avec X ») ou une vidéo
 3. L'écran « Poste ta progression » avec une photo et le compteur de séances
-4. Le profil : série, badges, épinglés
-5. L'onglet Amis
+4. Le profil : photo plein écran, bulle Streak, Posts, Amis, puis badges et objectifs en cours (version du build 8)
+5. Le partage en story, ou le profil d'un ami avec la bulle « Vous deux »
 
-Les captures doivent montrer l'app réelle, sur un compte rempli, sans vraies photos de testeurs qui n'ont pas donné leur accord.
+Les captures doivent venir du build 8 (le profil a été refait le 03/10, les anciennes ne conviennent plus). Elles doivent montrer l'app réelle, sur un compte rempli, sans vraies photos de testeurs qui n'ont pas donné leur accord.
 
 ---
 
@@ -234,12 +248,12 @@ Les captures doivent montrer l'app réelle, sur un compte rempli, sans vraies ph
 
 - [ ] Fiche renommée (le nom « Reiz (25dc8e) » ne doit pas partir en ligne)
 - [ ] Compte de démo rempli (au 30/09 : 0 objectif, 0 post, 0 ami) et mot de passe reporté
-- [ ] Politique de confidentialité à jour en ligne (version du 30/09, à redéployer)
-- [ ] Build 6 lancé, reçu sur TestFlight, testé sur iPhone
-- [ ] Build 6 sélectionné dans la version 1.0.0
-- [ ] 5 captures 6,9 pouces
+- [x] Politique de confidentialité et CGU à jour en ligne (versions du 03/10, déployées)
+- [ ] Build 8 lancé, reçu sur TestFlight, testé sur iPhone (connexion Apple, Google, profil, duo, story, vidéo)
+- [ ] Build 8 sélectionné dans la version 1.0.0
+- [ ] 5 captures 6,9 pouces prises depuis le build 8
 - [ ] App Privacy, classification par âge, déclaration DSA
-- [ ] Notes pour l'examinateur collées
+- [ ] Notes pour l'examinateur collées (email et mot de passe du compte de démo remplis)
 - [ ] Option « Publier manuellement cette version » cochée
 - [ ] Bouton « Ajouter pour vérification », puis « Soumettre »
 
