@@ -6,10 +6,12 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
 import { frError, inUnit } from '../lib/helpers';
-import { uploadImage, uploadVideo, signMany } from '../lib/storage';
+import { uploadImage, uploadVideo, compressVideo, signMany } from '../lib/storage';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Objective } from '../lib/types';
 import { QUICK_UNITS } from '../constants';
+import { ShareStoryModal, StoryData } from '../components/ShareStoryModal';
+import { loadDuoStats, ordinalDuo } from '../lib/duo';
 import { s, F } from '../styles';
 
 // Vidéo de progression : 15 s max, comme une story. Au-delà, le fichier pèse
@@ -79,6 +81,8 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
   const [loadingObj, setLoadingObj] = useState(true);
   const [value, setValue] = useState(0);
   const [caption, setCaption] = useState('');
+  // Après publication : proposition de partager la progression en story Instagram.
+  const [story, setStory] = useState<StoryData | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
@@ -273,9 +277,11 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
   const uploadPhoto = async (uri: string, userId: string): Promise<string | null> => {
     setUploadingPhoto(true);
     // L'extension du fichier sert à reconnaître une vidéo à l'affichage (voir isVideo).
-    const isMov = /\.mov$/i.test(uri);
+    // Vidéo : recompressée en 720p (sortie en mp4) avant envoi.
+    const sendUri = mediaType === 'video' ? await compressVideo(uri) : uri;
+    const isMov = /\.mov$/i.test(sendUri);
     const { path, error } = mediaType === 'video'
-      ? await uploadVideo(`${userId}/${Date.now()}.${isMov ? 'mov' : 'mp4'}`, uri, isMov ? 'video/quicktime' : 'video/mp4')
+      ? await uploadVideo(`${userId}/${Date.now()}.${isMov ? 'mov' : 'mp4'}`, sendUri, isMov ? 'video/quicktime' : 'video/mp4')
       : await uploadImage(`${userId}/${Date.now()}.jpg`, uri);
     setUploadingPhoto(false);
     if (error) {
@@ -324,8 +330,38 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
       Alert.alert('Erreur', frError(error));
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      Alert.alert('Publié', 'Ta mise à jour est en ligne.');
-      onPublish();
+      const fmtN = (n: number) => String(n).replace('.', ',');
+      const storyData: StoryData = {
+        photoUri: mediaType === 'image' ? photoUri : null,
+        emoji: obj.emoji,
+        title: obj.title,
+        progressLabel: isPercent ? `${pct}%` : `${fmtN(value)} / ${fmtN(obj.target_value)} ${obj.unit}`,
+        pct,
+        caption,
+        username: (await supabase.from('users').select('username').eq('id', user.id).maybeSingle()).data?.username,
+      };
+      // Séance en duo : prénoms identifiés, et si c'est une réponse à un duo, le décompte
+      // du binôme (« 3e duo avec Eden, 2 semaines d'affilée ») avec la photo de l'autre.
+      const tagged = canTag ? friends.filter(f => withIds.includes(f.id) && taggable.some(t => t.id === f.id)) : [];
+      let title = 'Publié';
+      let message = 'Ta mise à jour est en ligne. Tu veux la partager en story pour faire découvrir Reiz ?';
+      if (tagged.length > 0) {
+        storyData.duoNames = tagged.map(f => f.full_name.split(' ')[0]).join(' et ');
+        if (duoWith && tagged.some(f => f.id === duoWith)) {
+          const st = await loadDuoStats(user.id, duoWith).catch(() => null);
+          const who = tagged.find(f => f.id === duoWith)!.full_name.split(' ')[0];
+          if (st && st.validated > 0) {
+            title = 'Duo validé 🤝';
+            message = `${ordinalDuo(st.validated)} avec ${who}${st.weeks > 0 ? `, ${st.weeks} ${st.weeks > 1 ? 'semaines' : 'semaine'} d'affilée 🔥` : ''}. Partage votre duo en story ?`;
+            storyData.partnerPhotoUri = st.partnerPhoto;
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+          }
+        }
+      }
+      Alert.alert(title, message, [
+        { text: 'Partager en story', onPress: () => setStory(storyData) },
+        { text: 'Terminer', style: 'cancel', onPress: onPublish },
+      ]);
     }
   };
 
@@ -531,11 +567,12 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
           {publishing || uploadingPhoto
             ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <ActivityIndicator color="#000" />
-                {uploadingPhoto && mediaType === 'video' && <Text style={s.ctaText}>Envoi de la vidéo...</Text>}
+                {uploadingPhoto && mediaType === 'video' && <Text style={s.ctaText}>Compression et envoi de la vidéo...</Text>}
               </View>
             : <Text style={s.ctaText}>Publier</Text>}
         </TouchableOpacity>
       </View>
+      <ShareStoryModal visible={!!story} data={story} onClose={() => { setStory(null); onPublish(); }} />
     </KeyboardAvoidingView>
   );
 }

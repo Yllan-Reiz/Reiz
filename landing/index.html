@@ -375,6 +375,10 @@ nav.scrolled{
 }
 .cta-section .waitlist-form{margin:0 auto;justify-content:center}
 
+.cta-contact{margin-top:34px;margin-bottom:0;font-size:13px;color:var(--muted)}
+.cta-contact a{color:#fff;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--dim)}
+.cta-contact a:hover{text-decoration-color:#fff}
+
 /* ───────── FOOTER ───────── */
 footer{
   border-top:1px solid var(--border);
@@ -622,6 +626,84 @@ footer a:hover::after{transform:scaleX(1);transform-origin:left}
 .a-cta{position:absolute;bottom:0;left:0;right:0;padding:20px 20px 36px;background:#0a0a0a}
 .a-ctabtn{background:#fff;color:#000;border-radius:18px;padding:16px;text-align:center;font-size:16px;font-weight:800}
 
+/* ── mise à jour écrans (oct. 2026) : fidèle à l'app actuelle ── */
+.a-hright{display:flex;align-items:center;gap:10px}
+.a-heart{position:relative;width:34px;height:34px;display:flex;align-items:center;justify-content:center}
+.a-heart svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2;stroke-linejoin:round}
+.a-heart svg.on{fill:#fff}
+.a-hbadge{position:absolute;top:0;right:-2px;min-width:16px;height:16px;border-radius:8px;background:#ff3b30;border:1.5px solid #0a0a0a;font-style:normal;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.a-flame{width:14px;height:14px;fill:#fff}
+.a-gear{display:flex;justify-content:flex-end;padding-top:0}
+.a-gear svg{width:20px;height:20px;fill:none;stroke:#888;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.a-pbio{font-size:14px;color:#ddd;text-align:center;line-height:20px;margin-top:8px;padding:0 24px}
+.a-pmember{font-size:11px;color:#666;margin-top:4px}
+.a-phero{padding:6px 0 12px;margin-bottom:6px}
+.a-badges{display:flex;gap:12px;overflow:hidden;margin-bottom:6px}
+.a-badge{width:68px;flex:none;display:flex;flex-direction:column;align-items:center}
+.a-badge u{width:56px;height:56px;border-radius:28px;background:#1c1c1c;border:1.5px solid #3a3a3a;text-decoration:none;font-size:26px;display:flex;align-items:center;justify-content:center}
+.a-badge span{font-size:10px;font-weight:700;color:#ddd;text-align:center;margin-top:6px;line-height:12px}
+.a-badge.off{opacity:.35}
+.a-badge.off u{background:#111;border-color:#1c1c1c}
+.a-badge.off span{color:#777}
+.a-sect{margin-top:14px}
+.a-objhead{gap:8px}
+.a-objp{white-space:nowrap}
+/* carte du feed façon BeReal : pas de fond, photo 3:4 arrondie */
+.a-bcard{margin-bottom:24px}
+.a-bhead{display:flex;align-items:flex-start;gap:10px;padding:0 2px 10px}
+.a-bsub{font-size:12px;color:#8a8a8a;margin-top:1px}
+.a-duo{display:inline-flex;align-items:center;gap:6px;margin-top:5px;padding:3px 10px 3px 3px;border-radius:14px;background:#1a1a1a;font-size:12px;color:#8a8a8a}
+.a-duo b{color:#fff;font-weight:600}
+.a-duoav{width:20px;height:20px;border-radius:10px;background:#2a2a2a;border:1.5px solid #1a1a1a;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.a-bphoto{
+  position:relative;height:326px;border-radius:22px;overflow:hidden;
+  background:
+    radial-gradient(46% 34% at 26% 16%,rgba(255,244,226,.38),rgba(255,244,226,.08) 54%,transparent 72%),
+    radial-gradient(58% 44% at 88% 32%,rgba(122,152,204,.24),transparent 66%),
+    radial-gradient(80% 60% at 70% 98%,rgba(0,0,0,.88),transparent 62%),
+    linear-gradient(196deg,#2c3139 0%,#171a20 48%,#0c0e11 100%);
+}
+.a-bphoto::before{content:'';position:absolute;inset:0;background:radial-gradient(118% 88% at 48% 42%,transparent 38%,rgba(0,0,0,.58))}
+.a-stack{position:absolute;left:12px;bottom:14px;display:flex}
+.a-face{display:block;position:relative;width:40px;height:40px;margin-left:-12px}
+.a-face:first-child{margin-left:0}
+.a-face i{width:40px;height:40px;border-radius:20px;border:2px solid #0a0a0a;background:#2a2a2a;color:#fff;font-style:normal;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.a-face em{position:absolute;right:-4px;bottom:-4px;font-style:normal;font-size:15px;line-height:1}
+.a-reactbtn{position:absolute;right:12px;bottom:14px;width:48px;height:48px;border-radius:24px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center}
+.a-reactbtn svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.a-bbelow{padding:12px 2px 0;display:flex;flex-direction:column;gap:6px}
+.a-gauge{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.a-gtrack{flex:1;height:8px;border-radius:4px;background:#222;overflow:hidden}
+.a-gtrack i{display:block;height:8px;border-radius:4px;background:#fff}
+.a-gauge b{font-size:14px;font-weight:800;letter-spacing:-.2px}
+.a-bcap{font-size:14px;color:#eee;line-height:20px}
+.a-bcom{font-size:13px;color:#bbb;font-weight:600}
+.a-badd{font-size:13px;color:#6f6f6f}
+/* écran Poster */
+.a-mhead{padding:56px 20px 12px}
+.a-back{width:34px;height:34px;border-radius:17px;background:#1a1a1a;border:1px solid #2a2a2a;display:flex;align-items:center;justify-content:center}
+.a-back svg{width:20px;height:20px;fill:none;stroke:#888;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.a-mhead{border-bottom:0}
+.a-postphoto{height:150px}
+.a-vid{position:absolute;top:12px;left:12px;background:rgba(0,0,0,.6);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:700}
+.a-pbody{padding:20px 20px 0}
+.a-lbl{margin-bottom:10px}
+.a-lbl.a-sp{margin-top:22px}
+.a-objrow{margin-bottom:0;overflow:hidden}
+.a-objcard{padding:12px}
+.a-objemoji{margin-bottom:6px}
+.a-with{display:flex;gap:14px}
+.a-w{width:60px;display:flex;flex-direction:column;align-items:center}
+.a-wav{position:relative;width:52px;height:52px;border-radius:26px;border:2px solid transparent;padding:2px}
+.a-w.on .a-wav{border-color:#fff}
+.a-wav i{width:100%;height:100%;border-radius:24px;background:#2a2a2a;color:#fff;font-style:normal;font-weight:700;display:flex;align-items:center;justify-content:center}
+.a-wav u{position:absolute;right:-2px;bottom:-2px;width:18px;height:18px;border-radius:9px;background:#fff;color:#000;text-decoration:none;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.a-w span{font-size:11px;font-weight:600;color:#888;margin-top:5px}
+.a-w.on span{color:#fff}
+.a-prog{margin-bottom:0;padding:14px 16px}
+.a-capbox{min-height:0;padding:12px 14px;font-size:13px;line-height:18px}
+.a-ppct small{font-size:16px;color:#888;font-weight:700;letter-spacing:0}
+
 /* ───────── ANIM INIT STATES (JS only) ───────── */
 .js .hero-eyebrow,.js .hero-logo,.js .hero-tagline,
 .js .hero-headline,.js .hero-sub,
@@ -779,22 +861,37 @@ footer a:hover::after{transform:scaleX(1);transform-origin:left}
           <div class="app">
             <div class="a-header">
               <div class="a-logo">Reiz.</div>
-              <div class="a-streak"><span>🔥</span><span>12</span></div>
+              <div class="a-hright">
+                <div class="a-heart"><svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.6 7.7 3.6 4.5 6.9 4.5c1.9 0 3.5 1 5.1 3 1.6-2 3.2-3 5.1-3 3.3 0 5.3 3.2 4.1 6.6-1.7 4.8-9.2 9.4-9.2 9.4z"/></svg><i class="a-hbadge">3</i></div>
+                <div class="a-streak"><svg viewBox="0 0 24 24" class="a-flame"><path d="M12 2c.6 3.2 3.2 4.7 4.7 7.2 1.6 2.7 1.3 6.1-.8 8.3A6.3 6.3 0 0 1 12 20a6.2 6.2 0 0 1-4.6-2.1c-1.9-2.2-2-5.3-.4-7.6.5 1.2 1.3 1.9 2.2 2.2C8.7 9.6 9.6 5.2 12 2z"/></svg><span>12j</span></div>
+              </div>
             </div>
             <div class="a-body">
+              <div class="a-gear"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></div>
               <div class="a-phero">
                 <div class="a-pav">Y</div>
                 <div class="a-pname">Yllan</div>
                 <div class="a-puser">@yllan</div>
+                <div class="a-pbio">Je vise mon premier semi en novembre.</div>
+                <div class="a-pmember">Membre depuis septembre 2026</div>
               </div>
               <div class="a-stats">
-                <div class="a-stat"><div class="a-statv">12</div><div class="a-statl">Streak</div></div>
-                <div class="a-stat"><div class="a-statv">3</div><div class="a-statl">Objectifs</div></div>
+                <div class="a-stat"><div class="a-statv">12j</div><div class="a-statl">Streak</div></div>
+                <div class="a-stat"><div class="a-statv">34</div><div class="a-statl">Posts</div></div>
                 <div class="a-stat"><div class="a-statv">8</div><div class="a-statl">Amis</div></div>
               </div>
-              <div class="a-sect">Mes objectifs</div>
+              <div class="a-sect">Badges (5/12)</div>
+              <div class="a-badges">
+                <div class="a-badge"><u>🌱</u><span>Premier pas</span></div>
+                <div class="a-badge"><u>🔥</u><span>En feu</span></div>
+                <div class="a-badge"><u>⚡</u><span>Semaine parfaite</span></div>
+                <div class="a-badge"><u>🤝</u><span>En duo</span></div>
+                <div class="a-badge"><u>🎬</u><span>En action</span></div>
+                <div class="a-badge off"><u>👑</u><span>Inarrêtable</span></div>
+              </div>
+              <div class="a-sect">En cours</div>
               <div class="a-obj">
-                <div class="a-objhead"><div class="a-objt">Courir 100 km</div><div class="a-objp">68%</div></div>
+                <div class="a-objhead"><div class="a-objt">🏃 Courir 100 km</div><div class="a-objp">68 / 100 km</div></div>
                 <div class="a-objbar"><i style="width:68%"></i></div>
                 <div class="a-heat">
                   <b class="on"></b><b class="on"></b><b></b><b class="on"></b><b class="on"></b><b class="on"></b><b></b>
@@ -803,14 +900,6 @@ footer a:hover::after{transform:scaleX(1);transform-origin:left}
                   <b class="on"></b><b class="on"></b><b class="on"></b><b></b><b class="on"></b><b class="on"></b><b class="on"></b>
                 </div>
                 <div class="a-objfoot">22 jours sur 28</div>
-              </div>
-              <div class="a-obj">
-                <div class="a-objhead"><div class="a-objt">Muscu 5×/semaine</div><div class="a-objp">42%</div></div>
-                <div class="a-objbar"><i style="width:42%"></i></div>
-              </div>
-              <div class="a-obj">
-                <div class="a-objhead"><div class="a-objt">Squat à 140 kg</div><div class="a-objp">120 / 140 kg</div></div>
-                <div class="a-objbar"><i style="width:86%"></i></div>
               </div>
             </div>
             <div class="a-nav">
@@ -827,7 +916,7 @@ footer a:hover::after{transform:scaleX(1);transform-origin:left}
           </div>
         </div>
       </div>
-      <p class="showcase-cap"><b>Ta progression</b>Streak, objectifs, assiduité jour par jour. Impossible de se mentir.</p>
+      <p class="showcase-cap"><b>Ta progression</b>Streak, badges, objectifs, assiduité jour par jour. Impossible de se mentir.</p>
     </div>
 
     <!-- ── FEED ── -->
@@ -838,67 +927,42 @@ footer a:hover::after{transform:scaleX(1);transform-origin:left}
           <div class="app">
             <div class="a-header">
               <div class="a-logo">Reiz.</div>
-              <div class="a-streak"><span>🔥</span><span>12</span></div>
+              <div class="a-hright">
+                <div class="a-heart"><svg viewBox="0 0 24 24" class="on"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.6 7.7 3.6 4.5 6.9 4.5c1.9 0 3.5 1 5.1 3 1.6-2 3.2-3 5.1-3 3.3 0 5.3 3.2 4.1 6.6-1.7 4.8-9.2 9.4-9.2 9.4z"/></svg><i class="a-hbadge">3</i></div>
+                <div class="a-streak"><svg viewBox="0 0 24 24" class="a-flame"><path d="M12 2c.6 3.2 3.2 4.7 4.7 7.2 1.6 2.7 1.3 6.1-.8 8.3A6.3 6.3 0 0 1 12 20a6.2 6.2 0 0 1-4.6-2.1c-1.9-2.2-2-5.3-.4-7.6.5 1.2 1.3 1.9 2.2 2.2C8.7 9.6 9.6 5.2 12 2z"/></svg><span>12j</span></div>
+              </div>
             </div>
             <div class="a-feed">
               <div class="a-mycta">
                 <div>
                   <div class="a-mycta-t">Poste ta progression</div>
-                  <div class="a-mycta-s">Ton cercle t'attend aujourd'hui 👀</div>
+                  <div class="a-mycta-s">Ton cercle t'attend aujourd'hui</div>
                 </div>
-                <div class="a-mycta-b">Poster</div>
+                <div class="a-mycta-b">Publier →</div>
               </div>
-              <div class="a-card">
-                <div class="a-photo">
-                  <div class="a-ovtop">
-                    <div class="a-ovhead">
-                      <div class="a-av">L</div>
-                      <div class="a-meta">
-                        <div class="a-name">Léa</div>
-                        <div class="a-time">il y a 2 h</div>
-                      </div>
-                      <div class="a-menu">⋯</div>
-                    </div>
+              <div class="a-bcard">
+                <div class="a-bhead">
+                  <div class="a-av">L</div>
+                  <div class="a-meta">
+                    <div class="a-name">Léa</div>
+                    <div class="a-bsub">🏃 Semi-marathon · il y a 2 h</div>
+                    <div class="a-duo"><span class="a-duoav">E</span>avec <b>Eden</b></div>
                   </div>
-                  <div class="a-ovbot">
-                    <div class="a-prow">
-                      <div class="a-pbg"><i style="width:68%"></i></div>
-                      <div class="a-plabel">68%</div>
-                    </div>
-                    <div class="a-cap">Semaine 4, les jambes tiennent. Merci pour les messages d'hier 🙏</div>
-                    <div class="a-rxns">
-                      <div class="a-rxn on"><i>🔥</i><b>3</b></div>
-                      <div class="a-rxn"><i>💪</i><b>2</b></div>
-                    </div>
-                    <div class="a-acts">
-                      <div class="a-act"><i>😊</i><span>Réagir</span></div>
-                      <div class="a-act"><i>💬</i><span>4</span></div>
-                    </div>
-                  </div>
+                  <div class="a-menu">⋯</div>
                 </div>
-              </div>
-              <div class="a-card" style="margin-top:16px">
-                <div class="a-nophoto">
-                  <div class="a-cardhead">
-                    <div class="a-av">M</div>
-                    <div class="a-meta">
-                      <div class="a-name">Marc</div>
-                      <div class="a-time">il y a 5 h</div>
-                    </div>
-                    <div class="a-menu">⋯</div>
+                <div class="a-bphoto">
+                  <div class="a-stack">
+                    <span class="a-face"><i>E</i><em>🔥</em></span>
+                    <span class="a-face"><i>M</i><em>💪</em></span>
+                    <span class="a-face"><i>Y</i><em>👏</em></span>
                   </div>
-                  <div class="a-nocap">Jour 12. Aucune envie ce matin. J'y suis allé quand même.</div>
-                  <div class="a-prow2">
-                    <div class="a-pbg"><i style="width:41%"></i></div>
-                    <div class="a-plabel2">41%</div>
-                  </div>
-                  <div class="a-rxns">
-                    <div class="a-rxn"><i>👊</i><b>5</b></div>
-                  </div>
-                  <div class="a-acts">
-                    <div class="a-act"><i>😊</i><span>Réagir</span></div>
-                    <div class="a-act"><i>💬</i><span>2</span></div>
-                  </div>
+                  <div class="a-reactbtn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.2c.9 1.1 2 1.7 3.5 1.7s2.6-.6 3.5-1.7"/><path d="M9 9.5h.01M15 9.5h.01"/></svg></div>
+                </div>
+                <div class="a-bbelow">
+                  <div class="a-gauge"><div class="a-gtrack"><i style="width:68%"></i></div><b>68%</b></div>
+                  <div class="a-bcap">Semaine 4, les jambes tiennent. Merci pour les messages d'hier.</div>
+                  <div class="a-bcom">Voir les 4 commentaires</div>
+                  <div class="a-badd">Ajouter un commentaire…</div>
                 </div>
               </div>
             </div>
@@ -919,7 +983,7 @@ footer a:hover::after{transform:scaleX(1);transform-origin:left}
           </div>
         </div>
       </div>
-      <p class="showcase-cap"><b>Le feed de ton cercle</b>Uniquement les gens que tu as acceptés. Leur preuve du jour, et la tienne.</p>
+      <p class="showcase-cap"><b>Le feed de ton cercle</b>Photos et vidéos des gens que tu as acceptés, sur 24 h. Tu réagis d'un tap, tu commentes, tu t'entraînes en duo.</p>
     </div>
 
     <!-- ── POSTER ── -->
@@ -929,35 +993,43 @@ footer a:hover::after{transform:scaleX(1);transform-origin:left}
           <div class="phone-island"></div>
           <div class="app">
             <div class="a-mhead">
-              <div class="a-mcancel">Annuler</div>
+              <div class="a-back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></div>
               <div class="a-mtitle">Poste ta progression</div>
-              <div style="width:44px"></div>
+              <div style="width:34px"></div>
             </div>
-            <div class="a-postphoto"><div class="a-chg">Changer</div></div>
+            <div class="a-postphoto"><div class="a-chg">Changer</div><div class="a-vid">▶ 0:12</div></div>
             <div class="a-pbody">
               <div class="a-lbl">OBJECTIF</div>
               <div class="a-objrow">
                 <div class="a-objcard on"><div class="a-objemoji">🏃</div><div class="a-objname">Courir 100 km</div></div>
                 <div class="a-objcard"><div class="a-objemoji">🏋️</div><div class="a-objname">Muscu 5×/sem</div></div>
+                <div class="a-objcard"><div class="a-objemoji">🎯</div><div class="a-objname">Squat 140 kg</div></div>
               </div>
-              <div class="a-lbl">PROGRESSION</div>
+              <div class="a-lbl a-sp">AVEC QUI ? (FACULTATIF)</div>
+              <div class="a-with">
+                <div class="a-w on"><div class="a-wav"><i>E</i><u>✓</u></div><span>Eden</span></div>
+                <div class="a-w"><div class="a-wav"><i>L</i></div><span>Léa</span></div>
+                <div class="a-w"><div class="a-wav"><i>M</i></div><span>Marc</span></div>
+                <div class="a-w"><div class="a-wav"><i>S</i></div><span>Sarah</span></div>
+              </div>
+              <div class="a-lbl a-sp">PROGRESSION</div>
               <div class="a-prog">
                 <div class="a-pbtn">−</div>
                 <div class="a-pcenter">
-                  <div class="a-ppct">72%</div>
-                  <div class="a-pval">72 / 100 km</div>
+                  <div class="a-ppct">72<small> km</small></div>
+                  <div class="a-pval">sur 100 km</div>
                   <div class="a-pbar"><i style="width:72%"></i></div>
                 </div>
                 <div class="a-pbtn">+</div>
               </div>
-              <div class="a-lbl">CAPTION</div>
-              <div class="a-capbox">Séance du soir bouclée. Plus que 28 km avant la fin du mois.</div>
+              <div class="a-lbl a-sp">LÉGENDE</div>
+              <div class="a-capbox">Sortie du soir bouclée, Eden m'a suivi sur les 5 derniers km.</div>
             </div>
             <div class="a-cta"><div class="a-ctabtn">Publier</div></div>
           </div>
         </div>
       </div>
-      <p class="showcase-cap"><b>10 secondes par jour</b>Une photo, un pourcentage, une phrase. C'est tout ce que Reiz demande.</p>
+      <p class="showcase-cap"><b>10 secondes par jour</b>Une photo ou une vidéo, ton objectif, un chiffre. Tu identifies un ami pour poster en duo.</p>
     </div>
 
   </div>
@@ -1025,6 +1097,8 @@ footer a:hover::after{transform:scaleX(1);transform-origin:left}
     <p>Tu es sur la liste !</p>
     <span>On te prévient dès que Reiz est disponible.</span>
   </div>
+
+  <p class="cta-contact">Une question, une idée ? Écris-nous à <a href="mailto:reizapp.contact@gmail.com">reizapp.contact@gmail.com</a></p>
 </section>
 
 <footer>

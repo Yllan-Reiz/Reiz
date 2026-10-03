@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityInd
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
 import { CGU_URL, PRIVACY_URL } from '../constants';
+import { SocialAuthButtons } from '../components/SocialAuthButtons';
 import { s } from '../styles';
 
 export function Onboarding({ onNext }: { onNext: () => void }) {
@@ -210,6 +211,7 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
           <TouchableOpacity style={[s.btn, { marginTop: 8 }, loading && s.btnDisabled]} onPress={loading ? undefined : handleSignUp}>
             {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Créer mon compte</Text>}
           </TouchableOpacity>
+          <SocialAuthButtons />
           <Text style={s.legal}>
             En créant un compte tu acceptes nos{' '}
             <Text style={s.legalLink} onPress={() => Linking.openURL(CGU_URL).catch(() => {})}>CGU</Text>

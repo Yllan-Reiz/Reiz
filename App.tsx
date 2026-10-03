@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import { useFonts, Inter_300Light, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, Inter_900Black } from '@expo-google-fonts/inter';
 import { supabase } from './src/lib/supabase';
 import { registerForPushNotifications } from './src/lib/notifications';
+import { handleAuthUrl, ensureProfile } from './src/lib/googleAuth';
 import { captureInviteFromUrl, consumePendingInvite } from './src/lib/invites';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { Splash } from './src/screens/Splash';
@@ -44,14 +45,23 @@ function AppInner() {
   useEffect(() => {
     // Deep link d'invitation : capture le lien d'ouverture (app fermée) puis ceux reçus
     // app ouverte. Le ref est consommé après connexion (cf. onAuthStateChange ci-dessous).
-    Linking.getInitialURL().then((url) => captureInviteFromUrl(url, registeredUserId.current));
+    Linking.getInitialURL().then((url) => { handleAuthUrl(url); captureInviteFromUrl(url, registeredUserId.current); });
     const linkSub = Linking.addEventListener('url', ({ url }) => {
+      handleAuthUrl(url);
       captureInviteFromUrl(url, registeredUserId.current);
     });
 
+    // Apple / Google : la ligne `users` n'existe pas encore à la première connexion.
+    // On la crée AVANT d'entrer dans l'app, sinon le fil se charge sans profil.
+    const enter = async (user: any) => {
+      const viaEmail = (user?.app_metadata?.providers || [user?.app_metadata?.provider]).includes('email');
+      if (!viaEmail) { await ensureProfile(user).catch(() => {}); consumePendingInvite(user.id); }
+      setScreen('main');
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setScreen('main');
+        enter(session.user);
         maybeRegisterPush(session.user.id);
         consumePendingInvite(session.user.id);
       }
@@ -59,7 +69,7 @@ function AppInner() {
     });
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        setScreen('main');
+        enter(session.user);
         maybeRegisterPush(session.user.id);
         consumePendingInvite(session.user.id);
       } else {

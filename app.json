@@ -15,7 +15,8 @@
         "NSPhotoLibraryUsageDescription": "Reiz accède à ta galerie pour publier ta progression (photo ou vidéo) et ta photo de profil.",
         "NSMicrophoneUsageDescription": "Reiz utilise le micro pour enregistrer le son de tes vidéos de progression.",
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.yllan.reiz",
@@ -42,7 +43,8 @@
         }
       ],
       "expo-font",
-      "expo-video"
+      "expo-video",
+      "expo-apple-authentication"
     ],
     "extra": {
       "eas": {

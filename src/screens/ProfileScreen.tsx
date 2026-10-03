@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, RefreshControl, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, RefreshControl, Modal, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,13 +7,14 @@ import { supabase } from '../lib/supabase';
 import { frError, inUnit } from '../lib/helpers';
 import { uploadImage, signOne } from '../lib/storage';
 import { Objective } from '../lib/types';
-import { APP_VERSION, HEATMAP_MAX_DAYS, daysFor, dayKeysFor, navClearance } from '../constants';
-import { s } from '../styles';
+import { HEATMAP_MAX_DAYS, GUTTER, navClearance } from '../constants';
+import { s, F } from '../styles';
 import { ProfileSkeleton } from '../components/Skeleton';
-import { BadgesStrip, PinnedRow, PostsGrid, computeBadges, isCompleted } from '../components/ProfileSections';
+import { ProfileHeroPhoto, GlassIconButton, StatBubble, AboutBubble, BadgesSection, GoalCards, HistoryCarousel, AchievedList, SectionHeader, computeBadges, isCompleted } from '../components/ProfileSections';
 import { PostViewer } from '../components/PostViewer';
 import { ProfileTags } from '../components/ProfileTags';
 import { PeopleListModal } from '../components/PeopleListModal';
+import { SettingsScreen } from './SettingsScreen';
 import { loadProfilePosts, loadPost } from '../lib/posts';
 import { Update, FeedMeta } from '../lib/types';
 
@@ -39,6 +40,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   const [viewing, setViewing] = useState<{ u: Update; meta: FeedMeta } | null>(null);
   // Fenêtre « Amis » (liste cliquable) ou « Cercle proche » (étoiles).
   const [peopleMode, setPeopleMode] = useState<'friends' | 'close' | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => { loadProfile(); }, []);
 
@@ -184,18 +186,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
     );
   };
 
-  const openSettings = () => {
-    // La version s'affiche ici pour pouvoir vérifier, sur une capture d'écran,
-    // quelle version tourne réellement sur le téléphone d'un testeur.
-    Alert.alert('Paramètres', `Reiz ${APP_VERSION}`, [
-      { text: 'Modifier mon nom', onPress: () => setEditingName(true) },
-      { text: 'Modifier ma bio', onPress: () => setEditingBio(true) },
-      { text: 'Mon cercle proche', onPress: () => setPeopleMode('close') },
-      { text: 'Se déconnecter', onPress: handleSignOut },
-      { text: 'Supprimer mon compte', style: 'destructive', onPress: handleDeleteAccount },
-      { text: 'Annuler', style: 'cancel' },
-    ]);
-  };
+  const openSettings = () => setShowSettings(true);
 
   const handleSignOut = async () => {
     Alert.alert('Déconnexion', 'Tu veux vraiment te déconnecter ?', [
@@ -226,48 +217,36 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
     );
   };
 
-  const progressPct = (o: Objective) => o.target_value > 0 ? Math.min(Math.round((o.current_value / o.target_value) * 100), 100) : 0;
-  const initial = profile?.full_name?.charAt(0).toUpperCase() || '?';
+  const { height: winH } = useWindowDimensions();
+  const heroH = Math.round(Math.min(winH * 0.72, 620));
+  const ongoing = objectives.filter(o => !isCompleted(o));
+  const achieved = objectives.filter(isCompleted);
+  const badges = computeBadges(posts, objectives);
   const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '';
+  const topBtn = insets.top + 58;
 
   return (
     <View style={s.container}>
       {loading ? (
-        <ProfileSkeleton />
+        <View style={{ flex: 1, paddingTop: insets.top + 54 }}><ProfileSkeleton /></View>
       ) : (
         <ScrollView
-          style={s.feed}
+          style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshingProfile}
               onRefresh={async () => { setRefreshingProfile(true); await loadProfile(true); setRefreshingProfile(false); }}
-              tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1a1a1a"
+              tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1a1a1a" progressViewOffset={topBtn}
             />
           }
         >
-          <View style={s.profileTopBar}>
-            <TouchableOpacity
-              style={s.profileSettingsBtn}
-              onPress={openSettings}
-              accessibilityLabel="Paramètres"
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="settings-outline" size={20} color="#888" />
-            </TouchableOpacity>
-          </View>
+          {/* === Photo de profil en plein écran, nom au-dessus, bulle de verre à 3 zones === */}
+          <ProfileHeroPhoto avatarUrl={avatarUrl} height={heroH}>
+            <GlassIconButton icon="camera-outline" label="Changer la photo de profil" onPress={handlePickAvatar} style={{ position: 'absolute', top: topBtn, left: GUTTER }} />
+            <GlassIconButton icon="settings-outline" label="Réglages" onPress={openSettings} style={{ position: 'absolute', top: topBtn, right: GUTTER }} />
+            {uploadingAvatar && <ActivityIndicator color="#fff" style={{ position: 'absolute', top: heroH / 2 }} />}
 
-          <View style={s.profileHero}>
-            <TouchableOpacity style={s.profileAvatarWrap} onPress={handlePickAvatar} activeOpacity={0.8}>
-              {avatarUrl
-                ? <Image source={{ uri: avatarUrl }} style={s.profileAvatarImg} />
-                : <View style={s.profileAvatar}><Text style={s.profileAvatarText}>{initial}</Text></View>
-              }
-              {uploadingAvatar
-                ? <View style={s.profileAvatarOverlay}><ActivityIndicator color="#fff" /></View>
-                : <View style={s.profileAvatarOverlay}><Ionicons name="camera" size={13} color="#fff" /></View>
-              }
-            </TouchableOpacity>
             {editingName ? (
               <View style={s.profileNameEdit}>
                 <TextInput style={s.profileNameInput} value={newName} onChangeText={setNewName} autoFocus autoCapitalize="words" placeholderTextColor="#666" maxLength={40} />
@@ -281,16 +260,26 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
                 </View>
               </View>
             ) : (
-              <TouchableOpacity onPress={() => setEditingName(true)}>
-                <Text style={s.profileName}>{profile?.full_name || 'Utilisateur'}</Text>
-                <Text style={s.profileEditHint}>Appuie pour modifier</Text>
+              <TouchableOpacity onPress={() => setEditingName(true)} activeOpacity={0.8}>
+                <Text style={{ fontSize: 40, fontFamily: F.black, color: '#fff', textAlign: 'center', letterSpacing: -1.5, paddingHorizontal: GUTTER }} numberOfLines={2}>{profile?.full_name || 'Utilisateur'}</Text>
               </TouchableOpacity>
             )}
-            <Text style={s.profileUsername}>@{profile?.username}</Text>
+            <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.78)', fontFamily: F.semibold, marginTop: 4 }}>@{profile?.username}</Text>
+            <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontFamily: F.regular, marginTop: 2 }}>Membre depuis {memberSince}</Text>
+
+            <StatBubble items={[
+              { value: `${streak}j`, label: 'Streak' },
+              { value: String(posts.length), label: 'Posts' },
+              { value: String(friendCount), label: friendCount > 1 ? 'Amis' : 'Ami', onPress: () => setPeopleMode('friends') },
+            ]} />
+          </ProfileHeroPhoto>
+
+          {/* === À propos : bulle de verre (bio + tags) === */}
+          <AboutBubble>
             {editingBio ? (
-              <View style={[s.profileNameEdit, { marginTop: 10 }]}>
+              <View style={{ gap: 10, alignSelf: 'stretch' }}>
                 <TextInput
-                  style={[s.profileNameInput, { fontSize: 14, minHeight: 60, textAlignVertical: 'top' }]}
+                  style={[s.profileNameInput, { fontSize: 14, minHeight: 60, textAlignVertical: 'top', textAlign: 'left' }]}
                   value={newBio}
                   onChangeText={setNewBio}
                   autoFocus
@@ -300,7 +289,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
                   placeholderTextColor="#666"
                 />
                 <Text style={{ color: '#666', fontSize: 11, alignSelf: 'flex-end' }}>{newBio.length}/150</Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
+                <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
                   <TouchableOpacity style={s.profileSaveBtn} onPress={saving ? undefined : handleSaveBio}>
                     {saving ? <ActivityIndicator color="#000" size="small" /> : <Text style={s.profileSaveBtnText}>Sauvegarder</Text>}
                   </TouchableOpacity>
@@ -310,98 +299,54 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
                 </View>
               </View>
             ) : (
-              <TouchableOpacity onPress={() => setEditingBio(true)} style={{ marginTop: 8, paddingHorizontal: 24 }}>
+              <TouchableOpacity onPress={() => setEditingBio(true)} activeOpacity={0.8} style={{ alignItems: 'center' }}>
+                <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontFamily: F.bold, letterSpacing: 1.5, marginBottom: 6 }}>À PROPOS</Text>
                 {profile?.bio
-                  ? <Text style={s.profileBio}>{profile.bio}</Text>
-                  : <Text style={[s.profileBio, { color: '#666' }]}>+ Ajoute une bio</Text>}
+                  ? <Text style={{ fontSize: 15, color: '#fff', lineHeight: 22, fontFamily: F.regular, textAlign: 'center' }}>{profile.bio}</Text>
+                  : <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', fontFamily: F.regular }}>+ Ajoute une bio</Text>}
               </TouchableOpacity>
             )}
-            <Text style={s.profileMember}>Membre depuis {memberSince}</Text>
+            {userId && <View style={{ alignSelf: 'stretch' }}><ProfileTags userId={userId} currentUserId={userId} own /></View>}
+          </AboutBubble>
+
+          {/* === Badges, puis objectifs en cours, puis historique des posts === */}
+          <BadgesSection badges={badges} own />
+
+          <View style={{ marginTop: 14 }}>
+            {objectives.length === 0 ? (
+              <View style={s.emptyState}>
+                <Text style={s.emptyStateTitle}>Pose ton premier objectif</Text>
+                <Text style={s.emptyStateText}>Choisis ce que tu veux dépasser. Ton cercle te suivra chaque jour.</Text>
+                <TouchableOpacity style={s.emptyStateBtn} onPress={onCreateObjective}>
+                  <Text style={s.emptyStateBtnText}>Aller à mes objectifs →</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                {ongoing.length > 0 && <SectionHeader title="En cours" count={ongoing.length} style={{ paddingHorizontal: GUTTER }} />}
+                <GoalCards items={ongoing} activity={activityByObj} onPress={openObjectiveMenu} />
+                <AchievedList items={achieved} />
+              </>
+            )}
           </View>
 
-          <View style={s.statsRow}>
-            <View style={s.statPill}><Text style={s.statVal}>{streak}j</Text><Text style={s.statLbl}>Streak</Text></View>
-            <View style={s.statPill}><Text style={s.statVal}>{posts.length}</Text><Text style={s.statLbl}>Posts</Text></View>
-            <TouchableOpacity style={s.statPill} onPress={() => setPeopleMode('friends')} activeOpacity={0.75} accessibilityLabel="Voir mes amis">
-              <Text style={s.statVal}>{friendCount}</Text><Text style={s.statLbl}>{friendCount > 1 ? 'Amis' : 'Ami'}</Text>
-            </TouchableOpacity>
-          </View>
+          <SectionHeader title="Historique" count={posts.length} style={{ paddingHorizontal: GUTTER, marginTop: 6 }} />
+          <HistoryCarousel posts={posts} onOpen={openPost} emptyText="Tes publications apparaîtront ici." />
 
-          {userId && <ProfileTags userId={userId} currentUserId={userId} own />}
-          <BadgesStrip badges={computeBadges(posts, objectives)} own />
-          <PinnedRow posts={posts} onOpen={openPost} />
-
-          {objectives.length === 0 ? (
-            <View style={s.emptyState}>
-              <Text style={s.emptyStateTitle}>Pose ton premier objectif</Text>
-              <Text style={s.emptyStateText}>Choisis ce que tu veux dépasser. Ton cercle te suivra chaque jour.</Text>
-              <TouchableOpacity style={s.emptyStateBtn} onPress={onCreateObjective}>
-                <Text style={s.emptyStateBtnText}>Aller à mes objectifs →</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <>
-              {objectives.some(o => !isCompleted(o)) && <Text style={s.sectionTitle}>EN COURS</Text>}
-              {objectives.filter(o => !isCompleted(o)).map((o) => {
-                const set = activityByObj[o.id] || new Set<string>();
-                const nbDays = daysFor(o);
-                const dayKeys = dayKeysFor(nbDays);
-                const doneCount = dayKeys.filter(d => set.has(d)).length;
-                const pct = progressPct(o);
-                const isInfinite = o.duration_days == null;
-                return (
-                  <View key={o.id} style={s.objCardProfile}>
-                    <View style={s.objCardProfileHead}>
-                      <Text style={s.objCardProfileTitle} numberOfLines={1}>{o.emoji} {o.title}</Text>
-                      <Text style={s.objCardProfilePct}>{o.unit === '%' ? `${pct}%` : `${String(o.current_value).replace('.', ',')} / ${String(o.target_value).replace('.', ',')} ${o.unit}`}</Text>
-                      <TouchableOpacity
-                        onPress={() => openObjectiveMenu(o)}
-                        accessibilityLabel={`Options de l'objectif ${o.title}`}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <Ionicons name="ellipsis-horizontal" size={18} color="#777" />
-                      </TouchableOpacity>
-                    </View>
-                    <View style={s.progressBg}><View style={[s.progressFill, { width: `${pct}%` as any }]} /></View>
-                    <View style={s.heatGrid}>
-                      {dayKeys.map((d, i) => (
-                        <View key={i} style={[s.heatCell, set.has(d) && s.heatCellActive]} />
-                      ))}
-                    </View>
-                    <Text style={s.objCardProfileFoot}>
-                      {doneCount} {doneCount > 1 ? 'jours' : 'jour'} {isInfinite ? `sur les ${nbDays} derniers` : `sur ${nbDays}`}
-                    </Text>
-                  </View>
-                );
-              })}
-            </>
-          )}
-
-          {objectives.some(isCompleted) && (
-            <>
-              <Text style={s.sectionTitle}>RÉUSSIS</Text>
-              {objectives.filter(isCompleted).map(o => (
-                <View key={o.id} style={s.profileObjRow}>
-                  <Text style={s.profileObjEmoji}>{o.emoji}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.profileObjName}>{o.title}</Text>
-                    <Text style={{ color: '#888', fontSize: 11 }}>{o.target_value} {o.unit} atteints</Text>
-                  </View>
-                  <Text style={{ fontSize: 20 }}>🏆</Text>
-                </View>
-              ))}
-            </>
-          )}
-
-          <PostsGrid posts={posts} onOpen={openPost} emptyText="Tes publications apparaîtront ici." />
-
-          {/* Déconnexion et suppression de compte vivent désormais dans le menu
-              de la roue dentée, en haut à droite. */}
           {deleting && <ActivityIndicator color="#ff3b30" size="small" style={{ marginTop: 16 }} />}
-          {/* Sans cette réserve, "Supprimer mon compte" finit sous la barre de nav. */}
+          {/* Sans cette réserve, le bas de la page finit sous la barre de nav. */}
           <View style={{ height: navClearance(insets.bottom) }} />
         </ScrollView>
       )}
+      <SettingsScreen
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+        onEditName={() => setEditingName(true)}
+        onEditBio={() => setEditingBio(true)}
+        onCloseFriends={() => setPeopleMode('close')}
+        onSignOut={handleSignOut}
+        onDeleteAccount={handleDeleteAccount}
+      />
       {userId && (
         <PeopleListModal
           visible={!!peopleMode}

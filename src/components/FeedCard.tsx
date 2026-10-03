@@ -12,6 +12,7 @@ import { FadeInImage } from './FadeInImage';
 import { FeedVideo } from './FeedVideo';
 import { isVideo } from '../lib/storage';
 import { togglePin } from '../lib/posts';
+import { ShareStoryModal, StoryData } from './ShareStoryModal';
 import { FloatingEmoji, nextFloatId } from './FloatingEmoji';
 
 // Ouverture/fermeture en fondu-montée. Le contenu reste monté le temps de la
@@ -78,7 +79,7 @@ const STACK_MAX = 4;
 
 // Les réactions et le compteur de commentaires arrivent pré-chargés via `meta`
 // (chargés en lot par le feed) : zéro requête au montage de la carte.
-export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, onPinChanged, onDuoReply, onOpenProfile, duoDone }: {
+export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, onPinChanged, onDuoReply, onOpenProfile, duoDone, duoValidated }: {
   u: Update;
   meta?: FeedMeta;
   currentUserId: string | null;
@@ -96,6 +97,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   onOpenProfile?: (id: string) => void;
   // Déjà répondu à ce duo : le bouton devient une confirmation.
   duoDone?: boolean;
+  duoValidated?: boolean;
 }) {
   // Le fil parle la même langue que le reste de l'app : un objectif chiffré
   // s'affiche en séances (ou en km, en reps...), le pourcentage ne reste que
@@ -215,6 +217,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
     ]);
   };
 
+  const [storyData, setStoryData] = useState<StoryData | null>(null);
   const [pinned, setPinned] = useState(!!u.pinned_at);
   useEffect(() => { setPinned(!!u.pinned_at); }, [u.pinned_at]);
 
@@ -230,6 +233,15 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   const openMenu = () => {
     if (isMine) {
       Alert.alert('Ton post', undefined, [
+        { text: 'Partager en story Instagram', onPress: () => setStoryData({
+            photoUri: u.photo_url && !isVideo(u.photo_url) ? u.photo_url : null,
+            emoji: u.objectives?.emoji,
+            title: u.objectives?.title || u.caption,
+            progressLabel: progressLabel,
+            pct: pctValue,
+            caption: u.caption,
+            username: u.users?.username,
+          }) },
         { text: pinned ? 'Retirer des épinglés' : 'Épingler sur mon profil', onPress: pinPost },
         { text: 'Supprimer le post', style: 'destructive', onPress: deletePost },
         { text: 'Annuler', style: 'cancel' },
@@ -268,7 +280,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
     const withUsers = u.with_users || [];
     if (!duoLabel) return null;
     return (
-      <TouchableOpacity style={s.duoRow} onPress={openDuo} disabled={!onOpenProfile} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6 }} accessibilityLabel={`Séance avec ${duoLabel}`}>
+      <TouchableOpacity style={[s.duoRow, duoValidated && { backgroundColor: '#242424', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }]} onPress={openDuo} disabled={!onOpenProfile} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6 }} accessibilityLabel={`Séance avec ${duoLabel}`}>
         <View style={{ flexDirection: 'row' }}>
           {withUsers.slice(0, 3).map((w, i) => (
             w.avatar_url
@@ -276,7 +288,9 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
               : <View key={w.id} style={[s.duoAv, s.duoAvEmpty, i > 0 && { marginLeft: -7 }]}><Text style={s.duoAvText}>{w.full_name.charAt(0).toUpperCase()}</Text></View>
           ))}
         </View>
-        <Text style={s.duoText} numberOfLines={1}>avec <Text style={s.duoNames}>{duoLabel}</Text></Text>
+        {duoValidated
+          ? <Text style={s.duoText} numberOfLines={1}><Text style={s.duoNames}>✓ Duo validé</Text> avec <Text style={s.duoNames}>{duoLabel}</Text></Text>
+          : <Text style={s.duoText} numberOfLines={1}>avec <Text style={s.duoNames}>{duoLabel}</Text></Text>}
       </TouchableOpacity>
     );
   };
@@ -425,6 +439,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
         </ScrollView>
       </Reveal>
 
+      <ShareStoryModal visible={!!storyData} data={storyData} onClose={() => setStoryData(null)} />
       {/* Qui a réagi */}
       <Modal visible={showReactors} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowReactors(false)}>
         <View style={s.modalContainer}>

@@ -22,6 +22,7 @@ import { FriendProfileScreen } from './FriendProfileScreen';
 import { ActivityScreen } from './ActivityScreen';
 import { changelogUnseen } from '../lib/changelog';
 import { attachDuoNames, attachReactors } from '../lib/posts';
+import { validatedDuoIds } from '../lib/duo';
 
 const PAGE_SIZE = 20;
 const FEED_WINDOW_HOURS = 24;
@@ -115,6 +116,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     });
     return done;
   }, [updates, userId]);
+  // Séances dont le duo est validé : les deux posts du binôme sont dans le fil, à moins de 24 h.
+  const duoPairs = useMemo(() => validatedDuoIds(updates), [updates]);
   const [feedMeta, setFeedMeta] = useState<Record<string, FeedMeta>>({});
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [loadingFeed, setLoadingFeed] = useState(true);
@@ -402,7 +405,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     </TouchableOpacity>
   );
 
-  if (viewingFriendId) return <FriendProfileScreen key={viewingFriendId} userId={viewingFriendId} onClose={() => setProfileStack(st => st.slice(0, -1))} onOpenProfile={openProfile} />;
+  if (viewingFriendId) return <FriendProfileScreen key={viewingFriendId} userId={viewingFriendId} onClose={() => setProfileStack(st => st.slice(0, -1))} onOpenProfile={openProfile} onDuo={(id) => onPost({ duoWith: id })} />;
   if (showActivity) {
     return (
       <ActivityScreen
@@ -419,7 +422,12 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     <View style={s.container}>
       <CreateObjectiveModal visible={showCreateModal} onClose={() => setShowCreateModal(false)} onCreated={() => { setShowCreateModal(false); fetchObjectives(true); }} />
 
-      <View style={[s.header, { paddingTop: insets.top + 6 }]}>
+      <View style={[s.header, { paddingTop: insets.top + 6 }, tab === 'profile' && { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }]}>
+        {/* Sur le profil, l'en-tête flotte par-dessus la photo : un fondu noir derrière
+            évite que le logo se superpose au contenu quand on fait défiler. */}
+        {tab === 'profile' && (
+          <LinearGradient pointerEvents="none" colors={['#0a0a0a', '#0a0a0a', 'rgba(10,10,10,0)']} locations={[0, 0.62, 1]} style={[StyleSheet.absoluteFill, { bottom: -14 }]} />
+        )}
         <Image source={require('../../assets/ecriture-reiz-blanc.png')} style={s.headerLogo} resizeMode="contain" />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <TouchableOpacity
@@ -495,6 +503,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 onDuoReply={(authorId) => onPost({ duoWith: authorId })}
                 onOpenProfile={openProfile}
                 duoDone={duoDone.has(item.id)}
+                duoValidated={duoPairs.has(item.id)}
                 onDeleted={() => { setUpdates(prev => prev.filter(x => x.id !== item.id)); fetchObjectives(true); }}
                 onBlocked={() => userId && loadFeedPage(0, userId, true)}
               />

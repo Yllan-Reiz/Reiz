@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, StatusBar, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
+import { SocialAuthButtons } from '../components/SocialAuthButtons';
 import { s } from '../styles';
 
 export function Splash({ onNext }: { onNext: () => void }) {
@@ -63,6 +64,7 @@ export function Splash({ onNext }: { onNext: () => void }) {
         <TouchableOpacity style={s.btn} onPress={onNext}>
           <Text style={s.btnText}>Commencer →</Text>
         </TouchableOpacity>
+        <SocialAuthButtons />
         <TouchableOpacity style={{ marginTop: 14, alignItems: 'center' }} onPress={() => setShowLogin(true)}>
           <Text style={s.splashLogin}>Déjà un compte ? <Text style={s.splashLoginLink}>Se connecter</Text></Text>
         </TouchableOpacity>

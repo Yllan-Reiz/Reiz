@@ -129,6 +129,28 @@ async function uploadAndroid(
   }
 }
 
+/**
+ * Recompresse une vidéo en 720p à ~2,5 Mb/s avant l'envoi : une vidéo de 15 s
+ * passe de ~25 Mo à ~5 Mo. C'est ce poids que chaque spectateur retélécharge, donc
+ * c'est le levier principal sur la bande passante Supabase (le préréglage du
+ * sélecteur d'images ne s'appliquait pas : les vidéos arrivaient à 22-37 Mo).
+ * Si la compression échoue, on envoie l'original plutôt que de bloquer la publication.
+ */
+export async function compressVideo(uri: string): Promise<string> {
+  try {
+    // Chargé à la demande : le module natif n'existe pas dans Expo Go (tests au simulateur),
+    // et un import en tête de fichier ferait planter toute l'app là-bas.
+    const { Video: VideoCompressor } = require('react-native-compressor');
+    return await VideoCompressor.compress(uri, {
+      compressionMethod: 'manual',
+      maxSize: 1280,
+      bitrate: 2_500_000,
+    });
+  } catch {
+    return uri;
+  }
+}
+
 /** Envoie une image et renvoie son chemin de stockage (à enregistrer en base). */
 export async function uploadImage(
   path: string,
