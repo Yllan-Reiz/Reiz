@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, Modal, Platform, StyleSheet, useWindowDimensions } from 'react-native';
+import { useState, useEffect, useMemo, useRef, Children, ReactNode } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Image, Modal, Platform, StyleSheet, Animated, Easing, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -299,6 +299,80 @@ function BadgesStripRow({ badges, onAll }: { badges: Badge[]; onAll: () => void 
 }
 
 /**
+ * Carrousel « apesanteur » : les cartes se chevauchent et réagissent au défilement.
+ *  1. Profondeur : la carte au bord est droite, celles qui arrivent sont inclinées et plus
+ *     basses, celles qui partent se redressent, avec un léger zoom.
+ *  2. Inertie : en balayant vite, les cartes se balancent dans le sens du mouvement puis
+ *     reviennent doucement, comme suspendues.
+ *  3. Flottement : au repos, chaque carte monte et descend très légèrement, en décalé.
+ * Tout passe par le pilote natif : aucune saccade, même sur un profil chargé.
+ */
+function FloatyCarousel({ cardW, overlap, paddingTop, paddingBottom, children }: {
+  cardW: number; overlap: number; paddingTop: number; paddingBottom: number; children: ReactNode;
+}) {
+  const step = cardW - overlap;
+  const x = useRef(new Animated.Value(0)).current;
+  const swing = useRef(new Animated.Value(0)).current;
+  const bob = useRef(new Animated.Value(0)).current;
+  const last = useRef({ x: 0, t: Date.now() });
+
+  useEffect(() => {
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(bob, { toValue: 1, duration: 2600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      Animated.timing(bob, { toValue: 0, duration: 2600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [bob]);
+
+  const onScroll = useMemo(() => Animated.event([{ nativeEvent: { contentOffset: { x } } }], {
+    useNativeDriver: true,
+    listener: (e: any) => {
+      const off = e.nativeEvent.contentOffset.x;
+      const now = Date.now();
+      const v = (off - last.current.x) / Math.max(now - last.current.t, 1); // px par ms
+      last.current = { x: off, t: now };
+      // La vitesse donne l'amplitude du balancement, puis un ressort le ramène à zéro.
+      swing.setValue(Math.max(-1, Math.min(1, v / 1.6)));
+      Animated.spring(swing, { toValue: 0, stiffness: 55, damping: 6, mass: 1, useNativeDriver: true }).start();
+    },
+  }), [x, swing]);
+
+  const swingRot = swing.interpolate({ inputRange: [-1, 1], outputRange: ['7deg', '-7deg'] });
+  const cards = Children.toArray(children);
+
+  return (
+    <Animated.ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      scrollEventThrottle={16}
+      onScroll={onScroll}
+      decelerationRate="fast"
+      snapToInterval={step}
+      snapToAlignment="start"
+      contentContainerStyle={{ paddingLeft: GUTTER, paddingRight: GUTTER + 40, paddingTop, paddingBottom }}
+      style={{ overflow: 'visible' }}
+    >
+      {cards.map((card, i) => {
+        const range = [(i - 2) * step, (i - 1) * step, i * step, (i + 1) * step];
+        const rotate = x.interpolate({ inputRange: range, outputRange: ['-6deg', '-4deg', '0deg', '5deg'], extrapolate: 'clamp' });
+        const lift = x.interpolate({ inputRange: range, outputRange: [30, 26, 0, 14], extrapolate: 'clamp' });
+        const scale = x.interpolate({ inputRange: range, outputRange: [0.96, 0.98, 1, 0.95], extrapolate: 'clamp' });
+        const float = bob.interpolate({ inputRange: [0, 1], outputRange: i % 2 ? [3, -3] : [-3, 3] });
+        return (
+          <Animated.View
+            key={i}
+            style={{ width: cardW, marginLeft: i ? -overlap : 0, zIndex: i, transform: [{ translateY: lift }, { translateY: float }, { scale }, { rotate }, { rotate: swingRot }] }}
+          >
+            {card}
+          </Animated.View>
+        );
+      })}
+    </Animated.ScrollView>
+  );
+}
+
+/**
  * Objectifs en cours : des cartes de verre qui se chevauchent, la suivante inclinée,
  * comme les cartes de la référence. Valeur en haut à gauche, emoji dans un rond de verre
  * en haut à droite, titre en grand en bas.
@@ -309,20 +383,19 @@ export function GoalCards({ items, activity, onPress }: {
   if (items.length === 0) return null;
   const week = dayKeysFor(7);
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: GUTTER, paddingRight: GUTTER + 40, paddingTop: 10, paddingBottom: 40 }} style={{ overflow: 'visible' }}>
+    <FloatyCarousel cardW={236} overlap={30} paddingTop={10} paddingBottom={44}>
       {items.map((o, i) => {
         const pct = o.target_value > 0 ? Math.min(Math.round((o.current_value / o.target_value) * 100), 100) : 0;
         const inPct = o.unit === '%';
         const set = activity[o.id] || new Set<string>();
         const doneWeek = week.filter(d => set.has(d)).length;
         const vis = VIS_ICON[o.visibility] || VIS_ICON.friends;
-        const tilted = i % 2 === 1;
         return (
           <TouchableOpacity
             key={o.id}
             activeOpacity={onPress ? 0.9 : 1}
             onPress={onPress ? () => onPress(o) : undefined}
-            style={{ width: 236, height: 258, marginLeft: i ? -30 : 0, zIndex: i, transform: [{ rotate: tilted ? '-4deg' : '0deg' }, { translateY: tilted ? 28 : 0 }] }}
+            style={{ width: 236, height: 258 }}
           >
             <GlassSurface radius={32} style={{ flex: 1 }}>
               <View style={{ flex: 1, padding: 18, justifyContent: 'space-between' }}>
@@ -350,7 +423,7 @@ export function GoalCards({ items, activity, onPress }: {
           </TouchableOpacity>
         );
       })}
-    </ScrollView>
+    </FloatyCarousel>
   );
 }
 
@@ -362,16 +435,15 @@ export function HistoryCarousel({ posts, onOpen, emptyText }: { posts: Update[];
   if (posts.length === 0) return <Text style={{ color: '#777', fontSize: 13, paddingHorizontal: GUTTER }}>{emptyText}</Text>;
   const sorted = [...posts].sort((a, b) => (b.pinned_at ? 1 : 0) - (a.pinned_at ? 1 : 0));
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: GUTTER, paddingRight: GUTTER + 40, paddingTop: 8, paddingBottom: 30 }} style={{ overflow: 'visible' }}>
+    <FloatyCarousel cardW={200} overlap={26} paddingTop={8} paddingBottom={36}>
       {sorted.map((p, i) => {
         const video = isVideo(p.photo_url);
-        const tilted = i % 2 === 1;
         return (
           <TouchableOpacity
             key={p.id}
             activeOpacity={0.9}
             onPress={() => onOpen(p)}
-            style={{ width: 200, height: 270, marginLeft: i ? -26 : 0, zIndex: i, transform: [{ rotate: tilted ? '3deg' : '0deg' }, { translateY: tilted ? 18 : 0 }] }}
+            style={{ width: 200, height: 270 }}
           >
             <GlassSurface radius={30} style={{ flex: 1 }}>
               {p.photo_url && !video
@@ -398,7 +470,7 @@ export function HistoryCarousel({ posts, onOpen, emptyText }: { posts: Update[];
           </TouchableOpacity>
         );
       })}
-    </ScrollView>
+    </FloatyCarousel>
   );
 }
 
