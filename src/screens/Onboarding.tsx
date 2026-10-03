@@ -211,7 +211,7 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
           <TouchableOpacity style={[s.btn, { marginTop: 8 }, loading && s.btnDisabled]} onPress={loading ? undefined : handleSignUp}>
             {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Créer mon compte</Text>}
           </TouchableOpacity>
-          <SocialAuthButtons />
+          <SocialAuthButtons mode="signup" />
           <Text style={s.legal}>
             En créant un compte tu acceptes nos{' '}
             <Text style={s.legalLink} onPress={() => Linking.openURL(CGU_URL).catch(() => {})}>CGU</Text>

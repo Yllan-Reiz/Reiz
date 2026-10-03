@@ -47,6 +47,12 @@ export function Splash({ onNext }: { onNext: () => void }) {
           <TouchableOpacity style={[s.btn, { marginTop: 8 }, loading && s.btnDisabled]} onPress={loading ? undefined : handleLogin}>
             {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Se connecter →</Text>}
           </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 22, marginBottom: 6 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: '#222' }} />
+            <Text style={{ color: '#666', fontSize: 12 }}>ou</Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: '#222' }} />
+          </View>
+          <SocialAuthButtons mode="signin" />
           <TouchableOpacity style={{ marginTop: 18, alignItems: 'center' }} onPress={() => setShowLogin(false)}>
             <Text style={s.splashLogin}>← Retour</Text>
           </TouchableOpacity>
