@@ -107,7 +107,12 @@ Deno.serve(async (req) => {
       break;
     case 'duo_tag':
       title = `${name} t'a identifié dans sa séance 🤝`;
-      body = objLabel ? `${objLabel}. Poste la tienne pour valider le duo.` : 'Poste la tienne pour valider le duo.';
+      body = objLabel ? `${objLabel}. Poste la tienne dans l'heure pour valider le duo.` : "Poste la tienne dans l'heure pour valider le duo.";
+      break;
+    case 'at_gym':
+      // n.preview = nom du lieu choisi par la personne (« Basic-Fit »). Jamais de coordonnées.
+      title = n.preview ? `${name} est à ${clip(n.preview, 40)} 💪` : `${name} est à la salle 💪`;
+      body = `Viens t'entraîner avec ${name.split(' ')[0]}.`;
       break;
     case 'tag_endorse':
       title = `${name} a validé ton tag`;

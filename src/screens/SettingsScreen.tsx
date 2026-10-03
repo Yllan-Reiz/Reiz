@@ -6,10 +6,11 @@ import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
 import { signMany } from '../lib/storage';
 import { LEGAL_DOCS, LegalDoc, SUPPORT_EMAIL } from '../lib/legal';
+import { PresencePanel } from '../components/PresencePanel';
 import { APP_VERSION } from '../constants';
 import { F } from '../styles';
 
-type View_ = 'root' | 'password' | 'blocked' | 'legal';
+type View_ = 'root' | 'password' | 'blocked' | 'legal' | 'presence';
 
 // Page Réglages, organisée comme sur Instagram : Compte, Confidentialité, Notifications,
 // Légal, Aide, puis les actions sensibles tout en bas.
@@ -39,7 +40,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
   }, [visible]);
 
   const back = () => { if (view === 'root') onClose(); else setView('root'); };
-  const titles: Record<View_, string> = { root: 'Réglages', password: 'Mot de passe', blocked: 'Utilisateurs bloqués', legal: doc?.title || 'Légal' };
+  const titles: Record<View_, string> = { root: 'Réglages', password: 'Mot de passe', blocked: 'Utilisateurs bloqués', legal: doc?.title || 'Légal', presence: 'Salle et lieux' };
 
   const exportData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -84,6 +85,10 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
             </Section>
             <Text style={st.hint}>La visibilité de chaque objectif se règle depuis le menu « … » de l'objectif.</Text>
 
+            <Section title="ENTRAÎNEMENT">
+              <Row icon="location-outline" label="Prévenir mon cercle proche" value="Salle et lieux" onPress={() => setView('presence')} last />
+            </Section>
+
             <Section title="NOTIFICATIONS">
               <Row icon="notifications-outline" label="Gérer les notifications" value="Réglages iPhone" onPress={() => Linking.openSettings().catch(() => {})} last />
             </Section>
@@ -108,6 +113,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
         )}
 
         {view === 'password' && <PasswordForm onDone={() => setView('root')} />}
+        {view === 'presence' && <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}><PresencePanel /></ScrollView>}
         {view === 'blocked' && <BlockedList />}
         {view === 'legal' && doc && <LegalReader doc={doc} bottom={insets.bottom} />}
       </View>
@@ -130,7 +136,7 @@ function Row({ icon, label, value, onPress, danger, last }: { icon: any; label: 
     <TouchableOpacity activeOpacity={onPress ? 0.6 : 1} onPress={onPress} style={[st.row, !last && st.rowBorder]}>
       <Ionicons name={icon} size={20} color={danger ? '#ff453a' : '#bbb'} />
       <Text style={[st.rowLabel, { color }]} numberOfLines={1}>{label}</Text>
-      {!!value && <Text style={st.rowValue} numberOfLines={1}>{value}</Text>}
+      {!!value ? <Text style={st.rowValue} numberOfLines={1}>{value}</Text> : <View style={{ flex: 1 }} />}
       {!!onPress && !danger && <Ionicons name="chevron-forward" size={16} color="#555" />}
     </TouchableOpacity>
   );
@@ -155,7 +161,7 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <Text style={st.inputLabel}>NOUVEAU MOT DE PASSE</Text>
       <TextInput style={st.input} value={pwd} onChangeText={setPwd} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" placeholder="8 caractères minimum" placeholderTextColor="#666" />
       {tooShort && <Text style={st.error}>8 caractères minimum.</Text>}

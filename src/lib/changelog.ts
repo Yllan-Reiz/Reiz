@@ -6,6 +6,7 @@ export const CHANGELOG = {
   id: 'build-8',
   title: 'Nouveautés de Reiz',
   items: [
+    { emoji: '📍', text: 'Nouveau : préviens ton cercle proche quand tu arrives à ta salle. Un bouton dans le fil, ou la détection automatique si tu l\'actives (Réglages, Prévenir mon cercle proche). Tes coordonnées restent sur ton téléphone.' },
     { emoji: '🤝', text: 'Le duo devient un vrai binôme : un duo se valide quand vous postez à moins d\'1 h d\'écart, avec une série de semaines d\'affilée et un bouton « Proposer un duo » sur le profil de tes amis.' },
     { emoji: '✨', text: 'Ton profil est refait : ta photo en grand, ton cercle en un coup d\'œil, et trois onglets Objectifs, Posts et Badges.' },
     { emoji: '📲', text: 'Partage ta progression en story Instagram : un visuel aux couleurs de Reiz, prêt à poster, depuis le menu « … » de ton post.' },

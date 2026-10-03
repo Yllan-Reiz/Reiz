@@ -29,6 +29,7 @@ function describe(n: Row): string {
     case 'comment_like': return `a aimé ton commentaire${quote}`;
     case 'friend_post': return `a posté${postLabel}`;
     case 'tag_endorse': return `a validé ton tag ${n.preview || ''}`.trim();
+    case 'at_gym': return `est à ${n.preview || 'la salle'} 💪 Viens le rejoindre`;
     case 'duo_tag': return `t'a identifié dans sa séance${postLabel} 🤝`;
     case 'friend_request': return 'veut rejoindre ton cercle';
     case 'friend_accept': return 'a accepté ta demande. Vous êtes dans le même cercle.';

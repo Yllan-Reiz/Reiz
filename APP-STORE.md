@@ -93,6 +93,9 @@ Premier pas, Régulier, Binôme, Inarrêtable : ton profil garde la trace de ce 
 Un profil qui te ressemble
 Ta photo en grand, ta série, tes badges, tes objectifs en cours en un coup d'œil, l'historique de tes séances et des tags que tes amis peuvent valider.
 
+Prévenir ton cercle proche
+Quand tu arrives à ta salle ou à ton terrain, ton cercle proche reçoit l'alerte et peut venir te rejoindre. C'est facultatif, activé par toi, et tes coordonnées ne quittent jamais ton téléphone.
+
 Un visuel à partager en story
 Poste ta progression sur Instagram avec un visuel aux couleurs de Reiz. C'est toi qui décides de publier : Reiz ne publie jamais rien à ta place.
 
@@ -164,7 +167,13 @@ ACCOUNT DELETION (guideline 5.1.1)
 Profile tab, gear icon at the top right (Settings), "Supprimer mon compte" in the "Session" section. Deletion is immediate and permanent: data, posts, photos and videos are erased server-side. Users can also export their data from Settings, "Exporter mes données".
 
 PERMISSIONS
-Camera, photo library and microphone are only used to post a progress photo or a short video, and a profile picture. The app does not use location.
+Camera, photo library and microphone are only used to post a progress photo or a short video, and a profile picture.
+
+LOCATION AND BACKGROUND MODES (optional feature, guidelines 2.5.4 and 5.1.1)
+Settings, "Prévenir mon cercle proche". The feature is OFF by default. The user enables it after an explanation screen, then iOS asks for the location permission, and finally "Always". The user then saves one or more training places (gym, stadium) from where they are standing. With "Always", the app uses iOS region monitoring (geofencing) only to detect arrival at those places and notify the user's close friends ("X is at the gym"). The app never tracks the position continuously.
+Coordinates of the places are stored ONLY on the device and are never sent to our servers. Only the event "arrived at <place name>" (with the time) is sent, and it is visible only to the user's close friends. Limited to one alert every 3 hours. The user can turn it off at any time, in Settings or in iOS.
+UIBackgroundModes: location (region monitoring) and fetch.
+HOW TO TEST WITHOUT MOVING: the same alert can be sent with no location at all, with the button "Je suis à la salle" at the top of the feed (or Settings, "Prévenir mon cercle proche", "Je suis à la salle, prévenir maintenant"). The demo account has accepted friends in its close circle.
 
 INSTAGRAM STORY
 "Partager en story" (after publishing, or in the "..." menu of one's own post) builds an image and opens the standard iOS share sheet. Nothing is posted automatically.
@@ -194,6 +203,8 @@ App Store Connect, Confidentialité de l'app.
 | Jeton de notification | Identifiants, Identifiant de l'appareil | Fonctionnalité de l'app | Oui | Non |
 
 Connexion avec Apple ou Google : Reiz reçoit seulement l'email et le prénom, déjà déclarés ci-dessus. Aucune nouvelle ligne à ajouter.
+
+Localisation : à « Collectez-vous des données de localisation ? », réponds **Non**. Les coordonnées des lieux d'entraînement sont traitées uniquement sur l'appareil et ne sont jamais envoyées (Apple ne considère pas comme « collectées » les données qui ne quittent pas l'appareil). Ce qui est envoyé, « arrivé à la salle » avec l'heure, est du contenu utilisateur déjà couvert par la ligne « Autre contenu utilisateur ».
 
 À « Utilisez-vous ces données à des fins de suivi ? », réponds **Non** partout : Reiz n'a ni régie publicitaire ni outil d'analyse tiers.
 
@@ -255,6 +266,8 @@ Les captures doivent venir du build 8 (le profil a été refait le 03/10, les an
 - [ ] App Privacy, classification par âge, déclaration DSA
 - [ ] Notes pour l'examinateur collées (email et mot de passe du compte de démo remplis)
 - [ ] Option « Publier manuellement cette version » cochée
+- [ ] Phase 11 (supabase/phase11-presence.sql) exécutée et fonction send-push redéployée AVANT la soumission
+- [ ] Compte de démo : au moins un ami dans son cercle proche (sinon le bouton « Je suis à la salle » répond que le cercle est vide)
 - [ ] Bouton « Ajouter pour vérification », puis « Soumettre »
 
 ## Le jour de la sortie

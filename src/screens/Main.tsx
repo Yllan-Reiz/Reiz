@@ -23,6 +23,7 @@ import { ActivityScreen } from './ActivityScreen';
 import { changelogUnseen } from '../lib/changelog';
 import { attachDuoNames, attachReactors } from '../lib/posts';
 import { validatedDuoIds } from '../lib/duo';
+import { PresenceButton } from '../components/PresenceButton';
 
 const PAGE_SIZE = 20;
 const FEED_WINDOW_HOURS = 24;
@@ -473,7 +474,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             // Android seulement : sur iOS, le détachement des vues hors écran fait
             // parfois apparaître des cartes vides quand elles ont des calques absolus.
             removeClippedSubviews={Platform.OS === 'android'}
-            ListHeaderComponent={needsActivation ? activationHeader : postCTA}
+            ListHeaderComponent={needsActivation ? activationHeader : <View>{postCTA}<PresenceButton /></View>}
             ListEmptyComponent={
               loadingFeed ? (
                 <FeedSkeleton />

@@ -6,6 +6,7 @@ import { useFonts, Inter_300Light, Inter_400Regular, Inter_600SemiBold, Inter_70
 import { supabase } from './src/lib/supabase';
 import { registerForPushNotifications } from './src/lib/notifications';
 import { handleAuthUrl, ensureProfile } from './src/lib/googleAuth';
+import { stopAllPresence } from './src/lib/presence'; // importe aussi la tâche de détection d'arrivée
 import { captureInviteFromUrl, consumePendingInvite } from './src/lib/invites';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { Splash } from './src/screens/Splash';
@@ -74,6 +75,7 @@ function AppInner() {
         consumePendingInvite(session.user.id);
       } else {
         registeredUserId.current = null;
+        stopAllPresence(); // plus de détection d'arrivée pour un compte déconnecté
         setScreen('splash');
       }
     });
