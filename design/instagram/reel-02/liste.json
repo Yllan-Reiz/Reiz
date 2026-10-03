@@ -1,0 +1,5 @@
+[
+ {"id": "liste", "texte": "En action. En feu. Lève-tôt. Couche-tard. Inarrêtable. Acharné.", "emotion": 0.9, "cfg": 0.5},
+ {"id": "liste2", "texte": "En action. En feu. Lève-tôt. Couche-tard. Inarrêtable. Acharné.", "emotion": 0.8, "cfg": 0.5},
+ {"id": "premier", "texte": "Ici, si. Premier pas.", "emotion": 0.95, "cfg": 0.5}
+]

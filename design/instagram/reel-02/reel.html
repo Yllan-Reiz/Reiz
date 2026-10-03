@@ -2,194 +2,289 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Reiz reel 02 badges</title>
+<title>Reiz reel 02 badges v2</title>
 <style>
   @font-face { font-family: Inter; font-weight: 400; src: url(fonts/Inter_400Regular.ttf); }
   @font-face { font-family: Inter; font-weight: 600; src: url(fonts/Inter_600SemiBold.ttf); }
   @font-face { font-family: Inter; font-weight: 800; src: url(fonts/Inter_800ExtraBold.ttf); }
   @font-face { font-family: Inter; font-weight: 900; src: url(fonts/Inter_900Black.ttf); }
-  :root { --bg: #0a0a0a; --muted: #999; --dim: #8a8a8a; --green: #fff; }
+  :root { --bg: #0a0a0a; --muted: #9a9a9a; --dim: #8a8a8a; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
-  body { font-family: Inter, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; position: relative; }
+  body { font-family: Inter, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
 
-  /* zone sûre Reels : x 90 à 850, y 230 à 1440 ; centre utile x 470, y 835 */
-  .scene { position: absolute; inset: 0; opacity: 0; }
-  .txt { position: absolute; left: 90px; width: 760px; }
-  h1 { font-weight: 900; letter-spacing: -.045em; line-height: .98; }
-  .g { color: var(--green); }
-  .glow { position: absolute; left: 470px; top: 800px; width: 1100px; height: 1100px; margin: -550px 0 0 -550px; border-radius: 50%; opacity: 0; }
-  .badge { position: absolute; left: 470px; top: 800px; transform-origin: center; }
-  .badge img { display: block; width: 100%; }
-  .bname { position: absolute; left: 90px; width: 760px; top: 1110px; text-align: center; font-size: 76px; font-weight: 900; letter-spacing: -.035em; }
-  .bdesc { position: absolute; left: 90px; width: 760px; top: 1210px; text-align: center; font-size: 38px; color: var(--muted); line-height: 1.3; }
-  .spark { position: absolute; left: 470px; top: 800px; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #fff; opacity: 0; }
-  .ring { position: absolute; left: 470px; top: 800px; width: 500px; height: 500px; margin: -250px 0 0 -250px; border-radius: 50%; border: 6px solid #fff; opacity: 0; }
-  .count { position: absolute; left: 90px; top: 250px; font-size: 34px; font-weight: 800; color: var(--dim); letter-spacing: .12em; }
+  /* tout est centré sur x = 540 ; texte limité à 640 px de large pour rester hors de la colonne de droite d'Instagram */
+  #stage { position: absolute; inset: 0; transform-origin: 540px 860px; }
+  #glow { position: absolute; left: 540px; top: 860px; width: 1500px; height: 1500px; margin: -750px 0 0 -750px; border-radius: 50%; }
+  #vignette { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 50% 45%, transparent 40%, rgba(0,0,0,.75) 100%); pointer-events: none; }
+  #grain { position: absolute; inset: 0; width: 1080px; height: 1920px; opacity: .06; mix-blend-mode: screen; image-rendering: pixelated; }
+  #dust { position: absolute; inset: 0; }
+  .mote { position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #fff; }
+  #flash { position: absolute; inset: 0; background: #fff; opacity: 0; mix-blend-mode: screen; }
 
-  .lv { position: absolute; top: 800px; width: 116px; margin-left: -58px; }
-  .lv img { width: 116px; display: block; }
-  .lv span { display: block; text-align: center; font-size: 30px; font-weight: 800; color: var(--dim); margin-top: 18px; }
-  .cell { position: absolute; width: 210px; height: 210px; margin: -105px 0 0 -105px; }
-  .cell img { width: 100%; }
+  .scene { position: absolute; inset: 0; opacity: 0; transform-origin: 540px 860px; }
+  .center { position: absolute; left: 220px; width: 640px; text-align: center; }
+  .line { display: block; overflow: hidden; padding-bottom: .08em; }
+  .line > span { display: inline-block; will-change: transform; }
+  h1 { font-weight: 900; letter-spacing: -.045em; line-height: 1; }
+  .kick { font-size: 30px; font-weight: 800; letter-spacing: .32em; text-transform: uppercase; color: var(--dim); }
 
-  .logo { width: 430px; display: block; }
-  .kw { display: inline-block; white-space: nowrap; font-size: 46px; font-weight: 900; letter-spacing: .03em; color: #000; background: var(--green); border-radius: 26px; padding: 18px 34px; }
-  .small { font-size: 42px; color: var(--muted); font-weight: 600; }
+  .badge { position: absolute; left: 540px; top: 860px; }
+  .badge img { display: block; width: 100%; -webkit-mask-image: radial-gradient(circle, #000 52%, transparent 70%); }
+  .sheen { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 42%, rgba(255,255,255,.75) 50%, transparent 58%) no-repeat; background-size: 300% 300%; mix-blend-mode: screen; -webkit-mask-size: 100% 100%; }
+  .ring { position: absolute; left: 540px; top: 860px; border-radius: 50%; border: 5px solid #fff; opacity: 0; }
+  .spark { position: absolute; left: 540px; top: 860px; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #fff; opacity: 0; box-shadow: 0 0 14px #fff; }
+  .bname { font-size: 80px; font-weight: 900; letter-spacing: -.035em; }
+  .bdesc { font-size: 38px; color: var(--muted); margin-top: 14px; line-height: 1.3; }
+
+  .orb { position: absolute; top: 1290px; width: 104px; height: 104px; margin-left: -52px; }
+  .orb img { width: 100%; display: block; }
+  .orb span { display: block; text-align: center; font-size: 26px; font-weight: 800; color: var(--dim); margin-top: 10px; letter-spacing: .06em; }
+  #lvnum { font-size: 34px; font-weight: 800; letter-spacing: .3em; color: #fff; }
+  .cell { position: absolute; width: 200px; height: 200px; margin: -100px 0 0 -100px; }
+  .cell img { width: 100%; display: block; -webkit-mask-image: radial-gradient(circle, #000 52%, transparent 70%); }
+  .orbit { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; }
+  .orbit img { width: 100%; -webkit-mask-image: radial-gradient(circle, #000 52%, transparent 70%); }
+  .logo { width: 520px; display: block; margin: 0 auto; }
+  .pill { display: inline-block; white-space: nowrap; font-size: 44px; font-weight: 900; color: #000; background: #fff; border-radius: 999px; padding: 22px 46px; letter-spacing: -.01em; }
+  .small { font-size: 40px; color: var(--muted); font-weight: 600; }
 </style>
 </head>
 <body>
-<div class="glow" id="glow"></div>
+<div id="stage">
+  <div id="glow"></div>
+  <div id="dust"></div>
 
-<!-- 1  0 à 2,3 s : accroche -->
-<div class="scene" id="s1">
-  <div class="txt" style="top: 560px"><h1 style="font-size: 116px"><span class="w">À la salle,</span> <span class="w">personne te donne</span> <span class="w" style="color:#777">de médaille.</span></h1></div>
-</div>
-
-<!-- 2  2,3 à 4,1 s : révélation -->
-<div class="scene" id="s2">
-  <div class="txt" style="top: 300px"><h1 style="font-size: 120px" class="g">Ici, si.</h1></div>
-  <div class="ring" id="ring"></div>
-  <div id="sparks"></div>
-  <div class="badge" id="b0" style="width: 620px; margin: -310px 0 0 -310px"><img src="assets/premier-pas.png" alt=""></div>
-  <div class="bname" id="n0">Premier pas</div>
-</div>
-
-<!-- 3  4,1 à 9,5 s : défilé -->
-<div class="scene" id="s3">
-  <div class="count" id="cnt">02 / 12</div>
-  <div id="deck"></div>
-</div>
-
-<!-- 4  9,5 à 12,7 s : niveaux -->
-<div class="scene" id="s4">
-  <div class="txt" style="top: 420px"><h1 style="font-size: 104px">6 niveaux<br><span class="g">par badge.</span></h1></div>
-  <div id="levels"></div>
-</div>
-
-<!-- 5  12,7 à 15,3 s : collection -->
-<div class="scene" id="s5">
-  <div class="txt" style="top: 300px"><h1 style="font-size: 88px">Combien t'en<br>débloques ?</h1></div>
-  <div id="grid"></div>
-</div>
-
-<!-- 6  15,3 à 18 s : fin -->
-<div class="scene" id="s6">
-  <div class="txt" style="top: 560px">
-    <div class="small">Mieux qu'un like.</div>
-    <img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz" style="margin-top: 60px">
-    <div style="margin-top: 110px" class="small">Le 10 octobre sur iPhone</div>
-    <div style="margin-top: 26px"><span class="kw">Abonne-toi pour la sortie</span></div>
+  <!-- 1 accroche -->
+  <div class="scene" id="s1">
+    <div class="center" style="top: 560px">
+      <h1 style="font-size: 112px">
+        <span class="line"><span>À la salle,</span></span>
+        <span class="line"><span>personne</span></span>
+        <span class="line"><span>te donne</span></span>
+        <span class="line"><span style="color:#6f6f6f">de médaille.</span></span>
+      </h1>
+    </div>
   </div>
+
+  <!-- 2 révélation -->
+  <div class="scene" id="s2">
+    <div class="center" style="top: 300px"><h1 style="font-size: 120px"><span class="line"><span id="ici">Ici, si.</span></span></h1></div>
+    <div class="ring" id="ring1"></div><div class="ring" id="ring2"></div>
+    <div id="sparks"></div>
+    <div class="badge" id="b0" style="width: 600px; height: 600px; margin: -300px 0 0 -300px"><img src="assets/premier-pas.png" alt=""><div class="sheen"></div></div>
+    <div class="center" style="top: 1200px">
+      <div class="kick" id="k0">Badge 01</div>
+      <div class="bname" id="n0" style="margin-top: 14px">Premier pas</div>
+    </div>
+  </div>
+
+  <!-- 3 défilé en carrousel -->
+  <div class="scene" id="s3">
+    <div class="center" style="top: 300px"><div class="kick" id="cnt">02 / 12</div></div>
+    <div id="deck"></div>
+    <div class="center" style="top: 1200px" id="names"></div>
+  </div>
+
+  <!-- 4 niveaux -->
+  <div class="scene" id="s4">
+    <div class="center" style="top: 290px"><h1 style="font-size: 92px"><span class="line"><span>6 niveaux</span></span><span class="line"><span>par badge.</span></span></h1></div>
+    <svg id="prog" width="620" height="620" viewBox="0 0 620 620" style="position:absolute;left:230px;top:530px;transform:rotate(-90deg)">
+      <circle cx="310" cy="310" r="290" fill="none" stroke="#1d1d1d" stroke-width="10"/>
+      <circle id="arc" cx="310" cy="310" r="290" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-dasharray="1822" stroke-dashoffset="1822"/>
+    </svg>
+    <div class="badge" id="bf" style="width: 470px; height: 470px; margin: -235px 0 0 -235px; top: 840px"><img src="assets/en-feu.png" alt=""><div class="sheen"></div></div>
+    <div id="orbs"></div>
+    <div class="center" style="top: 1480px"><div id="lvnum">NIVEAU 1</div></div>
+  </div>
+
+  <!-- 5 collection -->
+  <div class="scene" id="s5">
+    <div class="center" style="top: 300px"><h1 style="font-size: 86px"><span class="line"><span>Combien tu vas</span></span><span class="line"><span>en débloquer ?</span></span></h1></div>
+    <div id="grid"></div>
+  </div>
+
+  <!-- 6 fin -->
+  <div class="scene" id="s6">
+    <div id="orbitwrap"></div>
+    <div class="center" style="top: 700px; z-index: 30">
+      <div style="position: relative"><img class="logo" id="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><div class="sheen" id="logosheen"></div></div>
+      <div class="small" id="date" style="margin-top: 70px">Le 10 octobre sur iPhone</div>
+      <div style="margin-top: 34px"><span class="pill" id="pill">Abonne-toi pour la sortie</span></div>
+    </div>
+  </div>
+
+  <div id="flash"></div>
 </div>
+<canvas id="grain" width="540" height="960"></canvas>
+<div id="vignette"></div>
 
 <script>
-const DUR = 18;
-const $ = s => document.querySelector(s);
-const $$ = s => [...document.querySelectorAll(s)];
-const cl = x => Math.max(0, Math.min(1, x));
-const seg = (t, a, b) => cl((t - a) / (b - a));
-const out3 = x => 1 - Math.pow(1 - x, 3);
-const back = x => { const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const cl = x => Math.max(0, Math.min(1, x)), seg = (t, a, b) => cl((t - a) / (b - a));
+const ex = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);                    // expo out
+const io = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;  // cubic in-out
+const back = x => { const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
 const lerp = (a, b, k) => a + (b - a) * k;
+function rng(s) { return () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const hex = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
 
 const DECK = [
   ['en-action', 'En action', 'Tu passes à l\'action, encore et encore.', '#4f7dff'],
   ['en-feu', 'En feu', 'Tu enchaînes sans t\'arrêter.', '#ff7a2e'],
-  ['leve-tot', 'Lève-tôt', 'Séance avant 7h.', '#ffb13b'],
-  ['couche-tard', 'Couche-tard', 'Séance après 22h.', '#6a5cff'],
+  ['leve-tot', 'Lève-tôt', 'Ta séance avant 7h.', '#ffb13b'],
+  ['couche-tard', 'Couche-tard', 'Ta séance après 22h.', '#7a5cff'],
   ['inarretable', 'Inarrêtable', 'Une série que rien ne casse.', '#4b6bff'],
   ['acharne', 'Acharné', 'Un volume d\'effort énorme.', '#ff5a3c'],
 ];
-const D0 = 4.1, DSTEP = .9;
 const ALL = ['premier-pas', 'en-action', 'en-duo', 'en-feu', 'semaine-parfaite', 'objectif-atteint', 'regulier', 'binome', 'leve-tot', 'couche-tard', 'inarretable', 'acharne'];
-const SC = [['s1', 0, 2.3], ['s2', 2.3, 4.1], ['s3', 4.1, 9.5], ['s4', 9.5, 12.7], ['s5', 12.7, 15.3], ['s6', 15.3, DUR + 1]];
+let T;
 
-// construction
-$('#deck').innerHTML = DECK.map(([f, n, d], i) => `<div class="card" data-i="${i}"><div class="badge" style="width:580px;margin:-290px 0 0 -290px"><img src="assets/${f}.png" alt=""></div><div class="bname">${n}</div><div class="bdesc">${d}</div></div>`).join('');
-$('#levels').innerHTML = [1, 2, 3, 4, 5, 6].map(l => `<div class="lv" style="left:${90 + 58 + (l - 1) * 128.8}px"><img src="assets/en-feu-niv${l}.png" alt=""><span>Niv. ${l}</span></div>`).join('');
-$('#grid').innerHTML = ALL.map((f, i) => { const c = i % 4, r = Math.floor(i / 4); return `<div class="cell" style="left:${90 + 95 + c * 190}px;top:${760 + r * 200}px"><img src="assets/${f}.png" alt=""></div>`; }).join('');
-let sp = '';
-for (let i = 0; i < 28; i++) sp += `<div class="spark" data-a="${(i / 28) * Math.PI * 2 + (i % 3) * .07}" data-r="${260 + (i * 97) % 220}"></div>`;
-$('#sparks').innerHTML = sp;
+function build() {
+  // poussière
+  const r = rng(11); let h = '';
+  for (let i = 0; i < 46; i++) h += `<div class="mote" data-x="${r() * 1080}" data-y="${r() * 1920}" data-v="${8 + r() * 26}" data-p="${r() * 6.28}" data-s="${.3 + r() * .9}"></div>`;
+  $('#dust').innerHTML = h;
+  // étincelles
+  h = ''; const r2 = rng(5);
+  for (let i = 0; i < 36; i++) h += `<div class="spark" data-a="${i / 36 * 6.283 + r2() * .2}" data-r="${280 + r2() * 300}"></div>`;
+  $('#sparks').innerHTML = h;
+  // carrousel
+  $('#deck').innerHTML = DECK.map(([f], i) => `<div class="badge dk" style="width:560px;height:560px;margin:-280px 0 0 -280px"><img src="assets/${f}.png" alt=""><div class="sheen"></div></div>`).join('');
+  $('#names').innerHTML = DECK.map(([, n, d]) => `<div class="nm" style="position:absolute;left:0;right:0;top:0"><div class="bname">${n}</div></div>`).join('');
+  // niveaux, posés sur un arc sous le grand badge
+  $('#orbs').innerHTML = [1, 2, 3, 4, 5, 6].map(l => { const x = 540 + (l - 3.5) * 132; return `<div class="orb" style="left:${x}px"><img src="assets/en-feu-niv${l}.png" alt=""><span>NIV. ${l}</span></div>`; }).join('');
+  // grille 4 x 3 centrée
+  $('#grid').innerHTML = ALL.map((f, i) => { const c = i % 4, rr = Math.floor(i / 4); return `<div class="cell" data-x="${540 + (c - 1.5) * 215}" data-y="${810 + rr * 230}"><img src="assets/${f}.png" alt=""></div>`; }).join('');
+  // orbite de fin
+  $('#orbitwrap').innerHTML = ALL.map(f => `<div class="orbit"><img src="assets/${f}.png" alt=""></div>`).join('');
+  // reflet : masqué par la forme du badge
+  $$('.badge').forEach(b => { const s = b.querySelector('.sheen'), src = b.querySelector('img').getAttribute('src'); s.style.webkitMaskImage = `url(${src})`; });
+  $('#logosheen').style.webkitMaskImage = 'url(assets/ecriture-reiz-blanc-trim.png)';
+  $('#logosheen').style.webkitMaskSize = '520px auto';
+  $('#logosheen').style.webkitMaskRepeat = 'no-repeat';
+  $('#logosheen').style.webkitMaskPosition = 'center top';
+}
 
-function scene(t, id, a, b) {
-  const el = $('#' + id);
-  const inn = id === 's1' ? 1 : out3(seg(t, a, a + .25));
-  const exit = out3(seg(t, b - .18, b));
-  el.style.opacity = t < a || t >= b ? 0 : inn * (1 - exit);
-  el.style.transform = id === 's3' ? '' : `translateY(${(1 - inn) * 50 - exit * 40}px)`;
-  return t >= a && t < b;
+// entrée/sortie de plan : zoom + flou, comme un vrai montage
+function scene(t, id, a, b, first) {
+  const el = $('#' + id), on = t >= a && t < b;
+  const k = first ? 1 : ex(seg(t, a, a + .45)), o = seg(t, b - .22, b);
+  el.style.opacity = on ? Math.min(cl(k * 1.6), 1 - o) : 0;
+  el.style.transform = `scale(${lerp(.94, 1, k) + o * .08})`;
+  el.style.filter = `blur(${(1 - k) * 14 + o * 16}px)`;
+  return on;
 }
-function glow(color, k) {
-  const g = $('#glow');
-  g.style.background = `radial-gradient(circle, ${color}66 0%, ${color}22 35%, transparent 65%)`;
-  g.style.opacity = k;
-}
-function pop(el, t, a, d = .35, dy = 40) {
-  const k = seg(t, a, a + d);
-  el.style.opacity = cl(k * 2.5);
-  el.style.transform = `translateY(${(1 - back(k)) * dy}px) scale(${.85 + .15 * back(k)})`;
+function lineUp(sp, t, a, d = .55) { const k = ex(seg(t, a, a + d)); sp.style.transform = `translateY(${(1 - k) * 110}%)`; }
+function sheen(el, t, a, d = .9) { const k = seg(t, a, a + d); el.style.backgroundPosition = `${lerp(120, -40, io(k))}% 0`; el.style.opacity = k > 0 && k < 1 ? 1 : 0; }
+
+let glowC = [154, 184, 255];
+function glow(col, a, scale = 1) { const g = $('#glow'); const [r, gg, b] = col; g.style.background = `radial-gradient(circle, rgba(${r},${gg},${b},${.42 * a}) 0%, rgba(${r},${gg},${b},${.14 * a}) 30%, transparent 62%)`; g.style.transform = `scale(${scale})`; }
+
+function grain(t) {
+  const c = $('#grain'), x = c.getContext('2d'), im = x.createImageData(540, 960), r = rng(Math.floor(t * 30) + 3), d = im.data;
+  for (let i = 0; i < d.length; i += 4) { const v = r() * 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
+  x.putImageData(im, 0, 0);
 }
 
 function render(t) {
-  glow('#000000', 0);
-  // 1
-  if (scene(t, ...SC[0])) {
-    $$('#s1 .w').forEach((w, i) => { const k = back(seg(t, i * .35 - .15, i * .35 + .2)); w.style.display = 'inline-block'; w.style.transform = `translateY(${(1 - k) * 34}px)`; w.style.opacity = cl(.75 + k); });
+  grain(t);
+  $$('.mote').forEach(m => { const y = ((+m.dataset.y - t * +m.dataset.v) % 1920 + 1920) % 1920, x = +m.dataset.x + Math.sin(t * .6 + +m.dataset.p) * 18; m.style.transform = `translate(${x}px, ${y}px) scale(${m.dataset.s})`; m.style.opacity = .12 + .1 * Math.sin(t * 1.7 + +m.dataset.p); });
+
+  // secousse de caméra et flash à l'impact
+  const sh = (1 - seg(t, T.impact, T.impact + .5)) * (t >= T.impact);
+  const sh2 = (1 - seg(t, T.s6 + .05, T.s6 + .4)) * (t >= T.s6 + .05);
+  const S = Math.max(sh, sh2 * .6);
+  $('#stage').style.transform = `translate(${Math.sin(t * 90) * 14 * S}px, ${Math.cos(t * 77) * 10 * S}px) scale(${1 + .015 * Math.sin(t * .5)})`;
+  $('#flash').style.opacity = .28 * Math.pow(1 - seg(t, T.impact, T.impact + .35), 2) * (t >= T.impact) + .3 * Math.pow(1 - seg(t, T.s6 + .05, T.s6 + .3), 2) * (t >= T.s6 + .05);
+
+  let gcol = [120, 120, 140], ga = .25, gs = 1;
+
+  // 1 : l'accroche est lisible dès l'image 1, les lignes montent en rythme
+  if (scene(t, 's1', 0, T.s2, true)) {
+    const L = $$('#s1 .line > span');
+    L.forEach((s, i) => { if (i === 0) s.style.transform = `translateY(${(1 - ex(seg(t, -.25, .35))) * 60}%)`; else lineUp(s, t, .12 + i * .32); });
+    $('#s1 h1').style.transform = `scale(${1 + .05 * seg(t, 0, T.s2)})`;
+    ga = .15;
   }
-  // 2 : le badge tombe, flash, étincelles
-  if (scene(t, ...SC[1])) {
-    const k = seg(t, 2.55, 2.85);
-    const b = $('#b0');
-    b.style.opacity = cl(k * 4);
-    b.style.transform = `scale(${lerp(2.4, 1, out3(k)) + .06 * Math.sin(seg(t, 2.85, 3.3) * Math.PI) * (1 - seg(t, 2.85, 3.3))}) rotate(${(1 - out3(k)) * -12}deg)`;
-    const r = seg(t, 2.85, 3.45);
-    $('#ring').style.opacity = (1 - r) * .8 * (t >= 2.85);
-    $('#ring').style.transform = `scale(${.6 + r * 1.3})`;
-    $$('#sparks .spark').forEach(s => {
-      const a = +s.dataset.a, R = +s.dataset.r, q = seg(t, 2.85, 3.7);
-      s.style.opacity = (t >= 2.85) * (1 - q);
-      s.style.transform = `translate(${Math.cos(a) * R * out3(q)}px, ${Math.sin(a) * R * out3(q)}px) scale(${1 - q * .6})`;
+  // 2 : « Ici, si. » puis le badge tombe sur le « si »
+  if (scene(t, 's2', T.s2, T.s3)) {
+    lineUp($('#ici'), t, T.s2 + .02, .5);
+    const k = seg(t, T.impact - .28, T.impact), b = $('#b0');
+    b.style.opacity = cl(k * 3);
+    const settle = seg(t, T.impact, T.impact + .7);
+    b.style.transform = `translateY(${Math.sin(t * 1.6) * 10 * settle}px) scale(${lerp(2.6, 1, io(k)) + .07 * Math.sin(settle * Math.PI) * (1 - settle)}) rotate(${(1 - io(k)) * -14}deg)`;
+    b.style.filter = `blur(${(1 - k) * 22}px)`;
+    sheen(b.querySelector('.sheen'), t, T.impact + .35, 1.0);
+    [['#ring1', 0, 1.6], ['#ring2', .12, 2.3]].forEach(([id, dl, sc]) => { const r = seg(t, T.impact + dl, T.impact + dl + .7), e = $(id); e.style.width = e.style.height = '600px'; e.style.margin = '-300px 0 0 -300px'; e.style.opacity = (t >= T.impact + dl) * (1 - r) * .7; e.style.transform = `scale(${.7 + ex(r) * sc})`; e.style.borderWidth = `${6 * (1 - r) + 1}px`; });
+    $$('#sparks .spark').forEach(s => { const q = seg(t, T.impact, T.impact + 1.1), a = +s.dataset.a, R = +s.dataset.r; s.style.opacity = (t >= T.impact) * (1 - q); s.style.transform = `translate(${Math.cos(a) * R * ex(q)}px, ${Math.sin(a) * R * ex(q) + q * q * 120}px) scale(${1.2 - q})`; });
+    lineUp($('#k0'), t, T.impact + .3); $('#k0').style.opacity = cl(seg(t, T.impact + .3, T.impact + .6));
+    const nk = ex(seg(t, T.r3 - .05, T.r3 + .45)); $('#n0').style.opacity = nk; $('#n0').style.transform = `translateY(${(1 - nk) * 40}px)`;
+    gcol = [154, 184, 255]; ga = t < T.impact ? .1 : .3 + .7 * (1 - seg(t, T.impact, T.impact + 1.2)) * .6 + .35; gs = 1 + .2 * (1 - seg(t, T.impact, T.impact + .8));
+  }
+  // 3 : carrousel, le badge actif au centre, les voisins sur les côtés
+  if (scene(t, 's3', T.s3, T.s4)) {
+    const sl = T.slots; let pos = 0;
+    for (let i = 0; i < sl.length; i++) { if (t >= sl[i][0]) pos = i + (i < sl.length - 1 ? 0 : 0); }
+    // position continue : glisse d'un cran au début de chaque créneau
+    let p = 0; sl.forEach(([a], i) => { if (i > 0) p += ex(seg(t, a - .05, a + .4)); });
+    const cur = Math.round(p);
+    $('#cnt').textContent = `${String(cur + 2).padStart(2, '0')} / 12`;
+    $$('#deck .dk').forEach((b, i) => {
+      const d = i - p, ad = Math.abs(d);
+      b.style.transform = `translateX(${d * 560}px) scale(${lerp(1, .5, cl(ad))}) rotateY(${-d * 18}deg)`;
+      b.style.opacity = cl(1 - (ad - 1) * 1.2) * lerp(1, .32, cl(ad));
+      b.style.filter = `blur(${cl(ad) * 4}px)`;
+      b.style.zIndex = 10 - Math.round(ad * 3);
+      const bob = Math.sin(t * 1.8 + i) * 8 * cl(1 - ad); b.style.top = `${860 + bob}px`;
+      sheen(b.querySelector('.sheen'), t, sl[i][0] + .35, .8);
     });
-    pop($('#n0'), t, 3.0, .3, 20);
-    glow('#9ab8ff', seg(t, 2.8, 3.1) * (1 - seg(t, 3.9, 4.1)));
-    document.body.style.background = t >= 2.85 && t < 2.95 ? '#1d2230' : '';
-  } else document.body.style.background = '';
-  // 3 : un badge par temps
-  if (scene(t, ...SC[2])) {
-    const i = Math.min(DECK.length - 1, Math.floor((t - D0) / DSTEP));
-    $('#cnt').textContent = `${String(i + 2).padStart(2, '0')} / 12`;
-    $$('#deck .card').forEach((c, j) => {
-      const a = D0 + j * DSTEP, k = seg(t, a, a + .32), ex = seg(t, a + DSTEP - .12, a + DSTEP);
-      const on = t >= a && (t < a + DSTEP || j === DECK.length - 1);
-      c.style.opacity = on ? 1 : 0;
-      const b = c.querySelector('.badge');
-      b.style.transform = `translateX(${(j === DECK.length - 1 ? 0 : -ex * 600)}px) scale(${lerp(.55, 1, back(k))}) rotate(${(1 - out3(k)) * 20}deg)`;
-      b.style.opacity = 1 - (j === DECK.length - 1 ? 0 : ex);
-      c.querySelector('.bname').style.opacity = cl(k * 3) * (1 - ex);
-      c.querySelector('.bdesc').style.opacity = cl(seg(t, a + .15, a + .4)) * (1 - ex);
-      if (on) glow(DECK[j][3], .9 * cl(k * 2));
+    $$('#names .nm').forEach((n, i) => { const d = Math.abs(i - p); n.style.opacity = cl(1 - d * 2.2); n.style.transform = `translateY(${d * 30}px)`; });
+    const i0 = Math.floor(p), f = p - i0, c0 = hex(DECK[Math.min(i0, 5)][3]), c1 = hex(DECK[Math.min(i0 + 1, 5)][3]);
+    gcol = c0.map((v, j) => lerp(v, c1[j], f)); ga = .85;
+  }
+  // 4 : un badge, 6 niveaux qui s'allument, l'anneau se remplit
+  if (scene(t, 's4', T.s4, T.s5)) {
+    $$('#s4 .line > span').forEach((s, i) => lineUp(s, t, T.s4 + .05 + i * .12));
+    const L0 = T.s4 + .55;
+    let n = 0;
+    $$('#orbs .orb').forEach((o, i) => { const a = L0 + i * .2, k = seg(t, a, a + .3); if (t >= a) n = i + 1; o.style.opacity = .25 + .75 * cl(k * 2); o.style.transform = `translateY(${(1 - back(k)) * 40}px) scale(${.8 + .2 * back(k)})`; o.querySelector('span').style.color = t >= a ? '#fff' : ''; });
+    $('#lvnum').textContent = `NIVEAU ${Math.max(1, n)}`;
+    const arc = seg(t, L0, L0 + 1.2); $('#arc').style.strokeDashoffset = 1822 * (1 - io(arc));
+    const bf = $('#bf'), kb = ex(seg(t, T.s4, T.s4 + .6));
+    bf.style.transform = `scale(${lerp(.8, 1, kb) + .03 * n / 6}) translateY(${Math.sin(t * 1.6) * 8}px)`;
+    sheen(bf.querySelector('.sheen'), t, L0 + 1.25, .9);
+    gcol = [255, 122, 46]; ga = .4 + .5 * n / 6; gs = 1 + .1 * n / 6;
+  }
+  // 5 : la collection s'assemble
+  if (scene(t, 's5', T.s5, T.s6)) {
+    $$('#s5 .line > span').forEach((s, i) => lineUp(s, t, T.s5 + .05 + i * .12));
+    const r = rng(9);
+    $$('#grid .cell').forEach((c, i) => {
+      const a = T.s5 + .15 + ((i % 4) + Math.floor(i / 4)) * .06, k = ex(seg(t, a, a + .6));
+      const ox = (r() - .5) * 900, oy = (r() - .5) * 900, rot = (r() - .5) * 90;
+      c.style.left = `${lerp(540 + ox, +c.dataset.x, k)}px`; c.style.top = `${lerp(860 + oy, +c.dataset.y, k) + Math.sin(t * 1.5 + i) * 5}px`;
+      c.style.transform = `rotate(${(1 - k) * rot}deg) scale(${lerp(.3, 1, k)})`; c.style.opacity = cl(k * 1.5); c.style.filter = `blur(${(1 - k) * 10}px)`;
     });
+    $('#grid').style.transform = `scale(${1 - .04 * seg(t, T.s5 + .9, T.s6)})`; $('#grid').style.transformOrigin = '540px 1040px';
+    gcol = [110, 125, 255]; ga = .6;
   }
-  // 4 : les 6 niveaux
-  if (scene(t, ...SC[3])) {
-    $$('#levels .lv').forEach((l, i) => pop(l, t, 9.9 + i * .28, .32, 50));
-    glow('#ff7a2e', .35 + .5 * seg(t, 9.9, 11.6));
+  // 6 : fin, le logo au centre, les badges en orbite derrière
+  if (scene(t, 's6', T.s6, T.dur + 1)) {
+    const k = ex(seg(t, T.s6 + .05, T.s6 + .6));
+    $('#logo').style.transform = `scale(${lerp(1.25, 1, k)})`; $('#logo').style.opacity = k;
+    sheen($('#logosheen'), t, T.s6 + .55, 1.0);
+    const kd = ex(seg(t, T.r6a - .05, T.r6a + .45)); $('#date').style.opacity = kd; $('#date').style.transform = `translateY(${(1 - kd) * 24}px)`;
+    const kp = seg(t, T.r6b - .1, T.r6b + .35); $('#pill').style.opacity = cl(kp * 3); $('#pill').style.transform = `scale(${lerp(.7, 1, back(kp))})`; $('#pill').style.display = 'inline-block';
+    $$('#orbitwrap .orbit').forEach((o, i) => { const a = i / 12 * 6.283 + t * .35, R = 430; o.style.left = `${540 + Math.cos(a) * R}px`; o.style.top = `${880 + Math.sin(a) * R * .55}px`; const z = (Math.sin(a) + 1) / 2; o.style.transform = `scale(${.55 + .45 * z})`; o.style.opacity = (.15 + .35 * z) * k; o.style.filter = `blur(${(1 - z) * 3}px)`; o.style.zIndex = Math.round(z * 10); });
+    gcol = [200, 200, 220]; ga = .35;
   }
-  // 5 : la collection
-  if (scene(t, ...SC[4])) {
-    $$('#grid .cell').forEach((c, i) => { const c4 = i % 4, r = Math.floor(i / 4); pop(c, t, 12.95 + (c4 + r) * .09, .32, 40); });
-    glow('#6a7dff', .5);
-  }
-  // 6
-  if (scene(t, ...SC[5])) {
-    pop($('#s6 .logo'), t, 15.5, .4, 30);
-    pop($('#s6 .kw'), t, 15.9, .4, 30);
-  }
+  glow(gcol, ga, gs);
 }
+
 window.render = render;
-Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => {}))]).then(() => { render(Number(new URLSearchParams(location.search).get('t') || 0)); window.__ready = true; });
+fetch('timeline.json').then(r => r.json()).then(j => { T = j; build(); return Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => {}))]); })
+  .then(() => { render(Number(new URLSearchParams(location.search).get('t') || 0)); window.__ready = true; });
 </script>
 </body>
 </html>

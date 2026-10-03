@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Reiz reel 03 POV</title>
+<style>
+  @font-face { font-family: Inter; font-weight: 400; src: url(fonts/Inter_400Regular.ttf); }
+  @font-face { font-family: Inter; font-weight: 600; src: url(fonts/Inter_600SemiBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 800; src: url(fonts/Inter_800ExtraBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 900; src: url(fonts/Inter_900Black.ttf); }
+  :root { --bg: #0a0a0a; --card: #161616; --line: #2a2a2a; --muted: #9a9a9a; --dim: #8a8a8a; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
+  body { font-family: Inter, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+
+  #stage { position: absolute; inset: 0; transform-origin: 540px 860px; }
+  #glow { position: absolute; left: 540px; top: 860px; width: 1500px; height: 1500px; margin: -750px 0 0 -750px; border-radius: 50%; }
+  #vignette { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 50% 45%, transparent 40%, rgba(0,0,0,.75) 100%); }
+  #grain { position: absolute; inset: 0; width: 1080px; height: 1920px; opacity: .05; mix-blend-mode: screen; }
+  .mote { position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #fff; }
+
+  .scene { position: absolute; inset: 0; opacity: 0; transform-origin: 540px 860px; }
+  .center { position: absolute; left: 220px; width: 640px; text-align: center; }
+  .line { display: block; overflow: hidden; padding-bottom: .08em; }
+  .line > span { display: inline-block; }
+  h1 { font-weight: 900; letter-spacing: -.045em; line-height: 1; }
+  .kick { font-size: 32px; font-weight: 800; letter-spacing: .32em; text-transform: uppercase; color: var(--dim); }
+
+  /* téléphone */
+  #phone { position: absolute; left: 540px; top: 880px; width: 560px; height: 1080px; margin: -540px 0 0 -280px; border-radius: 74px; background: #050505; border: 10px solid #1e1e1e; box-shadow: 0 40px 120px rgba(0,0,0,.8), inset 0 0 0 2px #333; overflow: hidden; }
+  #phone .island { position: absolute; left: 50%; top: 22px; width: 150px; height: 42px; margin-left: -75px; border-radius: 22px; background: #000; }
+  #phone .clock { position: absolute; left: 0; right: 0; top: 150px; text-align: center; font-size: 140px; font-weight: 600; letter-spacing: -.03em; color: #eaeaea; }
+  #phone .date { position: absolute; left: 0; right: 0; top: 120px; text-align: center; font-size: 30px; font-weight: 600; color: #bbb; }
+  .notif { position: absolute; left: 22px; right: 22px; height: 150px; border-radius: 34px; background: rgba(40,40,40,.92); border: 1px solid #3a3a3a; padding: 22px 26px; display: flex; gap: 20px; align-items: center; }
+  .notif .ic { width: 78px; height: 78px; border-radius: 18px; background: #000; flex: none; display: grid; place-items: center; border: 1px solid #333; }
+  .notif .ic img { width: 60px; }
+  .notif .t { font-size: 26px; font-weight: 800; color: #fff; display: flex; justify-content: space-between; }
+  .notif .t span { font-weight: 600; color: #888; font-size: 22px; }
+  .notif .m { font-size: 28px; color: #ddd; margin-top: 6px; line-height: 1.25; }
+
+  .avs { position: absolute; left: 540px; top: 900px; transform: translateX(-50%); display: flex; }
+  .av { width: 150px; height: 150px; border-radius: 50%; display: grid; place-items: center; font-size: 62px; font-weight: 900; color: #000; border: 8px solid var(--bg); margin: 0 -14px; box-shadow: 0 0 0 4px #fff; }
+  .card { position: absolute; left: 540px; top: 820px; width: 640px; margin-left: -320px; background: var(--card); border: 2px solid var(--line); border-radius: 44px; overflow: hidden; }
+  .card img { display: block; width: 100%; height: 420px; object-fit: cover; object-position: 50% 62%; }
+  .card .foot { padding: 30px 36px; }
+  .card .row { display: flex; justify-content: space-between; font-size: 34px; font-weight: 800; }
+  .dots { display: flex; gap: 14px; margin-top: 24px; }
+  .dots i { flex: 1; height: 20px; border-radius: 10px; background: #2a2a2a; }
+  .check { position: absolute; left: 540px; top: 820px; width: 150px; height: 150px; margin: -75px 0 0 -75px; border-radius: 50%; background: #fff; color: #000; display: grid; place-items: center; font-size: 90px; font-weight: 900; opacity: 0; }
+  .logo { width: 520px; display: block; margin: 0 auto; }
+  .pill { display: inline-block; white-space: nowrap; font-size: 44px; font-weight: 900; color: #000; background: #fff; border-radius: 999px; padding: 22px 46px; }
+  .small { font-size: 40px; color: var(--muted); font-weight: 600; }
+  .jtag { display: inline-block; font-size: 30px; font-weight: 900; letter-spacing: .2em; color: #000; background: #fff; border-radius: 12px; padding: 8px 18px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="glow"></div>
+  <div id="dust"></div>
+
+  <!-- 1 accroche -->
+  <div class="scene" id="s1">
+    <div class="center" style="top: 620px">
+      <div class="kick"><span class="line"><span>POV</span></span></div>
+      <h1 style="font-size: 116px; margin-top: 30px">
+        <span class="line"><span>t'as sauté</span></span>
+        <span class="line"><span>la salle</span></span>
+        <span class="line"><span style="color:#777">hier.</span></span>
+      </h1>
+    </div>
+  </div>
+
+  <!-- 2 le téléphone vibre -->
+  <div class="scene" id="s2">
+    <div id="phone">
+      <div class="island"></div>
+      <div class="date">Mardi</div>
+      <div class="clock">19:04</div>
+      <div id="notifs"></div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="scene" id="s3">
+    <div class="center" style="top: 430px"><h1 style="font-size: 96px"><span class="line"><span>Sur Reiz,</span></span><span class="line"><span>ton cercle</span></span><span class="line"><span>remarque.</span></span></h1></div>
+    <div class="avs" id="avs">
+      <div class="av" style="background:#f5c26b">N</div><div class="av" style="background:#8fb8ff">S</div><div class="av" style="background:#ff9ec4">I</div><div class="av" style="background:#b9a4ff">H</div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="scene" id="s4">
+    <div class="center" style="top: 330px"><h1 style="font-size: 104px"><span class="line"><span>Du coup,</span></span><span class="line"><span>t'y vas.</span></span></h1></div>
+    <div class="card" id="card">
+      <img src="assets/photo-seance.jpg" alt="">
+      <div class="foot"><div class="row"><span>💪 Aller à la salle</span><span id="cnt">3 / 4</span></div><div class="dots"><i></i><i></i><i></i><i></i></div></div>
+    </div>
+    <div class="check" id="check">✓</div>
+  </div>
+
+  <!-- 5 fin -->
+  <div class="scene" id="s5">
+    <div class="center" style="top: 640px">
+      <img class="logo" id="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+      <div style="margin-top: 60px"><span class="jtag" id="jtag">J-6</span></div>
+      <div class="small" id="date" style="margin-top: 26px">Le 10 octobre sur iPhone</div>
+      <div style="margin-top: 34px"><span class="pill" id="pill">Abonne-toi pour la sortie</span></div>
+    </div>
+  </div>
+</div>
+<canvas id="grain" width="540" height="960"></canvas>
+<div id="vignette"></div>
+
+<script>
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const cl = x => Math.max(0, Math.min(1, x)), seg = (t, a, b) => cl((t - a) / (b - a));
+const ex = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+const io = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const back = x => { const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const lerp = (a, b, k) => a + (b - a) * k;
+function rng(s) { return () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+// timing fixe (pas de voix), une notification par seconde
+const T = { s2: 2.3, n: [3.0, 3.9, 4.8, 5.7], s3: 7.2, s4: 9.6, fill: 10.7, s5: 12.6, dur: 15.4 };
+window.TIMELINE = T;
+const NOTIFS = [
+  ['Nathan', 'maintenant', "t'étais où hier ? 👀"],
+  ['Sarah', 'maintenant', "a posté sa séance. Toi ? 💪"],
+  ['Inès', 'maintenant', "on t'attend ce soir, pas d'excuse"],
+  ['Reiz', 'rappel', "Ta séance de 19h, c'est maintenant."],
+];
+
+function build() {
+  const r = rng(11); let h = '';
+  for (let i = 0; i < 40; i++) h += `<div class="mote" data-x="${r() * 1080}" data-y="${r() * 1920}" data-v="${8 + r() * 24}" data-p="${r() * 6.28}" data-s="${.3 + r() * .9}"></div>`;
+  $('#dust').innerHTML = h;
+  $('#notifs').innerHTML = NOTIFS.map(([a, w, m]) => `<div class="notif"><div class="ic"><img src="assets/ecriture-reiz-blanc-trim.png" alt=""></div><div style="flex:1"><div class="t">${a}<span>${w}</span></div><div class="m">${m}</div></div></div>`).join('');
+}
+
+function scene(t, id, a, b, first) {
+  const el = $('#' + id), on = t >= a && t < b;
+  const k = first ? 1 : ex(seg(t, a, a + .45)), o = seg(t, b - .22, b);
+  el.style.opacity = on ? Math.min(cl(k * 1.6), 1 - o) : 0;
+  el.style.transform = `scale(${lerp(.94, 1, k) + o * .08})`;
+  el.style.filter = `blur(${(1 - k) * 14 + o * 16}px)`;
+  return on;
+}
+function lineUp(sp, t, a, d = .55) { const k = ex(seg(t, a, a + d)); sp.style.transform = `translateY(${(1 - k) * 110}%)`; }
+function glow(col, a) { const [r, g, b] = col; $('#glow').style.background = `radial-gradient(circle, rgba(${r},${g},${b},${.4 * a}) 0%, rgba(${r},${g},${b},${.12 * a}) 30%, transparent 62%)`; }
+function grain(t) { const c = $('#grain'), x = c.getContext('2d'), im = x.createImageData(540, 960), r = rng(Math.floor(t * 30) + 3), d = im.data; for (let i = 0; i < d.length; i += 4) { const v = r() * 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; } x.putImageData(im, 0, 0); }
+
+function render(t) {
+  grain(t);
+  $$('.mote').forEach(m => { const y = ((+m.dataset.y - t * +m.dataset.v) % 1920 + 1920) % 1920, x = +m.dataset.x + Math.sin(t * .6 + +m.dataset.p) * 18; m.style.transform = `translate(${x}px, ${y}px) scale(${m.dataset.s})`; m.style.opacity = .1 + .08 * Math.sin(t * 1.7 + +m.dataset.p); });
+  let gc = [140, 140, 160], ga = .25;
+
+  if (scene(t, 's1', 0, T.s2, true)) {
+    const L = $$('#s1 .line > span');
+    L.forEach((s, i) => { if (i < 3) s.style.transform = `translateY(${(1 - ex(seg(t, -.3, .3))) * 60}%)`; else lineUp(s, t, .35); });
+    $('#s1 h1').style.transform = `scale(${1 + .05 * seg(t, 0, T.s2)})`;
+  }
+  // le téléphone monte, puis vibre à chaque notification
+  let shake = 0;
+  if (scene(t, 's2', T.s2, T.s3)) {
+    const k = ex(seg(t, T.s2, T.s2 + .7));
+    T.n.forEach(a => { const q = seg(t, a, a + .3); if (t >= a && q < 1) shake = Math.max(shake, 1 - q); });
+    $('#phone').style.transform = `translateY(${(1 - k) * 900}px) rotate(${(1 - k) * 6 + Math.sin(t * 95) * 1.2 * shake}deg) translateX(${Math.sin(t * 120) * 9 * shake}px)`;
+    $$('#notifs .notif').forEach((n, i) => {
+      const a = T.n[i], q = ex(seg(t, a, a + .45));
+      // les plus récentes en haut, les anciennes glissent dessous
+      const after = T.n.filter((b, j) => j > i && t >= b).length;
+      const y = 420 + after * 160;
+      n.style.top = `${lerp(-200, y, q)}px`;
+      n.style.opacity = cl(q * 2) * (1 - after * .12);
+      n.style.transform = `scale(${lerp(.9, 1, q) - after * .03})`;
+      n.style.zIndex = 10 + i;
+    });
+    gc = [180, 180, 200]; ga = .25 + .3 * shake;
+  }
+  if (scene(t, 's3', T.s3, T.s4)) {
+    $$('#s3 .line > span').forEach((s, i) => lineUp(s, t, T.s3 + .05 + i * .14));
+    $$('#avs .av').forEach((a, i) => { const k = seg(t, T.s3 + .7 + i * .12, T.s3 + 1.05 + i * .12); a.style.opacity = cl(k * 2.5); a.style.transform = `translateY(${(1 - back(k)) * 60}px) scale(${.7 + .3 * back(k)})`; });
+    gc = [160, 170, 255]; ga = .45;
+  }
+  if (scene(t, 's4', T.s4, T.s5)) {
+    $$('#s4 .line > span').forEach((s, i) => lineUp(s, t, T.s4 + .05 + i * .14));
+    const kc = ex(seg(t, T.s4 + .2, T.s4 + .8));
+    $('#card').style.transform = `translateY(${(1 - kc) * 140}px)`; $('#card').style.opacity = kc;
+    const filled = t >= T.fill ? 4 : 3;
+    $$('#card .dots i').forEach((d, i) => { d.style.background = i < filled ? '#fff' : '#2a2a2a'; d.style.transform = i === 3 && t >= T.fill ? `scaleY(${1 + .6 * (1 - seg(t, T.fill, T.fill + .3))})` : ''; });
+    $('#cnt').textContent = `${filled} / 4`;
+    const kk = seg(t, T.fill + .15, T.fill + .5); $('#check').style.opacity = cl(kk * 2) * (1 - seg(t, T.s5 - .4, T.s5)); $('#check').style.transform = `scale(${lerp(.3, 1, back(kk))})`;
+    gc = [255, 255, 255]; ga = t >= T.fill ? .35 + .3 * (1 - seg(t, T.fill, T.fill + 1)) : .2;
+  }
+  if (scene(t, 's5', T.s5, T.dur + 1)) {
+    const k = ex(seg(t, T.s5 + .05, T.s5 + .6)); $('#logo').style.transform = `scale(${lerp(1.25, 1, k)})`; $('#logo').style.opacity = k;
+    [['#jtag', .45], ['#date', .6], ['#pill', .9]].forEach(([id, d]) => { const q = seg(t, T.s5 + d, T.s5 + d + .4); $(id).style.opacity = cl(q * 2.5); $(id).style.transform = `translateY(${(1 - back(q)) * 24}px)`; $(id).style.display = 'inline-block'; });
+    gc = [200, 200, 220]; ga = .35;
+  }
+  $('#stage').style.transform = `translate(${Math.sin(t * 90) * 6 * shake}px, 0) scale(${1 + .012 * Math.sin(t * .5)})`;
+  glow(gc, ga);
+}
+window.render = render;
+build();
+Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => {}))]).then(() => { render(Number(new URLSearchParams(location.search).get('t') || 0)); window.__ready = true; });
+</script>
+</body>
+</html>

@@ -271,6 +271,27 @@ class Mix:
 
 
 def mux(video, audio, out):
-    subprocess.run([FFMPEG, '-y', '-loglevel', 'error', '-i', video, '-i', audio, '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
+    # réencodage : le grain rend la vidéo maîtresse très lourde (près de 100 Mo), Instagram et le téléphone préfèrent ~20 Mo
+    subprocess.run([FFMPEG, '-y', '-loglevel', 'error', '-i', video, '-i', audio, '-c:v', 'libx264', '-preset', 'slow', '-crf', '21', '-maxrate', '9M', '-bufsize', '18M', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k',
                     '-shortest', '-movflags', '+faststart', out], check=True)
     return out
+
+
+def load_wav(path):
+    """Charge un fichier audio (n'importe quel format) en mono 48 kHz."""
+    with tempfile.TemporaryDirectory() as d:
+        w = os.path.join(d, 'v.wav')
+        subprocess.run([FFMPEG, '-y', '-loglevel', 'error', '-i', path, '-ar', str(SR), '-ac', '1', w], check=True)
+        with wave.open(w) as f:
+            return np.frombuffer(f.readframes(f.getnframes()), dtype=np.int16).astype(float) / 32768
+
+
+def voice_file(self, t0, path, gain=1.0):
+    """Place une réplique déjà enregistrée (voix Chatterbox ou vraie voix)."""
+    x = load_wav(path)
+    self._put(self.vo, t0, x, gain)
+    self.lines.append((t0, round(t0 + len(x) / SR, 2), os.path.basename(path)))
+    return len(x) / SR
+
+
+Mix.voice_file = voice_file

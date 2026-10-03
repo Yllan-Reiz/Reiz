@@ -1,0 +1,14 @@
+[
+ {"id": "r1", "texte": "À la salle, personne te donne de médaille.", "emotion": 0.75},
+ {"id": "r2", "texte": "Ici... si.", "emotion": 1.0},
+ {"id": "r3", "texte": "Premier pas.", "emotion": 0.9},
+ {"id": "b1", "texte": "En action.", "emotion": 0.9},
+ {"id": "b2", "texte": "En feu !", "emotion": 1.1},
+ {"id": "b3", "texte": "Lève-tôt.", "emotion": 0.9},
+ {"id": "b4", "texte": "Couche-tard.", "emotion": 0.9},
+ {"id": "b5", "texte": "Inarrêtable.", "emotion": 1.0},
+ {"id": "b6", "texte": "Acharné.", "emotion": 1.0},
+ {"id": "r4", "texte": "Et chaque badge a six niveaux.", "emotion": 0.85},
+ {"id": "r5", "texte": "Douze badges. Combien tu vas en débloquer ?", "emotion": 0.9},
+ {"id": "r6", "texte": "Reiz. Le dix octobre, sur iPhone. Abonne-toi.", "emotion": 0.9}
+]

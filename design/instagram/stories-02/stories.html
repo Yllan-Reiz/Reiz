@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Reiz stories 02</title>
+<style>
+  @font-face { font-family: Inter; font-weight: 600; src: url(fonts/Inter_600SemiBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 800; src: url(fonts/Inter_800ExtraBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 900; src: url(fonts/Inter_900Black.ttf); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #000; }
+  body { font-family: Inter, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+  body.single { width: 1080px; height: 1920px; overflow: hidden; }
+  body.single .st:not(.on) { display: none; }
+  .st { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #0a0a0a; }
+  .logo { height: 46px; position: absolute; left: 100px; top: 250px; }
+  .tag { position: absolute; right: 100px; top: 252px; font-size: 28px; font-weight: 900; letter-spacing: .2em; color: #000; background: #fff; border-radius: 10px; padding: 6px 16px; }
+  .in { position: absolute; left: 100px; right: 100px; text-align: center; }
+  .kicker { font-size: 34px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: #8a8a8a; }
+  h1 { font-weight: 900; letter-spacing: -.045em; line-height: 1; font-size: 104px; margin-top: 30px; }
+  .duo { position: absolute; left: 0; right: 0; top: 760px; display: flex; justify-content: center; gap: 120px; }
+  .duo div { text-align: center; }
+  .duo img { width: 300px; display: block; -webkit-mask-image: radial-gradient(circle, #000 50%, transparent 68%); }
+  .duo span { display: block; font-size: 40px; font-weight: 800; margin-top: 6px; }
+  .hint { position: absolute; left: 0; right: 0; top: 1540px; text-align: center; font-size: 36px; font-weight: 700; color: #8a8a8a; }
+  .glow { position: absolute; width: 900px; height: 900px; border-radius: 50%; top: 520px; }
+</style>
+</head>
+<body>
+<section class="st" id="matin-soir">
+  <div class="glow" style="left: -260px; background: radial-gradient(circle, #ffb13b33 0%, transparent 60%)"></div>
+  <div class="glow" style="right: -260px; background: radial-gradient(circle, #7a5cff33 0%, transparent 60%)"></div>
+  <img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <span class="tag">J-6</span>
+  <div class="in" style="top: 400px">
+    <div class="kicker">Question du jour</div>
+    <h1>Tu t'entraînes plutôt…</h1>
+  </div>
+  <div class="duo">
+    <div><img src="assets/leve-tot.png" alt=""><span>Le matin</span></div>
+    <div><img src="assets/couche-tard.png" alt=""><span>Le soir</span></div>
+  </div>
+  <div class="hint">Vote 👇 (c'est un badge sur Reiz)</div>
+</section>
+<script>
+  const f = new URLSearchParams(location.search).get('f');
+  if (f) { document.body.classList.add('single'); document.getElementById(f).classList.add('on'); }
+</script>
+</body>
+</html>
