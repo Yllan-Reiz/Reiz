@@ -11,7 +11,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { Objective } from '../lib/types';
 import { QUICK_UNITS } from '../constants';
 import { ShareStoryModal, StoryData } from '../components/ShareStoryModal';
-import { loadDuoStats, ordinalDuo } from '../lib/duo';
+import { loadDuoStats, ordinalDuo, DUO_WINDOW_MS } from '../lib/duo';
 import { s, F } from '../styles';
 
 // Vidéo de progression : 15 s max, comme une story. Au-delà, le fichier pèse
@@ -350,7 +350,12 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
         if (duoWith && tagged.some(f => f.id === duoWith)) {
           const st = await loadDuoStats(user.id, duoWith).catch(() => null);
           const who = tagged.find(f => f.id === duoWith)!.full_name.split(' ')[0];
-          if (st && st.validated > 0) {
+          // Validé « à l'instant » : le dernier duo compté est celui qu'on vient de poster.
+          const justNow = !!st?.last && Date.now() - new Date(st.last).getTime() < 5 * 60 * 1000;
+          if (st && !justNow) {
+            message = `Ta séance est publiée, mais le duo avec ${who} n'est pas validé : il faut poster à moins d'une heure d'écart. Partage-la quand même en story ?`;
+          }
+          if (st && justNow) {
             title = 'Duo validé 🤝';
             message = `${ordinalDuo(st.validated)} avec ${who}${st.weeks > 0 ? `, ${st.weeks} ${st.weeks > 1 ? 'semaines' : 'semaine'} d'affilée 🔥` : ''}. Partage votre duo en story ?`;
             storyData.partnerPhotoUri = st.partnerPhoto;

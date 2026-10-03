@@ -2,11 +2,13 @@ import { supabase } from './supabase';
 import { signOne, isVideo } from './storage';
 
 // Un duo « validé » = deux séances, une de chacun, où chacun identifie l'autre, postées à
-// moins de 24 h d'écart. Tout se calcule à partir des posts existants (with_user_ids) :
+// moins d'1 heure d'écart : le but est de s'entraîner vraiment ensemble. Tout se calcule à partir des posts existants (with_user_ids) :
 // aucune table en plus. La base ne renvoie que les posts que tu as le droit de voir.
 
 const DAY = 24 * 60 * 60 * 1000;
 const WEEK = 7 * DAY;
+/** Fenêtre d'un duo : deux séances postées à moins d'une heure d'écart. */
+export const DUO_WINDOW_MS = 60 * 60 * 1000;
 
 export type DuoStats = {
   validated: number;       // nombre de duos validés avec cet ami
@@ -38,7 +40,7 @@ export async function loadDuoStats(me: string, friend: string): Promise<DuoStats
   const dates: string[] = [];
   mine.forEach(m => {
     const t = new Date(m.created_at).getTime();
-    const mate = theirs.find(x => !used.has(x.id) && Math.abs(new Date(x.created_at).getTime() - t) <= DAY);
+    const mate = theirs.find(x => !used.has(x.id) && Math.abs(new Date(x.created_at).getTime() - t) <= DUO_WINDOW_MS);
     if (!mate) return;
     used.add(mate.id);
     dates.push(new Date(m.created_at) > new Date(mate.created_at) ? m.created_at : mate.created_at);
@@ -54,8 +56,8 @@ export async function loadDuoStats(me: string, friend: string): Promise<DuoStats
     for (let i = 1; i < weeks.length && weeks[i] === weeks[i - 1] - 1; i++) streak++;
   }
 
-  // Photo de sa dernière séance si elle date de moins de 24 h (pour la story duo).
-  const recent = theirs.find(x => Date.now() - new Date(x.created_at).getTime() <= DAY && x.photo_url && !isVideo(x.photo_url));
+  // Photo de sa dernière séance si elle date de moins d'une heure (pour la story duo).
+  const recent = theirs.find(x => Date.now() - new Date(x.created_at).getTime() <= DUO_WINDOW_MS && x.photo_url && !isVideo(x.photo_url));
   const partnerPhoto = recent?.photo_url ? await signOne(recent.photo_url) : null;
 
   return { validated: dates.length, weeks: streak, last: dates[0] || null, partnerPhoto };
@@ -70,7 +72,7 @@ export function validatedDuoIds(posts: { id: string; user_id?: string; created_a
   posts.forEach(p => {
     if (!p.user_id || !(p.with_user_ids || []).length) return;
     const t = new Date(p.created_at).getTime();
-    const mate = posts.find(q => q.id !== p.id && !!q.user_id && (p.with_user_ids || []).includes(q.user_id!) && (q.with_user_ids || []).includes(p.user_id!) && Math.abs(new Date(q.created_at).getTime() - t) <= DAY);
+    const mate = posts.find(q => q.id !== p.id && !!q.user_id && (p.with_user_ids || []).includes(q.user_id!) && (q.with_user_ids || []).includes(p.user_id!) && Math.abs(new Date(q.created_at).getTime() - t) <= DUO_WINDOW_MS);
     if (mate) { out.add(p.id); out.add(mate.id); }
   });
   return out;

@@ -227,7 +227,7 @@ export function DuoBubble({ name, stats, onInvite }: { name: string; stats: DuoS
         </View>
         {none ? (
           <Text style={{ color: '#fff', fontSize: 15, lineHeight: 22, fontFamily: F.regular, marginTop: 10 }}>
-            Pas encore de duo avec {name}. Lancez le premier : vous postez chacun votre séance dans les 24 h et le duo est validé.
+            Pas encore de duo avec {name}. Lancez le premier : entraînez-vous ensemble et postez chacun votre séance à moins d'une heure d'écart pour le valider.
           </Text>
         ) : (
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8 }}>

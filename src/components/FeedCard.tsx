@@ -12,6 +12,7 @@ import { FadeInImage } from './FadeInImage';
 import { FeedVideo } from './FeedVideo';
 import { isVideo } from '../lib/storage';
 import { togglePin } from '../lib/posts';
+import { DUO_WINDOW_MS } from '../lib/duo';
 import { ShareStoryModal, StoryData } from './ShareStoryModal';
 import { FloatingEmoji, nextFloatId } from './FloatingEmoji';
 
@@ -218,6 +219,14 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   };
 
   const [storyData, setStoryData] = useState<StoryData | null>(null);
+  // Compte à rebours du duo : il se valide si vous postez à moins d'1 h d'écart.
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (!canDuoReply || duoDone) return;
+    const id = setInterval(() => tick(n => n + 1), 30000);
+    return () => clearInterval(id);
+  }, [canDuoReply, duoDone]);
+  const duoLeftMin = Math.ceil((DUO_WINDOW_MS - (Date.now() - new Date(u.created_at).getTime())) / 60000);
   const [pinned, setPinned] = useState(!!u.pinned_at);
   useEffect(() => { setPinned(!!u.pinned_at); }, [u.pinned_at]);
 
@@ -423,7 +432,11 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
           </View>
         ) : (
           <TouchableOpacity style={s.duoReplyBtn} onPress={() => onDuoReply!(u.user_id!)} activeOpacity={0.85}>
-            <Text style={s.actionTextDuo}>🤝 {uname.split(' ')[0]} t'a identifié · Poster ta séance</Text>
+            <Text style={s.actionTextDuo}>
+              {duoLeftMin > 0
+                ? `🤝 Valide ton duo avec ${uname.split(' ')[0]} : encore ${duoLeftMin} min`
+                : `🤝 Poster ta séance (duo hors délai)`}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>

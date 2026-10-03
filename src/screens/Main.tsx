@@ -116,7 +116,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     });
     return done;
   }, [updates, userId]);
-  // Séances dont le duo est validé : les deux posts du binôme sont dans le fil, à moins de 24 h.
+  // Séances dont le duo est validé : les deux posts du binôme sont dans le fil, à moins d'1 h d'écart.
   const duoPairs = useMemo(() => validatedDuoIds(updates), [updates]);
   const [feedMeta, setFeedMeta] = useState<Record<string, FeedMeta>>({});
   const [objectives, setObjectives] = useState<Objective[]>([]);
