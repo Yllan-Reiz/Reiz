@@ -52,6 +52,13 @@
       },
       "buildTag": "sortie"
     },
-    "owner": "yllan"
+    "owner": "yllan",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/69071c24-329f-4426-b10b-8b5fbe280564",
+      "fallbackToCacheTimeout": 0
+    }
   }
 }
