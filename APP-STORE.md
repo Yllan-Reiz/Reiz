@@ -105,7 +105,7 @@ Ton cercle réagit, t'encourage, te relance. C'est le moteur de l'app.
 
 LA CONFIDENTIALITÉ, PAR DÉFAUT
 
-Chaque objectif a sa visibilité : ton cercle, ton cercle proche, public ou strictement privé. Un objectif privé n'est visible que par toi, photos et vidéos comprises.
+Chaque objectif a sa visibilité : ton cercle, ton cercle proche ou strictement privé. Un objectif privé n'est visible que par toi, photos et vidéos comprises.
 
 Tu peux bloquer un utilisateur, signaler une publication ou un commentaire, exporter tes données et supprimer ton compte avec toutes tes données depuis l'app, à tout moment. Les règles de la communauté sont lisibles dans les Réglages.
 
