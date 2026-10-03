@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { GlassSurface } from './GlassSurface';
 import {
   Place, PermState, loadPlaces, isAutoEnabled, permissionState, setAutoEnabled, addPlaceHere, removePlace,
-  announcePresence, ANNOUNCE_MESSAGES, MAX_PLACES, COOLDOWN_HOURS,
+  announcePresence, ANNOUNCE_MESSAGES, MAX_PLACES, COOLDOWN_HOURS, AUTO_SUPPORTED,
 } from '../lib/presence';
 import { F } from '../styles';
 
@@ -19,6 +19,7 @@ export function PresencePanel() {
   const [busy, setBusy] = useState(false);
 
   const reload = useCallback(async () => {
+    if (!AUTO_SUPPORTED) return; // Android : pas de lieux ni de détection, seulement le bouton manuel
     setPlaces(await loadPlaces());
     setAuto(await isAutoEnabled());
     setPerm(await permissionState());
@@ -99,12 +100,15 @@ export function PresencePanel() {
           <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14, lineHeight: 21, fontFamily: F.regular, marginTop: 8 }}>
             Quand tu arrives à ta salle ou à ton terrain, ton cercle proche reçoit « tu es à la salle » et peut venir t'y rejoindre.
           </Text>
-          {[
+          {(AUTO_SUPPORTED ? [
             'Facultatif : tu choisis les lieux.',
             'Tes coordonnées restent sur ton téléphone. Elles ne sont jamais envoyées.',
             `Seul ton cercle proche est prévenu, une fois toutes les ${COOLDOWN_HOURS} heures au maximum.`,
             'Tu peux tout désactiver à tout moment.',
-          ].map(t => (
+          ] : [
+            'Un simple bouton : aucune localisation n\'est utilisée.',
+            `Seul ton cercle proche est prévenu, une fois toutes les ${COOLDOWN_HOURS} heures au maximum.`,
+          ]).map(t => (
             <View key={t} style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
               <Ionicons name="checkmark-circle" size={18} color="#fff" style={{ marginTop: 1 }} />
               <Text style={{ flex: 1, color: '#ddd', fontSize: 13, lineHeight: 19, fontFamily: F.regular }}>{t}</Text>
@@ -113,6 +117,7 @@ export function PresencePanel() {
         </View>
       </GlassSurface>
 
+      {AUTO_SUPPORTED && (<>
       <View style={{ marginTop: 20, backgroundColor: '#111', borderRadius: 18, borderWidth: 1, borderColor: '#1c1c1c', overflow: 'hidden' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
           <Ionicons name="location-outline" size={20} color="#bbb" />
@@ -166,6 +171,7 @@ export function PresencePanel() {
           </TouchableOpacity>
         </View>
       </View>
+      </>)}
 
       <TouchableOpacity onPress={notifyNow} activeOpacity={0.85} style={{ marginTop: 20 }}>
         <GlassSurface radius={18}>

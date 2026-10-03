@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
@@ -19,6 +20,9 @@ export const PRESENCE_TASK = 'reiz-presence-geofence';
 export const DEFAULT_RADIUS = 150; // mètres : en dessous, iOS ne détecte pas fiablement
 export const MAX_PLACES = 5;
 export const COOLDOWN_HOURS = 3;
+// La détection automatique (position en arrière-plan) n'existe que sur iPhone : sur Android
+// l'autorisation est retirée de l'app, seul le bouton manuel « Je suis à la salle » reste.
+export const AUTO_SUPPORTED = Platform.OS !== 'android';
 
 // Tâche système appelée à l'arrivée dans un lieu, même appli fermée. Elle doit être
 // définie à l'échelle du module (importé au démarrage dans App.tsx), pas dans un composant.
@@ -89,6 +93,7 @@ const askAlways = async () => { try { return (await Location.requestBackgroundPe
 
 /** Aligne la surveillance du système sur les lieux enregistrés et l'interrupteur. */
 export async function syncGeofencing(): Promise<void> {
+  if (!AUTO_SUPPORTED) return;
   try {
     const [enabled, places] = await Promise.all([isAutoEnabled(), loadPlaces()]);
     const started = await Location.hasStartedGeofencingAsync(PRESENCE_TASK);
@@ -106,6 +111,7 @@ export async function syncGeofencing(): Promise<void> {
 
 /** Active ou coupe la détection. Activer demande les deux autorisations (pendant l'usage, puis « toujours »). */
 export async function setAutoEnabled(on: boolean): Promise<'ok' | 'denied'> {
+  if (on && !AUTO_SUPPORTED) return 'denied';
   if (on) {
     if (!(await askForeground())) return 'denied';
     if (!(await askAlways())) return 'denied';
@@ -117,6 +123,7 @@ export async function setAutoEnabled(on: boolean): Promise<'ok' | 'denied'> {
 
 /** Enregistre l'endroit où l'on se trouve comme lieu d'entraînement. */
 export async function addPlaceHere(label: string): Promise<Place> {
+  if (!AUTO_SUPPORTED) throw new Error('unsupported');
   if (!(await askForeground())) throw new Error('denied');
   const places = await loadPlaces();
   if (places.length >= MAX_PLACES) throw new Error('max');
