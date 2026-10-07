@@ -42,3 +42,6 @@ yarn-error.*
 
 # Local Netlify folder
 .netlify
+
+# Vidéos produites (design/) : trop lourdes pour GitHub (limite 100 Mo par fichier), elles restent sur le disque
+design/**/*.mp4
