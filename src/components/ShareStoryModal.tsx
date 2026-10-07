@@ -1,11 +1,12 @@
 import { useRef, useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Modal, Image, ActivityIndicator, Alert, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, Image, ActivityIndicator, Alert, Share, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
 import ViewShot, { captureRef } from 'react-native-view-shot';
+import { inviteUrl, LANDING_URL } from '../constants';
 import { F } from '../styles';
 
 export type StoryData = {
@@ -24,6 +25,11 @@ export type StoryData = {
 // Visuel 9:16 aux couleurs de Reiz, prêt à poster en story Instagram. Le but : que ceux qui
 // voient la story découvrent l'appli. On capture la carte en PNG puis on ouvre la feuille de
 // partage iOS (Instagram, puis « Story »). Reiz ne publie jamais rien à la place de l'utilisateur.
+//
+// Une image n'est jamais cliquable, et Instagram ne laisse pas une app ajouter un lien toute seule
+// (l'API de partage en story n'accepte que des images et des couleurs). Le seul élément cliquable
+// est le sticker « Lien » d'Instagram, que la personne ajoute elle-même : la carte lui laisse donc
+// la place en bas, et l'écran lui donne son lien d'invitation à coller dedans.
 export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; data: StoryData | null; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -39,7 +45,7 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
   if (!data) return null;
 
   // La carte garde toujours le ratio 9:16 et tient dans l'écran, boutons compris.
-  const maxH = height - insets.top - insets.bottom - 150;
+  const maxH = height - insets.top - insets.bottom - 270;
   const cardW = Math.min(width - 48, maxH * 9 / 16);
   const cardH = cardW * 16 / 9;
   const k = cardW / 360; // tout est dessiné pour 360 de large, puis mis à l'échelle
@@ -60,6 +66,11 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
   };
 
   const pct = Math.max(0, Math.min(100, data.pct || 0));
+  // Le lien d'invitation du créateur : celui qui le touche arrive sur la page-pont, qui ouvre l'app ou propose de la télécharger.
+  const link = data.username ? inviteUrl(data.username) : LANDING_URL;
+  const shortLink = link.replace(/^https?:\/\//, '');
+  // La feuille de partage iOS propose « Copier » : seule façon de copier sans module natif en plus.
+  const copyLink = () => { Share.share({ message: link }).catch(() => {}); };
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
@@ -111,10 +122,10 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
                 )}
               </View>
 
-              <View style={{ marginTop: 16 * k, backgroundColor: '#fff', borderRadius: 16 * k, paddingVertical: 12 * k, alignItems: 'center' }}>
-                <Text style={{ color: '#000', fontSize: 14 * k, fontFamily: F.extrabold }}>{data.duoNames ? `Rejoins-nous sur Reiz` : data.username ? `Rejoins @${data.username} sur Reiz` : 'Rejoins mon cercle sur Reiz'}</Text>
-              </View>
-              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11 * k, fontFamily: F.regular, textAlign: 'center', marginTop: 8 * k }}>Ton cercle te regarde. Disponible sur iPhone.</Text>
+              {/* Pas de faux bouton : un texte, et la place du sticker « Lien » que la personne ajoute dans Instagram. */}
+              <Text style={{ color: '#fff', fontSize: 16 * k, fontFamily: F.extrabold, textAlign: 'center', marginTop: 16 * k }}>{data.duoNames ? 'Rejoins-nous sur Reiz' : data.username ? `Rejoins @${data.username} sur Reiz` : 'Rejoins mon cercle sur Reiz'}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11 * k, fontFamily: F.regular, textAlign: 'center', marginTop: 4 * k }}>Ton cercle te regarde. Disponible sur iPhone.</Text>
+              <View style={{ height: 66 * k }} />
             </View>
           </ViewShot>
         </View>
@@ -126,7 +137,18 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
               ? <ActivityIndicator color={ready ? '#000' : '#888'} />
               : <><Ionicons name="logo-instagram" size={18} color="#000" /><Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }}>Partager</Text></>}
           </TouchableOpacity>
-          <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular, textAlign: 'center', marginTop: 10 }}>Choisis Instagram, puis « Story ». Tu peux ensuite ajouter un lien ou un sticker.</Text>
+
+          {/* Le lien à coller dans le sticker « Lien » d'Instagram : c'est lui qui rend la story cliquable. */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, backgroundColor: '#141414', borderRadius: 14, borderWidth: 1, borderColor: '#262626', paddingLeft: 14, paddingRight: 6, paddingVertical: 6 }}>
+            <Ionicons name="link" size={16} color="#888" />
+            <Text style={{ flex: 1, color: '#bbb', fontSize: 12, fontFamily: F.semibold }} numberOfLines={1}>{shortLink}</Text>
+            <TouchableOpacity onPress={copyLink} activeOpacity={0.8} style={{ backgroundColor: '#262626', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }} accessibilityLabel="Copier mon lien d'invitation">
+              <Text style={{ color: '#fff', fontSize: 13, fontFamily: F.bold }}>Copier</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 17, marginTop: 10 }}>
+            Pour que ta story soit cliquable : copie ton lien, partage en story, puis ajoute le sticker « Lien » d'Instagram, colle-le et pose-le en bas.
+          </Text>
         </View>
       </View>
     </Modal>

@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, FlatList, Image, Modal, ActivityIndicator
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
-import { signMany } from '../lib/storage';
+import { signAvatars } from '../lib/storage';
+import { setClose } from '../lib/closeCircle';
 import { s, F } from '../styles';
 
 type Person = { id: string; full_name: string; username: string; avatar_url?: string | null };
@@ -31,7 +32,7 @@ export function PeopleListModal({ visible, userId, currentUserId, mode, onClose,
       const { data } = await supabase.rpc('friends_of', { p_user: userId });
       // Dédoublonnage : une amitié enregistrée deux fois ne doit pas afficher la personne deux fois.
       const list = [...new Map(((data || []) as Person[]).map(p => [p.id, p])).values()];
-      const signed = await signMany(list.map(p => p.avatar_url));
+      const signed = await signAvatars(list.map(p => p.avatar_url));
       list.forEach(p => { if (p.avatar_url) p.avatar_url = signed[p.avatar_url] ?? null; });
       setPeople(list);
       if (mode === 'close' && currentUserId) {
@@ -47,12 +48,8 @@ export function PeopleListModal({ visible, userId, currentUserId, mode, onClose,
     const on = closeIds.has(id);
     Haptics.selectionAsync().catch(() => {});
     setCloseIds(prev => { const n = new Set(prev); on ? n.delete(id) : n.add(id); return n; });
-    const { error } = on
-      ? await supabase.from('close_friends').delete().eq('owner_id', currentUserId).eq('friend_id', id)
-      : await supabase.from('close_friends').insert({ owner_id: currentUserId, friend_id: id });
-    if (error && !/duplicate key/i.test(error.message || '')) {
-      setCloseIds(prev => { const n = new Set(prev); on ? n.add(id) : n.delete(id); return n; });
-    }
+    const ok = await setClose(id, !on);
+    if (!ok) setCloseIds(prev => { const n = new Set(prev); on ? n.add(id) : n.delete(id); return n; });
   };
 
   return (

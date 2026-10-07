@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Modal, Linking, Share, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Modal, Linking, Share, Image, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
-import { signMany } from '../lib/storage';
+import { signAvatars } from '../lib/storage';
 import { LEGAL_DOCS, LegalDoc, SUPPORT_EMAIL } from '../lib/legal';
 import { PresencePanel } from '../components/PresencePanel';
 import { APP_VERSION } from '../constants';
@@ -28,6 +28,25 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
   const [doc, setDoc] = useState<LegalDoc | null>(null);
   const [email, setEmail] = useState('');
   const [provider, setProvider] = useState<string>('email');
+  // Encouragements perso (users.notif_encouragement). null = pas chargé, ou colonne absente : la ligne est cachée.
+  const [encourage, setEncourage] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!visible) return;
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data, error } = await supabase.from('users').select('notif_encouragement').eq('id', user.id).single();
+      setEncourage(!error && data ? (data as any).notif_encouragement !== false : null);
+    });
+  }, [visible]);
+
+  const toggleEncourage = async (value: boolean) => {
+    setEncourage(value);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase.from('users').update({ notif_encouragement: value }).eq('id', user.id);
+    if (error) { setEncourage(!value); Alert.alert('Erreur', frError(error)); }
+  };
 
   useEffect(() => {
     if (!visible) return;
@@ -90,8 +109,10 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
             </Section>
 
             <Section title="NOTIFICATIONS">
+              {encourage !== null && <ToggleRow icon="flame-outline" label="Encouragements" value={encourage} onChange={toggleEncourage} />}
               <Row icon="notifications-outline" label="Gérer les notifications" value="Réglages iPhone" onPress={() => Linking.openSettings().catch(() => {})} last />
             </Section>
+            {encourage !== null && <Text style={st.hint}>Un message quand tu approches d'un objectif, ou après quelques jours sans poster. Un tous les 2 jours au maximum.</Text>}
 
             <Section title="LÉGAL">
               {LEGAL_DOCS.map((d, i) => (
@@ -142,6 +163,17 @@ function Row({ icon, label, value, onPress, danger, last }: { icon: any; label: 
   );
 }
 
+function ToggleRow({ icon, label, value, onChange }: { icon: any; label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <View style={[st.row, st.rowBorder]}>
+      <Ionicons name={icon} size={20} color="#bbb" />
+      <Text style={st.rowLabel} numberOfLines={1}>{label}</Text>
+      <View style={{ flex: 1 }} />
+      <Switch value={value} onValueChange={onChange} trackColor={{ false: '#2a2a2a', true: '#fff' }} thumbColor={value ? '#000' : '#888'} ios_backgroundColor="#2a2a2a" accessibilityLabel={label} />
+    </View>
+  );
+}
+
 function PasswordForm({ onDone }: { onDone: () => void }) {
   const [pwd, setPwd] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -189,7 +221,7 @@ function BlockedList() {
       if (ids.length === 0) { setList([]); return; }
       const { data: users } = await supabase.from('users').select('id, full_name, username, avatar_url').in('id', ids);
       const people = (users || []) as Blocked[];
-      const signed = await signMany(people.map(p => p.avatar_url));
+      const signed = await signAvatars(people.map(p => p.avatar_url));
       people.forEach(p => { if (p.avatar_url) p.avatar_url = signed[p.avatar_url] ?? null; });
       setList(people);
     })();

@@ -6,12 +6,18 @@ import { useFonts, Inter_300Light, Inter_400Regular, Inter_600SemiBold, Inter_70
 import { supabase } from './src/lib/supabase';
 import { registerForPushNotifications } from './src/lib/notifications';
 import { handleAuthUrl, ensureProfile } from './src/lib/googleAuth';
+import { cacheClearAll } from './src/lib/cache';
+import { resetSignedCache } from './src/lib/storage';
+import { resetUserCards } from './src/lib/posts';
+import { resetCloseCircle } from './src/lib/closeCircle';
 import { stopAllPresence } from './src/lib/presence'; // importe aussi la tâche de détection d'arrivée
 import { captureInviteFromUrl, consumePendingInvite } from './src/lib/invites';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { Splash } from './src/screens/Splash';
 import { Onboarding } from './src/screens/Onboarding';
 import { Main } from './src/screens/Main';
+import { WhatsNewModal } from './src/components/WhatsNewModal';
+import { FindFriendsPrompt } from './src/components/FindFriendsPrompt';
 import { PostScreen } from './src/screens/PostScreen';
 
 export default function App() {
@@ -76,6 +82,7 @@ function AppInner() {
       } else {
         registeredUserId.current = null;
         stopAllPresence(); // plus de détection d'arrivée pour un compte déconnecté
+        cacheClearAll(); resetSignedCache(); resetUserCards(); resetCloseCircle(); // rien de ce compte ne reste affiché pour le suivant
         setScreen('splash');
       }
     });
@@ -101,7 +108,13 @@ function AppInner() {
   if (checkingAuth || !fontsLoaded) return null;
   if (screen === 'splash') return <Splash onNext={() => setScreen('onboarding')} />;
   if (screen === 'onboarding') return <Onboarding onNext={() => setScreen('main')} />;
-  if (screen === 'main') return <Main onPost={(opts) => { setPostDuoWith(opts?.duoWith ?? null); setScreen('post'); }} navIntent={navIntent} onNavIntentHandled={() => setNavIntent(null)} />;
+  if (screen === 'main') return (
+    <>
+      <Main onPost={(opts) => { setPostDuoWith(opts?.duoWith ?? null); setScreen('post'); }} navIntent={navIntent} onNavIntentHandled={() => setNavIntent(null)} />
+      <WhatsNewModal />
+      <FindFriendsPrompt />
+    </>
+  );
   if (screen === 'post') return <PostScreen duoWith={postDuoWith} onBack={() => setScreen('main')} onPublish={() => setScreen('main')} />;
   return null;
 }

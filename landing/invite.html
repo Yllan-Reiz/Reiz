@@ -6,6 +6,7 @@
 <title>Rejoins mon cercle sur Reiz</title>
 <meta property="og:title" content="Rejoins mon cercle sur Reiz" />
 <meta property="og:description" content="Mon cercle voit ma progression chaque jour. Pas d'excuse, pas d'abandon. Viens." />
+<meta property="og:image" content="https://reiz-landing.netlify.app/logo-reiz.png" />
 <style>
   :root { --bg:#0a0a0a; --card:#141414; --line:#262626; --txt:#ffffff; --muted:#8a8a8a; }
   * { box-sizing:border-box; margin:0; padding:0; }
@@ -32,6 +33,11 @@
   .fallback p { color:var(--muted); font-size:13px; line-height:1.6; }
   .tag { color:#fff; font-weight:700; }
   .hidden { display:none; }
+  .note {
+    margin-top:18px; padding:14px 16px; border-radius:14px; background:#1c1c1c; border:1px solid var(--line);
+    color:#d6d6d6; font-size:14px; line-height:1.5; text-align:left;
+  }
+  .note strong { color:#fff; }
 </style>
 </head>
 <body>
@@ -41,7 +47,13 @@
     <p class="sub">Sur Reiz, ton cercle voit ta progression chaque jour. Pas d'excuse, pas d'abandon.</p>
 
     <a class="btn btn-primary" id="openApp" href="#">Ouvrir dans Reiz →</a>
-    <a class="btn btn-secondary" id="download" href="https://reiz-landing.netlify.app">Télécharger l'app</a>
+    <a class="btn btn-secondary" id="download" href="#">Télécharger l'app</a>
+
+    <!-- Affiché seulement dans le navigateur intégré d'Instagram, TikTok, etc. : il ne sait pas ouvrir l'app. -->
+    <div class="note hidden" id="inAppNote">
+      <strong>Tu es dans le navigateur d'Instagram.</strong><br />
+      Pour ouvrir l'app, touche les trois points <strong>•••</strong> (en haut à droite), puis <strong>« Ouvrir dans Safari »</strong>, et touche « Ouvrir dans Reiz ».
+    </div>
 
     <div class="fallback" id="fallback">
       <p>
@@ -53,22 +65,53 @@
 
   <script>
     (function () {
-      // Récupère le pseudo du parrain (?ref=pseudo) et construit le deep link natif.
+      // Adresse de téléchargement iPhone. Avant la sortie : le lien public TestFlight.
+      // Après la sortie sur l'App Store, la remplacer par https://apps.apple.com/app/id6814173335
+      var IOS_URL = 'https://testflight.apple.com/join/tjT8RSJx';
+
       var params = new URLSearchParams(window.location.search);
       var ref = (params.get('ref') || '').replace(/^@/, '').trim();
+      var deepLink = ref ? 'reiz://invite?ref=' + encodeURIComponent(ref) : 'reiz://';
 
       var openApp = document.getElementById('openApp');
+      var download = document.getElementById('download');
       var byName = document.getElementById('byName');
       var searchHint = document.getElementById('searchHint');
+      var note = document.getElementById('inAppNote');
 
+      openApp.setAttribute('href', deepLink);
       if (ref) {
-        // Lien natif : ouvre l'app si installée et déclenche l'auto-ajout.
-        openApp.setAttribute('href', 'reiz://invite?ref=' + encodeURIComponent(ref));
         byName.textContent = ' par @' + ref;
         searchHint.innerHTML = 'cherche <span class="tag">@' + ref + '</span> dans l\'onglet Amis';
+      }
+
+      var ua = navigator.userAgent || '';
+      var isIOS = /iPhone|iPad|iPod/i.test(ua);
+      var isAndroid = /Android/i.test(ua);
+      // Navigateurs intégrés des réseaux sociaux : ils bloquent l'ouverture des applications.
+      var inApp = /Instagram|FBAN|FBAV|TikTok|musical_ly|Snapchat|Line\//i.test(ua);
+
+      if (isAndroid) {
+        download.textContent = 'Bientôt sur Android';
+        download.removeAttribute('href');
+        download.style.opacity = '0.6';
       } else {
-        // Sans parrain identifié : on ouvre simplement l'app.
-        openApp.setAttribute('href', 'reiz://');
+        download.setAttribute('href', IOS_URL);
+      }
+
+      // Dans le navigateur d'Instagram, l'app ne peut pas s'ouvrir : on explique le chemin.
+      window.showInAppNote = function () { note.classList.remove('hidden'); };
+      if (inApp) window.showInAppNote();
+
+      // Sur iPhone, dans un vrai navigateur : on tente d'ouvrir l'app tout de suite, sans toucher à rien.
+      // Une iframe invisible évite l'alerte d'erreur de Safari quand l'app n'est pas installée.
+      if (isIOS && !inApp) {
+        setTimeout(function () {
+          var f = document.createElement('iframe');
+          f.style.display = 'none';
+          f.src = deepLink;
+          document.body.appendChild(f);
+        }, 400);
       }
     })();
   </script>

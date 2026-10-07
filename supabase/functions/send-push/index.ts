@@ -67,6 +67,13 @@ Deno.serve(async (req) => {
   const token = recipientRes.data?.push_token;
   if (!token) return new Response('no token');
 
+  // Pastille rouge de l'icône : le nombre de notifications non lues, celle-ci comprise (elle est déjà écrite en base).
+  const { count: unread } = await supabase
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('recipient_id', n.recipient_id)
+    .is('read_at', null);
+
   const name = (actorRes.data as any)?.full_name || "Quelqu'un";
   const upd = updateRes.data as any;
   const obj = upd?.objectives;
@@ -126,6 +133,22 @@ Deno.serve(async (req) => {
       title = `${name} a accepté ta demande`;
       body = 'Vous êtes dans le même cercle. Va voir ses objectifs.';
       break;
+    case 'challenge_invite':
+      title = `${name} te défie 🔥`;
+      body = "Un duel d'une semaine : qui s'entraîne sur le plus de jours ? Réponds dans l'appli.";
+      break;
+    case 'challenge_accept':
+      title = `${name} relève ton défi 💪`;
+      body = "C'est parti pour 7 jours. Chaque jour où tu postes une séance compte.";
+      break;
+    case 'challenge_result': {
+      // n.preview = « Victoire 5 à 3 », « Défaite 3 à 5 » ou « Égalité 4 à 4 », déjà écrit du point de vue du destinataire.
+      const res = n.preview || '';
+      const icon = res.startsWith('Victoire') ? '🏆' : res.startsWith('Égalité') ? '🤝' : '💪';
+      title = `${icon} Défi terminé contre ${name}`;
+      body = res || 'Va voir le résultat.';
+      break;
+    }
     default:
       return new Response('unknown type');
   }
@@ -138,6 +161,7 @@ Deno.serve(async (req) => {
       title,
       body,
       sound: 'default',
+      badge: unread || 1,
       // `type` garde la compatibilité avec le deep link des builds déjà installés.
       data: { type: n.type === 'friend_request' ? 'friend_request' : 'activity', notificationId: n.id },
     }),

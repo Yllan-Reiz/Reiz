@@ -14,3 +14,10 @@ export const BADGE_IMAGES: Record<string, any> = {
   s30: require('../../assets/badges/inarretable.png'),
   p50: require('../../assets/badges/acharne.png'),
 };
+
+// Quand la planche HD sera découpée : ajouter ici les 6 images de chaque badge (niveau 1 à 6, dans
+// l'ordre), par exemple `first: [require('../../assets/badges/premier-pas-niv1.png'), ...]`.
+// Tant qu'un badge n'a pas ses 6 images, l'image unique ci-dessus sert à tous les niveaux.
+export const BADGE_LEVEL_IMAGES: Record<string, any[]> = {};
+
+export const badgeImage = (id: string, level: number) => BADGE_LEVEL_IMAGES[id]?.[level - 1] ?? BADGE_IMAGES[id];

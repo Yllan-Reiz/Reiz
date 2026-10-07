@@ -22,3 +22,14 @@ AppState.addEventListener('change', (state) => {
   if (state === 'active') supabase.auth.startAutoRefresh();
   else supabase.auth.stopAutoRefresh();
 });
+
+/**
+ * Utilisateur connecté, lu sur le téléphone sans appel réseau.
+ * `supabase.auth.getUser()` interroge le serveur à chaque appel (100 à 300 ms perdues à chaque
+ * écran) ; `getSession()` relit la session locale et la renouvelle toute seule si besoin. Les droits
+ * d'accès restent vérifiés par le serveur à chaque requête (RLS), donc rien n'est affaibli.
+ */
+export async function currentUser() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user ?? null;
+}

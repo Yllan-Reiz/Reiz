@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { GlassSurface } from './GlassSurface';
 import {
   Place, PermState, loadPlaces, isAutoEnabled, permissionState, setAutoEnabled, addPlaceHere, removePlace,
-  announcePresence, ANNOUNCE_MESSAGES, MAX_PLACES, COOLDOWN_HOURS, AUTO_SUPPORTED,
+  announcePresence, ANNOUNCE_MESSAGES, AUTO_CONSENT, MAX_PLACES, COOLDOWN_HOURS, AUTO_SUPPORTED,
 } from '../lib/presence';
 import { F } from '../styles';
 
@@ -37,8 +37,7 @@ export function PresencePanel() {
     if (!next) { setAutoEnabled(false).then(reload); return; }
     // Consentement : on explique d'abord, le système demande ensuite.
     Alert.alert(
-      'Autoriser la localisation ?',
-      "Reiz utilisera ta position uniquement pour savoir quand tu arrives à un lieu que tu choisis (ta salle, ton stade), même quand l'appli est fermée.\n\nTes coordonnées restent sur ton téléphone. Seul « je suis arrivé » est envoyé à ton cercle proche.\n\niOS va te demander l'autorisation, puis te proposer « Toujours autoriser ». Tu peux tout couper ici à tout moment.",
+      ...AUTO_CONSENT,
       [
         { text: 'Pas maintenant', style: 'cancel' },
         {
@@ -64,6 +63,8 @@ export function PresencePanel() {
       await addPlaceHere(label);
       setLabel('');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      // Un lieu enregistré mais une détection coupée ne prévient personne : on propose de l'activer.
+      if (!auto) toggleAuto(true);
     } catch (e: any) {
       if (e?.message === 'denied') {
         Alert.alert('Localisation refusée', "Autorise la localisation de Reiz dans les réglages pour enregistrer ce lieu.", [

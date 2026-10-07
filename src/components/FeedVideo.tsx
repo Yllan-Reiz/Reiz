@@ -12,16 +12,20 @@ export function FeedVideo({ uri, active, style }: {
   active: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
+  // Le lecteur n'existe que pour la carte visible. Avant, chaque vidéo du fil créait son lecteur dès
+  // l'affichage de la carte et commençait à télécharger : plusieurs vidéos de 20 Mo se disputaient la
+  // connexion avec les photos, et tout le fil ralentissait.
+  if (!active) return <View style={[style, { backgroundColor: '#111' }]} />;
+  return <FeedVideoPlayer uri={uri} style={style} />;
+}
+
+function FeedVideoPlayer({ uri, style }: { uri: string; style?: StyleProp<ViewStyle> }) {
   const [muted, setMuted] = useState(true);
   const player = useVideoPlayer(uri, p => {
     p.loop = true;
     p.muted = true;
+    p.play();
   });
-
-  useEffect(() => {
-    if (active) player.play();
-    else player.pause();
-  }, [active, player]);
 
   useEffect(() => { player.muted = muted; }, [muted, player]);
 

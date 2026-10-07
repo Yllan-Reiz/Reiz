@@ -95,3 +95,16 @@ export function GlassSurface({
     </View>
   );
 }
+
+/**
+ * Verre avec une légère teinte et un liseré. Sur un fond sombre et flou (onglets objectifs et amis), le
+ * verre natif seul se voit à peine : la teinte et l'arête le rendent lisible sans perdre l'effet.
+ */
+export function GlassCard({ radius, variant, children, style }: { radius: number; variant?: 'regular' | 'clear'; children?: ReactNode; style?: StyleProp<ViewStyle> }) {
+  return (
+    <GlassSurface radius={radius} variant={variant} tintColor={variant === 'clear' ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)'} style={style}>
+      {children}
+      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }]} />
+    </GlassSurface>
+  );
+}

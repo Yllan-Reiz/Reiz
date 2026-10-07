@@ -64,6 +64,12 @@ export async function announcePresence(label: string, source: 'manual' | 'auto')
   }
 }
 
+/** Texte du consentement affiché avant d'activer la détection : [titre, texte]. Partagé par la carte du fil et les Réglages. */
+export const AUTO_CONSENT: [string, string] = [
+  'Autoriser la localisation ?',
+  "Reiz utilisera ta position uniquement pour savoir quand tu arrives à un lieu que tu choisis (ta salle, ton stade), même quand l'appli est fermée.\n\nTes coordonnées restent sur ton téléphone. Seul « je suis arrivé » est envoyé à ton cercle proche.\n\niOS va te demander l'autorisation, puis te proposer « Toujours autoriser ». Tu peux tout couper dans Réglages à tout moment.",
+];
+
 /** Message à afficher après un envoi : [titre, texte]. */
 export const ANNOUNCE_MESSAGES: Record<Announce, [string, string]> = {
   sent: ['Cercle proche prévenu 💪', "Ils savent que tu es en train de t'entraîner."],

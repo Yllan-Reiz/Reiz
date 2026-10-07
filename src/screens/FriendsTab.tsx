@@ -2,11 +2,17 @@ import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, RefreshControl, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../lib/supabase';
+import { supabase, currentUser } from '../lib/supabase';
 import { frError } from '../lib/helpers';
-import { signMany } from '../lib/storage';
+import { signAvatars } from '../lib/storage';
+import { useCloseCircle, setClose } from '../lib/closeCircle';
+import { contactsAvailable } from '../lib/contacts';
+import { ContactsScreen } from '../components/ContactsScreen';
+import { GlassSurface } from '../components/GlassSurface';
+import * as Haptics from 'expo-haptics';
 import { Friend, PendingRequest } from '../lib/types';
-import { LANDING_URL, inviteUrl, GUTTER, navClearance } from '../constants';
+import { LANDING_URL, inviteUrl, GUTTER, navClearance, GLASS_FRIENDS } from '../constants';
+import { FriendsGlassView } from '../components/FriendsGlassView';
 import { s, F } from '../styles';
 
 export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (userId: string) => void; onPendingCount?: (n: number) => void }) {
@@ -22,6 +28,16 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   const [refreshingFriends, setRefreshingFriends] = useState(false);
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const [myUsername, setMyUsername] = useState<string | null>(null);
+  // Mes contacts (module natif livré avec la 1.1.0 : l'entrée reste cachée sur les builds plus anciens).
+  const [showContacts, setShowContacts] = useState(false);
+  // Cercle proche : l'étoile à droite de chaque ami. Les proches passent en tête de liste.
+  const { list: closeList, reload: reloadClose } = useCloseCircle();
+  const closeIds = new Set((closeList || []).map(c => c.id));
+  const toggleClose = async (id: string) => {
+    Haptics.selectionAsync().catch(() => {});
+    await setClose(id, !closeIds.has(id));
+    reloadClose(true);
+  };
   // Objectif en cours (jamais privé) pour personnaliser l'invitation.
   const [myTopObjective, setMyTopObjective] = useState<{ emoji: string; title: string } | null>(null);
 
@@ -58,7 +74,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await currentUser();
       if (user) {
         setCurrentUserId(user.id);
         supabase.from('users').select('username').eq('id', user.id).single()
@@ -96,7 +112,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
         else if (f.status === 'pending' && !isRequester) pendingReqs.push({ id: other.id, full_name: other.full_name, username: other.username, friendship_id: f.id, avatar_url: other.avatar_url });
       });
       // Bucket privé : les avatars des deux listes sont signés en une requête.
-      const signed = await signMany([
+      const signed = await signAvatars([
         ...accepted.map(f => f.avatar_url),
         ...pendingReqs.map(p => p.avatar_url),
       ]);
@@ -129,7 +145,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     }
     result.sort((a, b) => Number(b.match) - Number(a.match));
     const top = result.slice(0, 6);
-    const signed = await signMany(top.map(u => u.avatar_url));
+    const signed = await signAvatars(top.map(u => u.avatar_url));
     top.forEach(u => { if (u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });
     setSuggestions(top);
   };
@@ -148,7 +164,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     const { data, error } = await req;
     if (!error && data) {
       const results = data.filter((u: any) => !blockedIds.has(u.id));
-      const signed = await signMany(results.map((u: any) => u.avatar_url));
+      const signed = await signAvatars(results.map((u: any) => u.avatar_url));
       results.forEach((u: any) => { if (u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });
       setSearchResults(results);
     }
@@ -185,6 +201,44 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
 
   const getFriendshipStatus = (userId: string) => friends.find(f => f.id === userId) ? 'ami' : null;
 
+  // Essai de design « verre » (interrupteur GLASS_FRIENDS dans constants.ts). L'ancien affichage est juste en dessous.
+  if (GLASS_FRIENDS) {
+    return (
+      <>
+        <FriendsGlassView
+          friends={friends}
+          pending={pending}
+          suggestions={suggestions}
+          searchResults={searchResults}
+          searchQuery={searchQuery}
+          searching={searching}
+          loading={loading}
+          closeIds={closeIds}
+          refreshing={refreshingFriends}
+          onRefresh={async () => {
+            if (!currentUserId) return;
+            setRefreshingFriends(true);
+            await fetchFriends(currentUserId, true);
+            setRefreshingFriends(false);
+          }}
+          onSearch={handleSearch}
+          onClearSearch={() => { setSearchQuery(''); setSearchResults([]); }}
+          onViewProfile={onViewProfile}
+          onToggleClose={toggleClose}
+          onInvite={inviteFriends}
+          onOpenContacts={contactsAvailable() ? () => setShowContacts(true) : undefined}
+          onAccept={acceptRequest}
+          onDecline={declineRequest}
+          onRemove={removeFriend}
+          onAddFriend={sendFriendRequest}
+          isFriend={id => getFriendshipStatus(id) === 'ami'}
+          bottomPad={navClearance(insets.bottom)}
+        />
+        <ContactsScreen visible={showContacts} onClose={() => setShowContacts(false)} />
+      </>
+    );
+  }
+
   return (
     <ScrollView
       style={s.feed}
@@ -212,6 +266,23 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
         </View>
         <View style={s.postedBadge}><Text style={s.postedBadgeText}>Partager →</Text></View>
       </TouchableOpacity>
+
+      {/* Retrouver ses contacts sur Reiz et inviter les autres */}
+      {contactsAvailable() && (
+        <TouchableOpacity onPress={() => setShowContacts(true)} activeOpacity={0.85} style={{ marginTop: 10 }} accessibilityLabel="Retrouver mes contacts sur Reiz">
+          <GlassSurface radius={22}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 }}>
+              <Ionicons name="people" size={22} color="#fff" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>Retrouver mes contacts</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }}>Vois qui est déjà sur Reiz, invite les autres</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.6)" />
+            </View>
+          </GlassSurface>
+        </TouchableOpacity>
+      )}
+      <ContactsScreen visible={showContacts} onClose={() => setShowContacts(false)} />
 
       {/* Barre de recherche */}
       <View style={s.searchBarActive}>
@@ -312,7 +383,12 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       )}
 
       {/* Liste d'amis */}
-      <Text style={s.sectionTitle}>{friends.length > 0 ? `${friends.length} AMI${friends.length > 1 ? 'S' : ''}` : 'MES AMIS'}</Text>
+      <Text style={s.sectionTitle}>{friends.length > 0 ? `${friends.length} AMI${friends.length > 1 ? 'S' : ''}${closeIds.size > 0 ? `, DONT ${closeIds.size} PROCHE${closeIds.size > 1 ? 'S' : ''}` : ''}` : 'MES AMIS'}</Text>
+      {friends.length > 0 && (
+        <Text style={{ color: '#777', fontSize: 12, lineHeight: 17, marginBottom: 10, marginTop: -4 }}>
+          Touche l'étoile pour mettre un ami dans ton <Text style={{ color: '#fff', fontFamily: F.bold }}>cercle proche</Text> : il est prévenu quand tu arrives à ta salle et voit les objectifs que tu lui réserves.
+        </Text>
+      )}
       {loading ? (
         <View style={{ paddingTop: 20, alignItems: 'center' }}><ActivityIndicator color="#fff" /></View>
       ) : friends.length === 0 ? (
@@ -323,7 +399,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
             <Text style={s.emptyStateBtnText}>Inviter mes amis →</Text>
           </TouchableOpacity>
         </View>
-      ) : friends.map((f) => (
+      ) : [...friends].sort((a, b) => Number(closeIds.has(b.id)) - Number(closeIds.has(a.id))).map((f) => (
         <TouchableOpacity
           key={f.friendship_id}
           style={s.friendRow}
@@ -336,7 +412,14 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
             <Text style={s.friendRowName}>{f.full_name}</Text>
             <Text style={s.friendRowSub}>@{f.username}</Text>
           </View>
-          <View style={s.friendBadge}><Ionicons name="checkmark" size={14} color="#888" /></View>
+          <TouchableOpacity
+            onPress={() => toggleClose(f.id)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel={closeIds.has(f.id) ? `Retirer ${f.full_name} du cercle proche` : `Ajouter ${f.full_name} au cercle proche`}
+            style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: closeIds.has(f.id) ? '#fff' : '#1a1a1a' }}
+          >
+            <Ionicons name={closeIds.has(f.id) ? 'star' : 'star-outline'} size={17} color={closeIds.has(f.id) ? '#000' : '#888'} />
+          </TouchableOpacity>
         </TouchableOpacity>
       ))}
     </ScrollView>

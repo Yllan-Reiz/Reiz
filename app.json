@@ -48,6 +48,12 @@
           "sounds": []
         }
       ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Reiz regarde tes contacts pour te dire lesquels sont déjà sur l'app et te laisser inviter les autres. Tes contacts ne sont jamais enregistrés par Reiz."
+        }
+      ],
       "expo-font",
       "expo-video",
       "expo-apple-authentication",

@@ -5,9 +5,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { NAV_BOTTOM_MIN, navClearance } from '../constants';
-import { supabase } from '../lib/supabase';
+import { supabase, currentUser } from '../lib/supabase';
 import { calculateStreak, frError, inUnit } from '../lib/helpers';
-import { signMany } from '../lib/storage';
+import { signMany, signAvatars, signOne } from '../lib/storage';
+import { cacheGet, cacheSet } from '../lib/cache';
+import { setAppBadge } from '../lib/badge';
+import { selectObjectives } from '../lib/objectives';
+import { hasSchedule, daysLabel, trainsToday, GLASS_OBJECTIVES, GLASS_FRIENDS } from '../constants';
 import { Update, Objective, FeedMeta } from '../lib/types';
 import { s, F } from '../styles';
 import { FlameStreak } from '../components/FlameStreak';
@@ -20,10 +24,15 @@ import { FriendsTab } from './FriendsTab';
 import { ProfileScreen } from './ProfileScreen';
 import { FriendProfileScreen } from './FriendProfileScreen';
 import { ActivityScreen } from './ActivityScreen';
-import { changelogUnseen } from '../lib/changelog';
 import { attachDuoNames, attachReactors } from '../lib/posts';
 import { validatedDuoIds } from '../lib/duo';
-import { PresenceButton } from '../components/PresenceButton';
+import { PresenceCard } from '../components/PresenceCard';
+import { CloseCircleCard } from '../components/CloseCircleCard';
+import { ObjectiveEditSheet } from '../components/ObjectiveEditSheet';
+import { ObjectivesTab } from '../components/ObjectivesTab';
+import { GlassBackdrop } from '../components/ProfileSections';
+import { useCloseCircle } from '../lib/closeCircle';
+import { DuelBanner } from '../components/DuelCard';
 
 const PAGE_SIZE = 20;
 const FEED_WINDOW_HOURS = 24;
@@ -119,13 +128,21 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   }, [updates, userId]);
   // Séances dont le duo est validé : les deux posts du binôme sont dans le fil, à moins d'1 h d'écart.
   const duoPairs = useMemo(() => validatedDuoIds(updates), [updates]);
+  // Amis de ton cercle proche : une étoile à côté de leur prénom dans le fil.
+  const { list: closeList } = useCloseCircle();
+  const closeIds = useMemo(() => new Set((closeList || []).map(c => c.id)), [closeList]);
   const [feedMeta, setFeedMeta] = useState<Record<string, FeedMeta>>({});
   const [objectives, setObjectives] = useState<Objective[]>([]);
+  // Pour l'onglet objectifs « verre » : ta photo en fond, et les jours postés de chaque objectif cette semaine.
+  const [myAvatar, setMyAvatar] = useState<string | null>(null);
+  const [activityByObj, setActivityByObj] = useState<Record<string, Set<string>>>({});
   const [loadingFeed, setLoadingFeed] = useState(true);
   const [loadingObj, setLoadingObj] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  // Objectif en cours de modification (visibilité, jours d'entraînement, suppression).
+  const [editing, setEditing] = useState<Objective | null>(null);
   const [streak, setStreak] = useState(0);
   // Pile de profils ouverts : depuis le profil d'un ami, on peut ouvrir celui
   // d'un de ses amis, et « retour » revient au précédent.
@@ -164,8 +181,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     const id = uid ?? userId;
     if (!id) return;
     const { count } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('recipient_id', id).is('read_at', null);
-    // Les nouveautés de la version comptent pour une notification tant qu'elles n'ont pas été vues.
-    setUnreadCount((count || 0) + ((await changelogUnseen()) ? 1 : 0));
+    setUnreadCount(count || 0);
+    setAppBadge(count || 0);
   };
 
   const fetchFriendCount = async (uid?: string | null) => {
@@ -179,18 +196,44 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     setFriendCount(count || 0);
   };
 
-  // Charge une page du feed + ses métadonnées (réactions, commentaires) en 3 requêtes
-  // au total — au lieu d'une requête par carte (N+1).
-  const loadFeedPage = async (offset: number, uid: string, silent = false) => {
-    if (offset === 0 && !silent) setLoadingFeed(true);
-    if (offset > 0) setLoadingMore(true);
-    // Le feed = ton cercle : toi + tes amis acceptés.
+  // Le fil est déjà à l'écran (mémoire locale ou chargement précédent) : on ne remet pas le squelette.
+  const painted = useRef(false);
+  // Ton cercle (toi + tes amis), gardé d'un lancement à l'autre : le fil démarre sans l'attendre.
+  const circleRef = useRef<string[] | null>(null);
+
+  const fetchCircle = async (uid: string): Promise<string[]> => {
     const { data: fr } = await supabase
       .from('friendships')
       .select('requester_id, receiver_id')
       .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`)
       .eq('status', 'accepted');
-    const circleIds = [uid, ...(fr || []).map(f => (f.requester_id === uid ? f.receiver_id : f.requester_id))];
+    const ids = [uid, ...(fr || []).map(f => (f.requester_id === uid ? f.receiver_id : f.requester_id))];
+    cacheSet(`circle.${uid}`, ids);
+    return ids;
+  };
+
+  const emptyMeta = (): FeedMeta => ({ reactions: {}, mine: [], commentCount: 0 });
+
+  // Charge une page du fil. L'ordre compte pour la vitesse : les posts et leurs photos s'affichent
+  // d'abord ; réactions, commentaires et duos arrivent ensuite sans bloquer l'écran.
+  const loadFeedPage = async (offset: number, uid: string, silent = false) => {
+    if (offset === 0 && !silent && !painted.current) setLoadingFeed(true);
+    if (offset > 0) setLoadingMore(true);
+
+    // 1. Le cercle : la liste mémorisée tout de suite, vérifiée en parallèle.
+    let circleIds = circleRef.current ?? await cacheGet<string[]>(`circle.${uid}`, 7 * 24 * 3600 * 1000);
+    const fresh = offset === 0 ? fetchCircle(uid) : null;
+    if (!circleIds && fresh) circleIds = await fresh;
+    else if (fresh) {
+      const known = circleIds;
+      fresh.then(ids => {
+        // Un ami a été ajouté ou retiré depuis : on relance une fois avec la bonne liste.
+        if (known && [...ids].sort().join() !== [...known].sort().join()) { circleRef.current = ids; loadFeedPage(0, uid, true); }
+      });
+    }
+    if (!circleIds) circleIds = [uid];
+    circleRef.current = circleIds;
+
     // Le fil repart de zéro toutes les 24 h (fenêtre glissante) : on ne voit que
     // ce que le cercle a fait depuis hier à la même heure. L'historique complet
     // reste dans les profils.
@@ -202,45 +245,57 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       .gte('created_at', since)
       .order('created_at', { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1);
-    if (!error && data) {
-      setHasMore(data.length === PAGE_SIZE);
-      dbOffset.current = offset + data.length;
-      // Les posts liés à un objectif privé ne sont visibles que par leur auteur.
-      const visible = (data as unknown as Update[]).filter(u => u.user_id === uid || u.objectives?.visibility !== 'private');
+    if (error || !data) { setLoadingFeed(false); setLoadingMore(false); return; }
 
-      // Le bucket est privé : on convertit les chemins stockés en URLs signées,
-      // en une seule requête pour toute la page (photos de posts + avatars).
-      const signed = await signMany([
-        ...visible.map(u => u.photo_url),
-        ...visible.map(u => u.users?.avatar_url),
-      ]);
-      visible.forEach(u => {
-        if (u.photo_url) u.photo_url = signed[u.photo_url] ?? undefined;
-        if (u.users?.avatar_url) u.users.avatar_url = signed[u.users.avatar_url] ?? undefined;
-      });
-      await attachDuoNames(visible);
+    setHasMore(data.length === PAGE_SIZE);
+    dbOffset.current = offset + data.length;
+    // Les posts liés à un objectif privé ne sont visibles que par leur auteur.
+    const visible = (data as unknown as Update[]).filter(u => u.user_id === uid || u.objectives?.visibility !== 'private');
 
-      const ids = visible.map(u => u.id);
-      const meta: Record<string, FeedMeta> = {};
-      ids.forEach(id => { meta[id] = { reactions: {}, mine: [], commentCount: 0 }; });
-      if (ids.length > 0) {
-        const [rRes, cRes] = await Promise.all([
-          supabase.from('reactions').select('update_id, type, user_id, created_at').in('update_id', ids),
-          supabase.from('comments').select('update_id').in('update_id', ids),
-        ]);
-        (rRes.data || []).forEach((r: any) => {
-          const m = meta[r.update_id]; if (!m) return;
-          m.reactions[r.type] = (m.reactions[r.type] || 0) + 1;
-          if (r.user_id === uid) m.mine.push(r.type);
-        });
-        (cRes.data || []).forEach((c: any) => { const m = meta[c.update_id]; if (m) m.commentCount++; });
-        await attachReactors(rRes.data || [], meta);
-      }
-      if (offset === 0) { setUpdates(visible); setFeedMeta(meta); }
-      else { setUpdates(prev => [...prev, ...visible]); setFeedMeta(prev => ({ ...prev, ...meta })); }
+    // 2. Le bucket est privé : chemins -> URLs signées. Presque toujours déjà en mémoire (voir storage.ts).
+    const [signed, avatars] = await Promise.all([
+      // Photos réduites à 1080 px de large (l'écran n'en affiche pas plus) : les plus lourdes pèsent 2 Mo.
+      signMany(visible.map(u => u.photo_url), { width: 1080 }),
+      signAvatars(visible.map(u => u.users?.avatar_url)),
+    ]);
+    visible.forEach(u => {
+      if (u.photo_url) u.photo_url = signed[u.photo_url] ?? undefined;
+      if (u.users?.avatar_url) u.users.avatar_url = avatars[u.users.avatar_url] ?? undefined;
+    });
+
+    // 3. Premier affichage, sans attendre le reste. On garde les compteurs déjà connus (fil mémorisé).
+    if (offset === 0) {
+      setUpdates(visible);
+      setFeedMeta(prev => Object.fromEntries(visible.map(u => [u.id, prev[u.id] ?? emptyMeta()])));
+    } else {
+      setUpdates(prev => [...prev, ...visible]);
+      setFeedMeta(prev => ({ ...Object.fromEntries(visible.map(u => [u.id, emptyMeta()])), ...prev }));
     }
+    painted.current = true;
     setLoadingFeed(false);
     setLoadingMore(false);
+
+    // 4. La suite : réactions, commentaires, noms des duos, visages des réactions.
+    const ids = visible.map(u => u.id);
+    if (ids.length === 0) { if (offset === 0) cacheSet(`feed.${uid}`, { updates: [], meta: {} }); return; }
+    const [rRes, cRes] = await Promise.all([
+      supabase.from('reactions').select('update_id, type, user_id, created_at').in('update_id', ids),
+      supabase.from('comments').select('update_id').in('update_id', ids),
+      attachDuoNames(visible),
+    ]);
+    const meta: Record<string, FeedMeta> = {};
+    ids.forEach(id => { meta[id] = emptyMeta(); });
+    (rRes.data || []).forEach((r: any) => {
+      const m = meta[r.update_id]; if (!m) return;
+      m.reactions[r.type] = (m.reactions[r.type] || 0) + 1;
+      if (r.user_id === uid) m.mine.push(r.type);
+    });
+    (cRes.data || []).forEach((c: any) => { const m = meta[c.update_id]; if (m) m.commentCount++; });
+    await attachReactors(rRes.data || [], meta);
+    const enriched = new Map(visible.map(u => [u.id, { ...u }]));
+    setUpdates(cur => cur.map(u => enriched.get(u.id) ?? u));
+    setFeedMeta(prev => ({ ...prev, ...meta }));
+    if (offset === 0) cacheSet(`feed.${uid}`, { updates: visible, meta });
   };
 
   const fetchMore = () => {
@@ -250,11 +305,19 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
 
   const fetchObjectives = async (silent = false) => {
     if (!silent) setLoadingObj(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await currentUser();
     if (!user) { setLoadingObj(false); return; }
-    const { data, error } = await supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility').eq('user_id', user.id).order('created_at', { ascending: false });
+    const { data, error } = await selectObjectives('id, emoji, title, current_value, target_value, unit, visibility', cols => supabase.from('objectives').select(cols).eq('user_id', user.id).order('created_at', { ascending: false }));
     if (!error && data) setObjectives((data as Objective[]).map(inUnit));
     setLoadingObj(false);
+    // Jours postés par objectif (les pastilles de la semaine). Deux semaines de recul suffisent.
+    const sinceWeek = new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString();
+    const { data: act } = await supabase.from('updates').select('objective_id, created_at').eq('user_id', user.id).gte('created_at', sinceWeek);
+    const map: Record<string, Set<string>> = {};
+    ((act || []) as { objective_id: string; created_at: string }[]).forEach(u => {
+      if (u.objective_id) (map[u.objective_id] ||= new Set<string>()).add(new Date(u.created_at).toDateString());
+    });
+    setActivityByObj(map);
   };
 
   const onRefresh = async () => {
@@ -301,6 +364,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   // Fondu-montée du contenu à chaque changement d'onglet : sans ça, l'écran
   // change d'un coup et la navigation paraît saccadée.
   const tabFade = useRef(new Animated.Value(1)).current;
+  const lastCounts = useRef(0);
   const firstRender = useRef(true);
 
   useEffect(() => {
@@ -318,9 +382,14 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       tabFade.setValue(0);
       Animated.timing(tabFade, { toValue: 1, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
     }
-    fetchPendingCount();
-    fetchFriendCount();
-    fetchUnread();
+    // Les trois compteurs (demandes, amis, non lus) ne sont relus que s'ils ont plus de 15 s :
+    // changer d'onglet plusieurs fois de suite ne relance plus trois requêtes à chaque fois.
+    if (Date.now() - lastCounts.current > 15000) {
+      lastCounts.current = Date.now();
+      fetchPendingCount();
+      fetchFriendCount();
+      fetchUnread();
+    }
   }, [tab]);
 
   // Retour dans l'app (après une notif, par exemple) : on remet la pastille à jour.
@@ -330,15 +399,28 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   }, [userId]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    (async () => {
+      const user = await currentUser();
       if (!user) { setLoadingFeed(false); setLoadingObj(false); return; }
       setUserId(user.id);
+      // Dernier fil connu : affiché tout de suite, avant même la réponse du serveur.
+      const cached = await cacheGet<{ updates: Update[]; meta: Record<string, FeedMeta> }>(`feed.${user.id}`, 12 * 3600 * 1000);
+      if (cached && cached.updates.length > 0) {
+        setUpdates(cached.updates);
+        setFeedMeta(cached.meta || {});
+        painted.current = true;
+        setLoadingFeed(false);
+      }
+      lastCounts.current = Date.now();
+      supabase.from('users').select('avatar_url').eq('id', user.id).single().then(async ({ data: me }) => {
+        if (me?.avatar_url) setMyAvatar(await signOne(me.avatar_url, { width: 1200 }));
+      });
       loadFeedPage(0, user.id);
       calculateStreak(user.id).then(setStreak);
       fetchPendingCount(user.id);
       fetchFriendCount(user.id);
       fetchUnread(user.id);
-    });
+    })();
     fetchObjectives();
   }, []);
 
@@ -396,6 +478,10 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     </View>
   );
 
+  // « Poste ta progression » : seulement les jours où tu dois t'entraîner (planning des objectifs, tous les
+  // jours sans planning). Un objectif déjà atteint ne compte plus.
+  const showPostCTA = objectives.some(o => o.current_value < o.target_value && trainsToday(o.training_days));
+
   const postCTA = (
     <TouchableOpacity style={s.myUpdate} onPress={() => onPost()} activeOpacity={0.85}>
       <View style={s.myUpdateInfo}>
@@ -411,7 +497,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     return (
       <ActivityScreen
         currentUserId={userId}
-        onClose={() => { setShowActivity(false); setUnreadCount(0); }}
+        backdropUrl={myAvatar}
+        onClose={() => { setShowActivity(false); setUnreadCount(0); setAppBadge(0); }}
         onViewProfile={openProfile}
         onOpenFriends={() => { setShowActivity(false); setUnreadCount(0); setTab('friends'); }}
         onDuoReply={(authorId) => onPost({ duoWith: authorId })}
@@ -421,6 +508,13 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
 
   return (
     <View style={s.container}>
+      {((GLASS_OBJECTIVES && tab === 'objectives') || (GLASS_FRIENDS && tab === 'friends')) && <GlassBackdrop avatarUrl={myAvatar} />}
+      <ObjectiveEditSheet
+        objective={editing}
+        onClose={() => setEditing(null)}
+        onChanged={patch => editing && setObjectives(prev => prev.map(x => (x.id === editing.id ? { ...x, ...patch } : x)))}
+        onDelete={o => handleDeleteObjective(o.id, o.title)}
+      />
       <CreateObjectiveModal visible={showCreateModal} onClose={() => setShowCreateModal(false)} onCreated={() => { setShowCreateModal(false); fetchObjectives(true); }} />
 
       <View style={[s.header, { paddingTop: insets.top + 6 }, tab === 'profile' && { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }]}>
@@ -459,6 +553,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             style={s.feed}
             contentContainerStyle={s.feedContent}
             data={updates}
+            extraData={closeIds}
             keyExtractor={(u) => u.id}
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1a1a1a" />}
@@ -474,7 +569,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             // Android seulement : sur iOS, le détachement des vues hors écran fait
             // parfois apparaître des cartes vides quand elles ont des calques absolus.
             removeClippedSubviews={Platform.OS === 'android'}
-            ListHeaderComponent={needsActivation ? activationHeader : <View>{postCTA}<PresenceButton /></View>}
+            ListHeaderComponent={needsActivation ? activationHeader : <View>{showPostCTA && postCTA}<CloseCircleCard onOpenProfile={openProfile} /><PresenceCard /><DuelBanner onOpenProfile={openProfile} reloadKey={refreshing} /></View>}
             ListEmptyComponent={
               loadingFeed ? (
                 <FeedSkeleton />
@@ -505,6 +600,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 onOpenProfile={openProfile}
                 duoDone={duoDone.has(item.id)}
                 duoValidated={duoPairs.has(item.id)}
+                closeAuthor={!!item.user_id && closeIds.has(item.user_id)}
                 onDeleted={() => { setUpdates(prev => prev.filter(x => x.id !== item.id)); fetchObjectives(true); }}
                 onBlocked={() => userId && loadFeedPage(0, userId, true)}
               />
@@ -530,6 +626,19 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               <Text style={s.emptyStateBtnText}>+ Ajouter un objectif</Text>
             </TouchableOpacity>
           </View>
+        ) : GLASS_OBJECTIVES ? (
+          <ObjectivesTab
+            objectives={objectives}
+            activity={activityByObj}
+            streak={streak}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            onAdd={() => setShowCreateModal(true)}
+            onUpdate={() => onPost()}
+            onEdit={o => setEditing(o)}
+            onDelete={o => handleDeleteObjective(o.id, o.title)}
+            bottomPad={bottomPad}
+          />
         ) : (
         <ScrollView
           style={s.feed}
@@ -544,6 +653,9 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               <Text style={s.statLbl}>Moy.</Text>
             </View>
           </View>
+          <TouchableOpacity style={s.addObjBtn} onPress={() => setShowCreateModal(true)}>
+            <Text style={s.addObjBtnText}>+ Ajouter un objectif</Text>
+          </TouchableOpacity>
           {objectives.map((o) => {
               const pct = progressPct(o);
               return (
@@ -555,13 +667,19 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 >
                   <View style={s.objCardTop}>
                     <Text style={s.objCardName} numberOfLines={1}>{o.emoji} {o.title}</Text>
-                    <View style={[s.visBadge, o.visibility === 'public' && s.visBadgePublic]}>
-                      <Text style={[s.visText, o.visibility === 'public' && s.visTextPublic]}>
-                        {o.visibility === 'public' ? 'Public' : o.visibility === 'friends' ? 'Cercle' : o.visibility === 'close' ? 'Proche' : 'Privé'}
-                      </Text>
-                    </View>
+                    <TouchableOpacity onPress={() => setEditing(o)} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityLabel={`Modifier ${o.title}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <View style={[s.visBadge, o.visibility === 'public' && s.visBadgePublic]}>
+                        <Text style={[s.visText, o.visibility === 'public' && s.visTextPublic]}>
+                          {o.visibility === 'public' ? 'Public' : o.visibility === 'friends' ? 'Cercle' : o.visibility === 'close' ? 'Proche' : 'Privé'}
+                        </Text>
+                      </View>
+                      <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#1e1e1e', alignItems: 'center', justifyContent: 'center' }}>
+                        <Ionicons name="ellipsis-horizontal" size={16} color="#ddd" />
+                      </View>
+                    </TouchableOpacity>
                   </View>
                   <Text style={s.objCardSub}>{o.unit === '%' ? `${pct} %` : `${o.current_value} ${o.unit} sur ${o.target_value} ${o.unit}`}</Text>
+                  {hasSchedule(o.training_days) && <Text style={[s.objCardSub, { marginTop: 2 }]}>📅 {daysLabel(o.training_days, true)}</Text>}
                   <View style={s.objProgressRow}>
                     <View style={s.objProgressBg}>
                       <View style={[s.objProgressFill, { width: `${pct}%` as any }]} />
@@ -577,11 +695,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
           }
           {/* Hint suppression */}
           <Text style={{ color: '#666', fontSize: 11, textAlign: 'center', marginBottom: 8 }}>
-            Appui long sur un objectif pour le supprimer
+            Touche « … » pour modifier un objectif. Appui long pour le supprimer
           </Text>
-          <TouchableOpacity style={s.addObjBtn} onPress={() => setShowCreateModal(true)}>
-            <Text style={s.addObjBtnText}>+ Ajouter un objectif</Text>
-          </TouchableOpacity>
           <View style={{ height: bottomPad }} />
         </ScrollView>
         )

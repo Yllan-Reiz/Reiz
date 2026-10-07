@@ -142,12 +142,6 @@ export const s = StyleSheet.create({
   // Même vert que les « Amis proches » d'Instagram : repère connu, lu sans explication.
   cardClose: { fontSize: 11, color: '#3ddc84', fontFamily: F.bold, marginTop: 1 },
   cardDuo: { fontSize: 12, color: 'rgba(255,255,255,0.9)', fontFamily: F.semibold, marginTop: 1 },
-  newsCard: { marginTop: 12, marginBottom: 4, padding: 14, borderRadius: 18, backgroundColor: '#121212', borderWidth: 1, borderColor: '#262626' },
-  newsIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1e1e1e', alignItems: 'center', justifyContent: 'center' },
-  newsTitle: { color: '#fff', fontSize: 15, fontFamily: F.bold },
-  newsSub: { color: '#8a8a8a', fontSize: 12, marginTop: 1 },
-  newsDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#ff3b30' },
-  newsItem: { flex: 1, color: '#ddd', fontSize: 14, lineHeight: 20 },
   duoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5, alignSelf: 'flex-start', paddingVertical: 3, paddingLeft: 3, paddingRight: 10, borderRadius: 14, backgroundColor: '#1a1a1a' },
   duoAv: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: '#1a1a1a', backgroundColor: '#2a2a2a' },
   duoAvEmpty: { alignItems: 'center', justifyContent: 'center' },

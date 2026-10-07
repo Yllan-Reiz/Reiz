@@ -1,17 +1,20 @@
-import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal, useWindowDimensions } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, Animated, Alert, ActivityIndicator, Modal, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { supabase } from '../lib/supabase';
+import { supabase, currentUser } from '../lib/supabase';
 import { calculateStreak, timeAgo, frError, inUnit } from '../lib/helpers';
 import { signOne } from '../lib/storage';
 import { GUTTER, HEATMAP_MAX_DAYS } from '../constants';
 import { Update, Objective, FeedMeta } from '../lib/types';
-import { ProfileHeroPhoto, GlassIconButton, StatBubble, AboutBubble, BadgesSection, GoalCards, HistoryCarousel, AchievedList, SectionHeader, DuoBubble, computeBadges, isCompleted } from '../components/ProfileSections';
+import { ProfileHero, ProfileBackdrop, GlassIconButton, StatBubble, AboutBubble, BadgesSection, GoalCards, HistoryCarousel, AchievedList, SectionHeader, DuoBubble, computeBadges, isCompleted } from '../components/ProfileSections';
 import { PostViewer } from '../components/PostViewer';
 import { ProfileTags } from '../components/ProfileTags';
 import { PeopleListModal } from '../components/PeopleListModal';
 import { loadProfilePosts, loadPost } from '../lib/posts';
+import { selectObjectives } from '../lib/objectives';
 import { loadDuoStats, DuoStats } from '../lib/duo';
+import { Duel, loadDuels, proposeDuel, answerDuel, withdrawDuel } from '../lib/duel';
+import { DuelCard } from '../components/DuelCard';
 import { s, F } from '../styles';
 
 export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: { userId: string; onClose: () => void; onOpenProfile?: (id: string) => void; onDuo?: (friendId: string) => void }) {
@@ -32,12 +35,16 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
   const [relBusy, setRelBusy] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [duo, setDuo] = useState<DuoStats | null>(null);
+  // Défi d'une semaine avec cet ami. null = pas de défi ; `duelReady` faux = fonction serveur absente (carte cachée).
+  const [duel, setDuel] = useState<Duel | null>(null);
+  const [duelReady, setDuelReady] = useState(false);
+  const [duelBusy, setDuelBusy] = useState(false);
   const [activityByObj, setActivityByObj] = useState<Record<string, Set<string>>>({});
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await currentUser();
       let isFriend = false;
       if (user) {
         setCurrentUserId(user.id);
@@ -47,19 +54,19 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
           .or(`and(requester_id.eq.${user.id},receiver_id.eq.${userId}),and(requester_id.eq.${userId},receiver_id.eq.${user.id})`)
           .maybeSingle();
         if (!rel) setRelation({ kind: 'none' });
-        else if (rel.status === 'accepted') { setRelation({ kind: 'friends', id: rel.id }); }
+        else if (rel.status === 'accepted') { isFriend = true; setRelation({ kind: 'friends', id: rel.id }); }
         else setRelation({ kind: rel.requester_id === user.id ? 'sent' : 'received', id: rel.id });
       }
       const [profileRes, objRes, updatesRes, friendsRes] = await Promise.all([
         supabase.from('users').select('full_name, username, created_at, avatar_url, bio').eq('id', userId).single(),
-        supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility, duration_days, is_completed').eq('user_id', userId).neq('visibility', 'private').order('created_at', { ascending: false }),
+        selectObjectives('id, emoji, title, current_value, target_value, unit, visibility, duration_days, is_completed', cols => supabase.from('objectives').select(cols).eq('user_id', userId).neq('visibility', 'private').order('created_at', { ascending: false })),
         // La base ne renvoie que les posts que tu as le droit de voir (RLS).
         loadProfilePosts(userId),
         supabase.from('friendships').select('id').or(`requester_id.eq.${userId},receiver_id.eq.${userId}`).eq('status', 'accepted'),
       ]);
       if (profileRes.data) {
         setProfile(profileRes.data);
-        setAvatarUrl(await signOne(profileRes.data.avatar_url));
+        setAvatarUrl(await signOne(profileRes.data.avatar_url, { width: 1200 }));
       }
       if (objRes.data) setObjectives((objRes.data as Objective[]).map(inUnit));
       setRecentUpdates(updatesRes.filter(u => u.objectives?.visibility !== 'private'));
@@ -70,6 +77,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
       else if (friendsRes.data) setFriendCount(friendsRes.data.length);
       // Binôme d'entraînement : duos validés avec cet ami (réservé aux amis).
       if (isFriend && user) loadDuoStats(user.id, userId).then(setDuo).catch(() => setDuo(null)); else setDuo(null);
+      if (isFriend) refreshDuel(); else { setDuel(null); setDuelReady(false); }
       const streakVal = await calculateStreak(userId);
       setStreak(streakVal);
       // Jours postés par objectif (les 7 pastilles de chaque carte). Même règle d'accès
@@ -105,6 +113,29 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
     setRelBusy(false);
     if (error) { Alert.alert('Erreur', frError(error)); return; }
     setReloadKey(k => k + 1);
+  };
+
+  // Défi d'une semaine : toujours relire l'état côté serveur après une action (c'est lui qui fait foi).
+  const refreshDuel = async () => {
+    const list = await loadDuels();
+    setDuelReady(list !== null);
+    setDuel((list || []).find(d => d.otherId === userId) || null);
+  };
+
+  const runDuel = async (action: () => Promise<string | null>) => {
+    setDuelBusy(true);
+    const err = await action();
+    if (err) Alert.alert('Défi', err);
+    await refreshDuel();
+    setDuelBusy(false);
+  };
+
+  const proposeToFriend = () => {
+    const first = profile?.full_name?.split(' ')[0] || 'cet ami';
+    Alert.alert(`Défier ${first} ?`, `${first} recevra une notification. Le défi dure 7 jours dès qu'il accepte.`, [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Défier', onPress: () => runDuel(() => proposeDuel(userId)) },
+    ]);
   };
 
   const reportProfile = () => {
@@ -161,14 +192,23 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
   const firstName = profile?.full_name?.split(' ')[0] || 'Cette personne';
   const topBtn = insets.top + 12;
 
+  // Position de défilement : pilote le fondu photo nette -> photo floutée derrière la page.
+  const scrollY = useRef(new Animated.Value(0)).current;
+
   return (
     <View style={s.container}>
+      {!loading && <ProfileBackdrop avatarUrl={avatarUrl} scrollY={scrollY} height={heroH} />}
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#fff" /></View>
       ) : (
-        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        <Animated.ScrollView
+          style={{ flex: 1 }}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        >
           {/* === Même page que ton profil : photo plein écran, nom, bulle de verre à 3 zones === */}
-          <ProfileHeroPhoto avatarUrl={avatarUrl} height={heroH}>
+          <ProfileHero height={heroH}>
             <GlassIconButton icon="chevron-back" label="Retour" onPress={onClose} style={{ position: 'absolute', top: topBtn, left: GUTTER }} />
             <GlassIconButton icon="ellipsis-horizontal" label="Options" onPress={openMenu} style={{ position: 'absolute', top: topBtn, right: GUTTER }} />
 
@@ -196,7 +236,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
               // La liste des amis n'est montrée qu'aux amis (règle du serveur, friends_of).
               { value: String(friendCount), label: friendCount > 1 ? 'Amis' : 'Ami', onPress: relation.kind === 'friends' ? () => setShowFriends(true) : undefined },
             ]} />
-          </ProfileHeroPhoto>
+          </ProfileHero>
 
           {relation.kind !== 'friends' && (
             <Text style={{ color: '#888', fontSize: 13, textAlign: 'center', marginTop: 14, paddingHorizontal: 28 }}>
@@ -214,6 +254,17 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
           </AboutBubble>
 
           {relation.kind === 'friends' && onDuo && <DuoBubble name={firstName} stats={duo} onInvite={() => onDuo(userId)} />}
+
+          {relation.kind === 'friends' && duelReady && (
+            <DuelCard
+              name={firstName}
+              duel={duel}
+              busy={duelBusy}
+              onPropose={proposeToFriend}
+              onAnswer={(accept) => duel && runDuel(() => answerDuel(duel.id, accept))}
+              onWithdraw={() => duel && runDuel(() => withdrawDuel(duel.id))}
+            />
+          )}
 
           <BadgesSection badges={badges} own={false} />
 
@@ -233,7 +284,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
           <HistoryCarousel posts={recentUpdates} onOpen={openPost} emptyText="Pas encore de publication visible." />
 
           <View style={{ height: 40 + insets.bottom }} />
-        </ScrollView>
+        </Animated.ScrollView>
       )}
       <PeopleListModal
         visible={showFriends}

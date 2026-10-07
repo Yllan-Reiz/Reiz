@@ -5,8 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Update, Objective } from '../lib/types';
 import { isVideo } from '../lib/storage';
-import { GUTTER, dayKeysFor } from '../constants';
-import { BADGE_IMAGES } from '../lib/badgeImages';
+import { GUTTER, dayKeysFor, currentWeekKeys, hasSchedule, DAY_LETTERS } from '../constants';
+import { badgeImage } from '../lib/badgeImages';
+import { BADGE_RULES, MAX_LEVEL } from '../lib/badgeLevels';
 import { GlassSurface } from './GlassSurface';
 import { DuoStats } from '../lib/duo';
 import { s, F } from '../styles';
@@ -17,7 +18,12 @@ import { s, F } from '../styles';
 // ton cercle voit exactement les mêmes badges que toi.
 // ============================================================
 
-export type Badge = { id: string; emoji: string; title: string; desc: string; earned: boolean; progress?: string };
+// `level` va de 0 (pas encore gagné) à 6. `earned` = niveau 1 atteint. `desc` décrit le PROCHAIN
+// palier (ou le dernier, au niveau maximum). `progress` = avancement vers ce palier (« 7/10 j »).
+export type Badge = {
+  id: string; emoji: string; title: string; desc: string; earned: boolean; progress?: string;
+  level: number; value: number; next: number | null; color: string;
+};
 
 const dayKey = (iso: string) => {
   const d = new Date(iso);
@@ -40,30 +46,48 @@ export function bestStreak(posts: Update[]): number {
 export const isCompleted = (o: Objective & { is_completed?: boolean | null }) =>
   !!o.is_completed || (o.target_value > 0 && o.current_value >= o.target_value);
 
+const BADGE_META: { id: string; emoji: string; title: string }[] = [
+  { id: 'first', emoji: '🌱', title: 'Premier pas' },
+  { id: 's3', emoji: '🔥', title: 'En feu' },
+  { id: 's7', emoji: '⚡', title: 'Semaine parfaite' },
+  { id: 'goal', emoji: '🏆', title: 'Objectif atteint' },
+  { id: 'p10', emoji: '📸', title: 'Régulier' },
+  { id: 'video', emoji: '🎬', title: 'En action' },
+  { id: 'duo', emoji: '🤝', title: 'En duo' },
+  { id: 'duo5', emoji: '👯', title: 'Binôme' },
+  { id: 'early', emoji: '🌅', title: 'Lève-tôt' },
+  { id: 'night', emoji: '🌙', title: 'Couche-tard' },
+  { id: 's30', emoji: '👑', title: 'Inarrêtable' },
+  { id: 'p50', emoji: '💯', title: 'Acharné' },
+];
+
 export function computeBadges(posts: Update[], objectives: Objective[]): Badge[] {
   const n = posts.length;
   const streak = bestStreak(posts);
   const hour = (p: Update) => new Date(p.created_at).getHours();
-  const early = posts.filter(p => hour(p) < 8).length;
-  const night = posts.filter(p => hour(p) >= 22).length;
-  const videos = posts.filter(p => isVideo(p.photo_url)).length;
-  const done = objectives.filter(isCompleted).length;
   const duos = posts.filter(p => (p.with_user_ids || []).length > 0).length;
-  const of = (v: number, goal: number, unit = '') => `${Math.min(v, goal)}/${goal}${unit}`;
-  return [
-    { id: 'first', emoji: '🌱', title: 'Premier pas', desc: 'Publier ta première progression.', earned: n >= 1 },
-    { id: 's3', emoji: '🔥', title: 'En feu', desc: 'Poster 3 jours d\'affilée.', earned: streak >= 3, progress: of(streak, 3, ' j') },
-    { id: 's7', emoji: '⚡', title: 'Semaine parfaite', desc: 'Poster 7 jours d\'affilée.', earned: streak >= 7, progress: of(streak, 7, ' j') },
-    { id: 'goal', emoji: '🏆', title: 'Objectif atteint', desc: 'Atteindre la cible d\'un objectif.', earned: done >= 1 },
-    { id: 'p10', emoji: '📸', title: 'Régulier', desc: '10 publications.', earned: n >= 10, progress: of(n, 10) },
-    { id: 'video', emoji: '🎬', title: 'En action', desc: 'Publier une vidéo de ta séance.', earned: videos >= 1 },
-    { id: 'duo', emoji: '🤝', title: 'En duo', desc: 'Publier une séance avec un ami identifié.', earned: duos >= 1 },
-    { id: 'duo5', emoji: '👯', title: 'Binôme', desc: '5 séances en duo.', earned: duos >= 5, progress: of(duos, 5) },
-    { id: 'early', emoji: '🌅', title: 'Lève-tôt', desc: '5 posts avant 8 h du matin.', earned: early >= 5, progress: of(early, 5) },
-    { id: 'night', emoji: '🌙', title: 'Couche-tard', desc: '5 posts après 22 h.', earned: night >= 5, progress: of(night, 5) },
-    { id: 's30', emoji: '👑', title: 'Inarrêtable', desc: 'Poster 30 jours d\'affilée.', earned: streak >= 30, progress: of(streak, 30, ' j') },
-    { id: 'p50', emoji: '💯', title: 'Acharné', desc: '50 publications.', earned: n >= 50, progress: of(n, 50) },
-  ];
+  // Ce que chaque badge mesure ; les paliers de chacun sont dans lib/badgeLevels.ts.
+  const metric: Record<string, number> = {
+    first: n, s3: streak, s7: streak, s30: streak, p10: n, p50: n,
+    goal: objectives.filter(isCompleted).length,
+    video: posts.filter(p => isVideo(p.photo_url)).length,
+    duo: duos, duo5: duos,
+    early: posts.filter(p => hour(p) < 8).length,
+    night: posts.filter(p => hour(p) >= 22).length,
+  };
+  return BADGE_META.map(m => {
+    const rule = BADGE_RULES[m.id];
+    const value = metric[m.id];
+    const level = rule.steps.filter(step => value >= step).length;
+    const next = level < MAX_LEVEL ? rule.steps[level] : null;
+    return {
+      ...m,
+      desc: rule.say(next ?? rule.steps[MAX_LEVEL - 1]),
+      earned: level >= 1,
+      level, value, next, color: rule.color,
+      progress: next != null ? `${Math.min(value, next)}/${next}${rule.unit ?? ''}` : undefined,
+    };
+  });
 }
 
 /** Bandeau de badges. Sur ton profil, les badges à débloquer sont grisés ; chez un ami, seuls les gagnés s'affichent. */
@@ -80,8 +104,8 @@ export function BadgesStrip({ badges, own, grid, noTitle }: { badges: Badge[]; o
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 14 }}>
           {shown.map(b => (
             <TouchableOpacity key={b.id} activeOpacity={0.7} style={{ width: '33.33%', alignItems: 'center' }} onPress={() => setOpen(b)}
-              accessibilityLabel={`${b.title}, ${b.earned ? 'débloqué' : 'à débloquer'}`}>
-              <Image source={BADGE_IMAGES[b.id]} style={{ width: 92, height: 92, opacity: b.earned ? 1 : 0.22 }} resizeMode="contain" />
+              accessibilityLabel={badgeLabel(b)}>
+              <BadgeImage b={b} size={92} />
               <Text numberOfLines={2} style={{ color: b.earned ? '#ddd' : '#666', fontSize: 11, fontFamily: F.bold, textAlign: 'center', marginTop: 2 }}>{b.title}</Text>
             </TouchableOpacity>
           ))}
@@ -94,9 +118,9 @@ export function BadgesStrip({ badges, own, grid, noTitle }: { badges: Badge[]; o
               activeOpacity={0.7}
               style={{ width: 76, alignItems: 'center' }}
               onPress={() => setOpen(b)}
-              accessibilityLabel={`${b.title}, ${b.earned ? 'débloqué' : 'à débloquer'}`}
+              accessibilityLabel={badgeLabel(b)}
             >
-              <Image source={BADGE_IMAGES[b.id]} style={{ width: 72, height: 72, opacity: b.earned ? 1 : 0.22 }} resizeMode="contain" />
+              <BadgeImage b={b} size={72} />
               <Text numberOfLines={2} style={{ color: b.earned ? '#ddd' : '#666', fontSize: 10, fontFamily: F.bold, textAlign: 'center', marginTop: 2 }}>{b.title}</Text>
             </TouchableOpacity>
           ))}
@@ -107,24 +131,55 @@ export function BadgesStrip({ badges, own, grid, noTitle }: { badges: Badge[]; o
   );
 }
 
-/** Fiche d'un badge : grand visuel, ce qu'il faut faire, et où tu en es. */
+const badgeLabel = (b: Badge) => (b.earned ? `${b.title}, niveau ${b.level} sur ${MAX_LEVEL}` : `${b.title}, à débloquer`);
+
+/** L'image du badge, avec en bas à droite une pastille de la couleur du badge qui porte son niveau. */
+function BadgeImage({ b, size }: { b: Badge; size: number }) {
+  return (
+    <View style={{ width: size, height: size }}>
+      <Image source={badgeImage(b.id, Math.max(1, b.level))} style={{ width: size, height: size, opacity: b.earned ? 1 : 0.22 }} resizeMode="contain" />
+      {b.earned && (
+        <View style={{ position: 'absolute', right: 0, bottom: 0, minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 5, backgroundColor: b.color, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#0a0a0a' }}>
+          <Text style={{ color: '#000', fontSize: 11, fontFamily: F.black }}>{b.level}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+/** Fiche d'un badge : grand visuel, niveau sur 6, prochain palier, et où tu en es. */
 function BadgeDetail({ badge, onClose }: { badge: Badge | null; onClose: () => void }) {
   if (!badge) return null;
-  const m = badge.progress?.match(/^(\d+(?:[.,]\d+)?)\/(\d+)/);
-  const ratio = badge.earned ? 1 : m ? Math.min(1, Number(m[1].replace(',', '.')) / Number(m[2])) : 0;
+  const maxed = badge.next == null;
+  const ratio = maxed ? 1 : Math.min(1, badge.value / (badge.next as number));
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.78)', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
         <TouchableOpacity activeOpacity={1} style={{ width: '100%', maxWidth: 340, backgroundColor: '#111', borderRadius: 28, borderWidth: 1, borderColor: '#1f1f1f', alignItems: 'center', padding: 24 }}>
-          <Image source={BADGE_IMAGES[badge.id]} style={{ width: 170, height: 170, opacity: badge.earned ? 1 : 0.3 }} resizeMode="contain" />
+          <Image source={badgeImage(badge.id, Math.max(1, badge.level))} style={{ width: 170, height: 170, opacity: badge.earned ? 1 : 0.3 }} resizeMode="contain" />
           <Text style={{ color: '#fff', fontSize: 22, fontFamily: F.black, letterSpacing: -0.5, marginTop: 6 }}>{badge.title}</Text>
-          <Text style={{ color: '#aaa', fontSize: 14, fontFamily: F.regular, textAlign: 'center', lineHeight: 21, marginTop: 8 }}>{badge.desc}</Text>
-          <View style={{ width: '100%', height: 8, borderRadius: 4, backgroundColor: '#222', marginTop: 20, overflow: 'hidden' }}>
-            <View style={{ width: `${ratio * 100}%`, height: '100%', backgroundColor: '#fff', borderRadius: 4 }} />
+          {/* 6 segments : un par niveau, remplis dans la couleur du badge. */}
+          <View style={{ flexDirection: 'row', gap: 5, marginTop: 12 }}>
+            {Array.from({ length: MAX_LEVEL }, (_, i) => (
+              <View key={i} style={{ width: 24, height: 6, borderRadius: 3, backgroundColor: i < badge.level ? badge.color : '#262626' }} />
+            ))}
           </View>
-          <Text style={{ color: badge.earned ? '#fff' : '#888', fontSize: 13, fontFamily: F.semibold, marginTop: 10 }}>
-            {badge.earned ? 'Débloqué' : badge.progress ? `Où tu en es : ${badge.progress}` : 'À débloquer'}
+          <Text style={{ color: badge.earned ? '#fff' : '#888', fontSize: 13, fontFamily: F.bold, marginTop: 10 }}>
+            {badge.earned ? `Niveau ${badge.level} sur ${MAX_LEVEL}` : 'À débloquer'}
           </Text>
+          <Text style={{ color: '#aaa', fontSize: 14, fontFamily: F.regular, textAlign: 'center', lineHeight: 21, marginTop: 10 }}>
+            {maxed ? 'Niveau maximum atteint. Respect.' : `${badge.earned ? `Niveau ${badge.level + 1} : ` : ''}${badge.desc}`}
+          </Text>
+          {!maxed && (
+            <>
+              <View style={{ width: '100%', height: 8, borderRadius: 4, backgroundColor: '#222', marginTop: 18, overflow: 'hidden' }}>
+                <View style={{ width: `${ratio * 100}%`, height: '100%', backgroundColor: badge.color, borderRadius: 4 }} />
+              </View>
+              <Text style={{ color: '#888', fontSize: 13, fontFamily: F.semibold, marginTop: 10 }}>
+                {badge.progress ? `Où tu en es : ${badge.progress}` : ''}
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
@@ -136,20 +191,56 @@ function BadgeDetail({ badge, onClose }: { badge: Badge | null; onClose: () => v
 // DA : iOS 26 Liquid Glass. Photo plein écran, bulles de verre, cartes qui se chevauchent.
 // ============================================================
 
-/** Photo de profil en plein écran, légèrement floutée, fondue vers le noir en bas. */
-export function ProfileHeroPhoto({ avatarUrl, height, children }: { avatarUrl: string | null; height: number; children?: React.ReactNode }) {
+/**
+ * Photo de profil FIXE derrière toute la page. En haut elle est nette, en plein écran, fondue vers
+ * le noir ; dès qu'on fait défiler, la page passe devant et la photo se floute et s'assombrit.
+ * `scrollY` = la position de défilement de la page (Animated.Value branchée sur onScroll).
+ */
+export function ProfileBackdrop({ avatarUrl, scrollY, height }: { avatarUrl: string | null; scrollY: Animated.Value; height: number }) {
+  // Le fondu net → flou se fait sur la première moitié de la hauteur de la photo.
+  const end = Math.max(120, height * 0.5);
+  const toBlur = scrollY.interpolate({ inputRange: [0, end], outputRange: [0, 1], extrapolate: 'clamp' });
+  const toSharp = scrollY.interpolate({ inputRange: [0, end], outputRange: [1, 0], extrapolate: 'clamp' });
   return (
-    <View style={{ height, justifyContent: 'flex-end', alignItems: 'center' }}>
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      {/* Photo floutée et assombrie, sur tout l'écran : elle apparaît quand on défile. */}
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: toBlur }]}>
         {avatarUrl
-          ? <Image source={{ uri: avatarUrl }} blurRadius={Platform.OS === 'ios' ? 9 : 5} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ? <Image source={{ uri: avatarUrl }} blurRadius={Platform.OS === 'ios' ? 30 : 16} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          : <LinearGradient colors={['#2a2a2a', '#0a0a0a']} style={StyleSheet.absoluteFill} />}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10,10,10,0.72)' }]} />
+      </Animated.View>
+      {/* Photo nette en haut, qui s'efface au fil du défilement. */}
+      <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, height, opacity: toSharp }}>
+        {avatarUrl
+          ? <Image source={{ uri: avatarUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
           : <LinearGradient colors={['#3a3a3a', '#141414']} style={StyleSheet.absoluteFill} />}
         <LinearGradient colors={['rgba(10,10,10,0.7)', 'rgba(10,10,10,0)']} locations={[0, 0.28]} style={StyleSheet.absoluteFill} />
         <LinearGradient colors={['rgba(10,10,10,0)', 'rgba(10,10,10,0.55)', '#0a0a0a']} locations={[0.38, 0.72, 1]} style={StyleSheet.absoluteFill} />
-      </View>
-      {children}
+      </Animated.View>
     </View>
   );
+}
+
+/**
+ * Fond de page « verre » pour les onglets qui n'ont pas de grande photo (objectifs) : ta photo de profil,
+ * floutée et assombrie, derrière tout l'écran. C'est ce fond qui fait ressortir le verre des cartes.
+ */
+export function GlassBackdrop({ avatarUrl }: { avatarUrl: string | null }) {
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      {avatarUrl
+        ? <Image source={{ uri: avatarUrl }} blurRadius={Platform.OS === 'ios' ? 30 : 16} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        : <LinearGradient colors={['#2a2a2a', '#0a0a0a']} style={StyleSheet.absoluteFill} />}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10,10,10,0.62)' }]} />
+      <LinearGradient colors={['rgba(10,10,10,0.55)', 'rgba(10,10,10,0)']} locations={[0, 0.25]} style={StyleSheet.absoluteFill} />
+    </View>
+  );
+}
+
+/** Tête de page : un espace transparent de la hauteur de la photo, qui porte nom, boutons et bulle de stats par-dessus. */
+export function ProfileHero({ height, children }: { height: number; children?: React.ReactNode }) {
+  return <View style={{ height, justifyContent: 'flex-end', alignItems: 'center' }}>{children}</View>;
 }
 
 /** Rond de verre avec une icône (réglages, retour, menu, appareil photo). */
@@ -164,9 +255,10 @@ export function GlassIconButton({ icon, onPress, label, style }: { icon: any; on
 }
 
 /** Une seule bulle de verre à trois zones (comme « Going / Not Going / Maybe ») : série, posts, amis. */
-export function StatBubble({ items }: { items: { value: string; label: string; onPress?: () => void }[] }) {
+export function StatBubble({ items, tinted }: { items: { value: string; label: string; onPress?: () => void }[]; tinted?: boolean }) {
   return (
-    <GlassSurface radius={26} style={{ alignSelf: 'stretch', marginHorizontal: GUTTER, marginTop: 22 }}>
+    <GlassSurface radius={26} tintColor={tinted ? 'rgba(255,255,255,0.08)' : undefined} style={{ alignSelf: 'stretch', marginHorizontal: GUTTER, marginTop: 22 }}>
+      {tinted && <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: 26, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }]} />}
       <View style={{ flexDirection: 'row', paddingVertical: 14 }}>
         {items.map((x, i) => (
           <TouchableOpacity key={x.label} style={{ flex: 1, alignItems: 'center', borderLeftWidth: i ? 1 : 0, borderLeftColor: 'rgba(255,255,255,0.16)' }} activeOpacity={x.onPress ? 0.7 : 1} onPress={x.onPress} disabled={!x.onPress}>
@@ -283,8 +375,8 @@ function BadgesStripRow({ badges, onAll }: { badges: Badge[]; onAll: () => void 
     <>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: GUTTER, alignItems: 'center' }}>
         {badges.map(b => (
-          <TouchableOpacity key={b.id} activeOpacity={0.75} onPress={() => setOpen(b)} accessibilityLabel={`${b.title}, ${b.earned ? 'débloqué' : 'à débloquer'}`}>
-            <Image source={BADGE_IMAGES[b.id]} style={{ width: 72, height: 72, opacity: b.earned ? 1 : 0.22 }} resizeMode="contain" />
+          <TouchableOpacity key={b.id} activeOpacity={0.75} onPress={() => setOpen(b)} accessibilityLabel={badgeLabel(b)}>
+            <BadgeImage b={b} size={72} />
           </TouchableOpacity>
         ))}
         <TouchableOpacity onPress={onAll} activeOpacity={0.8} accessibilityLabel="Voir tous les badges">
@@ -377,6 +469,42 @@ function FloatyCarousel({ cardW, overlap, paddingTop, paddingBottom, children }:
  * comme les cartes de la référence. Valeur en haut à gauche, emoji dans un rond de verre
  * en haut à droite, titre en grand en bas.
  */
+/**
+ * La semaine d'un objectif qui a un planning : 7 pastilles L M M J V S D.
+ * Plein = tu t'es entraîné ce jour-là. Contour = jour prévu (en attente ou manqué). Estompé = repos.
+ */
+export function WeekTracker({ days, done, everyDay }: { days: number[]; done: Set<string>; everyDay?: boolean }) {
+  const keys = currentWeekKeys();
+  const todayKey = new Date().toDateString();
+  const planned = days.length;
+  const doneCount = days.filter(d => done.has(keys[d - 1])).length;
+  return (
+    <View style={{ marginTop: 6 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        {keys.map((k, i) => {
+          const scheduled = days.includes(i + 1);
+          const hit = done.has(k);
+          const isToday = k === todayKey;
+          return (
+            <View
+              key={k}
+              style={{
+                width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center',
+                backgroundColor: hit ? '#fff' : 'transparent',
+                borderWidth: scheduled && !hit ? 1.5 : 0,
+                borderColor: isToday ? '#fff' : 'rgba(255,255,255,0.4)',
+              }}
+            >
+              <Text style={{ color: hit ? '#000' : scheduled ? '#fff' : 'rgba(255,255,255,0.28)', fontSize: 10, fontFamily: F.extrabold }}>{DAY_LETTERS[i]}</Text>
+            </View>
+          );
+        })}
+      </View>
+      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.semibold, marginTop: 6 }} numberOfLines={1}>{everyDay ? `${doneCount} ${doneCount > 1 ? 'jours' : 'jour'} cette semaine` : `${doneCount} sur ${planned} séances prévues cette semaine`}</Text>
+    </View>
+  );
+}
+
 export function GoalCards({ items, activity, onPress }: {
   items: Objective[]; activity: Record<string, Set<string>>; onPress?: (o: Objective) => void;
 }) {
@@ -410,10 +538,14 @@ export function GoalCards({ items, activity, onPress }: {
                 </View>
                 <View>
                   <Text style={{ color: '#fff', fontSize: 25, fontFamily: F.black, letterSpacing: -0.6, lineHeight: 29 }} numberOfLines={2}>{o.title}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
-                    <Ionicons name={vis.icon} size={12} color="rgba(255,255,255,0.6)" />
-                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.semibold }} numberOfLines={1}>{doneWeek} {doneWeek > 1 ? 'jours' : 'jour'} cette semaine</Text>
-                  </View>
+                  {hasSchedule(o.training_days)
+                    ? <WeekTracker days={o.training_days!} done={set} />
+                    : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
+                        <Ionicons name={vis.icon} size={12} color="rgba(255,255,255,0.6)" />
+                        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.semibold }} numberOfLines={1}>{doneWeek} {doneWeek > 1 ? 'jours' : 'jour'} cette semaine</Text>
+                      </View>
+                    )}
                   <View style={{ height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.18)', marginTop: 10, overflow: 'hidden' }}>
                     <View style={{ width: `${pct}%`, height: '100%', backgroundColor: '#fff', borderRadius: 3 }} />
                   </View>
@@ -500,13 +632,13 @@ export function AchievedList({ items }: { items: Objective[] }) {
 // Carte « En cours » du profil : l'objectif d'un coup d'œil
 // ============================================================
 
-const VIS_ICON: Record<string, { icon: any; label: string }> = {
+export const VIS_ICON: Record<string, { icon: any; label: string }> = {
   friends: { icon: 'people-outline', label: 'Mon cercle' },
   close: { icon: 'star-outline', label: 'Cercle proche' },
   private: { icon: 'lock-closed-outline', label: 'Moi seul' },
   public: { icon: 'globe-outline', label: 'Public' },
 };
-const fmtNum = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
+export const fmtNum = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
 
 /**
  * Valeur en grand, jauge épaisse comme dans le fil, et les 7 derniers jours en pastilles

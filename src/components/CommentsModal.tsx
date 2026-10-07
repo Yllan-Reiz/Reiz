@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
 import { timeAgo, frError } from '../lib/helpers';
-import { signMany } from '../lib/storage';
+import { signAvatars } from '../lib/storage';
 import { Comment } from '../lib/types';
 import { s, F } from '../styles';
 
@@ -94,7 +94,7 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
     if (!error && data) {
       const list = data as unknown as Comment[];
       // Bucket privé : les avatars passent par des URLs signées, en un seul appel.
-      const signed = await signMany(list.map(c => c.users?.avatar_url));
+      const signed = await signAvatars(list.map(c => c.users?.avatar_url));
       list.forEach(c => { if (c.users?.avatar_url) c.users.avatar_url = signed[c.users.avatar_url] ?? null; });
       setComments(list);
       onCountChange?.(list.length);

@@ -1,5 +1,5 @@
 export type Update = { id: string; caption: string; progress_value: number; created_at: string; photo_url?: string; user_id?: string; pinned_at?: string | null; with_user_ids?: string[]; with_users?: { id: string; full_name: string; avatar_url?: string | null }[]; objectives?: { visibility: string; unit?: string; target_value?: number; emoji?: string; title?: string } | null; users: any; };
-export type Objective = { id: string; emoji: string; title: string; current_value: number; target_value: number; unit: string; visibility: string; duration_days?: number | null; };
+export type Objective = { id: string; emoji: string; title: string; current_value: number; target_value: number; unit: string; visibility: string; duration_days?: number | null; training_days?: number[] | null; };
 export type Comment = { id: string; content: string; created_at: string; user_id: string; parent_id?: string | null; users: any; };
 
 // Ligne du fil d'activité (cœur en haut à droite), écrite par les triggers SQL.

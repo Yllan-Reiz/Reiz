@@ -23,7 +23,9 @@ export function timeAgo(dateStr: string) {
 }
 
 export async function calculateStreak(userId: string): Promise<number> {
-  const { data, error } = await supabase.from('updates').select('created_at').eq('user_id', userId).order('created_at', { ascending: false });
+  // 120 derniers jours seulement : relire tout l'historique à chaque ouverture ralentissait l'app pour rien.
+  const since = new Date(Date.now() - 120 * 24 * 3600 * 1000).toISOString();
+  const { data, error } = await supabase.from('updates').select('created_at').eq('user_id', userId).gte('created_at', since).order('created_at', { ascending: false }).limit(400);
   if (error || !data || data.length === 0) return 0;
   const days = [...new Set(data.map(u => new Date(u.created_at).toDateString()))];
   const today = new Date();

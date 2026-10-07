@@ -80,7 +80,9 @@ const STACK_MAX = 4;
 
 // Les réactions et le compteur de commentaires arrivent pré-chargés via `meta`
 // (chargés en lot par le feed) : zéro requête au montage de la carte.
-export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, onPinChanged, onDuoReply, onOpenProfile, duoDone, duoValidated }: {
+export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, onPinChanged, onDuoReply, onOpenProfile, duoDone, duoValidated, closeAuthor }: {
+  // L'auteur est dans ton cercle proche : une étoile à côté de son prénom.
+  closeAuthor?: boolean;
   u: Update;
   meta?: FeedMeta;
   currentUserId: string | null;
@@ -389,7 +391,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       <View style={s.brHeader}>
         <Avatar />
         <View style={s.cardMeta}>
-          <Text style={s.cardName} onPress={openAuthor} suppressHighlighting numberOfLines={1}>{uname}</Text>
+          <Text style={s.cardName} onPress={openAuthor} suppressHighlighting numberOfLines={1}>{uname}{closeAuthor ? ' ★' : ''}</Text>
           <Text style={s.brSub} numberOfLines={1}>
             {u.objectives?.title && u.caption?.trim().toLowerCase() !== u.objectives.title.trim().toLowerCase() ? `${u.objectives.emoji || ''} ${u.objectives.title}`.trim() + ' · ' : ''}{timeAgo(u.created_at).replace('Il y a', 'il y a')}
             {u.objectives?.visibility === 'close' ? '  ★ Proche' : ''}

@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase, SUPABASE_ANON_KEY, SUPABASE_URL } from './supabase';
 
@@ -7,7 +8,12 @@ import { supabase, SUPABASE_ANON_KEY, SUPABASE_URL } from './supabase';
 // fichier (ex: "a1b2.../1712345678.jpg"), jamais une URL, et on signe à la lecture.
 
 const BUCKET = 'updates';
-const EXPIRES_IN = 60 * 60; // 1 h : largement au-delà d'une session de consultation
+// Une URL signée est valable 24 h côté serveur et RÉUTILISÉE pendant 18 h côté téléphone. Pourquoi : une
+// URL signée contient un jeton ; en re-signant à chaque ouverture, l'adresse de chaque photo changeait et
+// l'iPhone ne pouvait jamais réutiliser une photo déjà téléchargée (tout se retéléchargeait à chaque
+// lancement). Une adresse stable = la photo vient du cache de l'appareil, instantanément.
+const EXPIRES_IN = 24 * 60 * 60;
+const REUSE_MS = 18 * 60 * 60 * 1000;
 
 /**
  * Les anciens enregistrements contiennent une URL publique complète.
@@ -175,7 +181,7 @@ export async function uploadFile(
     const arrayBuffer = await response.arrayBuffer();
     const { error } = await supabase.storage
       .from(BUCKET)
-      .upload(path, arrayBuffer, { contentType, upsert });
+      .upload(path, arrayBuffer, { contentType, upsert, cacheControl: '31536000' });
     if (error) return { path: null, error };
     return { path, error: null };
   } catch (e: any) {
@@ -215,37 +221,134 @@ export async function uploadVideo(
   }
 }
 
-/** Signe un chemin unique. Renvoie null si le fichier est absent ou l'accès refusé. */
-export async function signOne(stored?: string | null): Promise<string | null> {
-  if (!stored) return null;
-  const { data } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(toPath(stored), EXPIRES_IN);
+// ---------- URLs signées, avec mémoire ----------
+
+type Signed = { url: string; at: number };
+const SIGNED_KEY = 'reiz.signed.v1';
+const memory = new Map<string, Signed>();
+let hydrated: Promise<void> | null = null;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+// La transformation d'images (réduction à la volée) dépend de l'offre Supabase : si elle échoue,
+// on s'en passe pour le reste de la session au lieu de réessayer à chaque photo.
+let transformOk = true;
+
+/** Relit les adresses déjà signées au premier usage (elles survivent entre deux lancements). */
+function hydrate(): Promise<void> {
+  if (!hydrated) {
+    hydrated = (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(SIGNED_KEY);
+        if (!raw) return;
+        const now = Date.now();
+        Object.entries(JSON.parse(raw) as Record<string, Signed>).forEach(([k, e]) => { if (now - e.at < REUSE_MS) memory.set(k, e); });
+      } catch {}
+    })();
+  }
+  return hydrated;
+}
+
+function persistSoon() {
+  if (persistTimer) return;
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    const entries = [...memory.entries()].sort((a, b) => b[1].at - a[1].at).slice(0, 500);
+    AsyncStorage.setItem(SIGNED_KEY, JSON.stringify(Object.fromEntries(entries))).catch(() => {});
+  }, 1500);
+}
+
+/** À la déconnexion : on oublie toutes les adresses (elles sont aussi effacées du disque par cacheClearAll). */
+export function resetSignedCache() {
+  memory.clear();
+  hydrated = null;
+}
+
+export type SignOpts = {
+  /**
+   * Largeur voulue en pixels pour une photo : le serveur renvoie une version réduite (un avatar de
+   * 40 pt n'a pas besoin des 300 Ko de l'original). Sans effet sur les vidéos.
+   */
+  width?: number;
+};
+
+const isImagePath = (p: string) => /\.(jpe?g|png|webp)$/i.test(p);
+const keyOf = (path: string, width?: number) => (width ? `${width}|${path}` : path);
+
+/** Un seul chemin, avec réduction demandée au serveur quand c'est possible. */
+async function signOneRaw(path: string, width?: number): Promise<string | null> {
+  if (width && transformOk && isImagePath(path)) {
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, EXPIRES_IN, { transform: { width, quality: 75 } });
+    if (!error && data?.signedUrl) return data.signedUrl;
+    // La réduction a échoué : si l'original, lui, se signe, c'est la fonction qui est indisponible.
+    const plain = await supabase.storage.from(BUCKET).createSignedUrl(path, EXPIRES_IN);
+    if (plain.data?.signedUrl) transformOk = false;
+    return plain.data?.signedUrl ?? null;
+  }
+  const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, EXPIRES_IN);
   return data?.signedUrl ?? null;
 }
 
+/** Exécute `fn` sur chaque élément, au plus `n` à la fois. */
+async function pool<T>(items: T[], n: number, fn: (x: T) => Promise<void>): Promise<void> {
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (i < items.length) { const x = items[i++]; await fn(x); }
+  }));
+}
+
 /**
- * Signe plusieurs chemins en une seule requête réseau.
+ * Signe plusieurs chemins. Une adresse déjà signée il y a moins de 18 h est réutilisée telle quelle
+ * (voir plus haut) : le plus souvent aucune requête réseau n'est nécessaire.
  * Renvoie une table chemin d'origine → URL signée, pour un accès direct au rendu.
  */
-export async function signMany(stored: (string | null | undefined)[]): Promise<Record<string, string>> {
+export async function signMany(stored: (string | null | undefined)[], opts?: SignOpts): Promise<Record<string, string>> {
   const uniques = [...new Set(stored.filter((v): v is string => !!v))];
   if (uniques.length === 0) return {};
+  await hydrate();
 
-  // chemin normalisé → valeur d'origine, pour réassocier sans dépendre de
-  // l'ordre de retour de l'API ni de l'absence des entrées en échec.
-  const backToStored = new Map<string, string>();
-  uniques.forEach(v => backToStored.set(toPath(v), v));
-
-  const { data } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrls([...backToStored.keys()], EXPIRES_IN);
-  if (!data) return {};
-
-  const map: Record<string, string> = {};
-  data.forEach(entry => {
-    const original = entry.path ? backToStored.get(entry.path) : undefined;
-    if (original && entry.signedUrl) map[original] = entry.signedUrl;
+  const out: Record<string, string> = {};
+  const missing: { original: string; path: string; width?: number }[] = [];
+  uniques.forEach(original => {
+    const path = toPath(original);
+    const width = opts?.width && transformOk && isImagePath(path) ? opts.width : undefined;
+    const hit = memory.get(keyOf(path, width));
+    if (hit && Date.now() - hit.at < REUSE_MS) out[original] = hit.url;
+    else missing.push({ original, path, width });
   });
-  return map;
+  if (missing.length === 0) return out;
+
+  const remember = (m: { original: string; path: string; width?: number }, url: string) => {
+    out[m.original] = url;
+    memory.set(keyOf(m.path, m.width), { url, at: Date.now() });
+  };
+
+  const plain = missing.filter(m => !m.width);
+  const resized = missing.filter(m => m.width);
+
+  // Sans réduction : une seule requête pour tout le lot.
+  if (plain.length > 0) {
+    const { data } = await supabase.storage.from(BUCKET).createSignedUrls(plain.map(m => m.path), EXPIRES_IN);
+    const byPath = new Map(plain.map(m => [m.path, m]));
+    (data || []).forEach(entry => {
+      const m = entry.path ? byPath.get(entry.path) : undefined;
+      if (m && entry.signedUrl) remember(m, entry.signedUrl);
+    });
+  }
+  // Avec réduction : le serveur ne signe qu'un chemin à la fois, on en lance quelques-uns en parallèle.
+  if (resized.length > 0) {
+    await pool(resized, 6, async m => {
+      const url = await signOneRaw(m.path, m.width);
+      if (url) remember(m, url);
+    });
+  }
+  persistSoon();
+  return out;
 }
+
+/** Signe un chemin unique. Renvoie null si le fichier est absent ou l'accès refusé. */
+export async function signOne(stored?: string | null, opts?: SignOpts): Promise<string | null> {
+  if (!stored) return null;
+  return (await signMany([stored], opts))[stored] ?? null;
+}
+
+/** Petite photo de profil (rond de liste, pastille) : version réduite à 200 px de large. */
+export const signAvatars = (stored: (string | null | undefined)[]) => signMany(stored, { width: 200 });

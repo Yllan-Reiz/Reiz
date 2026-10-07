@@ -1,21 +1,25 @@
-import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, RefreshControl, Modal, useWindowDimensions } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Animated, TextInput, Alert, ActivityIndicator, RefreshControl, Modal, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { supabase } from '../lib/supabase';
+import { supabase, currentUser } from '../lib/supabase';
 import { frError, inUnit } from '../lib/helpers';
 import { uploadImage, signOne } from '../lib/storage';
 import { Objective } from '../lib/types';
 import { HEATMAP_MAX_DAYS, GUTTER, navClearance } from '../constants';
 import { s, F } from '../styles';
 import { ProfileSkeleton } from '../components/Skeleton';
-import { ProfileHeroPhoto, GlassIconButton, StatBubble, AboutBubble, BadgesSection, GoalCards, HistoryCarousel, AchievedList, SectionHeader, computeBadges, isCompleted } from '../components/ProfileSections';
+import { ProfileHero, ProfileBackdrop, GlassIconButton, StatBubble, AboutBubble, BadgesSection, GoalCards, HistoryCarousel, AchievedList, SectionHeader, computeBadges, isCompleted } from '../components/ProfileSections';
 import { PostViewer } from '../components/PostViewer';
 import { ProfileTags } from '../components/ProfileTags';
 import { PeopleListModal } from '../components/PeopleListModal';
 import { SettingsScreen } from './SettingsScreen';
 import { loadProfilePosts, loadPost } from '../lib/posts';
+import { selectObjectives } from '../lib/objectives';
+import { ObjectiveEditSheet } from '../components/ObjectiveEditSheet';
+import { CloseCircleBubble } from '../components/CloseCircleBubble';
+import { resetCloseCircle } from '../lib/closeCircle';
 import { Update, FeedMeta } from '../lib/types';
 
 export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfile }: { onClose: () => void; streak: number; onCreateObjective: () => void; onViewProfile?: (id: string) => void }) {
@@ -41,18 +45,20 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   // Fenêtre « Amis » (liste cliquable) ou « Cercle proche » (étoiles).
   const [peopleMode, setPeopleMode] = useState<'friends' | 'close' | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  // Objectif en cours de modification (feuille).
+  const [daysFor, setDaysFor] = useState<Objective | null>(null);
 
   useEffect(() => { loadProfile(); }, []);
 
   const loadProfile = async (silent = false) => {
     if (!silent) setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await currentUser();
     if (!user) { setLoading(false); return; }
     const sinceISO = new Date(Date.now() - HEATMAP_MAX_DAYS * 24 * 60 * 60 * 1000).toISOString();
     setUserId(user.id);
     const [profileRes, objRes, updatesRes, friendsRes, allPosts] = await Promise.all([
       supabase.from('users').select('full_name, username, created_at, avatar_url, bio').eq('id', user.id).single(),
-      supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility, duration_days, is_completed').eq('user_id', user.id).order('created_at', { ascending: false }),
+      selectObjectives('id, emoji, title, current_value, target_value, unit, visibility, duration_days, is_completed', cols => supabase.from('objectives').select(cols).eq('user_id', user.id).order('created_at', { ascending: false })),
       supabase.from('updates').select('objective_id, created_at').eq('user_id', user.id).gte('created_at', sinceISO),
       supabase.from('friendships').select('requester_id, receiver_id').or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`).eq('status', 'accepted'),
       loadProfilePosts(user.id),
@@ -62,7 +68,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
       setProfile(profileRes.data);
       setNewName(profileRes.data.full_name);
       setNewBio(profileRes.data.bio || '');
-      setAvatarUrl(await signOne(profileRes.data.avatar_url));
+      setAvatarUrl(await signOne(profileRes.data.avatar_url, { width: 1200 }));
     }
     if (objRes.data) setObjectives((objRes.data as Objective[]).map(inUnit));
     if (updatesRes.data) {
@@ -83,7 +89,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   const handleSaveName = async () => {
     if (!newName.trim()) return;
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await currentUser();
     if (!user) { setSaving(false); return; }
     await supabase.from('users').update({ full_name: newName.trim() }).eq('id', user.id);
     setSaving(false); setEditingName(false); loadProfile();
@@ -96,7 +102,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
 
   const handleSaveBio = async () => {
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await currentUser();
     if (!user) { setSaving(false); return; }
     const bio = newBio.trim();
     const { error } = await supabase.from('users').update({ bio: bio || null }).eq('id', user.id);
@@ -132,7 +138,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
 
   const uploadAvatar = async (uri: string) => {
     setUploadingAvatar(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await currentUser();
     if (!user) { setUploadingAvatar(false); return; }
     // On enregistre le chemin, pas une URL : le bucket est privé et chaque
     // affichage génère une URL signée (qui change à chaque fois, ce qui règle
@@ -150,23 +156,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
 
   // Suppression d'un objectif : la base efface en cascade les publications
   // rattachées, d'où l'avertissement explicite dans la confirmation.
-  const setVisibility = async (o: Objective, visibility: string) => {
-    const { error } = await supabase.from('objectives').update({ visibility }).eq('id', o.id);
-    if (error) { Alert.alert('Erreur', frError(error)); return; }
-    setObjectives(prev => prev.map(x => (x.id === o.id ? { ...x, visibility } : x)));
-  };
-
-  const VIS_LABEL: Record<string, string> = { friends: 'Mon cercle', close: 'Cercle proche', private: 'Moi seul', public: 'Public' };
-  const openObjectiveMenu = (o: Objective) => {
-    const mark = (v: string) => (o.visibility === v ? '✓ ' : '');
-    Alert.alert(`${o.emoji} ${o.title}`, `Visible par : ${VIS_LABEL[o.visibility] || o.visibility}`, [
-      { text: `${mark('friends')}Visible par mon cercle`, onPress: () => setVisibility(o, 'friends') },
-      { text: `${mark('close')}Visible par mon cercle proche`, onPress: () => setVisibility(o, 'close') },
-      { text: `${mark('private')}Moi seul`, onPress: () => setVisibility(o, 'private') },
-      { text: "Supprimer l'objectif", style: 'destructive', onPress: () => handleDeleteObjective(o) },
-      { text: 'Annuler', style: 'cancel' },
-    ]);
-  };
+  // Toucher « … » sur un objectif : la feuille pour modifier sa visibilité, ses jours d'entraînement, ou le supprimer.
+  const openObjectiveMenu = (o: Objective) => setDaysFor(o);
 
   const handleDeleteObjective = (o: Objective) => {
     Alert.alert(
@@ -224,15 +215,20 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   const badges = computeBadges(posts, objectives);
   const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '';
   const topBtn = insets.top + 58;
+  // Position de défilement : pilote le fondu photo nette -> photo floutée derrière la page.
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   return (
     <View style={s.container}>
+      {!loading && <ProfileBackdrop avatarUrl={avatarUrl} scrollY={scrollY} height={heroH} />}
       {loading ? (
         <View style={{ flex: 1, paddingTop: insets.top + 54 }}><ProfileSkeleton /></View>
       ) : (
-        <ScrollView
+        <Animated.ScrollView
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
           refreshControl={
             <RefreshControl
               refreshing={refreshingProfile}
@@ -242,7 +238,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
           }
         >
           {/* === Photo de profil en plein écran, nom au-dessus, bulle de verre à 3 zones === */}
-          <ProfileHeroPhoto avatarUrl={avatarUrl} height={heroH}>
+          <ProfileHero height={heroH}>
             <GlassIconButton icon="camera-outline" label="Changer la photo de profil" onPress={handlePickAvatar} style={{ position: 'absolute', top: topBtn, left: GUTTER }} />
             <GlassIconButton icon="settings-outline" label="Réglages" onPress={openSettings} style={{ position: 'absolute', top: topBtn, right: GUTTER }} />
             {uploadingAvatar && <ActivityIndicator color="#fff" style={{ position: 'absolute', top: heroH / 2 }} />}
@@ -272,7 +268,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
               { value: String(posts.length), label: 'Posts' },
               { value: String(friendCount), label: friendCount > 1 ? 'Amis' : 'Ami', onPress: () => setPeopleMode('friends') },
             ]} />
-          </ProfileHeroPhoto>
+          </ProfileHero>
 
           {/* === À propos : bulle de verre (bio + tags) === */}
           <AboutBubble>
@@ -309,6 +305,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
             {userId && <View style={{ alignSelf: 'stretch' }}><ProfileTags userId={userId} currentUserId={userId} own /></View>}
           </AboutBubble>
 
+          <CloseCircleBubble onManage={() => setPeopleMode('close')} reloadKey={peopleMode} />
+
           {/* === Badges, puis objectifs en cours, puis historique des posts === */}
           <BadgesSection badges={badges} own />
 
@@ -336,8 +334,14 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
           {deleting && <ActivityIndicator color="#ff3b30" size="small" style={{ marginTop: 16 }} />}
           {/* Sans cette réserve, le bas de la page finit sous la barre de nav. */}
           <View style={{ height: navClearance(insets.bottom) }} />
-        </ScrollView>
+        </Animated.ScrollView>
       )}
+      <ObjectiveEditSheet
+        objective={daysFor}
+        onClose={() => setDaysFor(null)}
+        onChanged={patch => daysFor && setObjectives(prev => prev.map(x => (x.id === daysFor.id ? { ...x, ...patch } : x)))}
+        onDelete={handleDeleteObjective}
+      />
       <SettingsScreen
         visible={showSettings}
         onClose={() => setShowSettings(false)}
@@ -353,7 +357,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
           mode={peopleMode || 'friends'}
           userId={userId}
           currentUserId={userId}
-          onClose={() => setPeopleMode(null)}
+          onClose={() => { setPeopleMode(null); resetCloseCircle(); }}
           onOpenProfile={(id) => { setPeopleMode(null); onViewProfile?.(id); }}
         />
       )}

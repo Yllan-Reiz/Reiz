@@ -4,9 +4,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
-import { supabase } from '../lib/supabase';
+import { supabase, currentUser } from '../lib/supabase';
 import { frError, inUnit } from '../lib/helpers';
-import { uploadImage, uploadVideo, compressVideo, signMany } from '../lib/storage';
+import { uploadImage, uploadVideo, compressVideo, signAvatars } from '../lib/storage';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Objective } from '../lib/types';
 import { QUICK_UNITS } from '../constants';
@@ -102,7 +102,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await currentUser();
       if (!user) { setLoadingObj(false); return; }
       const { data, error } = await supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility').eq('user_id', user.id).order('created_at', { ascending: false });
       if (!error && data) setObjectives((data as Objective[]).map(inUnit));
@@ -117,7 +117,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
       if (ids.length > 0) {
         const { data: us } = await supabase.from('users').select('id, full_name, avatar_url').in('id', ids).order('full_name');
         const list = (us || []) as { id: string; full_name: string; avatar_url?: string | null }[];
-        const signed = await signMany(list.map(u => u.avatar_url));
+        const signed = await signAvatars(list.map(u => u.avatar_url));
         list.forEach(u => { if (u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });
         // L'ami du duo en premier, pour qu'on le voie coché sans faire défiler.
         if (duoWith) list.sort((a, b) => (a.id === duoWith ? -1 : b.id === duoWith ? 1 : 0));
@@ -299,7 +299,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
   const handlePublish = async () => {
     if (!obj) { Alert.alert('Erreur', 'Sélectionne un objectif.'); return; }
     setPublishing(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await currentUser();
     if (!user) { setPublishing(false); Alert.alert('Erreur', 'Tu dois être connecté.'); return; }
     let photoUrl: string | null = null;
     if (photoUri) {
