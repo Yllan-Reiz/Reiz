@@ -82,7 +82,13 @@
       openApp.setAttribute('href', deepLink);
       if (ref) {
         byName.textContent = ' par @' + ref;
-        searchHint.innerHTML = 'cherche <span class="tag">@' + ref + '</span> dans l\'onglet Amis';
+        // Le pseudo vient de l'adresse : on l'écrit comme du texte, jamais comme du HTML.
+        var tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = '@' + ref;
+        searchHint.textContent = 'cherche ';
+        searchHint.appendChild(tag);
+        searchHint.appendChild(document.createTextNode(' dans l\'onglet Amis'));
       }
 
       var ua = navigator.userAgent || '';
