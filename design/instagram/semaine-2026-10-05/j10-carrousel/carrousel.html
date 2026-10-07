@@ -1,0 +1,136 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Reiz carrousel 3 etapes</title><style>
+  @font-face { font-family: Inter; font-weight: 400; src: url(fonts/Inter_400Regular.ttf); }
+  @font-face { font-family: Inter; font-weight: 600; src: url(fonts/Inter_600SemiBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 800; src: url(fonts/Inter_800ExtraBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 900; src: url(fonts/Inter_900Black.ttf); }
+
+  :root {
+    --bg: #0a0a0a;
+    --card: #141414;
+    --line: #2a2a2a;
+    --track: #222;
+    --text: #fff;
+    --muted: #999;
+    --dim: #8a8a8a;
+    --green: #fff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #000; }
+  body { font-family: Inter, sans-serif; color: var(--text); -webkit-font-smoothing: antialiased; }
+  body.single { width: 1080px; height: 1350px; overflow: hidden; }
+  body:not(.single) { display: grid; gap: 40px; padding: 40px; justify-content: center; }
+
+  .slide {
+    position: relative; width: 1080px; height: 1350px; overflow: hidden;
+    background: var(--bg);
+    padding: 120px;
+    display: flex; flex-direction: column;
+  }
+  body.single .slide:not(.on) { display: none; }
+
+  /* entête et pied communs */
+  .top { display: flex; align-items: center; justify-content: space-between; height: 44px; }
+  .logo { height: 40px; }
+  .count { font-size: 30px; font-weight: 600; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .bars { display: flex; gap: 10px; margin-top: auto; }
+  .bars i { flex: 1; height: 6px; border-radius: 3px; background: var(--track); }
+  .bars i.on { background: var(--text); }
+  .body { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 40px 0; }
+
+  /* typo */
+  .kicker { font-size: 30px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--green); margin-bottom: 36px; }
+  h1 { font-weight: 900; letter-spacing: -.045em; line-height: .98; }
+  .xl { font-size: 124px; }
+  .l { font-size: 96px; }
+  .m { font-size: 80px; line-height: 1.04; }
+  p.sub { font-size: 44px; line-height: 1.38; color: var(--muted); margin-top: 40px; font-weight: 400; letter-spacing: -.01em; }
+  p.sub b { color: var(--text); font-weight: 600; }
+  .g { color: var(--green); }
+  .dimtxt { color: var(--dim); }
+
+  /* 1. couverture : la ligne qui cale */
+  .stall { margin-top: 80px; position: relative; height: 16px; border-radius: 8px; background: var(--track); }
+  .stall span { position: absolute; left: 0; top: 0; bottom: 0; width: 31%; border-radius: 8px; background: var(--text); }
+  .stall em { position: absolute; left: 31%; top: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border-radius: 50%; background: var(--bg); border: 6px solid var(--text); }
+  .stall-lbl { display: flex; justify-content: space-between; margin-top: 28px; font-size: 30px; font-weight: 600; color: var(--dim); }
+  .swipe { font-size: 32px; font-weight: 600; color: var(--muted); margin-bottom: 40px; }
+
+  /* cartes façon appli */
+  .card { background: var(--card); border: 2px solid var(--line); border-radius: 36px; padding: 36px 40px; }
+  .row { display: flex; align-items: center; gap: 24px; }
+  .av { width: 84px; height: 84px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 36px; font-weight: 800; color: #000; }
+  .name { font-size: 34px; font-weight: 800; }
+  .meta { font-size: 28px; color: var(--dim); margin-top: 4px; }
+  .msg { font-size: 38px; line-height: 1.35; margin-top: 22px; color: #ddd; }
+
+  /* 4. preuve photo */
+  .proof { margin-top: 56px; border-radius: 36px; overflow: hidden; border: 2px solid var(--line); background: var(--card); }
+  .proof img { display: block; width: 100%; height: 400px; object-fit: cover; object-position: 50% 62%; }
+  .proof .foot { padding: 28px 36px; display: flex; justify-content: space-between; align-items: center; font-size: 32px; font-weight: 600; }
+
+  /* 5. séances vs pourcent */
+  .versus { margin-top: 64px; display: grid; gap: 28px; }
+  .versus .card { padding: 40px; }
+  .bad { font-size: 88px; font-weight: 900; letter-spacing: -.04em; color: #444; text-decoration: line-through; text-decoration-thickness: 8px; text-decoration-color: #444; }
+  .good { font-size: 64px; font-weight: 900; letter-spacing: -.035em; }
+  .dots { display: flex; gap: 16px; margin-top: 28px; }
+  .dots i { flex: 1; height: 20px; border-radius: 10px; background: var(--track); }
+  .dots i.on { background: var(--green); }
+
+  /* 6. cercles */
+  .circles { margin-top: 64px; display: grid; gap: 24px; }
+  .chip { display: flex; align-items: center; justify-content: space-between; padding: 34px 40px; border-radius: 32px; font-size: 40px; font-weight: 800; border: 2px solid var(--line); background: var(--card); }
+  .chip small { font-size: 30px; font-weight: 400; color: var(--muted); }
+  .chip.close { border-color: var(--green); background: rgba(255, 255, 255, .06); }
+  .chip.close .star { color: var(--green); margin-right: 18px; }
+
+  /* 7. récap */
+  .recap { list-style: none; margin-top: 56px; display: grid; gap: 0; }
+  .recap li { display: flex; gap: 36px; align-items: baseline; padding: 34px 0; border-top: 2px solid var(--line); font-size: 54px; font-weight: 800; letter-spacing: -.025em; }
+  .recap li:last-child { border-bottom: 2px solid var(--line); }
+  .recap li b { color: var(--green); font-weight: 900; font-size: 54px; width: 44px; flex: none; }
+
+  /* 8. action */
+  .cta-box { margin-top: 64px; border: 3px dashed var(--line); border-radius: 36px; padding: 40px; display: flex; align-items: center; gap: 28px; }
+  .cta-box .kw { font-size: 44px; font-weight: 900; letter-spacing: .04em; color: #000; background: var(--green); border-radius: 20px; padding: 14px 26px; }
+  .cta-box span { font-size: 34px; color: var(--muted); line-height: 1.35; }
+  .big-logo { height: 76px; margin-top: 72px; align-self: flex-start; }
+
+  /* carrousel 02 */
+  .duo { margin-top: 56px; display: grid; gap: 22px; }
+  .pick { display: flex; align-items: center; gap: 26px; padding: 26px 34px; border-radius: 32px; background: var(--card); border: 2px solid var(--line); font-size: 38px; font-weight: 800; }
+  .pick .tick { margin-left: auto; width: 54px; height: 54px; border-radius: 50%; border: 4px solid var(--line); display: grid; place-items: center; font-size: 30px; color: #000; }
+  .pick.on { border-color: var(--green); }
+  .pick.on .tick { background: var(--green); border-color: var(--green); }
+  .notif { margin-top: 30px; font-size: 32px; color: var(--muted); }
+  .notif b { color: #fff; }
+  .bgrid { margin-top: 70px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 56px 70px; padding: 0 30px; }
+  .bgrid img { width: 100%; display: block; image-rendering: high-quality; -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 50%, transparent 68%); mask-image: radial-gradient(circle at 50% 50%, #000 50%, transparent 68%); }
+  .vid { position: absolute; top: 24px; left: 24px; background: rgba(0,0,0,.6); border-radius: 16px; padding: 8px 16px; font-size: 26px; font-weight: 800; }
+  .proof { position: relative; }
+
+  /* carrousel 03 */
+  .who { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .who img { width: 470px; display: block; -webkit-mask-image: radial-gradient(circle, #000 50%, transparent 68%); }
+  .who .num { font-size: 30px; font-weight: 800; letter-spacing: .3em; color: var(--dim); margin-top: 10px; }
+  .who h2 { font-size: 92px; font-weight: 900; letter-spacing: -.045em; margin-top: 18px; }
+  .who p { font-size: 44px; color: var(--muted); line-height: 1.35; margin-top: 22px; max-width: 760px; }
+  .ghost { filter: grayscale(1) brightness(.55); opacity: .55; }
+  .cover-badges { display: flex; justify-content: center; gap: 0; margin-top: 60px; }
+  .cover-badges img { width: 150px; margin: 0 -12px; -webkit-mask-image: radial-gradient(circle, #000 50%, transparent 68%); }
+
+  .big { font-size: 112px; } .bd { flex:1; display:flex; flex-direction:column; justify-content:center; padding:40px 0; }
+  .vs { margin-top: 56px; display: grid; gap: 24px; }
+  .opt { border-radius: 32px; padding: 36px 40px; border: 2px solid var(--line); background: var(--card); }
+  .opt b { font-size: 52px; font-weight: 900; letter-spacing: -.03em; display:block; }
+  .opt span { font-size: 34px; color: var(--muted); margin-top: 8px; display:block; }
+  .opt.hi { border-color: #fff; background: rgba(255,255,255,.07); }
+  .pillbtn { display:inline-block; margin-top: 56px; font-size: 48px; font-weight: 900; color:#000; background:#fff; border-radius: 999px; padding: 26px 56px; align-self:flex-start; }
+  .bgs { display:flex; margin-top: 56px; } .bgs img { width: 250px; margin: 0 -14px; -webkit-mask-image: radial-gradient(circle, #000 50%, transparent 68%); }
+  .stepn { width: 120px; height: 120px; border-radius: 50%; background:#fff; color:#000; display:grid; place-items:center; font-size: 72px; font-weight: 900; margin-bottom: 48px; }
+  .logo-big { width: 420px; margin-bottom: 56px; display:block; }
+</style></head><body><section class="slide" data-n="1"><div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div><div class="body"><div class="kicker">Reiz est disponible</div><h1 class="xl">Démarre en 3 étapes.</h1><p class="sub">Ça va vite.</p></div><div class=swipe>Glisse →</div><div class="bars"></div></section><section class="slide" data-n="2"><div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div><div class="bd"><div class="stepn">1</div><h1 class="xl">Crée ton objectif.</h1><p class="sub">Un nom, un chiffre : «&nbsp;4 séances&nbsp;», «&nbsp;170&nbsp;kg au bench&nbsp;».</p></div><div class="bars"></div></section><section class="slide" data-n="3"><div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div><div class="bd"><div class="stepn">2</div><h1 class="xl">Invite ton cercle.</h1><p class="sub">Envoie ton lien d'invitation à tes potes.</p></div><div class="bars"></div></section><section class="slide" data-n="4"><div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div><div class="bd"><div class="stepn">3</div><h1 class="xl">Poste ta séance.</h1><p class="sub">Une photo, ou une vidéo de 15 s.</p></div><div class="bars"></div></section><section class="slide" data-n="5"><div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div><div class="bd"><div class="kicker">Et là, ça commence</div><div class="card"><div class="row"><div class="av" style="background:#8fb8ff">S</div><div><div class="name">Sarah</div><div class="meta">a posté sa séance</div></div></div><div class="msg">Toi ? 💪</div></div><p class="sub">Ton cercle voit si t'es venu.</p></div><div class="bars"></div></section><section class="slide" data-n="6"><div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div><div class="bd"><div class="kicker">Chaque semaine tenue</div><h1 class="l">Un badge de plus.</h1><div class="bgs"><img src="assets/en-feu.png" alt=""><img src="assets/inarretable.png" alt=""><img src="assets/binome.png" alt=""></div></div><div class="bars"></div></section><section class="slide" data-n="7"><div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div><div class="body"><div class="kicker">Un conseil</div><h1 class="l">Un seul pote suffit pour commencer.</h1></div><div class="bars"></div></section><section class="slide" data-n="8"><div class="top"><img class="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz"><span class="count"></span></div><div class="bd"><img class="logo-big" src="assets/ecriture-reiz-blanc-trim.png" alt=""><h1 class="xl">Télécharge Reiz.</h1><p class="sub"><b>Disponible sur l'App Store.</b> Lien en bio.</p></div><div class="bars"></div></section><script>
+const slides=[...document.querySelectorAll('.slide')],total=slides.length;
+slides.forEach((s,i)=>{s.querySelector('.count').textContent=`${i+1}/${total}`;s.querySelector('.bars').innerHTML=slides.map((_,j)=>`<i class="${j<=i?'on':''}"></i>`).join('')});
+const n=new URLSearchParams(location.search).get('s');if(n){document.body.classList.add('single');slides[n-1].classList.add('on')}
+</script></body></html>

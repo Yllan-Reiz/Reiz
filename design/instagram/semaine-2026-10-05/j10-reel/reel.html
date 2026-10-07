@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Reiz reel disponible</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  .store { position: absolute; left: 540px; top: 760px; width: 720px; margin-left: -360px; background: #161616; border: 2px solid #2a2a2a; border-radius: 52px; padding: 48px; display: flex; gap: 40px; align-items: center; }
+  .icon { width: 200px; height: 200px; border-radius: 46px; background: #000; border: 2px solid #333; display: grid; place-items: center; flex: none; }
+  .icon img { width: 150px; }
+  .store .nm { font-size: 44px; font-weight: 900; letter-spacing: -.03em; line-height: 1.05; }
+  .store .sb { font-size: 28px; color: var(--muted); margin-top: 8px; font-weight: 600; }
+  .get { position: relative; display: inline-block; margin-top: 24px; background: #fff; color: #000; font-weight: 900; font-size: 34px; border-radius: 999px; padding: 12px 40px; min-width: 190px; text-align: center; overflow: hidden; }
+  .get i { position: absolute; left: 0; top: 0; bottom: 0; background: #bbb; width: 0; }
+  .get b { position: relative; }
+  .steps { position: absolute; left: 540px; top: 560px; width: 700px; margin-left: -350px; display: grid; gap: 26px; }
+  .st { display: flex; align-items: center; gap: 32px; background: #161616; border: 2px solid #2a2a2a; border-radius: 36px; padding: 34px 38px; font-size: 44px; font-weight: 900; letter-spacing: -.03em; }
+  .st i { font-style: normal; width: 80px; height: 80px; border-radius: 50%; background: #fff; color: #000; display: grid; place-items: center; font-size: 44px; flex: none; }
+</style></head>
+<body>
+<div id="stage">
+  <div id="glow"></div><div id="dust"></div>
+
+  <div class="scene" id="s1"><div class="center" style="top: 620px">
+    <div class="kick"><span class="line"><span>C'est aujourd'hui</span></span></div>
+    <h1 style="font-size: 128px; margin-top: 34px"><span class="line"><span>Reiz est</span></span><span class="line"><span>disponible.</span></span></h1>
+  </div></div>
+
+  <div class="scene" id="s2">
+    <div class="center" style="top: 380px"><div class="kick"><span class="line"><span>Sur l'App Store</span></span></div></div>
+    <div class="store" id="store"><div class="icon"><img src="assets/ecriture-reiz-blanc-trim.png" alt=""></div><div><div class="nm">Reiz : objectifs<br>entre amis</div><div class="sb">Ton cercle te regarde</div><span class="get" id="get"><i id="gi"></i><b id="gt">Obtenir</b></span></div></div>
+  </div>
+
+  <div class="scene" id="s3">
+    <div class="center" style="top: 300px"><h1 style="font-size: 92px"><span class="line"><span>Démarre en</span></span><span class="line"><span>3 étapes.</span></span></h1></div>
+    <div class="steps" style="top: 700px"><div class="st" id="t1"><i>1</i>Fixe un objectif</div><div class="st" id="t2"><i>2</i>Invite ton cercle</div><div class="st" id="t3"><i>3</i>Poste ta séance</div></div>
+  </div>
+
+  <div class="scene" id="s4"><div class="center" style="top: 640px"><h1 style="font-size: 124px"><span class="line"><span>Ton cercle</span></span><span class="line"><span style="color:#777">te regarde.</span></span></h1></div></div>
+
+  <div class="scene" id="s5"><div class="center" style="top: 600px">
+    <img class="logo" id="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+    <div style="margin-top: 60px"><span class="pill" id="pill">Télécharge Reiz</span></div>
+    <div class="small" id="date" style="margin-top: 34px">Disponible sur l'App Store</div>
+    <div class="small" id="bio" style="margin-top: 10px; color: #fff">Lien en bio</div>
+  </div></div>
+</div>
+<canvas id="grain" width="540" height="960"></canvas><div id="vignette"></div>
+<script src="common.js"></script>
+<script>
+const T = { s2: 2.4, load: 3.4, done: 5.0, s3: 6.8, s4: 11.0, s5: 12.8, dur: 15.6 };
+window.TIMELINE = T;
+dust(45);
+function render(t) {
+  grain(t); motes(t);
+  let gc = [140, 140, 160], ga = .25;
+  if (scene(t, 's1', 0, T.s2, true)) { $$('#s1 .line > span').forEach((s, i) => s.style.transform = `translateY(${(1 - ex(seg(t, -.3 + i * .12, .3 + i * .12))) * 60}%)`); $('#s1 h1').style.transform = `scale(${1 + .05 * seg(t, 0, T.s2)})`; gc = [255, 255, 255]; ga = .35; }
+  if (scene(t, 's2', T.s2, T.s3)) {
+    lines('#s2', t, T.s2 + .05);
+    const k = ex(seg(t, T.s2 + .3, T.s2 + .9)); $('#store').style.transform = `translateY(${(1 - k) * 140}px)`; $('#store').style.opacity = k;
+    const p = seg(t, T.load, T.done); $('#gi').style.width = `${p * 100}%`;
+    $('#gt').textContent = t < T.load ? 'Obtenir' : p < 1 ? `${Math.round(p * 100)} %` : 'Ouvrir';
+    $('#get').style.transform = `scale(${1 + .12 * Math.sin(Math.PI * seg(t, T.done, T.done + .3))})`;
+    gc = [255, 255, 255]; ga = .25 + .25 * seg(t, T.done, T.done + .4);
+  }
+  if (scene(t, 's3', T.s3, T.s4)) { lines('#s3', t, T.s3 + .05); ['t1', 't2', 't3'].forEach((id, i) => { const q = seg(t, T.s3 + .6 + i * .55, T.s3 + 1.1 + i * .55), e = $('#' + id); e.style.opacity = cl(q * 2.5); e.style.transform = `translateX(${(1 - back(q)) * 80}px)`; }); gc = [160, 170, 255]; ga = .35; }
+  if (scene(t, 's4', T.s4, T.s5)) { lines('#s4', t, T.s4 + .05, .2); gc = [255, 255, 255]; ga = .35; }
+  if (scene(t, 's5', T.s5, T.dur + 1)) {
+    const k = ex(seg(t, T.s5 + .05, T.s5 + .6)); $('#logo').style.transform = `scale(${lerp(1.25, 1, k)})`; $('#logo').style.opacity = k;
+    [['#pill', .5], ['#date', .8], ['#bio', 1.0]].forEach(([id, d]) => { pop(id, t, T.s5 + d); $(id).style.display = 'inline-block'; }); gc = [255, 255, 255]; ga = .4;
+  }
+  $('#stage').style.transform = `scale(${1 + .012 * Math.sin(t * .5)})`; glow(gc, ga);
+}
+ready(render);
+</script></body></html>

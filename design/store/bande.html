@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Reiz, bande panoramique</title>
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/Inter_400Regular.ttf)}
+@font-face{font-family:Inter;font-weight:500;src:url(fonts/Inter_500Medium.ttf)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/Inter_600SemiBold.ttf)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/Inter_700Bold.ttf)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/Inter_800ExtraBold.ttf)}
+@font-face{font-family:Inter;font-weight:900;src:url(fonts/Inter_900Black.ttf)}
+@font-face{font-family:Ionicons;src:url(fonts/Ionicons.ttf)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow:hidden;background:#000}
+body{font-family:Inter,"Apple Color Emoji",sans-serif;color:#fff;-webkit-font-smoothing:antialiased}
+.ion{font-family:Ionicons;font-style:normal;font-weight:normal;line-height:1;display:inline-block}
+#stage{position:absolute;left:0;top:0;overflow:hidden;background:#060607}
+#bg{position:absolute;inset:0}
+#copy{position:absolute;left:0;right:0;text-align:center}
+#copy h1{font-weight:900;letter-spacing:-.042em;line-height:.98;color:#fff}
+#copy h1 span{display:inline-block;white-space:nowrap}
+#copy p{text-wrap:balance;font-weight:500;color:#A4A4AC;letter-spacing:-.012em;line-height:1.3;margin:0 auto}
+#pw{position:absolute;left:0;top:0;transform-origin:0 0}
+.phone{position:absolute;left:0;top:0;width:408px;height:862px}
+.phone .sb1,.phone .sb2,.phone .sb3,.phone .sb4{position:absolute;width:4px;border-radius:2px;background:linear-gradient(90deg,#2a2b2f,#5c5e64)}
+.phone .sb1{left:-3px;top:128px;height:30px}
+.phone .sb2{left:-3px;top:188px;height:58px}
+.phone .sb3{left:-3px;top:258px;height:58px}
+.phone .sb4{right:-3px;top:212px;height:92px;background:linear-gradient(270deg,#2a2b2f,#5c5e64)}
+.phone .back{position:absolute;inset:0;border-radius:62px;background:linear-gradient(120deg,#5a5c62 0%,#1a1b1e 22%,#0c0c0d 50%,#1d1e21 78%,#6a6c72 100%);box-shadow:0 70px 150px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.05)}
+.phone .face{position:absolute;inset:0;border-radius:62px;background:#050505;overflow:hidden}
+.phone .screen{position:absolute;left:9px;top:9px;width:390px;height:844px;border-radius:53px;overflow:hidden;background:#0a0a0a}
+.phone .rim{position:absolute;inset:0;border-radius:62px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.34),inset 0 0 0 3px rgba(0,0,0,.9),inset 0 0 0 9px #040404,inset 0 0 0 10px rgba(255,255,255,.07);pointer-events:none}
+.phone .glare{position:absolute;inset:0;border-radius:62px;pointer-events:none;background:linear-gradient(112deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.035) 43%,rgba(255,255,255,.006) 52%,rgba(255,255,255,0) 60%)}
+.phone .isl{position:absolute;left:50%;top:21px;width:122px;height:35px;margin-left:-61px;border-radius:18px;background:#000;z-index:50}
+#chips{position:absolute;left:0;top:0;width:408px;height:862px;pointer-events:none}
+.chip{position:absolute}
+
+body.play .phone .back,body.play .phone .face,body.play .phone .rim,body.play .phone .glare{border-radius:46px}
+body.play .phone .screen{border-radius:38px}
+body.play .phone .isl{width:15px;height:15px;margin-left:-7px;top:24px;border-radius:50%}
+body.play .phone .sb1{display:none}
+body.play .sb .tm{left:34px}
+/* ---------- Interface Reiz (valeurs de src/styles.ts) ---------- */
+.scr{position:absolute;inset:0;background:#0a0a0a;overflow:hidden}
+.sb{position:absolute;left:0;right:0;top:0;height:52px;z-index:40}
+.sb .tm{position:absolute;left:44px;top:17px;font:600 17px/1 Inter;letter-spacing:-.2px}
+.sb .ic{position:absolute;right:30px;top:19px;display:flex;gap:6px;align-items:center}
+.hdr{position:absolute;left:16px;right:16px;top:56px;height:36px;display:flex;align-items:center;justify-content:space-between;z-index:30}
+.hdr .lg{width:72px;height:auto;display:block}
+.hdr .rt{display:flex;align-items:center;gap:14px}
+.hdr .hrt{position:relative;font-size:25px;color:#fff}
+.hdr .hbd{position:absolute;top:-4px;right:-7px;min-width:17px;height:17px;border-radius:9px;background:#ff3b30;border:1.5px solid #0a0a0a;font:800 10px/14px Inter;text-align:center;padding:0 3px}
+.streak{display:flex;align-items:center;gap:4px;background:#1e1e1e;border:1px solid #2a2a2a;border-radius:20px;padding:6px 11px 6px 9px;font:700 13px/1 Inter}
+.streak .ion{font-size:15px}
+.body{position:absolute;left:0;right:0;top:102px;bottom:0;overflow:hidden}
+.fade{position:absolute;left:0;right:0;top:0;height:18px;background:linear-gradient(#0a0a0a,rgba(10,10,10,0));z-index:5}
+.glass{background:linear-gradient(180deg,rgba(78,78,84,.62),rgba(40,40,44,.62));box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 1px rgba(255,255,255,.08),0 6px 16px rgba(0,0,0,.4)}
+.clear{background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 0 0 1px rgba(255,255,255,.1)}
+/* barre de navigation */
+.nav{position:absolute;left:16px;right:16px;bottom:34px;height:64px;display:flex;align-items:center;gap:10px;z-index:30}
+.npill{flex:1;height:64px;border-radius:36px;position:relative;display:flex;align-items:center;justify-content:space-around;padding:0 6px}
+.npill .ion{font-size:22px;color:rgba(235,235,245,.62);width:48px;text-align:center;position:relative;z-index:2}
+.npill .ion.on{color:#fff}
+.nbub{position:absolute;top:8px;width:48px;height:48px;border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.14));box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 2px 8px rgba(0,0,0,.3);z-index:1}
+.nplus{width:56px;height:56px;border-radius:28px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 14px rgba(255,255,255,.18);flex:none}
+.nplus .ion{font-size:30px;color:#000}
+/* fil façon BeReal */
+.fcard{margin:0 16px}
+.brh{display:flex;align-items:flex-start;gap:10px;padding:0 2px 10px}
+.av{border-radius:50%;border:1.5px solid #333;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font:800 14px/1 Inter;flex:none;width:40px;height:40px}
+.meta{flex:1;min-width:0}
+.meta .n{font:700 14px/17px Inter}
+.meta .sub{font:400 12px/15px Inter;color:#8a8a8a;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dots{font-size:18px;color:rgba(255,255,255,.7);padding:6px 4px}
+.duorow{display:inline-flex;align-items:center;gap:6px;margin-top:5px;padding:3px 10px 3px 3px;border-radius:14px;background:#1a1a1a}
+.duorow.ok{background:#242424;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.duorow .da{width:20px;height:20px;border-radius:10px;border:1.5px solid #1a1a1a;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font:700 9px/1 Inter;margin-left:-7px}
+.duorow .da:first-child{margin-left:0}
+.duorow .tx{font:400 12px/15px Inter;color:#8a8a8a}
+.duorow .tx b{color:#fff;font-weight:600}
+.media{position:relative;width:358px;height:477px;border-radius:22px;overflow:hidden;background:#141414}
+.media .img{position:absolute;inset:0;background-size:cover;background-position:center}
+.bot{position:absolute;left:12px;right:12px;bottom:14px;display:flex;align-items:flex-end}
+.stack{display:flex;align-items:center}
+.si{position:relative;width:40px;height:40px}
+.sa{width:40px;height:40px;border-radius:20px;border:2px solid #0a0a0a;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font:700 14px/1 Inter}
+.sa.more{background:rgba(0,0,0,.7);font-size:12px}
+.se{position:absolute;right:-4px;bottom:-4px;font-size:15px;line-height:1}
+.react{width:48px;height:48px;border-radius:24px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:24px;backdrop-filter:blur(10px)}
+.quick{position:absolute;left:10px;right:10px;bottom:12px;height:58px;border-radius:29px;background:rgba(12,12,12,.88);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:space-around;padding:0 6px}
+.qi{width:42px;height:42px;border-radius:21px;display:flex;align-items:center;justify-content:center;font-size:26px;line-height:1}
+.qi.on{background:rgba(255,255,255,.18)}
+.qi .ion{font-size:22px;color:#fff}
+.below{padding:12px 2px 0;display:flex;flex-direction:column;gap:6px}
+.gauge{display:flex;align-items:center;gap:12px;margin-bottom:0}
+.gt{flex:1;height:8px;border-radius:4px;background:#222;overflow:hidden}
+.gf{height:8px;border-radius:4px;background:#fff}
+.gl{font:800 14px/17px Inter;letter-spacing:-.2px}
+.cap{font:400 14px/20px Inter;color:#eee}
+.cm1{font:600 13px/16px Inter;color:#bbb}
+.cm2{font:400 13px/16px Inter;color:#6f6f6f}
+.duobtn{height:40px;border-radius:20px;background:#fff;color:#000;font:700 13px/40px Inter;text-align:center;margin-top:2px}
+/* création d'objectif (feuille) */
+.sheet{position:absolute;left:0;right:0;top:46px;bottom:0;background:#0a0a0a;border-radius:38px 38px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.12);overflow:hidden}
+.behind{position:absolute;inset:0;background:#000}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:24px 22px 16px;border-bottom:1px solid #1a1a1a}
+.mh .c{font:600 14px/17px Inter;color:#888}.mh .t{font:800 16px/19px Inter}.mh .s{font:800 14px/17px Inter}
+.mb{padding:20px}
+.lab{font:700 10px/12px Inter;color:#888;letter-spacing:1.5px;margin-bottom:6px}
+.lab.sp{margin-top:22px}
+.inp{background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:14px;padding:14px;font:400 14px/18px Inter;color:#fff;display:flex;align-items:center}
+.caret{display:inline-block;width:2px;height:17px;background:#0a84ff;margin-left:1px}
+.erow{display:flex;gap:8px;margin:0 -20px;padding:0 20px;overflow:hidden}
+.ei{width:44px;height:44px;border-radius:22px;background:#141414;border:1.5px solid #222;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+.ei.on{background:#fff;border-color:#fff}
+.trow{display:flex;align-items:center;gap:10px}
+.tin{width:84px;text-align:center;justify-content:center}
+.urow{display:flex;gap:8px;overflow:hidden}
+.pill{padding:9px 14px;border-radius:100px;background:#141414;border:1.5px solid #222;font:700 13px/16px Inter;color:#888;white-space:nowrap;flex:none}
+.pill.on{background:#fff;border-color:#fff;color:#000}
+.hint{font:400 12px/15px Inter;color:#777;margin-top:8px}
+.opt{display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding:14px 0;font:700 13px/16px Inter;color:#888}
+/* publication */
+.phdr{position:absolute;left:16px;right:16px;top:56px;height:36px;display:flex;align-items:center;justify-content:space-between}
+.bk{width:34px;height:34px;border-radius:17px;background:#1a1a1a;border:1px solid #2a2a2a;display:flex;align-items:center;justify-content:center;color:#888;font-size:20px}
+.phdr .tt{font:800 17px/1 Inter}
+.pz{height:280px;background:#111;position:relative;overflow:hidden}
+.pz .ph{position:absolute;inset:0;background-size:cover;background-position:center}
+.pz .chg{position:absolute;right:12px;bottom:12px;background:rgba(0,0,0,.6);border-radius:20px;padding:6px 12px;font:700 12px/15px Inter}
+.pb{padding:24px 20px 0}
+.pl{font:700 10px/12px Inter;color:#888;letter-spacing:1.5px;margin-bottom:12px}
+.pl.m{margin-top:28px}
+.ocs{display:flex;gap:10px;margin:0 -20px;padding:0 20px;overflow:hidden}
+.poc{width:120px;flex:none;background:#111;border-radius:16px;padding:14px;border:1.5px solid #1e1e1e}
+.poc.on{border-color:#fff;background:#1a1a1a}
+.poc .e{font-size:22px;line-height:26px;margin-bottom:8px}
+.poc .t{font:600 12px/16px Inter;color:#999;height:32px;overflow:hidden}
+.poc.on .t{color:#fff}
+.pw2{display:flex;align-items:center;gap:16px;background:#111;border-radius:20px;padding:16px}
+.pbtn{width:44px;height:44px;border-radius:22px;background:#1e1e1e;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none}
+.pc{flex:1;text-align:center}
+.pc .big{font:900 32px/39px Inter;letter-spacing:-1px}
+.pc .big .u{font:700 16px/1 Inter;color:#888;letter-spacing:0}
+.pc .val{font:400 12px/15px Inter;color:#888;margin-top:4px}
+.sl{height:36px;position:relative;margin-top:4px}
+.sl .tr{position:absolute;left:0;right:0;top:15px;height:6px;border-radius:3px;background:#222;overflow:hidden}
+.sl .fi{position:absolute;left:0;top:0;bottom:0;background:#fff}
+.sl .th{position:absolute;top:7px;width:22px;height:22px;border-radius:11px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.cta{position:absolute;left:0;right:0;bottom:0;padding:16px 16px 34px;background:#0a0a0a}
+.cta .b{background:#fff;border-radius:18px;padding:16px;text-align:center;font:800 16px/20px Inter;color:#000}
+/* objectifs */
+.stats{display:flex;gap:8px;margin:2px 16px 16px}
+.stat{flex:1;background:#111;border-radius:20px;padding:14px 6px;text-align:center}
+.stat b{display:block;font:900 20px/24px Inter}
+.stat i{display:block;font:700 9px/11px Inter;font-style:normal;color:#888;text-transform:uppercase;margin-top:3px}
+.oc{background:#111;border-radius:20px;padding:18px;margin:0 16px 12px}
+.oc .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.oc .nm{flex:1;font:800 18px/22px Inter;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-right:8px}
+.vis{background:#1e1e1e;border-radius:20px;padding:4px 10px;font:700 10px/12px Inter;color:#888}
+.oc .sub2{font:400 12px/15px Inter;color:#888;margin-bottom:14px}
+.oc .pr{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.track{flex:1;height:4px;background:#222;border-radius:4px;position:relative;overflow:hidden}
+.fill{position:absolute;left:0;top:0;bottom:0;background:#fff;border-radius:4px}
+.oc .pct{font:800 13px/16px Inter;min-width:32px;text-align:right}
+.ubtn{background:#fff;border-radius:14px;padding:12px;text-align:center;font:800 13px/16px Inter;color:#000}
+.hintc{font:400 11px/14px Inter;color:#666;text-align:center}
+/* profil */
+.hero{position:absolute;left:0;right:0;top:0;height:608px;overflow:hidden}
+.hero .ph{position:absolute;inset:-20px;background-size:cover;background-position:center;filter:blur(9px)}
+.hero .g1{position:absolute;inset:0;background:linear-gradient(rgba(10,10,10,.7),rgba(10,10,10,0) 28%)}
+.hero .g2{position:absolute;inset:0;background:linear-gradient(rgba(10,10,10,0) 38%,rgba(10,10,10,.55) 72%,#0a0a0a 100%)}
+.pcont{position:absolute;left:0;right:0;top:0}
+.hname{position:absolute;left:0;right:0;text-align:center}
+.hname .nm{font:900 40px/48px Inter;letter-spacing:-1.5px}
+.hname .us{font:600 15px/18px Inter;color:rgba(255,255,255,.78);margin-top:4px}
+.hname .mb2{font:400 13px/16px Inter;color:rgba(255,255,255,.55);margin-top:2px}
+.bub{margin:0 16px;border-radius:26px;display:flex;padding:14px 0}
+.bub .z{flex:1;text-align:center;border-left:1px solid rgba(255,255,255,.16)}
+.bub .z:first-child{border-left:0}
+.bub .z b{display:block;font:900 22px/27px Inter}
+.bub .z i{display:block;font:700 10px/12px Inter;font-style:normal;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
+.about{margin:14px 16px 0;border-radius:28px;padding:18px;text-align:center}
+.about .l{font:700 10px/12px Inter;color:rgba(255,255,255,.55);letter-spacing:1.5px;margin-bottom:6px}
+.about .bio{font:400 15px/22px Inter;color:#fff}
+.tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+.tag{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:18px;background:rgba(10,10,10,.5);border:1px solid rgba(255,255,255,.14);font:600 13px/16px Inter;color:#eee}
+.tag .k{font:700 12px/15px Inter;color:#999}
+.sec{display:flex;align-items:center;gap:8px;margin:26px 16px 12px}
+.sec b{font:700 18px/22px Inter}
+.cnt{background:rgba(255,255,255,.14);border-radius:11px;min-width:24px;height:22px;padding:0 7px;display:flex;align-items:center;justify-content:center;font:700 12px/14px Inter}
+.brow{display:flex;gap:12px;padding:0 16px;align-items:center;overflow:hidden}
+.brow img{width:72px;height:72px;flex:none}
+.brow .more{width:64px;height:64px;border-radius:32px;display:flex;align-items:center;justify-content:center;flex:none;font-size:22px}
+.gcs{display:flex;padding:10px 16px 0;margin-top:0}
+.gc{width:236px;height:258px;border-radius:32px;flex:none;position:relative;padding:18px;display:flex;flex-direction:column;justify-content:space-between;margin-left:-30px}
+.gc:first-child{margin-left:0}
+.gc .v{font:900 24px/28px Inter;letter-spacing:-.5px}
+.gc .v small{font:600 14px/17px Inter;color:rgba(255,255,255,.65);letter-spacing:0}
+.gc .u{font:600 13px/16px Inter;color:rgba(255,255,255,.6);margin-top:1px}
+.gc .em{width:52px;height:52px;border-radius:26px;display:flex;align-items:center;justify-content:center;font-size:24px}
+.gc .tt{font:900 25px/29px Inter;letter-spacing:-.6px}
+.gc .wk{display:flex;align-items:center;gap:5px;margin-top:4px;font:600 12px/15px Inter;color:rgba(255,255,255,.6)}
+.gc .wk .ion{font-size:12px}
+.gc .bar{height:6px;border-radius:3px;background:rgba(255,255,255,.18);margin-top:10px;overflow:hidden}
+.gc .bar i{display:block;height:100%;background:#fff;border-radius:3px}
+/* accueil */
+.splash{position:absolute;inset:0;background:#0a0a0a}
+.splash .lg{position:absolute;left:50%;top:50%;width:340px;margin:-110px 0 0 -170px}
+.splash .tg{position:absolute;left:0;right:0;top:50%;margin-top:34px;text-align:center;font:400 10px/12px Inter;color:#888;letter-spacing:3px;padding-left:3px}
+.splash .bt{position:absolute;left:28px;right:28px;bottom:48px}
+.sbtn{width:100%;height:50px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;font:600 16px/20px Inter}
+.sbtn.w{background:#fff;color:#000;margin-top:0;height:auto;padding:15px;font:800 15px/19px Inter}
+.sbtn.ap{background:#fff;color:#000;font-weight:600}
+.sbtn.gg{background:#131314;border:1px solid #8E918F;color:#E3E3E3}
+.sbtn.gg img{width:20px;height:20px}
+.splash .lk{text-align:center;margin-top:14px;font:400 12px/15px Inter;color:#888}
+.splash .lk b{color:#fff;font-weight:700}
+
+/* ---------- Pastilles flottantes (fragments d'interface) ---------- */
+.fl{background:rgba(30,30,34,.74);backdrop-filter:blur(18px) saturate(1.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.1),0 24px 60px rgba(0,0,0,.6)}
+.notif{display:flex;gap:10px;align-items:flex-start;width:300px;padding:12px 14px;border-radius:24px;background:rgba(58,58,64,.8);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.08),0 24px 60px rgba(0,0,0,.6);backdrop-filter:blur(26px) saturate(1.6)}
+.notif .ico{width:34px;height:34px;border-radius:9px;background:#000 url(assets/icon.png) center/cover;box-shadow:0 0 0 1px rgba(255,255,255,.16);flex:none}
+.notif .ap{font:500 11px/14px Inter;color:rgba(235,235,245,.62);text-transform:uppercase;letter-spacing:.3px;display:flex;justify-content:space-between}
+.notif .ti{font:700 14px/18px Inter;color:#fff}
+.notif .bo{font:400 13px/17px Inter;color:#e8e8ec;text-wrap:balance}
+.fp{display:inline-flex;align-items:center;gap:8px;border-radius:40px;padding:12px 20px 12px 16px;font:700 22px/1 Inter;white-space:nowrap}
+.fp .ion{font-size:22px}
+.fp small{font:600 13px/16px Inter;color:rgba(255,255,255,.65);display:block;margin-top:2px}
+.fcc{border-radius:26px;padding:14px 16px;width:250px}
+.fcc .r{display:flex;align-items:center;gap:10px}
+.cbub{border-radius:20px;padding:10px 14px;font:500 14px/19px Inter;color:#fff}
+.cbub b{font-weight:700}
+
+.hl{position:absolute;z-index:6;font-weight:900;letter-spacing:-.052em;line-height:.9;color:#fff;white-space:nowrap}
+.eyebrow{position:absolute;z-index:6;font:500 46px/1 Inter;color:#d3d3da;letter-spacing:-.01em}
+.sub3{position:absolute;z-index:6;font:500 54px/1.25 Inter;letter-spacing:-.015em;text-wrap:balance}
+.phone.silver .back{background:linear-gradient(120deg,#f1f2f4 0%,#a9abb1 18%,#e3e4e7 46%,#8c8e94 74%,#eceef0 100%);box-shadow:0 70px 140px rgba(20,22,30,.30),0 0 0 1px rgba(0,0,0,.06)}
+.phone.silver .rim{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.75),inset 0 0 0 3px rgba(0,0,0,.28),inset 0 0 0 9px #050505,inset 0 0 0 10px rgba(255,255,255,.08)}
+.phone.silver .sb1,.phone.silver .sb2,.phone.silver .sb3,.phone.silver .sb4{background:linear-gradient(90deg,#9c9ea4,#e6e7ea)}
+#stage{background:#050506}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+'use strict';
+const Q = new URLSearchParams(location.search);
+const W = +Q.get('w') || 1290, H = +Q.get('h') || 2796, N = +Q.get('s') || 1, PLAT = Q.get('p') || 'ios';
+const $ = s => document.querySelector(s);
+if (PLAT === 'play') document.body.classList.add('play');
+const GL = { heart: 0xf377, flame: 0xf313, home: 0xf382, apps: 0xf121, padd: 0xf4a6, person: 0xf4a5, add: 0xf103, remove: 0xf520, back: 0xf229, happy: 0xf362, dots: 0xf2ce, check: 0xf21d, gear: 0xf56c, camera: 0xf1dc, people: 0xf4a3, star: 0xf599, lock: 0xf3c8, chev: 0xf23b, chat: 0xf215, apple: 0xf3d8, pin: 0xf4ba, close: 0xf24a };
+const I = k => `<span class="ion">${String.fromCodePoint(GL[k])}</span>`;
+$('#stage').style.width = W + 'px'; $('#stage').style.height = H + 'px';
+document.documentElement.style.width = W + 'px'; document.documentElement.style.height = H + 'px';
+
+/* ---------- Données fictives (aucune personne réelle) ---------- */
+const PH = { track: 'assets/photo-piste-fictive.jpg', gym: 'assets/photo-seance.jpg', disc: 'assets/photo-salle-fictive.jpg' };
+const BADGES = ['premier-pas', 'en-feu', 'semaine-parfaite', 'regulier', 'en-action', 'en-duo', 'objectif-atteint'];
+
+/* ---------- Briques ---------- */
+const statusBar = () => `<div class="sb"><span class="tm">${PLAT === 'play' ? '10:24' : '9:41'}</span><span class="ic">
+ <svg width="19" height="12" viewBox="0 0 19 12"><rect x="0" y="8" width="3.2" height="4" rx="1" fill="#fff"/><rect x="5" y="5.5" width="3.2" height="6.5" rx="1" fill="#fff"/><rect x="10" y="3" width="3.2" height="9" rx="1" fill="#fff"/><rect x="15" y="0" width="3.2" height="12" rx="1" fill="#fff"/></svg>
+ <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2.3c2.4 0 4.6.9 6.3 2.5l1.2-1.2C14 1.6 11.4.6 8.5.6S3 1.6 1 3.6l1.2 1.2c1.7-1.6 3.9-2.5 6.3-2.5z" fill="#fff"/><path d="M8.5 5.6c1.5 0 2.9.6 3.9 1.5l1.2-1.2C12.3 4.6 10.5 3.9 8.5 3.9S4.7 4.6 3.4 5.9l1.2 1.2c1-.9 2.4-1.5 3.9-1.5z" fill="#fff"/><path d="M8.5 8.9c.6 0 1.2.2 1.6.6L8.5 11.2 6.9 9.5c.4-.4 1-.6 1.6-.6z" fill="#fff"/></svg>
+ <svg width="28" height="13" viewBox="0 0 28 13"><rect x=".5" y=".5" width="24" height="12" rx="3.5" fill="none" stroke="rgba(255,255,255,.4)"/><rect x="2.2" y="2.2" width="20.6" height="8.6" rx="2" fill="#fff"/><path d="M26 4.4v4.2c.8-.3 1.4-1.1 1.4-2.1s-.6-1.8-1.4-2.1z" fill="rgba(255,255,255,.45)"/></svg>
+</span></div>`;
+const header = () => `<div class="hdr"><img class="lg" src="assets/ecriture-reiz-blanc-trim.png"><div class="rt"><span class="hrt">${I('heart')}<span class="hbd">3</span></span><div class="streak">${I('flame')}<span>12j</span></div></div></div>`;
+const navBar = active => {
+  const L = ['home', 'apps'], R = ['padd', 'person'];
+  const bub = arr => arr.includes(active) ? `<div class="nbub" style="left:${arr.indexOf(active) === 0 ? 14 : 79}px"></div>` : '';
+  const icons = arr => arr.map(k => `<span class="ion${k === active ? ' on' : ''}">${String.fromCodePoint(GL[k])}</span>`).join('');
+  return `<div class="nav"><div class="npill glass">${bub(L)}${icons(L)}</div><div class="nplus">${I('add')}</div><div class="npill glass">${bub(R)}${icons(R)}</div></div>`;
+};
+const av = (ini, extra = '') => `<div class="av" style="${extra}">${ini}</div>`;
+
+/* ---------- Écrans ---------- */
+function feed(o) {
+  const faces = o.faces || [];
+  const stack = faces.length ? `<div class="stack">${faces.slice(0, 4).map(([i, e], k) => `<div class="si" style="margin-left:${k ? -12 : 0}px;z-index:${4 - k}"><div class="sa">${i}</div><span class="se">${e}</span></div>`).join('')}${o.more ? `<div class="si" style="margin-left:-12px"><div class="sa more">+${o.more}</div></div>` : ''}</div>` : '';
+  const bottom = o.quick
+    ? `<div class="quick">${['🔥', '💪', '👏', '😮', '😂', '❤️'].map(e => `<span class="qi${e === o.qon ? ' on' : ''}">${e}</span>`).join('')}<span class="qi">${I('add')}</span></div>`
+    : `<div class="bot">${stack}<div style="flex:1"></div><div class="react">${I('happy')}</div></div>`;
+  const duo = o.duo ? `<div class="duorow${o.duo.ok ? ' ok' : ''}"><span style="display:flex">${o.duo.ini.map(i => `<span class="da">${i}</span>`).join('')}</span><span class="tx">${o.duo.ok ? '<b>✓ Duo validé</b> avec ' : 'avec '}<b>${o.duo.names}</b></span></div>` : '';
+  return `<div class="scr">${statusBar()}${header()}<div class="body"><div class="fade"></div>
+  <div class="fcard" style="margin-top:${o.top ?? 8}px">
+    <div class="brh">${av(o.ini)}<div class="meta"><div class="n">${o.name}</div><div class="sub">${o.sub}</div>${duo}</div><span class="ion dots">${String.fromCodePoint(GL.dots)}</span></div>
+    <div class="media"><div class="img" style="background-image:url(${o.photo});background-position:${o.pos || 'center'}"></div>${bottom}</div>
+    <div class="below">
+      <div class="gauge"><div class="gt"><div class="gf" style="width:${o.pct}%"></div></div><span class="gl">${o.label}</span></div>
+      ${o.cap ? `<div class="cap">${o.cap}</div>` : ''}
+      ${o.cm ? `<div class="cm1">${o.cm}</div>` : ''}
+      ${o.noAdd ? '' : '<div class="cm2">Ajouter un commentaire…</div>'}
+      ${o.duoBtn ? `<div class="duobtn">${o.duoBtn}</div>` : ''}
+    </div>
+  </div></div>${navBar('home')}</div>`;
+}
+
+function create() {
+  return `<div class="scr"><div class="behind"></div>${statusBar()}
+  <div class="sheet">
+    <div class="mh"><span class="c">Annuler</span><span class="t">Nouvel objectif</span><span class="s">Créer</span></div>
+    <div class="mb">
+      <div class="lab">NOM DE L'OBJECTIF</div>
+      <div class="inp">170 kg au bench<span class="caret"></span></div>
+      <div class="lab sp">EMOJI</div>
+      <div class="erow">${['🎯', '💪', '🏋️', '🏃', '🚴', '🏊', '🥊', '⚽'].map((e, i) => `<div class="ei${i === 2 ? ' on' : ''}">${e}</div>`).join('')}</div>
+      <div class="lab sp">COMBIEN ?</div>
+      <div class="trow"><div class="inp tin">170</div><div class="urow">${['séances', 'kg', 'km', 'fois', 'min'].map(u => `<span class="pill${u === 'kg' ? ' on' : ''}">${u}</span>`).join('')}</div></div>
+      <div class="hint">Tu posteras ta progression en kg, jusqu'à 170.</div>
+      <div class="opt"><span>Options (autre unité, durée, visibilité)</span><span>▼</span></div>
+    </div>
+  </div></div>`;
+}
+
+function post(photo = PH.gym, pos = '50% 62%') {
+  return `<div class="scr">${statusBar()}
+  <div class="phdr"><div class="bk">${I('back')}</div><div class="tt">Poste ta progression</div><div style="width:34px"></div></div>
+  <div class="body"><div class="pz"><div class="ph" style="background-image:url(${photo});background-position:${pos}"></div><div class="chg">Changer</div></div>
+   <div class="pb">
+    <div class="pl">OBJECTIF</div>
+    <div class="ocs">
+     <div class="poc"><div class="e">💪</div><div class="t">Aller à la salle 4 fois</div></div>
+     <div class="poc on"><div class="e">🎯</div><div class="t">Deadlift à 200 kg</div></div>
+     <div class="poc"><div class="e">🏃</div><div class="t">Courir 50 km</div></div>
+    </div>
+    <div class="pl m">PROGRESSION</div>
+    <div class="pw2"><div class="pbtn">${I('remove')}</div><div class="pc"><div class="big">190<span class="u"> kg</span></div><div class="val">sur 200 kg</div><div class="sl"><div class="tr"><div class="fi" style="width:95%"></div></div><div class="th" style="left:calc(95% - 22px * .95)"></div></div></div><div class="pbtn">${I('add')}</div></div>
+   </div></div>
+  <div class="cta"><div class="b">Publier</div></div></div>`;
+}
+
+function objectives() {
+  const o = [
+    { e: '💪', t: 'Aller à la salle 4 fois', v: 'Cercle', sub: '3 séances sur 4 séances', p: 75, l: '3/4' },
+    { e: '🎯', t: 'Deadlift à 200 kg', v: 'Proche', sub: '190 kg sur 200 kg', p: 95, l: '190/200' },
+    { e: '🏃', t: 'Courir 50 km', v: 'Privé', sub: '39 km sur 50 km', p: 78, l: '39/50' },
+  ];
+  return `<div class="scr">${statusBar()}${header()}<div class="body"><div class="fade"></div>
+   <div class="stats"><div class="stat"><b>3</b><i>Actifs</i></div><div class="stat"><b>12j</b><i>Streak</i></div><div class="stat"><b>83%</b><i>Moy.</i></div></div>
+   ${o.map(x => `<div class="oc"><div class="top"><div class="nm">${x.e} ${x.t}</div><div class="vis">${x.v}</div></div><div class="sub2">${x.sub}</div><div class="pr"><div class="track"><div class="fill" style="width:${x.p}%"></div></div><div class="pct">${x.l}</div></div><div class="ubtn">+ Mise à jour</div></div>`).join('')}
+   </div>${navBar('apps')}</div>`;
+}
+
+function profile(hero = PH.disc) {
+  const SC = 300; // défilement : on voit le bas de la photo, puis les badges et les objectifs
+  return `<div class="scr">
+  <div class="pcont" style="top:${-SC}px">
+    <div class="hero"><div class="ph" style="background-image:url(${hero})"></div><div class="g1"></div><div class="g2"></div></div>
+    <div class="hname" style="top:${608 - 188}px"><div class="nm">Théo</div><div class="us">@theo</div><div class="mb2">Membre depuis septembre 2026</div></div>
+    <div style="position:absolute;left:0;right:0;top:${608 - 88}px"><div class="bub glass"><div class="z"><b>12j</b><i>Streak</i></div><div class="z"><b>34</b><i>Posts</i></div><div class="z"><b>9</b><i>Amis</i></div></div></div>
+    <div style="position:absolute;left:0;right:0;top:622px">
+      <div class="about glass" style="margin-top:0"><div class="l">À PROPOS</div><div class="bio">Objectif de l'été : 200 kg au deadlift. Rendez-vous à la salle.</div>
+        <div class="tags"><span class="tag">💪 Push day <span class="k">4</span></span><span class="tag">🎯 100 kg au bench <span class="k">6</span></span><span class="tag">🏃 Courir le matin <span class="k">3</span></span></div></div>
+      <div class="sec"><b>Badges</b><span class="cnt">7</span></div>
+      <div class="brow">${BADGES.slice(0, 4).map(b => `<img src="assets/badges/${b}.png">`).join('')}<div class="more glass">${I('chev')}</div></div>
+      <div class="sec" style="margin-top:22px"><b>En cours</b><span class="cnt">3</span></div>
+      <div class="gcs">
+        <div style="transform:none;z-index:1">${gc('190', '200', 'kg', '🎯', 'Deadlift à 200 kg', 4, 95)}</div>
+        <div style="transform:translateY(26px) rotate(-4deg) scale(.98);margin-left:-30px;z-index:2">${gc('3', '4', 'séances', '💪', 'Aller à la salle 4 fois', 3, 75)}</div>
+        <div style="transform:translateY(30px) rotate(-6deg) scale(.96);margin-left:-30px;z-index:3">${gc('39', '50', 'km', '🏃', 'Courir 50 km', 2, 78)}</div>
+      </div>
+    </div>
+  </div>
+  ${statusBar()}${navBar('person')}</div>`;
+}
+
+function badgesScreen() {
+  const B = [['premier-pas', 'Premier pas', 1], ['en-feu', 'En feu', 1], ['semaine-parfaite', 'Semaine parfaite', 1], ['objectif-atteint', 'Objectif atteint', 1], ['regulier', 'Régulier', 1], ['en-action', 'En action', 1], ['en-duo', 'En duo', 1], ['binome', 'Binôme', 0], ['leve-tot', 'Lève-tôt', 0], ['couche-tard', 'Couche-tard', 0], ['inarretable', 'Inarrêtable', 0], ['acharne', 'Acharné', 0]];
+  return `<div class="scr">${statusBar()}
+  <div style="position:absolute;left:0;right:0;top:59px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px"><div style="font:900 22px/27px Inter">Badges 7/12</div><div class="clear" style="width:40px;height:40px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:20px">${I('close')}</div></div>
+  <div style="position:absolute;left:0;right:0;top:131px;padding:0 16px;display:flex;flex-wrap:wrap;row-gap:14px">${B.map(([f, t, on]) => `<div style="width:33.33%;text-align:center"><img src="assets/badges/${f}.png" style="width:92px;height:92px;opacity:${on ? 1 : .22}"><div style="font:700 11px/14px Inter;color:${on ? '#ddd' : '#666'};margin-top:2px">${t}</div></div>`).join('')}</div>
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:28px">
+    <div style="width:100%;max-width:340px;background:#111;border-radius:28px;border:1px solid #1f1f1f;display:flex;flex-direction:column;align-items:center;padding:24px">
+      <img src="assets/badges/semaine-parfaite.png" style="width:160px;height:160px">
+      <div style="font:900 22px/27px Inter;letter-spacing:-.5px;margin-top:6px">Semaine parfaite</div>
+      <div style="font:400 14px/21px Inter;color:#aaa;text-align:center;margin-top:8px">Poster 7 jours d'affilée.</div>
+      <div style="width:100%;height:8px;border-radius:4px;background:#222;margin-top:20px;overflow:hidden"><div style="width:100%;height:100%;background:#fff;border-radius:4px"></div></div>
+      <div style="font:600 13px/16px Inter;margin-top:10px">Débloqué</div>
+    </div>
+  </div></div>`;
+}
+
+function splash() {
+  const apple = PLAT === 'play' ? '' : `<div class="sbtn ap"><span class="ion" style="font-size:20px">${String.fromCodePoint(GL.apple)}</span>Continuer avec Apple</div>`;
+  return `<div class="scr"><div class="splash">${statusBar()}<img class="lg" src="assets/ecriture-reiz-blanc-trim.png"><div class="tg">RISE TO YOUR GOALS</div>
+   <div class="bt"><div class="sbtn w">Commencer →</div>${apple}<div class="sbtn gg"><img src="assets/google-g.png">Continuer avec Google</div><div class="lk">Déjà un compte ? <b>Se connecter</b></div></div></div></div>`;
+}
+
+const gc = (v, tgt, unit, em, title, days, pct) => `<div class="gc glass"><div style="display:flex;justify-content:space-between"><div><div class="v">${v}<small> / ${tgt}</small></div><div class="u">${unit}</div></div><div class="em clear">${em}</div></div><div><div class="tt">${title}</div><div class="wk">${I('people')}<span>${days} jours cette semaine</span></div><div class="bar"><i style="width:${pct}%"></i></div></div></div>`;
+const gcChip = (args, x, y, rot, sc, z = 1) => `<div class="chip" style="left:${x}px;top:${y}px;transform:rotate(${rot}deg) scale(${sc});transform-origin:50% 50%;z-index:${z};filter:drop-shadow(0 26px 40px rgba(0,0,0,.55))">${gc(...args)}</div>`;
+
+/* ---------- Pastilles ---------- */
+const notif = (t, b, x, y, w = 300) => `<div class="chip notif" style="left:${x}px;top:${y}px;width:${w}px"><div class="ico"></div><div style="flex:1"><div class="ap"><span>Reiz</span><span>maintenant</span></div><div class="ti">${t}</div><div class="bo">${b}</div></div></div>`;
+const pill = (html, x, y, cls = '') => `<div class="chip fp fl ${cls}" style="left:${x}px;top:${y}px">${html}</div>`;
+const card = (html, x, y, w) => `<div class="chip fl fcc" style="left:${x}px;top:${y}px;width:${w || 250}px">${html}</div>`;
+
+/* ---------- Bande panoramique de 8 panneaux, découpée ensuite ---------- */
+const PWID = 1284;
+const X = i => i * PWID;
+const G = { p1: 'assets/gym-1-mains.png', p2: 'assets/gym-2-rack.jpg', p3: 'assets/gym-3-airbike.jpg', p4: 'assets/gym-4-mur.jpg', p5: 'assets/gym-5-cage.jpg', p6: 'assets/gym-6-cardio.jpg' };
+const phone = (screen, cx, cy, w, rot = 0, theme = 'dark', z = 5, extra = '') => {
+  const k = w / 408;
+  return `<div style="position:absolute;left:${cx - 204}px;top:${cy - 431}px;width:408px;height:862px;transform-origin:50% 50%;transform:scale(${k}) rotate(${rot}deg);z-index:${z};${extra}"><div class="phone ${theme}"><div class="sb1"></div><div class="sb2"></div><div class="sb3"></div><div class="sb4"></div><div class="back"></div><div class="face"></div><div class="screen">${screen}</div><div class="isl"></div><div class="rim"></div><div class="glare"></div></div></div>`;
+};
+const big = (inner, x, y, sc, z = 12, rot = 0) => `<div style="position:absolute;left:${x}px;top:${y}px;transform-origin:0 0;transform:scale(${sc}) rotate(${rot}deg);z-index:${z}">${inner}</div>`;
+const sticker = (file, x, y, w, rot, z = 14) => `<img src="assets/badges/${file}.png" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;transform:rotate(${rot}deg);z-index:${z};filter:drop-shadow(0 34px 44px rgba(0,0,0,.5))">`;
+const emo = (e, x, y, size, rot, z = 14) => `<div style="position:absolute;left:${x}px;top:${y}px;font-size:${size}px;line-height:1;transform:rotate(${rot}deg);z-index:${z};filter:drop-shadow(0 28px 34px rgba(0,0,0,.45))">${e}</div>`;
+const panel = (i, style, inner = '') => `<div style="position:absolute;left:${X(i)}px;top:0;width:${PWID}px;height:${H}px;overflow:hidden;${style}">${inner}</div>`;
+const T = (html, x, y, size, css = '') => `<div class="hl" style="left:${x}px;top:${y}px;font-size:${size}px;${css}">${html}</div>`;
+const S = (text, x, y, w, color, align = 'left') => `<div class="sub3" style="left:${x}px;top:${y}px;width:${w}px;color:${color};text-align:${align}">${text}</div>`;
+const bgImg = f => `<div style="position:absolute;inset:0;background:url(${f}) 0 0/100% 100%"></div>`;
+const shade = (a, b, c) => `<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,5,6,${a}) 0%,rgba(5,5,6,${b}) 42%,rgba(5,5,6,${c}) 100%)"></div>`;
+const LIGHT = 'background:linear-gradient(180deg,#F6F6F9 0%,#E3E4E9 100%)';
+const lightGlow = `<div style="position:absolute;left:-250px;top:700px;width:1800px;height:1800px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,255,255,0))"></div>`;
+
+// écrans avec les vraies photos de salle
+const sFeed1 = feed({ ini: 'N', name: 'Nathan', sub: '🚴 Cardio 5 fois, il y a 12 min', photo: G.p3, pos: '50% 50%', pct: 80, label: '4 / 5 séances', cap: 'Air bike, 20 minutes. J\'ai failli abandonner.', cm: 'Voir les 7 commentaires', faces: [['S', '🔥'], ['I', '💪'], ['H', '👏'], ['M', '😮']], more: 3 });
+const sCreate = create();
+const sPost = post(G.p1, '50% 45%');
+const sReact = feed({ ini: 'S', name: 'Sarah', sub: '🏋️ Squat à 100 kg, il y a 8 min', photo: G.p2, pos: '50% 40%', pct: 95, label: '95 / 100 kg', cap: 'Ça monte. Plus que 5 kg.', cm: 'Voir les 12 commentaires', quick: true, qon: '💪' });
+const sDuo = feed({ ini: 'H', name: 'Hugo', sub: '💪 Aller à la salle 4 fois, il y a 9 min', photo: G.p4, pos: '50% 60%', pct: 75, label: '3 / 4 séances', duo: { ini: ['T'], names: 'Théo' }, duoBtn: '🤝 Valide ton duo avec Hugo : encore 51 min', faces: [['T', '💪'], ['S', '🔥']], noAdd: true });
+const sBadges = badgesScreen();
+const sProfile = profile(G.p2);
+const sSplash = splash();
+
+/* 1. Hero, sombre, photo */
+const P1 = panel(0, 'background:#050506', bgImg('assets/bg-p1.jpg') + shade(.62, .12, .82))
+ + `<img src="assets/ecriture-reiz-blanc-trim.png" style="position:absolute;left:96px;top:128px;width:230px;z-index:6">`
+ + `<div class="eyebrow" style="left:98px;top:330px">Le réseau social des sportifs.</div>`
+ + `<div class="hl" style="left:90px;top:430px;font-size:198px;transform:skewX(-6deg);transform-origin:0 100%"><span>Ton</span><br><span>cercle</span><br><span>te regarde.</span></div>`
+ + phone(sFeed1, 690, 2230, 980, 5, 'dark', 5)
+ + big(notif('Sarah a réagi 🔥', 'Sur 🚴 Cardio 5 fois', 0, 0, 296), 56, 1600, 2.3, 13)
+ + sticker('en-feu', 36, 1010, 330, -14)
+ + sticker('semaine-parfaite', 1056, 1150, 430, 10, 15);
+
+/* 2. Clair, création */
+const P2 = panel(1, LIGHT, lightGlow)
+ + T('Fixe ton<br>objectif.', X(1), 200, 176, 'width:1284px;text-align:center;color:#0a0a0a')
+ + S('Un nom, un chiffre : séances, kg, km. Et c\'est parti.', X(1) + 150, 560, 984, '#6b6b76', 'center')
+ + phone(sCreate, X(1) + 640, 1960, 940, 0, 'dark', 5)
+ + gcChip(['108', '170', 'kg', '🏋️', '170 kg au squat', 3, 64], X(1) + 560, 2210, 6, 1.62, 9)
+ + gcChip(['6', '10', 'km', '🏃', 'Courir 10 km', 2, 60], X(1) + 60, 2130, -7, 1.45, 8)
+ + sticker('regulier', X(1) + 1050, 1380, 300, 12, 14);
+
+/* 3. Verre sur photo, publication */
+const P3 = panel(2, 'background:#050506', bgImg('assets/bg-p3.jpg') + shade(.45, .05, .55))
+ + T('Poste', X(2) + 96, 190, 310)
+ + T('ta séance.', X(2) + 104, 480, 150, 'font-weight:400;letter-spacing:-.04em')
+ + S('Les mains pleines de magnésie, une photo ou 15 secondes de vidéo. Ton cercle voit tout.', X(2) + 104, 670, 960, 'rgba(255,255,255,.8)')
+ + `<div style="position:absolute;left:${X(2) + 84}px;top:1120px;width:1116px;height:2100px;border-radius:120px;overflow:hidden;z-index:6;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,.07));border:2px solid rgba(255,255,255,.38);box-shadow:0 60px 140px rgba(0,0,0,.45)">${phone(sPost, 558, 1060, 860, 0, 'dark', 5)}</div>`
+ + big(pill(`${I('camera')}<span>Photo ou vidéo<small>15 secondes max</small></span>`, 0, 0), X(2) + 40, 990, 2.3, 13)
+ + big(notif('Séance publiée ✓', 'Ton cercle est prévenu.', 0, 0, 270), X(2) + 540, 2540, 2.2, 13);
+
+/* 4. Sombre, réactions */
+const P4 = panel(3, 'background:radial-gradient(70% 40% at 50% 62%,#14141a 0%,#050506 70%)', '')
+ + T('Ils réagissent.<br>Tu continues.', X(3), 190, 150, 'width:1284px;text-align:center')
+ + S('Emojis, commentaires, réponses. Un fil rien que pour tes proches.', X(3) + 150, 500, 984, 'rgba(255,255,255,.7)', 'center')
+ + phone(sReact, X(3) + 642, 1950, 900, 0, 'dark', 5)
+ + big(`<div class="fl cbub" style="width:236px"><div style="font:700 12px/15px Inter;color:#9a9aa2;margin-bottom:2px">Hugo</div>Allez, plus que 5 kg 🔥</div>`, X(3) + 30, 1600, 2.2, 13)
+ + big(`<div class="fl cbub" style="width:210px"><div style="font:700 12px/15px Inter;color:#9a9aa2;margin-bottom:2px">Inès</div>Monstre. 💪</div>`, X(3) + 720, 1760, 2.2, 13)
+ + emo('🔥', X(3) - 80, 1230, 270, -14) + emo('💪', X(3) + 1000, 1140, 260, 16) + emo('👏', X(3) + 1010, 2260, 200, 10);
+
+/* 5. Clair, duo */
+const P5 = panel(4, LIGHT, lightGlow)
+ + T('Entraîne-toi<br>en duo.', X(4), 200, 176, 'width:1284px;text-align:center;color:#0a0a0a')
+ + S('Postez chacun votre séance à moins d\'une heure : le duo est validé.', X(4) + 150, 560, 984, '#6b6b76', 'center')
+ + phone(sDuo, X(4) + 642, 1960, 940, 0, 'dark', 5)
+ + big(notif('Hugo t\'a identifié dans sa séance 🤝', 'Poste la tienne dans l\'heure pour valider le duo.', 0, 0, 352), X(4) + 20, 1530, 2.3, 13)
+ + big(pill('<span>✓ Duo validé</span>', 0, 0), X(4) + 880, 2330, 2.2, 13);
+
+/* 6. Verre sur photo, badges */
+const P6 = panel(5, 'background:#050506', bgImg('assets/bg-p6.jpg') + shade(.5, .1, .6))
+ + T('Débloque', X(5) + 96, 190, 250)
+ + T('tes badges.', X(5) + 104, 450, 150, 'font-weight:400;letter-spacing:-.04em')
+ + S('12 badges à gagner, de ton premier pas jusqu\'à 30 jours d\'affilée.', X(5) + 104, 650, 960, 'rgba(255,255,255,.8)')
+ + phone(sBadges, X(5) + 642, 2000, 940, 0, 'dark', 5)
+ + sticker('inarretable', X(5) + 30, 1120, 360, -12) + sticker('en-duo', X(5) + 940, 1020, 330, 12) + sticker('acharne', X(5) + 960, 2250, 300, -8)
+ + big(pill(`${I('flame')}<span>12 jours<small>de série</small></span>`, 0, 0), X(5) + 60, 2300, 2.2, 14);
+
+/* 7. Clair, profil */
+const P7 = panel(6, LIGHT, lightGlow)
+ + T('Ton profil,<br>ta preuve.', X(6), 200, 176, 'width:1284px;text-align:center;color:#0a0a0a')
+ + S('Ta série, tes badges, tes objectifs en cours.', X(6) + 150, 560, 984, '#6b6b76', 'center')
+ + phone(sProfile, X(6) + 642, 1930, 960, 0, 'silver', 5)
+ + big(card(`<div class="r"><div style="display:flex;gap:8px"><img src="assets/badges/en-feu.png" style="width:52px;height:52px"><img src="assets/badges/regulier.png" style="width:52px;height:52px"><img src="assets/badges/en-duo.png" style="width:52px;height:52px"></div></div><div style="font:700 13px/16px Inter;margin-top:8px;color:rgba(255,255,255,.75)">7 badges débloqués</div>`, 0, 0, 250), X(6) + 760, 2140, 2.2, 13);
+
+/* 8. Sombre, photo, appel à l'action */
+const P8 = panel(7, 'background:#050506', bgImg('assets/bg-p8.jpg') + shade(.6, .2, .85))
+ + `<img src="assets/ecriture-reiz-blanc-trim.png" style="position:absolute;left:${X(7) + 96}px;top:128px;width:230px;z-index:6">`
+ + `<div class="hl" style="left:${X(7) + 90}px;top:300px;font-size:206px;transform:skewX(-6deg);transform-origin:0 100%"><span>Rejoins</span><br><span>ton cercle.</span></div>`
+ + S('Crée ton premier objectif en moins d\'une minute.', X(7) + 98, 700, 900, 'rgba(255,255,255,.82)')
+ + phone(sSplash, X(7) + 642, 1810, 880, -3, 'dark', 5)
+ + sticker('premier-pas', X(7) + 960, 880, 320, 12, 15);
+
+(async () => {
+  await document.fonts.load('20px Ionicons'); await document.fonts.load('900 20px Inter'); await document.fonts.load('400 20px Inter');
+  if (Q.get('f')) {
+    // image de présentation Google Play, 1024 x 500
+    $('#stage').innerHTML = `<div style="position:absolute;inset:0;background:url(${G.p2}) 50% 38%/cover"></div>`
+      + `<div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(5,5,6,.92) 0%,rgba(5,5,6,.78) 48%,rgba(5,5,6,.35) 100%)"></div>`
+      + `<img src="assets/ecriture-reiz-blanc-trim.png" style="position:absolute;left:64px;top:56px;width:104px;z-index:6">`
+      + `<div class="hl" style="left:62px;top:140px;font-size:82px;transform:skewX(-6deg);transform-origin:0 100%"><span>Ton cercle</span><br><span>te regarde.</span></div>`
+      + `<div class="sub3" style="left:66px;top:352px;width:470px;font-size:25px;color:rgba(255,255,255,.8)">Tes objectifs sport, vus par les gens qui comptent.</div>`
+      + phone(sFeed1, 790, 560, 330, 5, 'dark', 5)
+      + sticker('en-feu', 586, 300, 110, -14);
+    await Promise.all([...document.images].map(i => i.decode().catch(() => {})));
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    window.__ready = true; return;
+  }
+  $('#stage').innerHTML = P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8;
+  $('#stage').style.transform = 'translateX(' + (-(+Q.get('px') || 0) * PWID) + 'px)';
+  await Promise.all([...document.images].map(i => i.decode().catch(() => {})));
+  await Promise.all(Object.values(G).map(u => new Promise(r => { const im = new Image(); im.onload = im.onerror = r; im.src = u; })));
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  window.__ready = true;
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "clipped-overflow-container",
+        "value": "*",
+        "files": [
+          "/Users/yllankarsenty/Desktop/Reiz/design/store/store.html"
+        ],
+        "createdAt": "2026-10-05T14:56:43.483Z",
+        "reason": "Claude decision, not reviewed by the user: phone mockup screens and photo frames are clip containers by design, their absolutely positioned children are UI layers meant to be cropped at the screen edge"
+      }
+    ]
+  }
+}

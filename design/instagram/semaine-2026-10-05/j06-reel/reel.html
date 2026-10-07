@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Reiz reel duo</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  .ring { position: absolute; left: 540px; top: 1180px; width: 300px; height: 300px; margin: -150px 0 0 -150px; }
+  .ring svg { width: 300px; height: 300px; transform: rotate(-90deg); }
+  .ring .num { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; font-size: 84px; font-weight: 900; letter-spacing: -.04em; line-height: .95; }
+  .ring .num small { display: block; font-size: 26px; font-weight: 800; letter-spacing: .24em; color: var(--dim); margin-top: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 14px; background: #fff; color: #000; font-weight: 900; font-size: 34px; border-radius: 999px; padding: 14px 28px; }
+  .tagrow { position: absolute; left: 0; right: 0; display: flex; justify-content: center; }
+</style></head>
+<body>
+<div id="stage">
+  <div id="glow"></div><div id="dust"></div>
+
+  <div class="scene" id="s1"><div class="center" style="top: 520px">
+    <div class="kick"><span class="line"><span>Opinion</span></span></div>
+    <h1 style="font-size: 112px; margin-top: 34px"><span class="line"><span>Tu sautes</span></span><span class="line"><span>la salle</span></span><span class="line"><span>parce que</span></span><span class="line"><span style="color:#777">personne</span></span><span class="line"><span style="color:#777">t'attend.</span></span></h1>
+  </div></div>
+
+  <div class="scene" id="s2">
+    <div class="notif" id="n1" style="top: 430px"><div class="ic"><img src="assets/ecriture-reiz-blanc-trim.png" alt=""></div><div style="flex:1"><div class="t">Reiz<span>maintenant</span></div><div class="m">Théo t'a identifié 🤝<br>Poste ta séance dans l'heure.</div></div></div>
+    <div class="ring" id="ring"><svg viewBox="0 0 300 300"><circle cx="150" cy="150" r="130" fill="none" stroke="#2a2a2a" stroke-width="18"/><circle id="arc" cx="150" cy="150" r="130" fill="none" stroke="#fff" stroke-width="18" stroke-linecap="round" stroke-dasharray="817" stroke-dashoffset="0"/></svg><div class="num"><div><span id="mm">59</span>:<span id="ss">59</span><small>ENCORE</small></div></div></div>
+  </div>
+
+  <div class="scene" id="s3">
+    <div class="center" style="top: 300px"><h1 style="font-size: 100px"><span class="line"><span>Vous deux,</span></span><span class="line"><span>même heure.</span></span></h1></div>
+    <div class="card" id="card" style="top: 760px">
+      <img class="ph" src="assets/photo-seance.jpg" alt="">
+      <div class="foot"><div class="row"><span>💪 Aller à la salle</span><span>🤝 avec Théo</span></div><div class="dots"><i></i><i></i><i></i><i></i></div></div>
+    </div>
+    <div class="tagrow" id="duo" style="top: 1420px"><span class="chip">✓ Séance en duo validée</span></div>
+  </div>
+
+  <div class="scene" id="s4">
+    <div class="center" style="top: 620px"><h1 style="font-size: 124px"><span class="line"><span>2 séances.</span></span><span class="line"><span style="color:#777">1 heure.</span></span></h1>
+    <div class="small" style="margin-top: 40px">Quand quelqu'un t'attend,<br>tu y vas.</div></div>
+  </div>
+
+  <div class="scene" id="s5"><div class="center" style="top: 640px">
+    <img class="logo" id="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+    <div style="margin-top: 60px"><span class="jtag" id="jtag">J-4</span></div>
+    <div class="small" id="date" style="margin-top: 26px">Le 10 octobre sur iPhone</div>
+    <div style="margin-top: 34px"><span class="pill" id="pill">Abonne-toi pour la sortie</span></div>
+  </div></div>
+</div>
+<canvas id="grain" width="540" height="960"></canvas><div id="vignette"></div>
+<script src="common.js"></script>
+<script>
+const T = { s2: 3.0, s3: 7.4, ok: 10.0, s4: 11.6, s5: 13.4, dur: 16.2 };
+window.TIMELINE = T;
+dust(21);
+function render(t) {
+  grain(t); motes(t);
+  let gc = [140, 140, 160], ga = .25;
+  if (scene(t, 's1', 0, T.s2, true)) { $$('#s1 .line > span').forEach((s, i) => s.style.transform = `translateY(${(1 - ex(seg(t, -.3 + i * .1, .3 + i * .1))) * 60}%)`); $('#s1 h1').style.transform = `scale(${1 + .05 * seg(t, 0, T.s2)})`; }
+  if (scene(t, 's2', T.s2, T.s3)) {
+    const q = ex(seg(t, T.s2 + .1, T.s2 + .6)); $('#n1').style.transform = `translateY(${(1 - q) * -260}px) scale(${lerp(.92, 1, q)})`; $('#n1').style.opacity = cl(q * 2);
+    const k = seg(t, T.s2 + .8, T.s3 - .3), left = 3599 - Math.floor(k * 3000);
+    $('#mm').textContent = String(Math.floor(left / 60)).padStart(2, '0'); $('#ss').textContent = String(left % 60).padStart(2, '0');
+    $('#arc').style.strokeDashoffset = 817 * k * .8; const rq = ex(seg(t, T.s2 + .6, T.s2 + 1.2)); $('#ring').style.opacity = rq; $('#ring').style.transform = `scale(${lerp(.8, 1, rq)})`;
+    gc = [180, 180, 200]; ga = .3;
+  }
+  if (scene(t, 's3', T.s3, T.s4)) {
+    lines('#s3', t, T.s3 + .05);
+    const kc = ex(seg(t, T.s3 + .3, T.s3 + .9)); $('#card').style.transform = `translateY(${(1 - kc) * 140}px)`; $('#card').style.opacity = kc;
+    const f = t >= T.ok ? 4 : 3; $$('#card .dots i').forEach((d, i) => { d.style.background = i < f ? '#fff' : '#2a2a2a'; });
+    pop('#duo', t, T.ok, .45, 30); gc = [255, 255, 255]; ga = t >= T.ok ? .4 : .2;
+  }
+  if (scene(t, 's4', T.s4, T.s5)) { lines('#s4', t, T.s4 + .05, .2); gc = [170, 170, 255]; ga = .35; }
+  if (scene(t, 's5', T.s5, T.dur + 1)) {
+    const k = ex(seg(t, T.s5 + .05, T.s5 + .6)); $('#logo').style.transform = `scale(${lerp(1.25, 1, k)})`; $('#logo').style.opacity = k;
+    [['#jtag', .45], ['#date', .6], ['#pill', .9]].forEach(([id, d]) => { pop(id, t, T.s5 + d); $(id).style.display = 'inline-block'; }); gc = [200, 200, 220]; ga = .35;
+  }
+  $('#stage').style.transform = `scale(${1 + .012 * Math.sin(t * .5)})`; glow(gc, ga);
+}
+ready(render);
+</script></body></html>

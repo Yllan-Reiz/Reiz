@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Reiz reel 15 secondes</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  #timer { position: absolute; left: 540px; top: 250px; margin-left: -110px; width: 220px; text-align: center; font-size: 64px; font-weight: 900; letter-spacing: -.02em; font-variant-numeric: tabular-nums; border: 3px solid #333; border-radius: 999px; padding: 10px 0; background: rgba(10,10,10,.7); z-index: 5; }
+  .step { position: absolute; left: 190px; width: 700px; text-align: center; top: 330px; }
+  .step .n { font-size: 30px; font-weight: 900; letter-spacing: .3em; color: var(--dim); }
+  .step h1 { font-size: 92px; margin-top: 20px; }
+  .stage2 { position: absolute; left: 0; right: 0; top: 760px; display: flex; justify-content: center; }
+  .avrow { display: flex; justify-content: center; }
+  .avrow .av { margin: 0 -14px; }
+  .rx { position: absolute; font-size: 90px; }
+  .badges { display: flex; justify-content: center; }
+  .badges img { width: 230px; margin: 0 -10px; -webkit-mask-image: radial-gradient(circle, #000 50%, transparent 68%); }
+</style></head>
+<body>
+<div id="stage">
+  <div id="glow"></div><div id="dust"></div>
+  <div id="timer">0:15</div>
+
+  <div class="scene" id="s1"><div class="center" style="top: 640px">
+    <h1 style="font-size: 126px"><span class="line"><span>Tout Reiz</span></span><span class="line"><span>en 15</span></span><span class="line"><span style="color:#777">secondes.</span></span></h1>
+  </div></div>
+
+  <div class="scene" id="a"><div class="step"><div class="n">1</div><h1><span class="line"><span>Tu fixes</span></span><span class="line"><span>un objectif.</span></span></h1></div>
+    <div class="card" style="top: 800px"><div class="foot" style="padding: 44px 40px"><div class="row"><span>💪 Aller à la salle 4 fois</span></div><div class="dots" style="margin-top: 34px"><i></i><i></i><i></i><i></i></div><div style="margin-top: 22px; font-size: 30px; color: var(--muted); font-weight: 600">0 / 4 séances</div></div></div></div>
+
+  <div class="scene" id="b"><div class="step"><div class="n">2</div><h1><span class="line"><span>Tu postes</span></span><span class="line"><span>ta séance.</span></span></h1></div>
+    <div class="card" id="cb" style="top: 780px"><img class="ph" src="assets/photo-seance.jpg" alt=""><div class="foot"><div class="row"><span>💪 Aller à la salle</span><span>1 / 4</span></div><div class="dots"><i style="background:#fff"></i><i></i><i></i><i></i></div></div></div></div>
+
+  <div class="scene" id="c"><div class="step"><div class="n">3</div><h1><span class="line"><span>Ton cercle</span></span><span class="line"><span>le voit.</span></span></h1></div>
+    <div class="stage2" style="top: 820px"><div class="avrow"><div class="av" style="background:#f5c26b">N</div><div class="av" style="background:#8fb8ff">S</div><div class="av" style="background:#ff9ec4">I</div><div class="av" style="background:#b9a4ff">H</div></div></div>
+    <div class="rx" id="r1" style="left: 300px; top: 1060px">🔥</div><div class="rx" id="r2" style="left: 480px; top: 1100px">💪</div><div class="rx" id="r3" style="left: 660px; top: 1060px">👀</div></div>
+
+  <div class="scene" id="d"><div class="step"><div class="n">4</div><h1><span class="line"><span>Un pote</span></span><span class="line"><span>t'identifie.</span></span></h1></div>
+    <div class="notif" id="nd" style="top: 800px"><div class="ic"><img src="assets/ecriture-reiz-blanc-trim.png" alt=""></div><div style="flex:1"><div class="t">Reiz<span>maintenant</span></div><div class="m">Théo t'a identifié 🤝<br>Poste ta séance dans l'heure.</div></div></div></div>
+
+  <div class="scene" id="e"><div class="step"><div class="n">5</div><h1><span class="line"><span>Tu gagnes</span></span><span class="line"><span>des badges.</span></span></h1></div>
+    <div class="stage2" style="top: 820px"><div class="badges"><img src="assets/en-feu.png" alt=""><img src="assets/inarretable.png" alt=""><img src="assets/binome.png" alt=""></div></div></div>
+
+  <div class="scene" id="s5"><div class="center" style="top: 640px">
+    <img class="logo" id="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+    <div style="margin-top: 60px"><span class="jtag" id="jtag">J-2</span></div>
+    <div class="small" id="date" style="margin-top: 26px">Le 10 octobre sur iPhone</div>
+    <div style="margin-top: 34px"><span class="pill" id="pill">Abonne-toi pour la sortie</span></div>
+  </div></div>
+</div>
+<canvas id="grain" width="540" height="960"></canvas><div id="vignette"></div>
+<script src="common.js"></script>
+<script>
+const T = { a: 2.0, b: 4.0, c: 6.0, d: 8.0, e: 10.0, s5: 12.0, dur: 15.0 };
+window.TIMELINE = T;
+dust(33);
+function render(t) {
+  grain(t); motes(t);
+  let gc = [140, 140, 160], ga = .25;
+  const left = Math.max(0, Math.ceil(15 - t)); $('#timer').textContent = `0:${String(left).padStart(2, '0')}`;
+  $('#timer').style.opacity = t < T.s5 ? 1 : 1 - seg(t, T.s5, T.s5 + .3);
+  if (scene(t, 's1', 0, T.a, true)) { $$('#s1 .line > span').forEach((s, i) => s.style.transform = `translateY(${(1 - ex(seg(t, -.3 + i * .1, .3 + i * .1))) * 60}%)`); $('#s1 h1').style.transform = `scale(${1 + .05 * seg(t, 0, T.a)})`; }
+  const S = [['a', T.a, T.b, [255, 255, 255]], ['b', T.b, T.c, [255, 255, 255]], ['c', T.c, T.d, [160, 170, 255]], ['d', T.d, T.e, [180, 180, 200]], ['e', T.e, T.s5, [255, 214, 120]]];
+  for (const [id, a, b, col] of S) if (scene(t, id, a, b)) { lines('#' + id, t, a + .05); gc = col; ga = .3; }
+  if (t >= T.a && t < T.b) { const k = ex(seg(t, T.a + .3, T.a + .9)); $$('#a .card')[0].style.transform = `translateY(${(1 - k) * 120}px)`; $$('#a .card')[0].style.opacity = k; $$('#a .dots i').forEach((d, i) => d.style.transform = `scaleX(${ex(seg(t, T.a + .6 + i * .12, T.a + 1.0 + i * .12))})`); }
+  if (t >= T.b && t < T.c) { const k = ex(seg(t, T.b + .3, T.b + .9)); $('#cb').style.transform = `translateY(${(1 - k) * 120}px)`; $('#cb').style.opacity = k; }
+  if (t >= T.c && t < T.d) { $$('#c .av').forEach((a, i) => { const k = seg(t, T.c + .3 + i * .1, T.c + .65 + i * .1); a.style.opacity = cl(k * 2.5); a.style.transform = `translateY(${(1 - back(k)) * 60}px) scale(${.7 + .3 * back(k)})`; });
+    ['r1', 'r2', 'r3'].forEach((id, i) => { const k = seg(t, T.c + 1.0 + i * .22, T.c + 1.6 + i * .22), e = $('#' + id); e.style.opacity = cl(k * 2) * (1 - seg(t, T.d - .4, T.d)); e.style.transform = `translateY(${-k * 130}px) scale(${.6 + .6 * back(cl(k * 1.4))})`; }); }
+  if (t >= T.d && t < T.e) { const q = ex(seg(t, T.d + .3, T.d + .8)); $('#nd').style.transform = `translateY(${(1 - q) * -200}px) scale(${lerp(.92, 1, q)})`; $('#nd').style.opacity = cl(q * 2); }
+  if (t >= T.e && t < T.s5) { $$('#e .badges img').forEach((a, i) => { const k = seg(t, T.e + .3 + i * .15, T.e + .75 + i * .15); a.style.opacity = cl(k * 2.5); a.style.transform = `translateY(${(1 - back(k)) * 60}px) scale(${.6 + .4 * back(k)}) rotate(${(1 - k) * -12}deg)`; }); }
+  if (scene(t, 's5', T.s5, T.dur + 1)) {
+    const k = ex(seg(t, T.s5 + .05, T.s5 + .6)); $('#logo').style.transform = `scale(${lerp(1.25, 1, k)})`; $('#logo').style.opacity = k;
+    [['#jtag', .45], ['#date', .6], ['#pill', .9]].forEach(([id, d]) => { pop(id, t, T.s5 + d); $(id).style.display = 'inline-block'; }); gc = [200, 200, 220]; ga = .35;
+  }
+  $('#stage').style.transform = `scale(${1 + .012 * Math.sin(t * .5)})`; glow(gc, ga);
+}
+ready(render);
+</script></body></html>
