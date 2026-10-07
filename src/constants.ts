@@ -105,3 +105,6 @@ export const trainsToday = (days?: number[] | null) => !hasSchedule(days) || day
 // l'ancien code est resté intact à côté du nouveau.
 export const GLASS_OBJECTIVES = true;
 export const GLASS_FRIENDS = true;
+
+// Accueil d'un compte tout neuf (profil, objectif, notifications, amis). false = l'ancienne fenêtre « Retrouve tes amis » seule.
+export const WELCOME_FLOW = true;

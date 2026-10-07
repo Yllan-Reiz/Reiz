@@ -7,7 +7,8 @@ import { frError } from '../lib/helpers';
 import { signAvatars } from '../lib/storage';
 import { LEGAL_DOCS, LegalDoc, SUPPORT_EMAIL } from '../lib/legal';
 import { PresencePanel } from '../components/PresencePanel';
-import { APP_VERSION } from '../constants';
+import { WelcomeModal } from '../components/WelcomeFlow';
+import { APP_VERSION, WELCOME_FLOW } from '../constants';
 import { F } from '../styles';
 
 type View_ = 'root' | 'password' | 'blocked' | 'legal' | 'presence';
@@ -26,6 +27,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
   const insets = useSafeAreaInsets();
   const [view, setView] = useState<View_>('root');
   const [doc, setDoc] = useState<LegalDoc | null>(null);
+  const [welcome, setWelcome] = useState(false);
   const [email, setEmail] = useState('');
   const [provider, setProvider] = useState<string>('email');
   // Encouragements perso (users.notif_encouragement). null = pas chargé, ou colonne absente : la ligne est cachée.
@@ -121,6 +123,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
             </Section>
 
             <Section title="AIDE">
+              {WELCOME_FLOW && <Row icon="sparkles-outline" label="Revoir l'accueil" value="Aperçu" onPress={() => setWelcome(true)} />}
               <Row icon="chatbubble-ellipses-outline" label="Contacter le support" value={SUPPORT_EMAIL} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Reiz`).catch(() => {})} last />
             </Section>
 
@@ -137,6 +140,8 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
         {view === 'presence' && <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}><PresencePanel /></ScrollView>}
         {view === 'blocked' && <BlockedList />}
         {view === 'legal' && doc && <LegalReader doc={doc} bottom={insets.bottom} />}
+        {/* Aperçu de l'accueil des nouveaux comptes : rien n'est enregistré. */}
+        <WelcomeModal visible={welcome} preview onClose={() => setWelcome(false)} />
       </View>
     </Modal>
   );

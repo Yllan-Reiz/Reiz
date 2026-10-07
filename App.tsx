@@ -18,6 +18,8 @@ import { Onboarding } from './src/screens/Onboarding';
 import { Main } from './src/screens/Main';
 import { WhatsNewModal } from './src/components/WhatsNewModal';
 import { FindFriendsPrompt } from './src/components/FindFriendsPrompt';
+import { WelcomeFlow, welcomePending } from './src/components/WelcomeFlow';
+import { WELCOME_FLOW } from './src/constants';
 import { PostScreen } from './src/screens/PostScreen';
 
 export default function App() {
@@ -39,14 +41,18 @@ function AppInner() {
   const [navIntent, setNavIntent] = useState<string | null>(null);
   // Ami à identifier d'office quand on répond à une séance en duo.
   const [postDuoWith, setPostDuoWith] = useState<string | null>(null);
+  // Remonter Main recharge le fil : utile quand l'accueil vient de créer la photo ou le premier objectif.
+  const [mainKey, setMainKey] = useState(0);
   const notifListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
   const registeredUserId = useRef<string | null>(null);
 
-  const maybeRegisterPush = (uid: string) => {
-    if (registeredUserId.current === uid) return;
-    registeredUserId.current = uid;
-    registerForPushNotifications(uid);
+  // Compte tout neuf : la demande d'autorisation du système attend l'écran d'accueil qui explique pourquoi (sinon elle tombe sans contexte).
+  const maybeRegisterPush = async (user: { id: string; created_at?: string }) => {
+    if (registeredUserId.current === user.id) return;
+    registeredUserId.current = user.id;
+    if (await welcomePending(user)) return;
+    registerForPushNotifications(user.id);
   };
 
   useEffect(() => {
@@ -69,7 +75,7 @@ function AppInner() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         enter(session.user);
-        maybeRegisterPush(session.user.id);
+        maybeRegisterPush(session.user);
         consumePendingInvite(session.user.id);
       }
       setCheckingAuth(false);
@@ -77,7 +83,7 @@ function AppInner() {
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         enter(session.user);
-        maybeRegisterPush(session.user.id);
+        maybeRegisterPush(session.user);
         consumePendingInvite(session.user.id);
       } else {
         registeredUserId.current = null;
@@ -110,9 +116,9 @@ function AppInner() {
   if (screen === 'onboarding') return <Onboarding onNext={() => setScreen('main')} />;
   if (screen === 'main') return (
     <>
-      <Main onPost={(opts) => { setPostDuoWith(opts?.duoWith ?? null); setScreen('post'); }} navIntent={navIntent} onNavIntentHandled={() => setNavIntent(null)} />
+      <Main key={mainKey} onPost={(opts) => { setPostDuoWith(opts?.duoWith ?? null); setScreen('post'); }} navIntent={navIntent} onNavIntentHandled={() => setNavIntent(null)} />
       <WhatsNewModal />
-      <FindFriendsPrompt />
+      {WELCOME_FLOW ? <WelcomeFlow onChanged={() => setMainKey(k => k + 1)} /> : <FindFriendsPrompt />}
     </>
   );
   if (screen === 'post') return <PostScreen duoWith={postDuoWith} onBack={() => setScreen('main')} onPublish={() => setScreen('main')} />;
