@@ -1,0 +1,29 @@
+Texte à coller dans « Remarques » (App Review Information) d'App Store Connect.
+Le nom d'utilisateur et le mot de passe se saisissent dans les champs « Informations de connexion », jamais dans ce texte.
+Compte à utiliser : demo.apple@reiz.test (le mot de passe est celui que tu as choisi pour ce compte).
+
+------------------------------------------------------------
+
+Hello,
+
+Reiz is a goal-tracking app where progress is shared with a small circle of chosen friends. The interface is in French.
+
+HOW TO SIGN IN (IMPORTANT)
+Please do NOT use "Sign in with Apple". It creates a new empty account, which cannot show the app's features.
+Instead, use the e-mail form and the demo credentials entered in the Sign-In Information fields above.
+Account: demo.apple@reiz.test
+
+WHAT THE DEMO ACCOUNT CONTAINS
+The account is pre-populated: 2 goals, 2 posts, 3 friends (Théo, Sarah, Inès) and one close friend, with one post from each friend.
+The main feed only shows the last 24 hours. If it looks empty, open the Friends tab and a friend's profile to see their posts.
+
+REPORTING AND BLOCKING
+Open the menu ("...") of a friend's post, or the menu of a friend's profile, to report the content or block the user. Blocked users can be unblocked in Settings.
+
+LOCATION
+Location is used only by the optional feature "Prévenir mon cercle proche" (Settings). It lets the user save a gym or stadium and detects arrival at that place with region monitoring, only after explicit consent. Coordinates stay on the device and are never sent to our servers. The app does not use continuous background location, and the "location" background mode has been removed in this build.
+
+ACCOUNT DELETION
+Settings > delete account.
+
+Thank you.
