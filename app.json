@@ -51,7 +51,7 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Reiz utilise ta position uniquement pour détecter ton arrivée à un lieu d'entraînement que tu as choisi (ta salle, ton stade) et prévenir ton cercle proche. Tes coordonnées restent sur ton téléphone et ne sont jamais envoyées.",
           "locationWhenInUsePermission": "Reiz lit ta position quand tu enregistres un lieu d'entraînement (ta salle, ton stade). Elle reste sur ton téléphone.",
-          "isIosBackgroundLocationEnabled": true,
+          "isIosBackgroundLocationEnabled": false,
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": false
         }
