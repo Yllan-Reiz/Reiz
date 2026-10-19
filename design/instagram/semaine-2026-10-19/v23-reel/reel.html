@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Reiz reel 19h</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  #s1 .line { padding-bottom: .16em; }
+  .clock { position: absolute; left: 0; right: 0; text-align: center; font-weight: 900; letter-spacing: -.05em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .feed { position: absolute; left: 540px; width: 720px; margin-left: -360px; display: grid; gap: 22px; }
+  .fr { display: flex; align-items: center; gap: 26px; background: #161616; border: 2px solid #2a2a2a; border-radius: 36px; padding: 24px 30px; }
+  .fr .a { width: 96px; height: 96px; border-radius: 50%; background: #fff; color: #000; display: grid; place-items: center; font-size: 44px; font-weight: 900; flex: none; }
+  .fr b { display: block; font-size: 38px; font-weight: 900; letter-spacing: -.02em; }
+  .fr span { display: block; font-size: 28px; font-weight: 600; color: #8a8a8a; margin-top: 4px; }
+  .fr .ok { margin-left: auto; width: 62px; height: 62px; border-radius: 50%; background: #fff; color: #000; display: grid; place-items: center; font-size: 34px; font-weight: 900; }
+  .fr.me { border: 3px dashed #666; background: transparent; }
+  .fr.me .a { background: #2a2a2a; color: #888; }
+  .fr.me .ok { background: transparent; border: 3px dashed #666; color: #888; }
+</style></head>
+<body>
+<div id="stage">
+  <div id="glow"></div><div id="dust"></div>
+
+  <div class="scene" id="s1"><div class="center" style="top: 420px">
+    <div class="kick">Ce soir</div>
+    <div class="clock" id="c1" style="position: static; font-size: 250px; margin-top: 40px">18:59</div>
+    <h1 style="font-size: 110px; margin-top: 50px"><span class="line"><span>Le canapé</span></span><span class="line"><span style="color:#777">ou la salle ?</span></span></h1>
+  </div></div>
+
+  <div class="scene" id="s2">
+    <div class="clock" id="c2" style="top: 560px; font-size: 300px">18:59</div>
+    <div class="notif" id="n1" style="top: 1000px"><div class="ic"><img src="assets/ecriture-reiz-blanc-trim.png" alt=""></div><div style="flex:1"><div class="t">Reiz<span>19:00</span></div><div class="m">Pas encore de séance aujourd'hui.<br>Ton cercle, lui, a posté 👀</div></div></div>
+  </div>
+
+  <div class="scene" id="s3">
+    <div class="center" style="top: 300px"><div class="kick"><span class="line"><span>Ton cercle aujourd'hui</span></span></div></div>
+    <div class="feed" style="top: 420px">
+      <div class="fr" id="r1"><div class="a">S</div><div><b>Sarah</b><span>Salle, 17h12</span></div><div class="ok">✓</div></div>
+      <div class="fr" id="r2"><div class="a">T</div><div><b>Théo</b><span>Course, 18h05</span></div><div class="ok">✓</div></div>
+      <div class="fr" id="r3"><div class="a">N</div><div><b>Nathan</b><span>Salle, 18h40</span></div><div class="ok">✓</div></div>
+      <div class="fr me" id="r4"><div class="a">?</div><div><b>Toi</b><span>pas encore</span></div><div class="ok">?</div></div>
+    </div>
+  </div>
+
+  <div class="scene" id="s4">
+    <div class="center" style="top: 600px"><h1 style="font-size: 124px"><span class="line"><span>Il est 19h.</span></span><span class="line"><span style="color:#777">T'as encore</span></span><span class="line"><span style="color:#777">le temps.</span></span></h1>
+    <div class="small" style="margin-top: 50px" id="cercle">Ton cercle te regarde.</div></div>
+  </div>
+
+  <div class="scene" id="s5"><div class="center" style="top: 640px">
+    <img class="logo" id="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+    <div class="small" id="date" style="margin-top: 60px">Bientôt sur iPhone</div>
+    <div style="margin-top: 34px"><span class="pill" id="pill">Abonne-toi pour être prévenu</span></div>
+  </div></div>
+</div>
+<canvas id="grain" width="540" height="960"></canvas><div id="vignette"></div>
+<script src="common.js"></script>
+<script>
+const T = { s2: 2.8, flip: 3.6, notif: 4.1, s3: 6.6, r1: 7.1, r2: 7.6, r3: 8.1, r4: 8.8, s4: 10.8, s5: 13.4, dur: 16.2 };
+window.TIMELINE = T;
+dust(47);
+function render(t) {
+  grain(t); motes(t);
+  let gc = [200, 200, 210], ga = .25;
+  if (scene(t, 's1', 0, T.s2, true)) { $('#s1').style.transform = `scale(${1 + .05 * seg(t, 0, T.s2)})`; $('#c1').style.opacity = .75 + .25 * Math.abs(Math.cos(t * 3.2)); }
+  if (scene(t, 's2', T.s2, T.s3)) {
+    const on = t >= T.flip, f = ex(seg(t, T.flip, T.flip + .35));
+    $('#c2').textContent = on ? '19:00' : '18:59'; $('#c2').style.transform = `scale(${on ? lerp(1.12, 1, f) : 1})`;
+    $('#c2').style.textShadow = on ? `0 0 ${80 * (1 - f) + 30}px rgba(255,255,255,.45)` : 'none';
+    const q = ex(seg(t, T.notif, T.notif + .5)); $('#n1').style.transform = `translateY(${(1 - q) * -300}px) scale(${lerp(.92, 1, q)})`; $('#n1').style.opacity = cl(q * 2);
+    gc = [230, 230, 230]; ga = on ? .38 : .18;
+  }
+  if (scene(t, 's3', T.s3, T.s4)) {
+    lines('#s3', t, T.s3 + .05);
+    [['#r1', T.r1], ['#r2', T.r2], ['#r3', T.r3], ['#r4', T.r4]].forEach(([id, a]) => { const q = seg(t, a, a + .4), e = $(id); e.style.opacity = cl(q * 2.5); e.style.transform = `translateX(${(1 - back(q)) * 80}px)`; });
+    if (t > T.r4 + .4) $('#r4').style.transform = `scale(${1 + .025 * Math.sin((t - T.r4) * 7)})`;
+    gc = [255, 255, 255]; ga = .28;
+  }
+  if (scene(t, 's4', T.s4, T.s5)) { lines('#s4', t, T.s4 + .05, .18); pop('#cercle', t, T.s4 + .9); gc = [210, 210, 220]; ga = .32; }
+  if (scene(t, 's5', T.s5, T.dur + 1)) {
+    const k = ex(seg(t, T.s5 + .05, T.s5 + .6)); $('#logo').style.transform = `scale(${lerp(1.25, 1, k)})`; $('#logo').style.opacity = k;
+    [['#date', .6], ['#pill', .9]].forEach(([id, d]) => { pop(id, t, T.s5 + d); $(id).style.display = 'inline-block'; }); gc = [210, 210, 220]; ga = .35;
+  }
+  $('#stage').style.transform = `scale(${1 + .012 * Math.sin(t * .5)})`; glow(gc, ga);
+}
+ready(render);
+</script></body></html>

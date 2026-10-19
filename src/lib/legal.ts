@@ -2,7 +2,14 @@
 // web de landing/ (cgu.html, confidentialite.html) : si tu modifies l'un, modifie l'autre.
 // Aucun lien externe n'est nécessaire pour les lire : tout est dans l'application.
 
+import { contactsAvailable } from './contacts';
+
 export const SUPPORT_EMAIL = 'reizapp.contact@gmail.com';
+
+// Les passages « Contacts » de la politique ne s'affichent que dans une version de l'app qui embarque vraiment
+// la fonction (module natif expo-contacts, version 1.1.0). Un ancien build qui reçoit ce texte par mise à jour à
+// distance garde l'ancienne politique : elle décrit toujours exactement ce que fait son app.
+const WITH_CONTACTS = contactsAvailable();
 
 export type LegalSection = { h: string; p?: string[]; list?: string[] };
 export type LegalDoc = { id: 'cgu' | 'privacy' | 'rules'; title: string; updated: string; intro?: string; sections: LegalSection[] };
@@ -35,7 +42,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
   {
     id: 'privacy',
     title: 'Politique de confidentialité',
-    updated: '3 octobre 2026',
+    updated: WITH_CONTACTS ? '20 octobre 2026' : '3 octobre 2026',
     sections: [
       { h: '1. Qui sommes-nous ?', p: [`Reiz est une application mobile éditée par Yllan Karsenty (« nous »). Elle permet de suivre ses objectifs personnels et de partager sa progression avec un cercle d'amis. Pour toute question relative à tes données : ${SUPPORT_EMAIL}.`] },
       { h: '2. Données que nous collectons', list: [
@@ -44,16 +51,20 @@ export const LEGAL_DOCS: LegalDoc[] = [
         "Données sociales : liste d'amis, cercle proche, demandes d'amitié, blocages, signalements.",
         "Données techniques : jeton de notification push de ton appareil (si tu acceptes les notifications), journaux techniques de sécurité.",
         "Lieux d'entraînement (facultatif) : si tu actives la détection d'arrivée, ta position est lue sur ton téléphone pour savoir quand tu arrives à un lieu que tu as choisi (ta salle, ton stade). Les coordonnées de ces lieux restent sur ton téléphone et ne sont jamais envoyées à nos serveurs. Seul l'événement « arrivé à <nom du lieu> », avec l'heure, est enregistré, et visible par ton cercle proche.",
-      ], p: ['Nous ne collectons ni contacts, ni données publicitaires, et aucune position en dehors de la fonction facultative ci-dessus. Nous ne vendons aucune donnée.'] },
+        ...(WITH_CONTACTS ? ["Contacts (facultatif) : si tu touches « Retrouver mes contacts », ton téléphone te demande l'accès à ton carnet d'adresses. Les noms, e-mails et numéros restent sur ton téléphone. Pour te dire lesquels de tes contacts sont déjà sur Reiz, l'application calcule l'empreinte de chaque adresse e-mail (une version chiffrée à sens unique, SHA-256) et envoie seulement ces empreintes à nos serveurs. Ils les comparent à celles des comptes Reiz et répondent avec les comptes qui correspondent (prénom, nom d'utilisateur, photo de profil), sans conserver ces empreintes. Les numéros servent uniquement à ouvrir Messages avec un texte d'invitation déjà écrit : rien n'est envoyé sans ton tap sur « Envoyer »."] : []),
+      ], p: [WITH_CONTACTS
+        ? "Nous ne collectons aucune donnée publicitaire et aucune position en dehors de la fonction « Lieux d'entraînement », et nous ne conservons jamais ton carnet d'adresses. Nous ne vendons aucune donnée."
+        : 'Nous ne collectons ni contacts, ni données publicitaires, et aucune position en dehors de la fonction facultative ci-dessus. Nous ne vendons aucune donnée.'] },
       { h: '3. Pourquoi (bases légales)', list: [
         'Fournir le service (exécution du contrat) : compte, fil, amis, publication.',
         'Notifications push (consentement) : tu peux les refuser ou les désactiver à tout moment dans les réglages de ton téléphone.',
         'Sécurité et modération (intérêt légitime) : traitement des signalements, prévention des abus.',
         'Localisation et alerte à ton cercle proche (consentement) : tu actives la fonction toi-même, après une explication. Tu peux la couper à tout moment dans Réglages, « Prévenir mon cercle proche », ou dans les réglages de localisation de ton iPhone.',
+        ...(WITH_CONTACTS ? ["Retrouver tes contacts (consentement) : tu lances la fonction toi-même, et l'accès au carnet d'adresses est demandé par ton téléphone à ce moment-là. Tu peux le retirer à tout moment dans les réglages de ton iPhone, rubrique Reiz, Contacts."] : []),
       ] },
       { h: '4. Où sont stockées tes données ?', p: ["Tes données sont hébergées par Supabase sur des serveurs situés dans l'Union européenne (Stockholm, Suède). Supabase agit comme sous-traitant au sens du RGPD. Si tu acceptes les notifications, leur envoi passe par le service de notifications d'Expo puis par Apple ou Google, qui reçoivent le jeton de ton appareil et le texte de la notification."] },
-      { h: '5. Qui voit ton contenu ?', p: ["Ta progression est visible selon la visibilité que tu choisis pour chaque objectif : Mon cercle (tes amis), Cercle proche (les amis que tu as choisis) ou Moi seul. Ton prénom, ton nom d'utilisateur, ta photo de profil et ta bio sont visibles des utilisateurs connectés (recherche d'amis). Les alertes « je suis à la salle » ne sont visibles que par ton cercle proche. Si tu partages un visuel de ta progression sur Instagram, c'est toi qui décides de le publier : Reiz ne publie jamais rien à ta place."] },
-      { h: '6. Combien de temps ?', p: ["Tes données sont conservées tant que ton compte existe. La suppression de ton compte (Réglages, puis « Supprimer mon compte ») efface immédiatement et définitivement ton compte, tes publications, tes photos, tes vidéos, tes objectifs et tes liens d'amitié."] },
+      { h: '5. Qui voit ton contenu ?', p: ["Ta progression est visible selon la visibilité que tu choisis pour chaque objectif : Mon cercle (tes amis), Cercle proche (les amis que tu as choisis) ou Moi seul. Ton prénom, ton nom d'utilisateur, ta photo de profil et ta bio sont visibles des utilisateurs connectés (recherche d'amis). Les alertes « je suis à la salle » ne sont visibles que par ton cercle proche. Si tu partages un visuel de ta progression sur Instagram, c'est toi qui décides de le publier : Reiz ne publie jamais rien à ta place." + (WITH_CONTACTS ? " Si quelqu'un a ton adresse e-mail dans ses contacts et utilise « Retrouver mes contacts », il peut voir que tu es sur Reiz, avec ton prénom, ton nom d'utilisateur et ta photo de profil. Les utilisateurs bloqués, dans un sens comme dans l'autre, n'apparaissent pas dans ces résultats, et un compte créé avec « Masquer mon e-mail » d'Apple ne peut pas être retrouvé de cette façon." : '')] },
+      { h: '6. Combien de temps ?', p: ["Tes données sont conservées tant que ton compte existe. La suppression de ton compte (Réglages, puis « Supprimer mon compte ») efface immédiatement et définitivement ton compte, tes publications, tes photos, tes vidéos, tes objectifs et tes liens d'amitié." + (WITH_CONTACTS ? " Les empreintes d'e-mails envoyées pour retrouver tes contacts ne sont pas conservées." : '')] },
       { h: '7. Tes droits (RGPD)', p: [`Tu disposes des droits d'accès, de rectification, d'effacement, de portabilité, de limitation et d'opposition. Tu peux les exercer directement dans l'app (modification du profil, « Exporter mes données », suppression du compte) ou en écrivant à ${SUPPORT_EMAIL}. Tu peux aussi saisir la CNIL (cnil.fr).`] },
       { h: '8. Mineurs', p: ["Reiz est réservé aux personnes de 15 ans et plus. Si tu as moins de 15 ans, l'accord d'un parent ou tuteur est requis."] },
       { h: '9. Modifications', p: ["Cette politique peut évoluer. La date en haut de page indique la dernière version ; en cas de changement important, nous t'en informerons dans l'app."] },

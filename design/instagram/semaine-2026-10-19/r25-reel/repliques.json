@@ -1,0 +1,7 @@
+[
+ {"id": "v1", "texte": "Personne te dit que ta semaine se joue le dimanche soir.", "emotion": 0.8},
+ {"id": "v2", "texte": "Tu ouvres Reiz. Quatre potes sur six ont posté cette semaine.", "emotion": 0.85},
+ {"id": "v3", "texte": "Hugo, rien depuis mardi. Il est à relancer.", "emotion": 0.85},
+ {"id": "v4", "texte": "Tu lui envoies un message. Et lundi, il y va.", "emotion": 0.9},
+ {"id": "v5", "texte": "Reiz. Bientôt sur iPhone. Abonne-toi pour être prévenu.", "emotion": 0.9}
+]

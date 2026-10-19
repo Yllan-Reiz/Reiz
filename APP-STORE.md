@@ -208,6 +208,8 @@ Localisation : à « Collectez-vous des données de localisation ? », réponds 
 
 À « Utilisez-vous ces données à des fins de suivi ? », réponds **Non** partout : Reiz n'a ni régie publicitaire ni outil d'analyse tiers.
 
+Version avec la fonction « Retrouver mes contacts » (pas dans le build 10) : ajouter une ligne « Contacts », voir `a-publier-avec-contacts/LISEZ-MOI.md` (réponses App Store Connect et Google Play, page de politique prête, liste du jour J).
+
 ---
 
 ## Classification par âge

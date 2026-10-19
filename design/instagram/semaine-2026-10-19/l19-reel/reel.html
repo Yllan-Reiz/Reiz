@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Reiz reel pourcentages</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  .pct { position: absolute; left: 0; right: 0; text-align: center; font-weight: 900; letter-spacing: -.06em; line-height: 1; }
+  .strike { position: absolute; left: 540px; height: 22px; background: #fff; border-radius: 11px; transform-origin: 0 50%; box-shadow: 0 0 40px rgba(255,255,255,.5); }
+  .bar { position: absolute; left: 540px; width: 700px; margin-left: -350px; height: 34px; border-radius: 17px; background: #222; overflow: hidden; }
+  .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: #fff; border-radius: 17px; }
+  .blbl { position: absolute; left: 540px; width: 700px; margin-left: -350px; display: flex; justify-content: space-between; font-size: 34px; font-weight: 800; color: var(--dim); }
+  .big4 { position: absolute; left: 540px; width: 760px; margin-left: -380px; display: flex; gap: 28px; }
+  .big4 i { flex: 1; height: 150px; border-radius: 40px; background: #1c1c1c; border: 4px solid #2c2c2c; display: grid; place-items: center; font-style: normal; font-size: 64px; font-weight: 900; color: #000; }
+  .big4 i.on { background: #fff; border-color: #fff; box-shadow: 0 0 60px rgba(255,255,255,.35); }
+  #s1 .line { padding-bottom: .16em; }
+  .big4 i.last { background: transparent; border: 4px dashed #777; color: #777; }
+</style></head>
+<body>
+<div id="stage">
+  <div id="glow"></div><div id="dust"></div>
+
+  <div class="scene" id="s1"><div class="center" style="top: 470px">
+    <div class="kick"><span class="line"><span>Opinion</span></span></div>
+    <h1 style="font-size: 270px; margin-top: 40px"><span class="line"><span>75 %</span></span></h1>
+    <h1 style="font-size: 108px; margin-top: 30px"><span class="line"><span>ça motive</span></span><span class="line"><span style="color:#777">personne.</span></span></h1>
+  </div></div>
+
+  <div class="scene" id="s2">
+    <div class="center" style="top: 330px"><h1 style="font-size: 92px"><span class="line"><span>Ton appli de sport</span></span><span class="line"><span style="color:#777">te dit ça :</span></span></h1></div>
+    <div class="pct" id="pctn" style="top: 700px; font-size: 300px">0 %</div>
+    <div class="strike" id="strike" style="top: 830px; width: 760px; margin-left: -380px"></div>
+    <div class="blbl" style="top: 1110px"><span>Objectif salle</span><span>ce mois-ci</span></div>
+    <div class="bar" style="top: 1170px"><i id="barf"></i></div>
+    <div class="center" style="top: 1300px"><div class="small" id="zap">Et ton cerveau zappe.</div></div>
+  </div>
+
+  <div class="scene" id="s3">
+    <div class="center" style="top: 360px"><div class="kick"><span class="line"><span>Sur Reiz</span></span></div>
+    <h1 style="font-size: 124px; margin-top: 34px"><span class="line"><span>3 séances</span></span><span class="line"><span>sur 4.</span></span></h1></div>
+    <div class="big4" id="b4" style="top: 900px"><i>✓</i><i>✓</i><i>✓</i><i class="last">?</i></div>
+    <div class="center" style="top: 1170px"><h1 id="reste" style="font-size: 84px">Il t'en reste <span style="color:#777">une.</span></h1></div>
+  </div>
+
+  <div class="scene" id="s4">
+    <div class="center" style="top: 380px"><h1 style="font-size: 110px"><span class="line"><span>Une séance,</span></span><span class="line"><span style="color:#777">tu la vois.</span></span><span class="line"><span>Tes potes aussi.</span></span></h1></div>
+    <div class="notif" id="n1" style="top: 1000px"><div class="ic"><img src="assets/ecriture-reiz-blanc-trim.png" alt=""></div><div style="flex:1"><div class="t">Reiz<span>maintenant</span></div><div class="m">Théo : plus qu'une 💪<br>Jeudi 18h, on y va ?</div></div></div>
+  </div>
+
+  <div class="scene" id="s5"><div class="center" style="top: 640px">
+    <img class="logo" id="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+    <div class="small" id="date" style="margin-top: 60px">Bientôt sur iPhone</div>
+    <div style="margin-top: 34px"><span class="pill" id="pill">Abonne-toi pour être prévenu</span></div>
+  </div></div>
+</div>
+<canvas id="grain" width="540" height="960"></canvas><div id="vignette"></div>
+<script src="common.js"></script>
+<script>
+const T = { s2: 2.8, cut: 5.3, s3: 6.8, f1: 7.5, f2: 8.0, f3: 8.5, rest: 9.3, s4: 11.0, notif: 11.7, s5: 13.4, dur: 16.2 };
+window.TIMELINE = T;
+dust(33);
+function render(t) {
+  grain(t); motes(t);
+  let gc = [200, 200, 210], ga = .25;
+  if (scene(t, 's1', 0, T.s2, true)) { $('#s1').style.transform = `scale(${1 + .05 * seg(t, 0, T.s2)})`; }
+  if (scene(t, 's2', T.s2, T.s3)) {
+    lines('#s2', t, T.s2 + .05);
+    const k = io(seg(t, T.s2 + .5, T.s2 + 1.8)), v = Math.round(75 * k);
+    $('#pctn').textContent = v + ' %'; $('#barf').style.width = (75 * k) + '%';
+    const c = ex(seg(t, T.cut, T.cut + .3)); $('#strike').style.transform = `scaleX(${c}) rotate(-6deg)`;
+    $('#pctn').style.color = t >= T.cut ? '#555' : '#fff';
+    $('#pctn').style.transform = `translateX(${t >= T.cut && t < T.cut + .25 ? Math.sin(t * 90) * 10 : 0}px)`;
+    pop('#zap', t, T.cut + .35); gc = [220, 220, 220]; ga = t >= T.cut ? .12 : .3;
+  }
+  if (scene(t, 's3', T.s3, T.s4)) {
+    lines('#s3', t, T.s3 + .05);
+    $$('#b4 i').forEach((d, i) => { const at = [T.f1, T.f2, T.f3][i]; if (at === undefined) { const q = ex(seg(t, T.f3 + .3, T.f3 + .7)); d.style.opacity = q; d.style.transform = `scale(${1 + .05 * Math.sin(t * 6) * q})`; return; }
+      const q = seg(t, at, at + .35); d.classList.toggle('on', t >= at); d.style.transform = `scale(${t >= at ? lerp(1.18, 1, ex(q)) : .92})`; d.style.color = t >= at ? '#000' : 'transparent'; });
+    pop('#reste', t, T.rest, .45, 30); gc = [255, 255, 255]; ga = t >= T.f3 ? .4 : .22;
+  }
+  if (scene(t, 's4', T.s4, T.s5)) {
+    lines('#s4', t, T.s4 + .05, .16);
+    const q = ex(seg(t, T.notif, T.notif + .5)); $('#n1').style.transform = `translateY(${(1 - q) * 220}px) scale(${lerp(.92, 1, q)})`; $('#n1').style.opacity = cl(q * 2);
+    gc = [200, 200, 220]; ga = .3;
+  }
+  if (scene(t, 's5', T.s5, T.dur + 1)) {
+    const k = ex(seg(t, T.s5 + .05, T.s5 + .6)); $('#logo').style.transform = `scale(${lerp(1.25, 1, k)})`; $('#logo').style.opacity = k;
+    [['#date', .6], ['#pill', .9]].forEach(([id, d]) => { pop(id, t, T.s5 + d); $(id).style.display = 'inline-block'; }); gc = [210, 210, 220]; ga = .35;
+  }
+  $('#stage').style.transform = `scale(${1 + .012 * Math.sin(t * .5)})`; glow(gc, ga);
+}
+ready(render);
+</script></body></html>

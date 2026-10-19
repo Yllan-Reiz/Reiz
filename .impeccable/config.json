@@ -8,6 +8,21 @@
         "value": "inter",
         "createdAt": "2026-09-30T07:49:00.470Z",
         "reason": "Inter est la police de la marque Reiz, utilisée dans l'app (src/styles.ts) et toute la landing ; choix antérieur du projet, non confirmé explicitement par l'utilisateur dans cette session"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "#ffffff on #ff3b30",
+        "createdAt": "2026-10-11T16:07:51.784Z",
+        "reason": "Claude: pastille rouge de notification reproduite à l'identique de l'app (styles.ts headerBadge #ff3b30), dans les maquettes d'écran"
+      },
+      {
+        "rule": "clipped-overflow-container",
+        "value": "*",
+        "files": [
+          "site/index.html"
+        ],
+        "createdAt": "2026-10-11T16:07:51.856Z",
+        "reason": "Claude: écrans de téléphone et photos qui rognent volontairement leur contenu, pas de popover"
       }
     ]
   }

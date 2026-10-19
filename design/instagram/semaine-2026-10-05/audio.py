@@ -29,6 +29,16 @@ elif name == 'j08-reel':
         m.add(T['s5'] - .8, rise(.85), .6); m.add(T['s5'] + .05, impact(2.6, 70, 26), 1.1); m.add(T['s5'] + .95, pop(990), .6)
         m.beat(bpm=120, start=0.5, end=T['dur'] - .6, drop=[(T['s5'] - .5, T['s5'] + .05)])
     run(T['dur'], f)
+elif name == 'k10-reel':
+    T = dict(s2=2.6, s3=8.0, s4=10.8, s5=13.0, dur=16.0)
+    def f(m):
+        m.add(0, impact(1.6, 80, 30), .8)
+        for k in ('s2', 's3', 's4', 's5'): m.add(T[k] - .2, swish(), .7)
+        for i in range(5): m.add(T['s2'] + 1.2 + i * .85, tick(1400 + i * 150), .45)
+        m.add(T['s3'] + .4, fail(), .5)
+        m.add(T['s5'] - .8, rise(.85), .6); m.add(T['s5'] + .05, impact(2.6, 70, 26), 1.1); m.add(T['s5'] + .95, pop(990), .6)
+        m.beat(bpm=90, start=T['s2'], end=T['dur'] - .6, drop=[(T['s5'] - .5, T['s5'] + .05)])
+    run(T['dur'], f)
 else:
     T = dict(s2=2.4, load=3.4, done=5.0, s3=6.8, s4=11.0, s5=12.8, dur=15.6)
     def f(m):

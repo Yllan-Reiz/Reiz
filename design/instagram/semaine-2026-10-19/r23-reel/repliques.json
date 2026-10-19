@@ -1,0 +1,7 @@
+[
+ {"id": "v1", "texte": "Théo vient d'arriver à la salle. Et toi, t'es où ?", "emotion": 0.9},
+ {"id": "v2", "texte": "Sur Reiz, quand t'arrives à la salle, ton cercle proche est prévenu. Tout seul.", "emotion": 0.85},
+ {"id": "v3", "texte": "Pas tout le monde. Juste les trois potes que t'as choisis.", "emotion": 0.85},
+ {"id": "v4", "texte": "Tu le vois arriver. T'as plus d'excuse pour rester sur ton canapé.", "emotion": 0.9},
+ {"id": "v5", "texte": "Reiz. Bientôt sur iPhone. Abonne-toi pour être prévenu.", "emotion": 0.9}
+]

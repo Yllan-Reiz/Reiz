@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  html,body{margin:0;width:1200px;height:630px;overflow:hidden;background:#0a0a0a}
+  .og{position:relative;width:1200px;height:630px;display:grid;grid-template-columns:1fr 420px;align-items:center;padding:0 70px;overflow:hidden}
+  .og .bg{position:absolute;inset:0;z-index:-1}
+  .og .bg img{width:100%;height:100%;object-fit:cover}
+  .og .bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,10,10,.92),rgba(10,10,10,.45) 70%,rgba(10,10,10,.7))}
+  .og .tag{display:flex;align-items:center;gap:14px;color:rgba(235,235,245,.7);font-size:14px;font-weight:700;letter-spacing:.28em;text-transform:uppercase}
+  .og .tag svg{width:110px;color:#fff}
+  .og h1{margin:26px 0 0;color:#fff;font-style:italic;font-weight:900;font-size:96px;line-height:.94;letter-spacing:-.04em}
+  .og p{margin:26px 0 0;color:#c9c9c9;font-size:26px;line-height:1.4;max-width:560px}
+  .og .ph{position:relative;height:630px}
+  .og .ph .phone-wrap{--pw:330px;position:absolute;top:70px;left:40px}
+  .og .sticker{animation:none}
+</style></head>
+<body>
+<div class="og">
+  <div class="bg"><img src="assets/img/bg-cage-wide.jpg" alt=""></div>
+  <div>
+    <div class="tag"><svg viewBox="0 0 157.21 55.57"><use href="index.html#logo"/></svg>Rise to your goals</div>
+    <h1>Ton cercle<br>te regarde.</h1>
+    <p>Fixe ton objectif, poste ta séance, tes amis te voient avancer.</p>
+  </div>
+  <div class="ph" id="ph"></div>
+</div>
+<script>
+// Reprend le téléphone du hero de la page d'accueil
+fetch('index.html').then(r=>r.text()).then(t=>{
+  const d=new DOMParser().parseFromString(t,'text/html');
+  document.body.prepend(d.querySelector('svg[aria-hidden]'));
+  const ph=d.querySelector('.hero-phone'); ph.classList.remove('hero-phone');
+  document.getElementById('ph').append(ph);
+  const st=d.querySelector('.hero-stage .sticker'); st.style.cssText='--s:120px;top:40px;right:-6px;--rot:8deg;animation:none';
+  document.getElementById('ph').append(st);
+  document.querySelectorAll('use').forEach(u=>{const h=u.getAttribute('href'); if(h.startsWith('index.html'))u.setAttribute('href',h.replace('index.html',''))});
+});
+</script>
+</body></html>

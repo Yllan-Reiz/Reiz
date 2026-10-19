@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Reiz reel en attente</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  .store { position: absolute; left: 540px; top: 640px; width: 760px; margin-left: -380px; background: #161616; border: 2px solid #2a2a2a; border-radius: 52px; padding: 44px; }
+  .top { display: flex; gap: 36px; align-items: center; }
+  .icon { width: 170px; height: 170px; border-radius: 40px; background: #000; border: 2px solid #333; display: grid; place-items: center; flex: none; }
+  .icon img { width: 126px; }
+  .nm { font-size: 42px; font-weight: 900; letter-spacing: -.03em; line-height: 1.05; }
+  .sb { font-size: 28px; color: var(--muted); margin-top: 8px; font-weight: 600; }
+  .status { margin-top: 40px; display: flex; align-items: center; gap: 22px; background: #0f0f0f; border: 2px solid #2a2a2a; border-radius: 28px; padding: 28px 32px; font-size: 38px; font-weight: 800; }
+  .dot { width: 26px; height: 26px; border-radius: 50%; background: #fff; flex: none; }
+  .days { position: absolute; left: 540px; top: 1230px; margin-left: -300px; width: 600px; text-align: center; }
+  .days .n { font-size: 150px; font-weight: 900; letter-spacing: -.05em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .days .l { font-size: 30px; font-weight: 800; letter-spacing: .3em; color: var(--dim); margin-top: 8px; }
+</style></head>
+<body>
+<div id="stage">
+  <div id="glow"></div><div id="dust"></div>
+
+  <div class="scene" id="s1"><div class="center" style="top: 560px">
+    <div class="kick"><span class="line"><span>Statut</span></span></div>
+    <h1 style="font-size: 120px; margin-top: 34px"><span class="line"><span>Reiz est</span></span><span class="line"><span>en attente</span></span><span class="line"><span style="color:#777">chez Apple.</span></span></h1>
+  </div></div>
+
+  <div class="scene" id="s2">
+    <div class="store" id="store"><div class="top"><div class="icon"><img src="assets/ecriture-reiz-blanc-trim.png" alt=""></div><div><div class="nm">Reiz : objectifs<br>entre amis</div><div class="sb">Envoyé le 5 octobre</div></div></div>
+      <div class="status"><span class="dot" id="dot"></span>En attente de vérification</div></div>
+    <div class="days" id="days"><div class="n" id="dn">1</div><div class="l" id="dl">JOUR D'ATTENTE</div></div>
+  </div>
+
+  <div class="scene" id="s3"><div class="center" style="top: 600px"><h1 style="font-size: 110px"><span class="line"><span>Rien à faire,</span></span><span class="line"><span style="color:#777">sauf attendre.</span></span></h1><div class="small" style="margin-top: 40px">Et te prévenir<br>dès que c'est bon.</div></div></div>
+
+  <div class="scene" id="s4"><div class="center" style="top: 600px"><h1 style="font-size: 116px"><span class="line"><span>Tu le sauras</span></span><span class="line"><span>ici en premier.</span></span></h1></div></div>
+
+  <div class="scene" id="s5"><div class="center" style="top: 600px">
+    <img class="logo" id="logo" src="assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+    <div class="small" id="date" style="margin-top: 60px">On te prévient dès que c'est sorti</div>
+    <div style="margin-top: 34px"><span class="pill" id="pill">Abonne-toi</span></div>
+  </div></div>
+</div>
+<canvas id="grain" width="540" height="960"></canvas><div id="vignette"></div>
+<script src="common.js"></script>
+<script>
+const T = { s2: 2.6, s3: 8.0, s4: 10.8, s5: 13.0, dur: 16.0 };
+window.TIMELINE = T;
+dust(61);
+function render(t) {
+  grain(t); motes(t);
+  let gc = [140, 140, 160], ga = .25;
+  if (scene(t, 's1', 0, T.s2, true)) { $$('#s1 .line > span').forEach((s, i) => s.style.transform = `translateY(${(1 - ex(seg(t, -.3 + i * .1, .3 + i * .1))) * 60}%)`); $('#s1 h1').style.transform = `scale(${1 + .05 * seg(t, 0, T.s2)})`; }
+  if (scene(t, 's2', T.s2, T.s3)) {
+    const k = ex(seg(t, T.s2 + .2, T.s2 + .8)); $('#store').style.transform = `translateY(${(1 - k) * 140}px)`; $('#store').style.opacity = k;
+    const q = seg(t, T.s2 + 1.2, T.s3 - 1.0), d = 1 + Math.floor(q * 4.999); $('#dn').textContent = d; $('#dl').textContent = d > 1 ? "JOURS D'ATTENTE" : "JOUR D'ATTENTE";
+    const pulse = .5 + .5 * Math.sin(t * 5); $('#dot').style.opacity = .35 + .65 * pulse;
+    pop('#days', t, T.s2 + .9, .5, 30);
+    gc = [200, 200, 220]; ga = .3;
+  }
+  if (scene(t, 's3', T.s3, T.s4)) { lines('#s3', t, T.s3 + .05, .2); gc = [160, 170, 255]; ga = .3; }
+  if (scene(t, 's4', T.s4, T.s5)) { lines('#s4', t, T.s4 + .05, .2); gc = [255, 255, 255]; ga = .35; }
+  if (scene(t, 's5', T.s5, T.dur + 1)) {
+    const k = ex(seg(t, T.s5 + .05, T.s5 + .6)); $('#logo').style.transform = `scale(${lerp(1.25, 1, k)})`; $('#logo').style.opacity = k;
+    [['#date', .5], ['#pill', .8]].forEach(([id, d]) => { pop(id, t, T.s5 + d); $(id).style.display = 'inline-block'; }); gc = [200, 200, 220]; ga = .35;
+  }
+  $('#stage').style.transform = `scale(${1 + .012 * Math.sin(t * .5)})`; glow(gc, ga);
+}
+ready(render);
+</script></body></html>

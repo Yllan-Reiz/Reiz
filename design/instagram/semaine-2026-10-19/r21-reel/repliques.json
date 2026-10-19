@@ -1,0 +1,7 @@
+[
+ {"id": "v1", "texte": "T'as pas besoin d'aller à la salle tous les jours.", "emotion": 0.8},
+ {"id": "v2", "texte": "Sept jours sur sept, tu tiens deux semaines. Après, tu lâches tout.", "emotion": 0.85},
+ {"id": "v3", "texte": "Choisis tes jours. Lundi, mercredi, vendredi. Et ton cercle les voit.", "emotion": 0.85},
+ {"id": "v4", "texte": "Un jour de repos prévu, c'est pas un jour raté.", "emotion": 0.85},
+ {"id": "v5", "texte": "Reiz. Bientôt sur iPhone. Abonne-toi pour être prévenu.", "emotion": 0.9}
+]
