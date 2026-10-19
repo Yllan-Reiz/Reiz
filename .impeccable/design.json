@@ -1,0 +1,521 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-11T16:35:20+00:00",
+  "title": "Design System: Reiz",
+  "extensions": {
+    "colorMeta": {
+      "ink-black": {
+        "role": "neutral",
+        "displayName": "Noir Encre",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#141414",
+          "#222222",
+          "#3a3a3a",
+          "#5c5c5c",
+          "#8a8a8a",
+          "#bbbbbb",
+          "#eeeeee"
+        ]
+      },
+      "card-black": {
+        "role": "neutral",
+        "displayName": "Noir Carte",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#141414",
+          "#222222",
+          "#3a3a3a",
+          "#5c5c5c",
+          "#8a8a8a",
+          "#bbbbbb",
+          "#eeeeee"
+        ]
+      },
+      "surface-black": {
+        "role": "neutral",
+        "displayName": "Noir Surface",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#141414",
+          "#222222",
+          "#3a3a3a",
+          "#5c5c5c",
+          "#8a8a8a",
+          "#bbbbbb",
+          "#eeeeee"
+        ]
+      },
+      "field-black": {
+        "role": "neutral",
+        "displayName": "Noir Champ",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#141414",
+          "#222222",
+          "#3a3a3a",
+          "#5c5c5c",
+          "#8a8a8a",
+          "#bbbbbb",
+          "#eeeeee"
+        ]
+      },
+      "chip-black": {
+        "role": "neutral",
+        "displayName": "Noir Puce",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#141414",
+          "#222222",
+          "#3a3a3a",
+          "#5c5c5c",
+          "#8a8a8a",
+          "#bbbbbb",
+          "#eeeeee"
+        ]
+      },
+      "track-gray": {
+        "role": "neutral",
+        "displayName": "Gris Piste",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#141414",
+          "#222222",
+          "#3a3a3a",
+          "#5c5c5c",
+          "#8a8a8a",
+          "#bbbbbb",
+          "#eeeeee"
+        ]
+      },
+      "hairline-gray": {
+        "role": "neutral",
+        "displayName": "Gris Filet",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#141414",
+          "#222222",
+          "#3a3a3a",
+          "#5c5c5c",
+          "#8a8a8a",
+          "#bbbbbb",
+          "#eeeeee"
+        ]
+      },
+      "signal-white": {
+        "role": "primary",
+        "displayName": "Blanc Signal",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#141414",
+          "#222222",
+          "#3a3a3a",
+          "#5c5c5c",
+          "#8a8a8a",
+          "#bbbbbb",
+          "#eeeeee"
+        ]
+      },
+      "text-bright": {
+        "role": "neutral",
+        "displayName": "Texte Vif",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#141414",
+          "#222222",
+          "#3a3a3a",
+          "#5c5c5c",
+          "#8a8a8a",
+          "#bbbbbb",
+          "#eeeeee"
+        ]
+      },
+      "text-soft": {
+        "role": "neutral",
+        "displayName": "Texte Doux",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#141414",
+          "#222222",
+          "#3a3a3a",
+          "#5c5c5c",
+          "#8a8a8a",
+          "#bbbbbb",
+          "#eeeeee"
+        ]
+      },
+      "text-body": {
+        "role": "neutral",
+        "displayName": "Texte Courant",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#141414",
+          "#222222",
+          "#3a3a3a",
+          "#5c5c5c",
+          "#8a8a8a",
+          "#bbbbbb",
+          "#eeeeee"
+        ]
+      },
+      "text-quiet": {
+        "role": "neutral",
+        "displayName": "Texte Discret",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#141414",
+          "#222222",
+          "#3a3a3a",
+          "#5c5c5c",
+          "#8a8a8a",
+          "#bbbbbb",
+          "#eeeeee"
+        ]
+      },
+      "notif-red": {
+        "role": "tertiary",
+        "displayName": "Rouge Notification",
+        "tonalRamp": [
+          "#4a0d0a",
+          "#7a1610",
+          "#a81f17",
+          "#d4291f",
+          "#ff3b30",
+          "#ff6b62",
+          "#ff9d97",
+          "#ffd0cd"
+        ]
+      },
+      "glass-smoke": {
+        "role": "neutral",
+        "displayName": "Verre Fumé"
+      },
+      "glass-hairline": {
+        "role": "neutral",
+        "displayName": "Filet de Verre"
+      },
+      "panel-light": {
+        "role": "neutral",
+        "displayName": "Gris Clair App Store",
+        "tonalRamp": [
+          "#1c1c20",
+          "#3c3c43",
+          "#55555c",
+          "#77777e",
+          "#9a9aa1",
+          "#c4c4c9",
+          "#e2e2e6",
+          "#f2f2f4"
+        ]
+      },
+      "panel-ink": {
+        "role": "neutral",
+        "displayName": "Encre Panneau",
+        "tonalRamp": [
+          "#1c1c20",
+          "#3c3c43",
+          "#55555c",
+          "#77777e",
+          "#9a9aa1",
+          "#c4c4c9",
+          "#e2e2e6",
+          "#f2f2f4"
+        ]
+      },
+      "panel-text": {
+        "role": "neutral",
+        "displayName": "Texte Panneau",
+        "tonalRamp": [
+          "#1c1c20",
+          "#3c3c43",
+          "#55555c",
+          "#77777e",
+          "#9a9aa1",
+          "#c4c4c9",
+          "#e2e2e6",
+          "#f2f2f4"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Les deux titres signatures uniquement, en italique (ouverture et clôture)."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Un titre par section, droit."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Étapes de fonctionnalités, badge sélectionné."
+      },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "Phrase d'introduction sous chaque titre de section, 34em max."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Texte courant gris, 32em max."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Texte des boutons."
+      },
+      "fine": {
+        "displayName": "Fine",
+        "purpose": "Mentions, notes, légendes."
+      }
+    },
+    "shadows": [
+      {
+        "name": "phone-object",
+        "value": "0 40px 80px -20px rgba(0,0,0,0.85), 0 18px 30px -12px rgba(0,0,0,0.6)",
+        "purpose": "Sous le boîtier de l'iPhone uniquement."
+      },
+      {
+        "name": "floating-badge",
+        "value": "drop-shadow(0 18px 30px rgba(0,0,0,0.55))",
+        "purpose": "Filtre sous les badges illustrés flottants."
+      },
+      {
+        "name": "edge-chip",
+        "value": "0 18px 40px -12px rgba(0,0,0,0.6)",
+        "purpose": "Puce de verre qui déborde du téléphone."
+      },
+      {
+        "name": "inner-hairline",
+        "value": "inset 0 0 0 1px rgba(255,255,255,0.14)",
+        "purpose": "Contour des cartes plates et des bulles ; aucune ombre portée sur les surfaces."
+      },
+      {
+        "name": "glass",
+        "value": "background: rgba(38,38,40,0.5); backdrop-filter: blur(22px) saturate(1.5); reflet linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04) 42%, rgba(0,0,0,0.2)); contour 1px rgba(255,255,255,0.2), bas rgba(255,255,255,0.06)",
+        "purpose": "Matière Liquid Glass, toujours sur photo de salle."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Entrées, jauges, changements d'écran, tilt au relâchement."
+      },
+      {
+        "name": "ease-press",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Compression des boutons à 0.97 en 160 ms."
+      },
+      {
+        "name": "gauge-fill",
+        "value": "scaleX 0.04 vers 1, 1400ms (hero) / 900ms (écrans)",
+        "purpose": "Remplissage de la jauge, motif signature."
+      },
+      {
+        "name": "screen-swap",
+        "value": "opacity 450ms, transform scale(1.03) vers 1 700ms",
+        "purpose": "Changement d'écran du téléphone collant."
+      },
+      {
+        "name": "reveal",
+        "value": "animation-timeline view(), translateY(28px) + blur(6px) vers 0",
+        "purpose": "Apparition au défilement, CSS seul, coupée en mouvement réduit."
+      },
+      {
+        "name": "badge-tilt",
+        "value": "perspective(600px), rotation max 13deg, reflet radial masqué par la silhouette",
+        "purpose": "Survol souris du mur de badges ; désactivé en tactile et mouvement réduit."
+      },
+      {
+        "name": "float",
+        "value": "6s ease-in-out infinite, translateY -10px",
+        "purpose": "Badges flottants du hero."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "xs",
+        "value": "360px"
+      },
+      {
+        "name": "sm",
+        "value": "520px"
+      },
+      {
+        "name": "sm-plus",
+        "value": "560px"
+      },
+      {
+        "name": "nav",
+        "value": "880px"
+      },
+      {
+        "name": "md",
+        "value": "960px"
+      },
+      {
+        "name": "lg",
+        "value": "1100px"
+      },
+      {
+        "name": "xl",
+        "value": "1240px"
+      }
+    ],
+    "upstream": [
+      "src/styles.ts",
+      "src/components/GlassSurface.tsx"
+    ]
+  },
+  "components": [
+    {
+      "name": "Bouton principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Action principale : blanc plein, texte noir, compression à l'appui.",
+      "html": "<button class=\"ds-btn\">Préviens-moi à la sortie</button>",
+      "css": ".ds-btn{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;display:inline-flex;align-items:center;justify-content:center;height:54px;padding:0 24px;border:0;border-radius:16px;background:#fff;color:#000;font-weight:800;font-size:15.5px;letter-spacing:-0.01em;cursor:pointer;transition:transform 160ms cubic-bezier(0.23,1,0.32,1),background-color 200ms ease}.ds-btn:hover{background:#e9e9ea}.ds-btn:active{transform:scale(0.97)}.ds-btn:focus-visible{outline:2px solid #fff;outline-offset:3px}"
+    },
+    {
+      "name": "Bouton pilule",
+      "kind": "button",
+      "refersTo": "button-pill",
+      "description": "Appel compact de la navigation.",
+      "html": "<a class=\"ds-btn-pill\" href=\"#\">Être prévenu</a>",
+      "css": ".ds-btn-pill{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;display:inline-flex;align-items:center;height:40px;padding:0 18px;border-radius:999px;background:#fff;color:#000;font-weight:800;font-size:14px;letter-spacing:-0.01em;text-decoration:none;transition:transform 160ms cubic-bezier(0.23,1,0.32,1),background-color 200ms ease}.ds-btn-pill:hover{background:#e9e9ea}.ds-btn-pill:active{transform:scale(0.97)}.ds-btn-pill:focus-visible{outline:2px solid #fff;outline-offset:3px}"
+    },
+    {
+      "name": "Bouton fantôme",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Action secondaire sur fond noir.",
+      "html": "<button class=\"ds-btn-ghost\">En savoir plus</button>",
+      "css": ".ds-btn-ghost{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;height:54px;padding:0 24px;border:0;border-radius:16px;background:transparent;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.22);font-weight:800;font-size:15.5px;cursor:pointer;transition:background-color 200ms ease,transform 160ms cubic-bezier(0.23,1,0.32,1)}.ds-btn-ghost:hover{background:rgba(255,255,255,0.08)}.ds-btn-ghost:active{transform:scale(0.97)}.ds-btn-ghost:focus-visible{outline:2px solid #fff;outline-offset:3px}"
+    },
+    {
+      "name": "Formulaire liste d'attente",
+      "kind": "input",
+      "refersTo": "waitlist-field",
+      "description": "Barre de verre contenant le champ e-mail et le bouton blanc, posée sur photo.",
+      "html": "<div class=\"ds-bg\"><form class=\"ds-wait\"><input type=\"email\" placeholder=\"ton@email.com\" aria-label=\"Ton adresse e-mail\"><button type=\"button\">Préviens-moi</button></form></div>",
+      "css": ".ds-bg{padding:32px;background:radial-gradient(circle at 30% 40%,#5a5148,#1b1b1d 70%)}.ds-wait{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;display:flex;gap:8px;padding:6px;border-radius:22px;background:rgba(38,38,40,0.5);backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.2);transition:box-shadow 200ms ease}.ds-wait:focus-within{box-shadow:inset 0 0 0 1px rgba(255,255,255,0.55)}.ds-wait input{flex:1;min-width:0;height:54px;padding:0 16px;border:0;background:transparent;color:#fff;font:inherit;font-size:16px;outline:none}.ds-wait input::placeholder{color:#8c8c8c}.ds-wait button{height:54px;padding:0 24px;border:0;border-radius:16px;background:#fff;color:#000;font:inherit;font-weight:800;font-size:15.5px;cursor:pointer}.ds-wait button:hover{background:#e9e9ea}.ds-wait button:active{transform:scale(0.97)}"
+    },
+    {
+      "name": "Navigation de verre",
+      "kind": "nav",
+      "refersTo": "nav-bar",
+      "description": "Pilule de verre flottante : logo, liens, appel blanc.",
+      "html": "<div class=\"ds-bg\"><nav class=\"ds-nav\"><strong>Reiz.</strong><a href=\"#\">Le concept</a><a href=\"#\">Badges</a><a class=\"ds-cta\" href=\"#\">Être prévenu</a></nav></div>",
+      "css": ".ds-bg{padding:24px;background:radial-gradient(circle at 70% 40%,#4b4640,#121213 70%)}.ds-nav{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;display:flex;align-items:center;gap:4px;height:60px;padding:0 10px 0 22px;border-radius:999px;background:rgba(38,38,40,0.5);backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.2)}.ds-nav strong{color:#fff;font-weight:900;font-size:22px;letter-spacing:-0.04em;margin-right:auto}.ds-nav a{padding:9px 14px;border-radius:999px;color:rgba(235,235,245,0.72);font-size:14.5px;font-weight:600;text-decoration:none;transition:color 160ms ease,background-color 160ms ease}.ds-nav a:hover{color:#fff;background:rgba(255,255,255,0.08)}.ds-nav a:focus-visible{outline:2px solid #fff;outline-offset:3px}.ds-nav .ds-cta{height:40px;display:inline-flex;align-items:center;padding:0 18px;background:#fff;color:#000;font-weight:800}.ds-nav .ds-cta:hover{background:#e9e9ea;color:#000}"
+    },
+    {
+      "name": "Carte de verre avec jauge",
+      "kind": "card",
+      "refersTo": "glass-card",
+      "description": "Carte de verre sur photo, chiffre réel en Black et jauge blanche de 8 px.",
+      "html": "<div class=\"ds-bg\"><figure class=\"ds-glass\"><p class=\"ds-t\">Ton cercle, cette semaine</p><p class=\"ds-n\">7 <small>/ 11</small></p><p class=\"ds-s\">ont posté cette semaine</p><div class=\"ds-track\"><i></i></div></figure></div>",
+      "css": ".ds-bg{padding:40px;background:radial-gradient(circle at 40% 50%,#6a5a4a,#141414 70%)}.ds-glass{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;margin:0;max-width:360px;padding:26px;border-radius:32px;background:rgba(38,38,40,0.5);backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);background-image:linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.04) 42%,rgba(0,0,0,0.2));box-shadow:inset 0 1px 0 rgba(255,255,255,0.2),inset 0 0 0 1px rgba(255,255,255,0.12)}.ds-t{margin:0;color:#fff;font-weight:700;font-size:17px;letter-spacing:-0.01em}.ds-n{margin:14px 0 0;color:#fff;font-size:60px;font-weight:900;letter-spacing:-0.04em;line-height:1}.ds-n small{font-size:0.4em;font-weight:600;color:rgba(255,255,255,0.6)}.ds-s{margin:6px 0 0;color:rgba(255,255,255,0.72);font-size:15px}.ds-track{margin-top:18px;height:8px;border-radius:99px;background:rgba(255,255,255,0.14);overflow:hidden}.ds-track i{display:block;height:100%;width:64%;background:#fff;border-radius:inherit;transform-origin:left;animation:ds-fill 1400ms cubic-bezier(0.22,1,0.36,1) both}@keyframes ds-fill{from{transform:scaleX(0.04)}}@media (prefers-reduced-motion:reduce){.ds-track i{animation:none}}"
+    },
+    {
+      "name": "Puce d'objectif",
+      "kind": "chip",
+      "refersTo": "goal-chip",
+      "description": "Pilule noire du bandeau « Ta discipline », emoji de contenu dans un rond.",
+      "html": "<span class=\"ds-goal\"><span class=\"ds-e\">🏋️</span>170 kg au squat</span>",
+      "css": ".ds-goal{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;display:inline-flex;align-items:center;gap:10px;height:58px;padding:0 22px 0 10px;border-radius:999px;background:#111;box-shadow:inset 0 0 0 1px #222;color:#fff;font-size:16px;font-weight:700;letter-spacing:-0.01em;white-space:nowrap}.ds-e{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#1e1e1e;font-size:19px}"
+    },
+    {
+      "name": "Question de FAQ",
+      "kind": "card",
+      "refersTo": "faq-item",
+      "description": "Détails natifs Noir Carte, plus rond qui tourne et blanchit à l'ouverture.",
+      "html": "<details class=\"ds-faq\" open><summary>Reiz est gratuit ?<span class=\"ds-pm\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg></span></summary><p>Oui, gratuit sur iPhone.</p></details>",
+      "css": ".ds-faq{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;border-radius:24px;background:#111;box-shadow:inset 0 0 0 1px #1d1d1d;transition:background-color 200ms ease}.ds-faq[open]{background:#151515}.ds-faq summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 22px 22px 26px;color:#fff;font-size:17.5px;font-weight:700;letter-spacing:-0.015em;border-radius:24px}.ds-faq summary::-webkit-details-marker{display:none}.ds-faq summary:focus-visible{outline:2px solid #fff;outline-offset:3px}.ds-pm{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,0.08);color:#fff;transition:transform 300ms cubic-bezier(0.22,1,0.36,1),background-color 200ms ease}.ds-faq[open] .ds-pm{transform:rotate(45deg);background:#fff;color:#000}.ds-faq p{margin:0;padding:0 26px 24px;color:#a3a3a3;font-size:17px;line-height:1.6}"
+    },
+    {
+      "name": "Puce de bord",
+      "kind": "custom",
+      "description": "Pilule de verre qui déborde du téléphone, icône SVG et deux lignes.",
+      "html": "<div class=\"ds-bg\"><div class=\"ds-edge\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12.5l4.6 4.6L19 7.6\"/></svg><span>Duo validé<small>à 23 min d'écart</small></span></div></div>",
+      "css": ".ds-bg{padding:32px;background:radial-gradient(circle at 50% 50%,#55504a,#141414 70%)}.ds-edge{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;display:inline-flex;align-items:center;gap:10px;height:52px;padding:0 20px 0 14px;border-radius:999px;color:#fff;font-size:15px;font-weight:700;letter-spacing:-0.01em;white-space:nowrap;background:rgba(38,38,40,0.5);backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.2),0 18px 40px -12px rgba(0,0,0,0.6);animation:ds-pop 520ms cubic-bezier(0.22,1,0.36,1) both}.ds-edge small{display:block;font-size:12px;font-weight:500;color:rgba(255,255,255,0.65)}@keyframes ds-pop{from{transform:translateY(8px) scale(0.98);opacity:0}}@media (prefers-reduced-motion:reduce){.ds-edge{animation:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "La preuve sous verre",
+    "overview": "**Creative North Star: \"La preuve sous verre\"**\n\nReiz se montre comme il se vit. Le site ne raconte pas le sport, il affiche l'écran : un iPhone qui montre une vraie séance, une jauge blanche qui se remplit, des amis qui réagissent. Tout le reste (titres, formulaire, sections) existe pour encadrer cet écran. La preuve, c'est l'interface elle-même, reproduite en HTML à l'échelle exacte de l'app.\n\nLe monde est noir presque pur, avec le blanc comme unique accent. La matière est le verre « Liquid Glass » de l'app, toujours posé sur une photo de salle floutée ou assombrie, jamais sur du noir vide. La couleur ne vient pas de l'interface : elle vient des photos de séance et des badges illustrés, qui sont les seuls objets autorisés à briller. La typographie est une seule famille, Inter, poussée au Black et serrée pour les titres, calme et grise pour le texte courant.\n\nLa densité est celle d'une page de marque mobile d'abord : grandes respirations verticales, une idée par section, et des objets (téléphones, badges, puces de verre) qui débordent légèrement de leur cadre pour donner du relief. Rejet confirmé : la landing fitness générique (néon, slogans de dépassement, grilles de cartes à icônes) et tout vert d'accent.",
+    "keyCharacteristics": [
+      "Fond noir #0a0a0a, blanc seul accent, aucune couleur d'interface en dehors du rouge de notification.",
+      "Inter partout ; titres en Black (900), interlettrage de -0.04em, italique réservé aux deux titres signatures.",
+      "Verre flouté sur photo de salle comme matière unique de relief.",
+      "L'écran de l'app reproduit à l'identique comme preuve centrale.",
+      "Jauge blanche de 8 px comme motif récurrent de progression.",
+      "La couleur appartient aux photos et aux badges, jamais aux composants."
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "Le blanc est la seule couleur d'action. Aucun composant ne reçoit de teinte : pas de bleu de lien, pas de vert de succès (refusé explicitement), pas de dégradé de marque.",
+        "section": "colors"
+      },
+      {
+        "name": "The Color Belongs to Proof Rule",
+        "body": "La couleur n'entre sur la page que par les photos de séance et les badges illustrés. La teinte propre à chaque badge peut colorer une lueur de fond derrière le mur de badges et l'ombre du badge agrandi, et rien d'autre.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Light Panel Rule",
+        "body": "Une page a au plus un panneau clair, arrondi et détaché des bords, qui inverse le système (fond Gris Clair, bouton noir, filets noirs de 2 px). Il marque un changement de registre, il ne devient pas un thème.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Italics Rule",
+        "body": "L'italique est réservé aux deux titres signatures de la page, comme sur la fiche App Store. Un troisième titre italique en dilue la signature.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tight Black Rule",
+        "body": "Tout titre est en 900 avec un interlettrage négatif (entre -0.025em et -0.04em) et un interligne sous 1.1. Pas de titre en graisse moyenne, pas de titre en capitales espacées.",
+        "section": "typography"
+      },
+      {
+        "name": "The Real Numbers Rule",
+        "body": "Les chiffres de progression s'écrivent en Black avec leur vraie unité en plus petit et plus gris à côté (« 150 kg sur 170 kg », « 7 / 11 »), en chiffres tabulaires dans les jauges. Jamais de pourcentage abstrait.",
+        "section": "typography"
+      },
+      {
+        "name": "The Real Screen Rule",
+        "body": "Un écran d'app reproduit sur le site garde les proportions de l'iPhone (390 × 844) et les valeurs de l'app, mises à l'échelle par une unité relative au conteneur (100cqw / 390). On ne redessine pas l'app, on la reproduit.",
+        "section": "layout"
+      },
+      {
+        "name": "The Glass Needs a Photo Rule",
+        "body": "Le verre ne se pose jamais sur du noir vide : il y a toujours derrière lui une photo de salle, floutée, assombrie ou masquée en radial. Sans photo, utiliser une carte noire à filet intérieur.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Objects Cast, Surfaces Don't Rule",
+        "body": "Seuls les objets (téléphone, badges, puces qui débordent) portent une ombre. Cartes, FAQ, champs et boutons restent plats.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do garder `src/styles.ts` et `src/components/GlassSurface.tsx` comme source amont : une valeur qui change dans l'app change ici.",
+      "Do utiliser le blanc (#ffffff) comme seule couleur d'action, avec un texte Noir Encre dessus.",
+      "Do poser le verre (flou 22 px, saturation 1.5, fond rgba(38, 38, 40, 0.5)) sur une photo de salle floutée ou masquée.",
+      "Do écrire les titres en Inter 900 avec un interlettrage de -0.035em à -0.04em, et réserver l'italique aux deux titres signatures.",
+      "Do montrer la progression avec la jauge blanche de 8 px et de vrais chiffres dans leur unité.",
+      "Do utiliser la courbe cubic-bezier(0.22, 1, 0.36, 1) pour les entrées et la compression à 0.97 pour les appuis.",
+      "Do laisser tout contenu visible sans animation : apparitions en CSS via `animation-timeline`, coupées en mouvement réduit.",
+      "Do garder le texte gris au-dessus de #8a8a8a sur fond noir."
+    ],
+    "donts": [
+      "Don't introduire de vert d'accent, ni aucune teinte d'interface : la couleur appartient aux photos et aux badges.",
+      "Don't utiliser le rouge #ff3b30 ailleurs que sur une pastille de compteur.",
+      "Don't poser une ombre portée sous une carte, un champ ou un bouton ; seuls les objets en portent.",
+      "Don't poser du verre sur du noir uni.",
+      "Don't construire de grille de cartes à icônes, de néon ou de slogan de dépassement : c'est la landing fitness générique que Reiz refuse.",
+      "Don't mettre de surtitre en petites capitales espacées au-dessus d'un titre. Les étiquettes en capitales espacées n'existent qu'à l'intérieur des écrans d'app reproduits, parce que l'app les utilise pour ses champs.",
+      "Don't utiliser de pictogramme en caractère ou d'emoji comme icône d'interface du site : les icônes sont des SVG au trait. Les emojis restent du contenu (réactions, objectifs) comme dans l'app.",
+      "Don't écrire de tiret cadratin ni de point médian dans les textes."
+    ]
+  }
+}
