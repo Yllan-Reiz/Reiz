@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232325"/><stop offset="1" stop-color="#0a0a0a"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.13"/><stop offset="0.45" stop-color="#ffffff" stop-opacity="0.05"/><stop offset="1" stop-color="#ffffff" stop-opacity="0.03"/></linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+  <rect x="100.5" y="100.5" width="823" height="823" rx="185.5" fill="none" stroke="#ffffff" stroke-opacity="0.14"/>
+  <g fill="#ffffff" transform="translate(200 208) scale(2.6716) translate(-342.34 -269.85)"><path d="M342.34,270.37h20.26c13.56,0,20.78,6.93,20.78,16.76,0,7.82-4.62,13.04-11.770,15.35l17.06,22.42h-13.41l-16.31-21.160h-5.66v21.16h-10.95v-54.53ZM372.29,287.13c0-5.14-2.53-7.67-9.83-7.67h-9.16v15.2h9.16c7.23,0,9.83-2.760,9.83-7.52Z"/>
+      <path d="M408.35,325.42c-12.51,0-21.9-8.42-21.9-21.01,0-13.26,10.06-21.01,22.05-21.01s21.9,7.82,21.9,21.01l-.07,2.31h-32.63c.9,6.18,5.29,9.31,10.65,9.31,4.69,0,8.64-2.31,10.28-6.93l10.73,2.46c-2.9,8.34-10.88,13.86-21.01,13.86ZM408.5,292.72c-3.58,0-7.52,1.56-9.54,5.44h19c-1.86-3.720-5.59-5.44-9.46-5.44Z"/>
+      <path d="M434.13,275.66c0-3.2,2.76-5.81,6.11-5.81s6.11,2.61,6.11,5.81-2.75,5.89-6.11,5.89-6.11-2.61-6.11-5.89ZM434.58,293.17l10.95-9.16v40.9h-10.95v-31.73Z"/>
+      <path d="M450.08,317.01l19.3-23.84h-19v-9.24h32.85v7.9l-19.37,23.84h19.74v9.24h-33.52v-7.9Z"/>
+      <path d="M487.33,318.87c0-3.2,2.76-5.81,6.11-5.81s6.11,2.61,6.11,5.81-2.75,5.890-6.11,5.89-6.11-2.61-6.11-5.89Z"/></g>
+  <rect x="200" y="430" width="624" height="394" rx="64" fill="url(#glass)" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
+  <line x1="248" y1="770" x2="776" y2="770" stroke="#ffffff" stroke-opacity="0.18" stroke-width="4" stroke-linecap="round"/>
+  <rect x="248" y="626" width="108" height="130" rx="22" fill="#ffffff" fill-opacity="0.42"/>
+  <rect x="388" y="551" width="108" height="205" rx="22" fill="#ffffff" fill-opacity="0.42"/>
+  <rect x="528" y="596" width="108" height="160" rx="22" fill="#ffffff" fill-opacity="0.42"/>
+  <rect x="668" y="466" width="108" height="290" rx="22" fill="#ffffff" fill-opacity="1"/>
+</svg>

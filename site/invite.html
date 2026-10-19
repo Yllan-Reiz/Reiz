@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rejoins mon cercle sur Reiz</title>
+<meta property="og:title" content="Rejoins mon cercle sur Reiz" />
+<meta property="og:description" content="Mon cercle voit ma progression chaque jour. Pas d'excuse, pas d'abandon. Viens." />
+<meta property="og:image" content="https://reiz-landing.netlify.app/logo-reiz.png" />
+<style>
+  :root { --bg:#0a0a0a; --card:#141414; --line:#262626; --txt:#ffffff; --muted:#8a8a8a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    background:var(--bg); color:var(--txt); min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .card {
+    width:100%; max-width:400px; background:var(--card); border:1px solid var(--line);
+    border-radius:24px; padding:32px 26px; text-align:center;
+  }
+  .logo { width:96px; height:auto; margin:0 auto 22px; display:block; }
+  h1 { font-size:23px; font-weight:800; line-height:1.25; margin-bottom:10px; }
+  h1 .name { color:#fff; }
+  p.sub { color:var(--muted); font-size:15px; line-height:1.5; margin-bottom:26px; }
+  .btn {
+    display:block; width:100%; padding:16px; border-radius:14px; font-size:16px;
+    font-weight:700; text-decoration:none; margin-bottom:12px; border:none; cursor:pointer;
+  }
+  .btn-primary { background:#fff; color:#000; }
+  .btn-secondary { background:transparent; color:#fff; border:1px solid var(--line); }
+  .fallback { margin-top:22px; padding-top:20px; border-top:1px solid var(--line); }
+  .fallback p { color:var(--muted); font-size:13px; line-height:1.6; }
+  .tag { color:#fff; font-weight:700; }
+  .hidden { display:none; }
+  .note {
+    margin-top:18px; padding:14px 16px; border-radius:14px; background:#1c1c1c; border:1px solid var(--line);
+    color:#d6d6d6; font-size:14px; line-height:1.5; text-align:left;
+  }
+  .note strong { color:#fff; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img src="logo-reiz.png" alt="Reiz" class="logo" />
+    <h1 id="title">Tu es invité<span id="byName"></span> dans un cercle Reiz.</h1>
+    <p class="sub">Sur Reiz, ton cercle voit ta progression chaque jour. Pas d'excuse, pas d'abandon.</p>
+
+    <a class="btn btn-primary" id="openApp" href="#">Ouvrir dans Reiz →</a>
+    <a class="btn btn-secondary" id="download" href="#">Télécharger l'app</a>
+
+    <!-- Affiché seulement dans le navigateur intégré d'Instagram, TikTok, etc. : il ne sait pas ouvrir l'app. -->
+    <div class="note hidden" id="inAppNote">
+      <strong>Tu es dans le navigateur d'Instagram.</strong><br />
+      Pour ouvrir l'app, touche les trois points <strong>•••</strong> (en haut à droite), puis <strong>« Ouvrir dans Safari »</strong>, et touche « Ouvrir dans Reiz ».
+    </div>
+
+    <div class="fallback" id="fallback">
+      <p>
+        Déjà l'app installée ? Touche « Ouvrir dans Reiz ».<br />
+        Sinon, télécharge-la puis <span id="searchHint">cherche ton parrain dans l'onglet Amis</span>.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // Adresse de téléchargement iPhone. Avant la sortie : le lien public TestFlight.
+      // Après la sortie sur l'App Store, la remplacer par https://apps.apple.com/app/id6814173335
+      var IOS_URL = 'https://testflight.apple.com/join/tjT8RSJx';
+
+      var params = new URLSearchParams(window.location.search);
+      var ref = (params.get('ref') || '').replace(/^@/, '').trim();
+      var deepLink = ref ? 'reiz://invite?ref=' + encodeURIComponent(ref) : 'reiz://';
+
+      var openApp = document.getElementById('openApp');
+      var download = document.getElementById('download');
+      var byName = document.getElementById('byName');
+      var searchHint = document.getElementById('searchHint');
+      var note = document.getElementById('inAppNote');
+
+      openApp.setAttribute('href', deepLink);
+      if (ref) {
+        byName.textContent = ' par @' + ref;
+        // Le pseudo vient de l'adresse : on l'écrit comme du texte, jamais comme du HTML.
+        var tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = '@' + ref;
+        searchHint.textContent = 'cherche ';
+        searchHint.appendChild(tag);
+        searchHint.appendChild(document.createTextNode(' dans l\'onglet Amis'));
+      }
+
+      var ua = navigator.userAgent || '';
+      var isIOS = /iPhone|iPad|iPod/i.test(ua);
+      var isAndroid = /Android/i.test(ua);
+      // Navigateurs intégrés des réseaux sociaux : ils bloquent l'ouverture des applications.
+      var inApp = /Instagram|FBAN|FBAV|TikTok|musical_ly|Snapchat|Line\//i.test(ua);
+
+      if (isAndroid) {
+        download.textContent = 'Bientôt sur Android';
+        download.removeAttribute('href');
+        download.style.opacity = '0.6';
+      } else {
+        download.setAttribute('href', IOS_URL);
+      }
+
+      // Dans le navigateur d'Instagram, l'app ne peut pas s'ouvrir : on explique le chemin.
+      window.showInAppNote = function () { note.classList.remove('hidden'); };
+      if (inApp) window.showInAppNote();
+
+      // Sur iPhone, dans un vrai navigateur : on tente d'ouvrir l'app tout de suite, sans toucher à rien.
+      // Une iframe invisible évite l'alerte d'erreur de Safari quand l'app n'est pas installée.
+      if (isIOS && !inApp) {
+        setTimeout(function () {
+          var f = document.createElement('iframe');
+          f.style.display = 'none';
+          f.src = deepLink;
+          document.body.appendChild(f);
+        }, 400);
+      }
+    })();
+  </script>
+</body>
+</html>

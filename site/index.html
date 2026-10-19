@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reiz : l'appli sportive où ton cercle te regarde</title>
+<meta name="description" content="Reiz, le réseau social de tes objectifs sportifs. Fixe ton objectif, poste chaque séance en photo ou en vidéo, et tes amis te voient avancer. Bientôt sur iPhone, gratuit.">
+<link rel="canonical" href="https://reiz-landing.netlify.app/">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="index,follow">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Reiz">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="Reiz : ton cercle te regarde">
+<meta property="og:description" content="Fixe ton objectif, poste ta séance, tes amis te voient avancer. L'appli sportive qui te rend régulier, bientôt sur iPhone.">
+<meta property="og:url" content="https://reiz-landing.netlify.app/">
+<meta property="og:image" content="https://reiz-landing.netlify.app/assets/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Reiz. Ton cercle te regarde. Un téléphone montre une séance de salle publiée dans l'appli.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Reiz : ton cercle te regarde">
+<meta name="twitter:description" content="Fixe ton objectif, poste ta séance, tes amis te voient avancer.">
+<meta name="twitter:image" content="https://reiz-landing.netlify.app/assets/og.jpg">
+<!-- Le jour de la sortie, décommenter pour la bannière Safari « Ouvrir dans l'App Store » :
+<meta name="apple-itunes-app" content="app-id=6814173335">
+-->
+
+<link rel="icon" href="assets/icon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="assets/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="manifest" href="site.webmanifest">
+
+<link rel="preload" href="assets/fonts/inter-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/img/post-rack.avif" as="image" type="image/avif">
+<link rel="stylesheet" href="assets/styles.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "MobileApplication",
+  "name": "Reiz",
+  "alternateName": "Reiz : objectifs entre amis",
+  "description": "Le réseau social de tes objectifs sportifs : fixe un objectif chiffré, poste chaque séance en photo ou en vidéo, et ton cercle d'amis voit ta progression.",
+  "operatingSystem": "iOS",
+  "applicationCategory": "HealthApplication",
+  "inLanguage": "fr",
+  "url": "https://reiz-landing.netlify.app/",
+  "image": "https://reiz-landing.netlify.app/assets/icon-512.png",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+  "sameAs": ["https://www.instagram.com/reiz_officiel"]
+}
+</script>
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+<!--
+THESIS: Reiz se montre comme il se vit : un téléphone qui affiche une vraie séance, une jauge qui se remplit, des amis qui réagissent. On refuse la landing fitness générique (néon, slogans de dépassement, grilles de cartes à icônes) : la preuve, c'est l'écran.
+OWN-WORLD: noir #0a0a0a, blanc seul accent, Inter Black serré (italique pour les deux titres-signatures, comme la fiche App Store), verre Liquid Glass posé sur des photos de salle floutées, badges de verre lumineux, jauge blanche de 8 px.
+STORY: le visiteur comprend « ton cercle te regarde », voit les cinq gestes de l'app, a envie des badges, laisse son e-mail pour être prévenu de la sortie.
+FIRST VIEWPORT: à gauche, titre italique géant, une phrase, formulaire e-mail blanc. À droite, l'iPhone sur le fil, notification qui tombe, trois badges flottants, photo de salle floutée en fond.
+FORM: page unique en neuf temps, téléphone collant pour les fonctionnalités. Pas de tirage de concept : structure section par section imposée par le brief du client et monde visuel déjà établi par l'app (règle « requête précise »), seed: none.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="logo" viewBox="342.34 269.85 157.21 55.57" fill="currentColor">
+      <path d="M342.34,270.37h20.26c13.56,0,20.78,6.93,20.78,16.76,0,7.82-4.62,13.04-11.770,15.35l17.06,22.42h-13.41l-16.31-21.160h-5.66v21.16h-10.95v-54.53ZM372.29,287.13c0-5.14-2.53-7.67-9.83-7.67h-9.16v15.2h9.16c7.23,0,9.83-2.760,9.83-7.52Z"/>
+      <path d="M408.35,325.42c-12.51,0-21.9-8.42-21.9-21.01,0-13.26,10.06-21.01,22.05-21.01s21.9,7.82,21.9,21.01l-.07,2.31h-32.63c.9,6.18,5.29,9.31,10.65,9.31,4.69,0,8.64-2.31,10.28-6.93l10.73,2.46c-2.9,8.34-10.88,13.86-21.01,13.86ZM408.5,292.72c-3.58,0-7.52,1.56-9.54,5.44h19c-1.86-3.720-5.59-5.44-9.46-5.44Z"/>
+      <path d="M434.13,275.66c0-3.2,2.76-5.81,6.11-5.81s6.11,2.61,6.11,5.81-2.75,5.89-6.11,5.89-6.11-2.61-6.11-5.89ZM434.58,293.17l10.95-9.16v40.9h-10.95v-31.73Z"/>
+      <path d="M450.08,317.01l19.3-23.84h-19v-9.24h32.85v7.9l-19.37,23.84h19.74v9.24h-33.52v-7.9Z"/>
+      <path d="M487.33,318.87c0-3.2,2.76-5.81,6.11-5.81s6.11,2.61,6.11,5.81-2.75,5.890-6.11,5.89-6.11-2.61-6.11-5.89Z"/>
+    </symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 20.3s-7.6-4.7-7.6-10.4A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.6 2.7c0 5.7-7.6 10.4-7.6 10.4z"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="currentColor"><path d="M3.6 10.6 11.2 4a1.2 1.2 0 0 1 1.6 0l7.6 6.6c.4.3.6.8.6 1.3V20a1 1 0 0 1-1 1h-4.6v-5.6a1 1 0 0 0-1-1h-4.8a1 1 0 0 0-1 1V21H4a1 1 0 0 1-1-1v-8.1c0-.5.2-1 .6-1.3z"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-person-add" viewBox="0 0 24 24" fill="currentColor"><circle cx="9.5" cy="8" r="4"/><path d="M2 20.2C2.6 16.4 5.6 14 9.5 14s6.9 2.4 7.5 6.2c.1.5-.3.8-.7.8H2.7c-.4 0-.8-.3-.7-.8z"/><path d="M19 7v6M16 10h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-person" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7.6" r="4.4"/><path d="M3.6 20.2c.7-4.1 4.1-6.7 8.4-6.7s7.7 2.6 8.4 6.7c.1.4-.3.8-.7.8H4.3c-.4 0-.8-.4-.7-.8z"/></symbol>
+    <symbol id="i-dots" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.6 4.6L19 7.6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 8.5h16M4 15.5h16"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24" fill="currentColor"><circle cx="8.5" cy="8" r="3.6"/><circle cx="16.8" cy="9" r="2.9"/><path d="M1.8 19.6c.6-3.5 3.3-5.6 6.7-5.6s6.1 2.1 6.7 5.6c.1.4-.3.9-.8.9H2.6c-.5 0-.9-.5-.8-.9z"/><path d="M16.2 13.7c3.1-.3 5.6 1.5 6.1 4.6.1.4-.2.8-.7.8h-4.7c-.2-2.1-1-3.9-2.4-5.2.5-.1 1.1-.2 1.7-.2z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.3l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.7l-5.2 2.8 1-5.9L3.5 9.5l5.9-.8z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke-linecap="round"/></symbol>
+    <symbol id="i-instagram" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="3"/><path d="M4 7.5l8 5.5 8-5.5"/></symbol>
+    <symbol id="i-smile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.3 14.2c1 1.4 2.3 2.1 3.7 2.1s2.7-.7 3.7-2.1"/><circle cx="9" cy="9.8" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="9.8" r="1.1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.7l1.4-2h4.8l1.4 2h1.7A2.5 2.5 0 0 1 20 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.8" r="3.6"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24" fill="currentColor"><path d="M12.3 2.5c.4 3-1.2 4.6-2.8 6.3C8 10.4 6.5 12 6.5 14.6A5.5 5.5 0 0 0 12 20.5a5.5 5.5 0 0 0 5.5-5.6c0-2.3-1-4-2.2-5.4-.2 1.4-.9 2.5-2 3 .5-3.3-.1-6.6-1-10z"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-status" viewBox="0 0 70 13" fill="currentColor">
+      <rect x="0" y="8.5" width="3" height="4" rx=".8"/><rect x="4.6" y="6" width="3" height="6.5" rx=".8"/><rect x="9.2" y="3.4" width="3" height="9.1" rx=".8"/><rect x="13.8" y=".8" width="3" height="11.7" rx=".8"/>
+      <path d="M30 3.4c2.4 0 4.6.9 6.3 2.5l1.2-1.3A10.8 10.8 0 0 0 30 1.6c-2.9 0-5.5 1.1-7.5 3l1.2 1.3A9 9 0 0 1 30 3.4zm0 3.7c1.4 0 2.6.5 3.6 1.4l1.2-1.3a7 7 0 0 0-9.6 0l1.2 1.3c1-.9 2.2-1.4 3.6-1.4zm0 3.6c.5 0 .9.2 1.2.5L30 12.6l-1.2-1.4c.3-.3.7-.5 1.2-.5z"/>
+      <rect x="43" y="1" width="23" height="11.5" rx="3.4" fill="none" stroke="currentColor" stroke-opacity=".4"/><rect x="45" y="3" width="17" height="7.5" rx="1.8"/><path d="M67.6 5v3.6c.8-.3 1.3-1 1.3-1.8s-.5-1.5-1.3-1.8z" fill-opacity=".5"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="nav" id="haut">
+  <nav class="nav-bar glass" aria-label="Navigation principale">
+    <a class="nav-logo" href="#haut" aria-label="Reiz, retour en haut de la page">
+      <svg viewBox="0 0 157.21 55.57" aria-hidden="true"><use href="#logo"/></svg>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#concept">Le concept</a></li>
+      <li><a href="#fonctionnalites">Fonctionnalités</a></li>
+      <li><a href="#badges">Badges</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <a class="btn btn-pill" href="#rejoindre" data-prelaunch data-track="nav_cta"><span>Être prévenu<span class="long"> de la sortie</span></span></a>
+    <a class="btn btn-pill store-cta" href="#" data-store-link data-track="nav_store">Télécharger</a>
+    <button class="nav-menu-btn" type="button" aria-expanded="false" aria-controls="menu-mobile" aria-label="Ouvrir le menu">
+      <svg aria-hidden="true"><use href="#i-menu"/></svg>
+    </button>
+  </nav>
+  <div class="nav-sheet glass" id="menu-mobile" hidden>
+    <ul>
+      <li><a href="#concept">Le concept</a></li>
+      <li><a href="#fonctionnalites">Fonctionnalités</a></li>
+      <li><a href="#badges">Badges</a></li>
+      <li><a href="#comment">Comment ça marche</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+  </div>
+</header>
+
+<main id="contenu">
+
+<!-- 1. HERO -->
+<section class="hero" aria-labelledby="titre-hero">
+  <div class="hero-bg" aria-hidden="true">
+    <picture>
+      <source media="(max-width: 700px)" srcset="assets/img/bg-cage-tall.jpg">
+      <img src="assets/img/bg-cage-wide.jpg" alt="" width="1600" height="1000" fetchpriority="high">
+    </picture>
+  </div>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <h1 class="display is-italic" id="titre-hero">Ton cercle te regarde.</h1>
+      <p class="lead">Fixe ton objectif, poste chaque séance en photo ou en vidéo, et tes amis te voient avancer. <strong>Avec eux qui suivent, sauter une séance devient beaucoup plus dur.</strong></p>
+      <div class="hero-actions">
+        <form class="waitlist" data-waitlist="hero" novalidate>
+          <div class="waitlist-row glass">
+            <label class="sr-only" for="email-hero">Ton adresse e-mail</label>
+            <input id="email-hero" name="email" type="email" inputmode="email" autocomplete="email" placeholder="ton@email.com" required maxlength="254" aria-describedby="msg-hero">
+            <input class="hp" type="text" name="site" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <button class="btn" type="submit"><span class="btn-label">Préviens-moi à la sortie</span></button>
+          </div>
+          <div class="waitlist-done glass" role="status">
+            <span class="check"><svg aria-hidden="true"><use href="#i-check"/></svg></span>
+            <span><strong>C'est noté.</strong><span>On t'écrit le jour où Reiz sort sur l'App Store.</span></span>
+          </div>
+          <p class="waitlist-msg" id="msg-hero" aria-live="polite">Bientôt sur l'App Store, gratuit, pour iPhone.</p>
+        </form>
+        <a class="btn store-cta" href="#" data-store-link data-track="hero_store">Télécharger Reiz sur l'App Store</a>
+        <a class="link-arrow" href="#fonctionnalites">Voir comment ça marche<svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+    </div>
+
+    <div class="hero-stage">
+      <div class="sticker" style="--s:124px; top:2%; right:6%; --rot:8deg; --d:-1s" aria-hidden="true">
+        <picture><source srcset="assets/badges/en-feu.avif" type="image/avif"><img src="assets/badges/en-feu.png" alt="" width="240" height="240"></picture>
+      </div>
+      <div class="sticker" style="--s:110px; bottom:6%; left:2%; --rot:-10deg; --d:-3s" aria-hidden="true">
+        <picture><source srcset="assets/badges/premier-pas.avif" type="image/avif"><img src="assets/badges/premier-pas.png" alt="" width="240" height="240"></picture>
+      </div>
+      <div class="sticker" style="--s:96px; top:52%; right:-2%; --rot:6deg; --d:-4.5s" aria-hidden="true">
+        <picture><source srcset="assets/badges/binome.avif" type="image/avif"><img src="assets/badges/binome.png" alt="" width="240" height="240"></picture>
+      </div>
+
+      <div class="hero-notif" aria-hidden="true">
+        <div class="notif glass">
+          <span class="app-ic"><img src="assets/icon-192.png" alt="" width="192" height="192"></span>
+          <div class="n-body">
+            <div class="n-top"><b>Nathan a réagi 🔥</b><small>maintenant</small></div>
+            <p>Sur ta séance : « Soulevé de terre, ça passe enfin »</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap hero-phone" role="img" aria-label="Écran de démonstration de l'appli Reiz : le fil montre la séance de Sarah, sa jauge à 3 séances sur 4 et les réactions de ses amis.">
+        <div class="phone"><div class="screen">
+          <div class="sb"><span>9:41</span><span class="sb-icons"><svg viewBox="0 0 70 13"><use href="#i-status"/></svg></span></div>
+          <div class="app-head">
+            <svg class="logo" viewBox="0 0 157.21 55.57"><use href="#logo"/></svg>
+            <div class="app-head-right">
+              <span class="icon-btn"><svg><use href="#i-heart"/></svg><span class="dot-badge">3</span></span>
+              <span class="streak">🔥 12j</span>
+            </div>
+          </div>
+          <div class="post">
+            <div class="post-head">
+              <span class="av">S</span>
+              <div class="post-meta"><div class="post-name">Sarah</div><div class="post-sub">💪 Aller à la salle 4 fois, il y a 12 min</div></div>
+              <svg class="post-menu" viewBox="0 0 24 24"><use href="#i-dots"/></svg>
+            </div>
+            <div class="media">
+              <picture><source srcset="assets/img/post-rack.avif" type="image/avif"><img src="assets/img/post-rack.jpg" alt="" width="720" height="960"></picture>
+              <div class="media-bottom">
+                <div class="stack">
+                  <span class="rx" style="--i:0"><span class="av">N</span><em>🔥</em></span>
+                  <span class="rx" style="--i:1"><span class="av">I</span><em>💪</em></span>
+                  <span class="rx" style="--i:2"><span class="av">H</span><em>👏</em></span>
+                  <span class="rx" style="--i:3"><span class="av">M</span><em>❤️</em></span>
+                </div>
+                <span class="react-btn mine">🔥</span>
+              </div>
+            </div>
+            <div class="below">
+              <div class="gauge"><div class="gauge-track"><div class="gauge-fill" style="--p:75%"></div></div><span class="gauge-label">3 / 4 séances</span></div>
+              <div class="caption">Séance jambes bouclée. Plus qu'une cette semaine.</div>
+              <div class="comments-link">Voir les 3 commentaires</div>
+            </div>
+          </div>
+          <div class="screen-fade"></div>
+          <div class="tabbar">
+            <div class="pill glass"><span class="on"><svg><use href="#i-home"/></svg></span><span><svg><use href="#i-grid"/></svg></span></div>
+            <span class="plus-btn"><svg><use href="#i-plus"/></svg></span>
+            <div class="pill glass"><span><svg><use href="#i-person-add"/></svg></span><span><svg><use href="#i-person"/></svg></span></div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. LE CONCEPT -->
+<section class="section" id="concept" aria-labelledby="titre-concept">
+  <div class="wrap concept-grid">
+    <div>
+      <div class="section-head">
+        <h2 class="h2 reveal" id="titre-concept">Seul, tu lâches. Pas devant tes potes.</h2>
+        <p class="lead reveal">La motivation dure trois semaines. Tes potes, trois ans. Reiz part de là : quand ton cercle voit tes séances, tenir le rythme devient une affaire d'équipe.</p>
+      </div>
+      <div class="versus-head" aria-hidden="true"><span>Sans Reiz</span><span>Avec Reiz</span></div>
+      <ul class="versus">
+        <li class="reveal"><span class="before"><span class="sr-only">Sans Reiz : </span>Tu sautes une séance, personne ne le remarque.</span><span class="after"><span class="sr-only">Avec Reiz : </span>Ton cercle voit ta semaine, jour après jour.</span></li>
+        <li class="reveal"><span class="before"><span class="sr-only">Sans Reiz : </span>Ta progression reste dans ta tête.</span><span class="after"><span class="sr-only">Avec Reiz : </span>Elle s'affiche en vrais chiffres : 150 kg sur 170.</span></li>
+        <li class="reveal"><span class="before"><span class="sr-only">Sans Reiz : </span>Tu t'entraînes seul, même entouré.</span><span class="after"><span class="sr-only">Avec Reiz : </span>Tes amis réagissent, commentent et viennent en duo.</span></li>
+      </ul>
+    </div>
+
+    <div class="concept-visual reveal">
+      <div class="bg-photo" aria-hidden="true"><img src="assets/img/bg-cardio-wide.jpg" alt="" width="1600" height="1000" loading="lazy"></div>
+      <figure class="rhythm glass" style="margin:0">
+        <h3 class="rhythm-top"><svg aria-hidden="true"><use href="#i-pulse"/></svg>Ton cercle, cette semaine</h3>
+        <p class="rhythm-num" style="margin:14px 0 0">7 <small>/ 11</small></p>
+        <p class="rhythm-sub" style="margin:6px 0 0">ont posté cette semaine</p>
+        <div class="gauge-track"><div class="gauge-fill" style="--p:64%"></div></div>
+        <ul class="rhythm-people">
+          <li><span class="av">S</span><span class="who">Sarah<small>a posté aujourd'hui</small></span><span class="wk" aria-label="4 séances sur 4 prévues"><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i></span></li>
+          <li><span class="av">N</span><span class="who">Nathan<small>hier</small></span><span class="wk" aria-label="3 séances sur 4 prévues"><i class="h"></i><i class="h"></i><i class="h"></i><i></i></span></li>
+          <li><span class="av">A</span><span class="who">Adam<small>à relancer, il y a 4 j</small></span><span class="wk" aria-label="1 séance, 2 séances prévues manquées"><i class="h"></i><i class="m"></i><i class="m"></i><i></i></span></li>
+        </ul>
+        <figcaption class="rhythm-legend">La régularité de ton cercle, dans l'onglet Activité. Exemple avec des prénoms fictifs.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- 3. FONCTIONNALITÉS -->
+<section class="section features" id="fonctionnalites" aria-labelledby="titre-fonctions">
+  <div class="wrap">
+    <div class="section-head center">
+      <h2 class="h2 reveal" id="titre-fonctions">De l'objectif à la preuve.</h2>
+      <p class="lead reveal">Cinq gestes, et ta progression devient visible pour ceux qui comptent.</p>
+    </div>
+
+    <div class="feat-layout">
+      <ol class="feat-steps">
+        <!-- Étape 1 -->
+        <li class="feat-step is-on" data-step="0">
+          <div class="feat-copy">
+            <h3 class="h3">Fixe ton objectif.</h3>
+            <p class="body">Un nom, un chiffre, une unité : 170 kg au squat, 50 km ce mois, 12 séances. Choisis tes jours d'entraînement, Reiz suit ta semaine et ne te relance pas un jour de repos.</p>
+          </div>
+          <div class="feat-inline">
+            <div class="edge-chip glass" aria-hidden="true"><svg class="e" aria-hidden="true"><use href="#i-calendar"/></svg><span>Lun, mer, ven<small>tes jours d'entraînement</small></span></div>
+            <div class="phone-wrap" role="img" aria-label="Écran de démonstration : création de l'objectif 170 kg au squat, compté en kilos, trois jours d'entraînement par semaine, visible par mon cercle.">
+              <div class="phone"><div class="screen">
+                <div class="scr scr-pad">
+                  <div class="sb"><span>9:41</span><span class="sb-icons"><svg viewBox="0 0 70 13"><use href="#i-status"/></svg></span></div>
+                  <div class="scr-top"><span>Annuler</span><b>Nouvel objectif</b><span class="ok">Créer</span></div>
+                  <span class="lbl">Nom de l'objectif</span>
+                  <div class="field">170 kg au squat<span class="caret"></span></div>
+                  <span class="lbl">Emoji</span>
+                  <div class="emoji-row"><span class="on">🏋️</span><span>💪</span><span>🏃</span><span>🚴</span><span>🏊</span><span>🥊</span></div>
+                  <span class="lbl">Combien ?</span>
+                  <div class="chips"><span class="chip ring">170</span><span class="chip">séances</span><span class="chip on">kg</span><span class="chip">km</span><span class="chip">fois</span></div>
+                  <span class="lbl">Jours d'entraînement</span>
+                  <div class="days"><span class="on">L</span><span>M</span><span class="on">M</span><span>J</span><span class="on">V</span><span>S</span><span>D</span></div>
+                  <span class="lbl">Qui voit ?</span>
+                  <div class="seg"><span class="on">Mon cercle</span><span>★ Proches</span><span>Privé</span><span>Public</span></div>
+                  <div class="scr-btn">Créer l'objectif</div>
+                </div>
+              </div></div>
+            </div>
+          </div>
+        </li>
+
+        <!-- Étape 2 -->
+        <li class="feat-step" data-step="1">
+          <div class="feat-copy">
+            <h3 class="h3">Poste ta séance.</h3>
+            <p class="body">Une photo ou quinze secondes de vidéo, ta nouvelle valeur, et la jauge avance. Pas de pourcentage abstrait : tes vrais kilos, tes vrais kilomètres. Ton cercle est prévenu.</p>
+          </div>
+          <div class="feat-inline">
+            <div class="edge-chip glass" aria-hidden="true"><svg class="e" aria-hidden="true"><use href="#i-camera"/></svg><span>Photo ou vidéo<small>15 secondes max</small></span></div>
+            <div class="phone-wrap" role="img" aria-label="Écran de démonstration : publication d'une séance avec une photo, la progression réglée à 150 kg sur 170 et une légende.">
+              <div class="phone"><div class="screen">
+                <div class="scr scr-pad">
+                  <div class="sb"><span>9:41</span><span class="sb-icons"><svg viewBox="0 0 70 13"><use href="#i-status"/></svg></span></div>
+                  <div class="scr-top"><svg style="width:calc(22*var(--u));color:#fff" viewBox="0 0 24 24"><use href="#i-chevron-left"/></svg><b>Poste ta progression</b><span style="width:calc(22*var(--u))"></span></div>
+                  <div class="media-sm">
+                    <picture><source srcset="assets/img/post-mains.avif" type="image/avif"><img src="assets/img/post-mains.jpg" alt="" width="720" height="960" loading="lazy"></picture>
+                    <span class="tag">Changer</span>
+                  </div>
+                  <span class="lbl">Objectif</span>
+                  <div class="chips" style="flex-wrap:nowrap"><span class="chip ring">🏋️ 170 kg au squat</span><span class="chip">🏃 Courir 50 km</span></div>
+                  <span class="lbl">Progression</span>
+                  <div class="big-val"><b>150 kg</b><span>sur 170 kg</span></div>
+                  <div class="slider"><span class="round">−</span><span class="track" style="--p:88%"><i></i><b></b></span><span class="round">+</span></div>
+                  <span class="lbl">Légende</span>
+                  <div class="field">Plus que 20 kg.</div>
+                  <div class="scr-btn">Publier</div>
+                </div>
+              </div></div>
+            </div>
+          </div>
+        </li>
+
+        <!-- Étape 3 -->
+        <li class="feat-step" data-step="2">
+          <div class="feat-copy">
+            <h3 class="h3">Ton cercle réagit.</h3>
+            <p class="body">Emojis, commentaires, réponses. Et c'est toi qui choisis qui voit quoi, objectif par objectif : toi seul, tes amis, ou seulement ton cercle proche.</p>
+            <span class="feat-tag">Privé, Mon cercle, Cercle proche ou Public</span>
+          </div>
+          <div class="feat-inline">
+            <div class="edge-chip glass" aria-hidden="true"><svg class="e" aria-hidden="true"><use href="#i-smile"/></svg><span>4 réactions<small>en 8 minutes</small></span></div>
+            <div class="phone-wrap" role="img" aria-label="Écran de démonstration : la séance de course de Nathan, la barre de réactions ouverte et deux commentaires d'amis.">
+              <div class="phone"><div class="screen">
+                <div class="scr">
+                  <div class="sb"><span>9:41</span><span class="sb-icons"><svg viewBox="0 0 70 13"><use href="#i-status"/></svg></span></div>
+                  <div class="app-head">
+                    <svg class="logo" viewBox="0 0 157.21 55.57"><use href="#logo"/></svg>
+                    <div class="app-head-right"><span class="icon-btn"><svg><use href="#i-heart"/></svg></span><span class="streak">🔥 12j</span></div>
+                  </div>
+                  <div class="post">
+                    <div class="post-head">
+                      <span class="av">N</span>
+                      <div class="post-meta"><div class="post-name">Nathan</div><div class="post-sub">🏃 Courir 50 km, il y a 8 min</div></div>
+                      <svg class="post-menu" viewBox="0 0 24 24"><use href="#i-dots"/></svg>
+                    </div>
+                    <div class="media" style="aspect-ratio:4/4.3">
+                      <picture><source srcset="assets/img/post-cardio.avif" type="image/avif"><img src="assets/img/post-cardio.jpg" alt="" width="720" height="960" loading="lazy"></picture>
+                      <div class="quickbar"><span class="on">🔥</span><span>💪</span><span>👏</span><span>😮</span><span>😂</span><span>❤️</span><span class="plus">+</span></div>
+                    </div>
+                    <div class="below">
+                      <div class="gauge"><div class="gauge-track"><div class="gauge-fill" style="--p:64%"></div></div><span class="gauge-label">32 / 50 km</span></div>
+                      <div class="caption">10 km bouclés avant le boulot.</div>
+                      <div class="cmt"><span class="av sm">I</span><p><b>Inès</b> Allez, plus que 18 km 🔥</p></div>
+                      <div class="cmt"><span class="av sm">S</span><p><b>Sarah</b> Monstre. 💪</p></div>
+                    </div>
+                  </div>
+                </div>
+              </div></div>
+            </div>
+          </div>
+        </li>
+
+        <!-- Étape 4 -->
+        <li class="feat-step" data-step="3">
+          <div class="feat-copy">
+            <h3 class="h3">Entraîne-toi en duo.</h3>
+            <p class="body">Identifie ton pote dans ta séance. S'il poste la sienne dans l'heure, le duo est validé. Envie de pimenter&nbsp;? Lance-lui un duel d'une semaine : celui qui s'entraîne le plus de jours gagne.</p>
+          </div>
+          <div class="feat-inline">
+            <div class="edge-chip glass" aria-hidden="true"><svg class="e" aria-hidden="true"><use href="#i-check"/></svg><span>Duo validé<small>à 23 min d'écart</small></span></div>
+            <div class="phone-wrap" role="img" aria-label="Écran de démonstration : Hugo a identifié Théo dans sa séance, une notification l'invite à poster la sienne dans l'heure pour valider le duo.">
+              <div class="phone"><div class="screen">
+                <div class="scr">
+                  <div class="sb"><span>9:41</span><span class="sb-icons"><svg viewBox="0 0 70 13"><use href="#i-status"/></svg></span></div>
+                  <div class="app-head">
+                    <svg class="logo" viewBox="0 0 157.21 55.57"><use href="#logo"/></svg>
+                    <div class="app-head-right"><span class="icon-btn"><svg><use href="#i-heart"/></svg><span class="dot-badge">1</span></span><span class="streak">🔥 12j</span></div>
+                  </div>
+                  <div class="post">
+                    <div class="post-head">
+                      <span class="av">H</span>
+                      <div class="post-meta"><div class="post-name">Hugo</div><div class="post-sub">💪 Aller à la salle 4 fois, il y a 9 min</div><span class="duo-pill"><span class="av sm">T</span>avec <b>Théo</b></span></div>
+                      <svg class="post-menu" viewBox="0 0 24 24"><use href="#i-dots"/></svg>
+                    </div>
+                    <div class="media" style="aspect-ratio:4/4.2">
+                      <picture><source srcset="assets/img/post-mur.avif" type="image/avif"><img src="assets/img/post-mur.jpg" alt="" width="720" height="960" loading="lazy"></picture>
+                    </div>
+                    <div class="below">
+                      <div class="gauge"><div class="gauge-track"><div class="gauge-fill" style="--p:50%"></div></div><span class="gauge-label">2 / 4 séances</span></div>
+                      <div class="duo-btn">🤝 Poste ta séance <small>encore 51 min</small></div>
+                    </div>
+                  </div>
+                  <div class="scr-notif">
+                    <div class="notif glass">
+                      <span class="app-ic"><img src="assets/icon-192.png" alt="" width="192" height="192" loading="lazy"></span>
+                      <div class="n-body"><div class="n-top"><b>Hugo t'a identifié dans sa séance 🤝</b><small>9 min</small></div><p>Poste la tienne dans l'heure pour valider le duo.</p></div>
+                    </div>
+                  </div>
+                </div>
+              </div></div>
+            </div>
+          </div>
+        </li>
+
+        <!-- Étape 5 -->
+        <li class="feat-step" data-step="4">
+          <div class="feat-copy">
+            <h3 class="h3">Reste régulier.</h3>
+            <p class="body">Un rappel le soir de tes jours d'entraînement si tu n'as rien posté, ta série qui se joue, des encouragements quand tu approches du but. Et ton cercle proche est prévenu quand tu arrives à la salle.</p>
+            <span class="feat-tag">Alerte « À la salle » sur iPhone, avec ton accord</span>
+          </div>
+          <div class="feat-inline">
+            <div class="edge-chip glass" aria-hidden="true"><svg class="e" aria-hidden="true"><use href="#i-flame"/></svg><span>12 jours<small>de série</small></span></div>
+            <div class="phone-wrap" role="img" aria-label="Écran de démonstration : écran verrouillé avec trois notifications de Reiz, une série de 12 jours en jeu, une amie arrivée à la salle et un duel en cours.">
+              <div class="phone"><div class="screen">
+                <div class="scr">
+                  <div class="glass-bd"><img src="assets/img/bg-cage-tall.jpg" alt="" width="900" height="1500" loading="lazy"></div>
+                  <div class="sb"><span>19:02</span><span class="sb-icons"><svg viewBox="0 0 70 13"><use href="#i-status"/></svg></span></div>
+                  <div class="lock">
+                    <div class="lock-date">Jeudi</div>
+                    <div class="lock-time">19:02</div>
+                  </div>
+                  <div class="lock-stack">
+                    <div class="notif glass"><span class="app-ic"><img src="assets/icon-192.png" alt="" width="192" height="192" loading="lazy"></span><div class="n-body"><div class="n-top"><b>🔥 Ta série de 12 jours est en jeu</b><small>maintenant</small></div><p>Une séance et elle continue. Sarah et Nathan ont déjà posté.</p></div></div>
+                    <div class="notif glass"><span class="app-ic"><img src="assets/icon-192.png" alt="" width="192" height="192" loading="lazy"></span><div class="n-body"><div class="n-top"><b>Inès est à la salle 💪</b><small>18 min</small></div><p>Viens t'entraîner avec Inès.</p></div></div>
+                    <div class="notif glass"><span class="app-ic"><img src="assets/icon-192.png" alt="" width="192" height="192" loading="lazy"></span><div class="n-body"><div class="n-top"><b>⚔️ Ton duel contre Hugo</b><small>1 h</small></div><p>Il mène 3 à 2. Poste aujourd'hui pour revenir.</p></div></div>
+                  </div>
+                </div>
+              </div></div>
+            </div>
+          </div>
+        </li>
+      </ol>
+
+      <div class="feat-stage" aria-hidden="true">
+        <div class="feat-sticky">
+          <div class="feat-glow"><img src="assets/img/bg-cage-wide.jpg" alt="" width="1600" height="1000" loading="lazy"></div>
+          <div class="edge-chip glass" data-edge-chip></div>
+          <div class="phone-wrap feat-phone"><div class="phone"><div class="screen" data-feat-screen></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. BADGES -->
+<section class="section badges" id="badges" aria-labelledby="titre-badges">
+  <div class="badges-bg" aria-hidden="true"><img src="assets/img/bg-cage-wide.jpg" alt="" width="1600" height="1000" loading="lazy"></div>
+  <div class="wrap">
+    <div class="section-head center">
+      <h2 class="h2 reveal" id="titre-badges">Débloque tes badges.</h2>
+      <p class="lead reveal">Douze badges de verre à gagner séance après séance, de ton premier post à trente jours d'affilée. Ils s'affichent sur ton profil, ton cercle les voit.</p>
+    </div>
+
+    <ul class="badge-wall" aria-label="Les 12 badges de Reiz">
+      <li class="badge-item"><button class="badge-btn" type="button" aria-pressed="true" data-badge="premier-pas" data-name="Premier pas" data-rule="Publier ta première progression." data-color="#a9c7ff" style="--c:#a9c7ff"><span class="badge-3d" style="--mask:url(/assets/badges/premier-pas.png)"><picture><source srcset="assets/badges/premier-pas.avif" type="image/avif"><img src="assets/badges/premier-pas.png" alt="" width="240" height="240" loading="lazy"></picture></span>Premier pas<span class="lvl-mini" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button></li>
+      <li class="badge-item"><button class="badge-btn" type="button" aria-pressed="false" data-badge="en-feu" data-name="En feu" data-rule="Poster 3 jours d'affilée." data-color="#ff8a3d" style="--c:#ff8a3d"><span class="badge-3d" style="--mask:url(/assets/badges/en-feu.png)"><picture><source srcset="assets/badges/en-feu.avif" type="image/avif"><img src="assets/badges/en-feu.png" alt="" width="240" height="240" loading="lazy"></picture></span>En feu<span class="lvl-mini" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button></li>
+      <li class="badge-item"><button class="badge-btn" type="button" aria-pressed="false" data-badge="semaine-parfaite" data-name="Semaine parfaite" data-rule="Poster 7 jours d'affilée." data-color="#47e0b0" style="--c:#47e0b0"><span class="badge-3d" style="--mask:url(/assets/badges/semaine-parfaite.png)"><picture><source srcset="assets/badges/semaine-parfaite.avif" type="image/avif"><img src="assets/badges/semaine-parfaite.png" alt="" width="240" height="240" loading="lazy"></picture></span>Semaine parfaite<span class="lvl-mini" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button></li>
+      <li class="badge-item"><button class="badge-btn" type="button" aria-pressed="false" data-badge="objectif-atteint" data-name="Objectif atteint" data-rule="Atteindre la cible d'un objectif." data-color="#3fa2ff" style="--c:#3fa2ff"><span class="badge-3d" style="--mask:url(/assets/badges/objectif-atteint.png)"><picture><source srcset="assets/badges/objectif-atteint.avif" type="image/avif"><img src="assets/badges/objectif-atteint.png" alt="" width="240" height="240" loading="lazy"></picture></span>Objectif atteint<span class="lvl-mini" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button></li>
+      <li class="badge-item"><button class="badge-btn" type="button" aria-pressed="false" data-badge="regulier" data-name="Régulier" data-rule="Atteindre 10 publications." data-color="#7fb4ff" style="--c:#7fb4ff"><span class="badge-3d" style="--mask:url(/assets/badges/regulier.png)"><picture><source srcset="assets/badges/regulier.avif" type="image/avif"><img src="assets/badges/regulier.png" alt="" width="240" height="240" loading="lazy"></picture></span>Régulier<span class="lvl-mini" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button></li>
+      <li class="badge-item"><button class="badge-btn" type="button" aria-pressed="false" data-badge="en-action" data-name="En action" data-rule="Publier une vidéo de ta séance." data-color="#4c8dff" style="--c:#4c8dff"><span class="badge-3d" style="--mask:url(/assets/badges/en-action.png)"><picture><source srcset="assets/badges/en-action.avif" type="image/avif"><img src="assets/badges/en-action.png" alt="" width="240" height="240" loading="lazy"></picture></span>En action<span class="lvl-mini" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button></li>
+      <li class="badge-item"><button class="badge-btn" type="button" aria-pressed="false" data-badge="en-duo" data-name="En duo" data-rule="Publier une séance avec un ami identifié." data-color="#b27bff" style="--c:#b27bff"><span class="badge-3d" style="--mask:url(/assets/badges/en-duo.png)"><picture><source srcset="assets/badges/en-duo.avif" type="image/avif"><img src="assets/badges/en-duo.png" alt="" width="240" height="240" loading="lazy"></picture></span>En duo<span class="lvl-mini" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button></li>
+      <li class="badge-item"><button class="badge-btn" type="button" aria-pressed="false" data-badge="binome" data-name="Binôme" data-rule="Faire 5 séances en duo." data-color="#6b6bff" style="--c:#6b6bff"><span class="badge-3d" style="--mask:url(/assets/badges/binome.png)"><picture><source srcset="assets/badges/binome.avif" type="image/avif"><img src="assets/badges/binome.png" alt="" width="240" height="240" loading="lazy"></picture></span>Binôme<span class="lvl-mini" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button></li>
+      <li class="badge-item"><button class="badge-btn" type="button" aria-pressed="false" data-badge="leve-tot" data-name="Lève-tôt" data-rule="Poster 5 fois avant 8 h du matin." data-color="#ffb340" style="--c:#ffb340"><span class="badge-3d" style="--mask:url(/assets/badges/leve-tot.png)"><picture><source srcset="assets/badges/leve-tot.avif" type="image/avif"><img src="assets/badges/leve-tot.png" alt="" width="240" height="240" loading="lazy"></picture></span>Lève-tôt<span class="lvl-mini" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button></li>
+      <li class="badge-item"><button class="badge-btn" type="button" aria-pressed="false" data-badge="couche-tard" data-name="Couche-tard" data-rule="Poster 5 fois après 22 h." data-color="#8a6bff" style="--c:#8a6bff"><span class="badge-3d" style="--mask:url(/assets/badges/couche-tard.png)"><picture><source srcset="assets/badges/couche-tard.avif" type="image/avif"><img src="assets/badges/couche-tard.png" alt="" width="240" height="240" loading="lazy"></picture></span>Couche-tard<span class="lvl-mini" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button></li>
+      <li class="badge-item"><button class="badge-btn" type="button" aria-pressed="false" data-badge="inarretable" data-name="Inarrêtable" data-rule="Poster 30 jours d'affilée." data-color="#3d8bff" style="--c:#3d8bff"><span class="badge-3d" style="--mask:url(/assets/badges/inarretable.png)"><picture><source srcset="assets/badges/inarretable.avif" type="image/avif"><img src="assets/badges/inarretable.png" alt="" width="240" height="240" loading="lazy"></picture></span>Inarrêtable<span class="lvl-mini" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button></li>
+      <li class="badge-item"><button class="badge-btn" type="button" aria-pressed="false" data-badge="acharne" data-name="Acharné" data-rule="Atteindre 50 publications." data-color="#ff6a4a" style="--c:#ff6a4a"><span class="badge-3d" style="--mask:url(/assets/badges/acharne.png)"><picture><source srcset="assets/badges/acharne.avif" type="image/avif"><img src="assets/badges/acharne.png" alt="" width="240" height="240" loading="lazy"></picture></span>Acharné<span class="lvl-mini" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></button></li>
+    </ul>
+
+    <div class="badge-detail glass reveal" aria-live="polite" data-badge-detail>
+      <div class="big"><picture><source srcset="assets/badges/premier-pas.avif" type="image/avif" data-detail-source><img src="assets/badges/premier-pas.png" alt="" width="240" height="240" loading="lazy" data-detail-img></picture></div>
+      <div>
+        <h3 data-detail-name>Premier pas</h3>
+        <p><b>Pour le débloquer :</b> <span data-detail-rule>Publier ta première progression.</span></p>
+        <ol class="levels" aria-label="6 niveaux, le niveau 1 est débloqué en premier"><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li></ol>
+        <p class="levels-note">Chaque badge évolue sur six niveaux : continue de poster, il monte avec toi.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. COMMENT ÇA MARCHE -->
+<section class="section light" id="comment" aria-labelledby="titre-comment">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 class="h2 reveal" id="titre-comment">Prêt en une minute.</h2>
+      <p class="lead reveal">Pas de programme à suivre, pas de réglages sans fin. Tu crées ton compte, tu poses un objectif, tu ramènes tes potes.</p>
+    </div>
+    <ol class="steps">
+      <li class="reveal"><span class="n">1</span><h3>Crée ton compte</h3><p>Avec Apple, Google ou ton e-mail, puis ta photo et ton prénom.</p></li>
+      <li class="reveal"><span class="n">2</span><h3>Pose ton premier objectif</h3><p>Pars d'un modèle (salle, course, vélo, natation, boxe) ou écris le tien.</p></li>
+      <li class="reveal"><span class="n">3</span><h3>Invite ton cercle</h3><p>Partage ton lien d'invitation : tes amis te rejoignent en un tap.</p></li>
+      <li class="reveal"><span class="n">4</span><h3>Poste après chaque séance</h3><p>Ta jauge avance, tes badges tombent, ton cercle suit.</p></li>
+    </ol>
+    <div class="steps-cta">
+      <a class="btn" href="#rejoindre" data-prelaunch data-track="steps_cta">Être prévenu de la sortie</a>
+      <a class="btn store-cta" href="#" data-store-link data-track="steps_store">Télécharger Reiz</a>
+      <p data-prelaunch>Gratuit, sur iPhone.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6. POUR QUI -->
+<section class="section" id="pour-qui" aria-labelledby="titre-pourqui">
+  <div class="wrap">
+    <div class="who-grid">
+      <div class="section-head" style="margin:0">
+        <h2 class="h2 reveal" id="titre-pourqui">Ta discipline. Ta mesure.</h2>
+        <p class="lead reveal">Reiz n'est pas réservé à la muscu. Salle, course, vélo, natation, boxe : chaque objectif se compte dans sa vraie unité.</p>
+      </div>
+      <ul class="who-points reveal">
+        <li><svg aria-hidden="true"><use href="#i-target"/></svg><span><b>Tes chiffres, pas les nôtres.</b> Séances, kilos, kilomètres, minutes, répétitions : tu choisis.</span></li>
+        <li><svg aria-hidden="true"><use href="#i-people"/></svg><span><b>Chacun son programme, un seul cercle.</b> Vous comparez votre régularité, pas vos charges.</span></li>
+        <li><svg aria-hidden="true"><use href="#i-lock"/></svg><span><b>Ta vie privée, objectif par objectif.</b> Par défaut, seuls tes amis voient ce que tu postes. Tu peux aussi garder un objectif pour toi.</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="marquee" aria-label="Exemples d'objectifs">
+    <ul class="marquee-track">
+      <li class="goal-chip"><span class="e">💪</span>100 kg au bench</li>
+      <li class="goal-chip"><span class="e">🏃</span>50 km ce mois</li>
+      <li class="goal-chip"><span class="e">🏋️</span>12 séances à la salle</li>
+      <li class="goal-chip"><span class="e">🚴</span>100 km de vélo</li>
+      <li class="goal-chip"><span class="e">🏊</span>8 séances de natation</li>
+      <li class="goal-chip"><span class="e">🥊</span>10 séances de boxe</li>
+    </ul>
+    <ul class="marquee-track" aria-hidden="true">
+      <li class="goal-chip"><span class="e">💪</span>100 kg au bench</li>
+      <li class="goal-chip"><span class="e">🏃</span>50 km ce mois</li>
+      <li class="goal-chip"><span class="e">🏋️</span>12 séances à la salle</li>
+      <li class="goal-chip"><span class="e">🚴</span>100 km de vélo</li>
+      <li class="goal-chip"><span class="e">🏊</span>8 séances de natation</li>
+      <li class="goal-chip"><span class="e">🥊</span>10 séances de boxe</li>
+    </ul>
+  </div>
+  <div class="marquee reverse" aria-hidden="true">
+    <ul class="marquee-track">
+      <li class="goal-chip"><span class="e">🎯</span>Deadlift à 200 kg</li>
+      <li class="goal-chip"><span class="e">⏱️</span>300 min de cardio</li>
+      <li class="goal-chip"><span class="e">🏃</span>Un 10 km par semaine</li>
+      <li class="goal-chip"><span class="e">💪</span>170 kg au squat</li>
+      <li class="goal-chip"><span class="e">🔁</span>1 000 tractions</li>
+      <li class="goal-chip"><span class="e">🏋️</span>4 séances par semaine</li>
+    </ul>
+    <ul class="marquee-track">
+      <li class="goal-chip"><span class="e">🎯</span>Deadlift à 200 kg</li>
+      <li class="goal-chip"><span class="e">⏱️</span>300 min de cardio</li>
+      <li class="goal-chip"><span class="e">🏃</span>Un 10 km par semaine</li>
+      <li class="goal-chip"><span class="e">💪</span>170 kg au squat</li>
+      <li class="goal-chip"><span class="e">🔁</span>1 000 tractions</li>
+      <li class="goal-chip"><span class="e">🏋️</span>4 séances par semaine</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 7. APERÇU -->
+<section class="section" id="apercu" aria-labelledby="titre-apercu" style="padding-top:0">
+  <div class="wrap">
+    <div class="section-head center">
+      <h2 class="h2 reveal" id="titre-apercu">Un coup d'œil dedans.</h2>
+      <p class="lead reveal">Le fil, tes objectifs, ton profil et ton activité, dans le design de l'appli.</p>
+    </div>
+    <div class="gallery" data-gallery tabindex="0" aria-label="Écrans de l'appli, faire défiler horizontalement">
+      <!-- Fil -->
+      <figure class="shot">
+        <div class="phone-wrap" role="img" aria-label="Écran de démonstration du fil : la séance de vélo d'Inès, sa jauge à 64 km sur 100 et les réactions.">
+          <div class="phone"><div class="screen">
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg viewBox="0 0 70 13"><use href="#i-status"/></svg></span></div>
+            <div class="app-head">
+              <svg class="logo" viewBox="0 0 157.21 55.57"><use href="#logo"/></svg>
+              <div class="app-head-right"><span class="icon-btn"><svg><use href="#i-heart"/></svg><span class="dot-badge">2</span></span><span class="streak">🔥 12j</span></div>
+            </div>
+            <div class="post">
+              <div class="post-head">
+                <span class="av">I</span>
+                <div class="post-meta"><div class="post-name">Inès</div><div class="post-sub">🚴 Faire du vélo 100 km, il y a 1 h</div></div>
+                <svg class="post-menu" viewBox="0 0 24 24"><use href="#i-dots"/></svg>
+              </div>
+              <div class="media">
+                <picture><source srcset="assets/img/post-airbike.avif" type="image/avif"><img src="assets/img/post-airbike.jpg" alt="" width="720" height="960" loading="lazy"></picture>
+                <div class="media-bottom">
+                  <div class="stack"><span class="rx"><span class="av">T</span><em>💪</em></span><span class="rx"><span class="av">S</span><em>🔥</em></span><span class="rx"><span class="av">M</span><em>👏</em></span></div>
+                  <span class="react-btn"><svg viewBox="0 0 24 24"><use href="#i-smile"/></svg></span>
+                </div>
+              </div>
+              <div class="below">
+                <div class="gauge"><div class="gauge-track"><div class="gauge-fill" style="--p:64%"></div></div><span class="gauge-label">64 / 100 km</span></div>
+                <div class="caption">Air bike, 20 min. Les jambes brûlent.</div>
+              </div>
+            </div>
+            <div class="screen-fade"></div>
+            <div class="tabbar">
+              <div class="pill glass"><span class="on"><svg><use href="#i-home"/></svg></span><span><svg><use href="#i-grid"/></svg></span></div>
+              <span class="plus-btn"><svg><use href="#i-plus"/></svg></span>
+              <div class="pill glass"><span><svg><use href="#i-person-add"/></svg></span><span><svg><use href="#i-person"/></svg></span></div>
+            </div>
+          </div></div>
+        </div>
+        <figcaption>Le fil<small>Les séances de ton cercle</small></figcaption>
+      </figure>
+
+      <!-- Objectifs -->
+      <figure class="shot">
+        <div class="phone-wrap" role="img" aria-label="Écran de démonstration des objectifs : 2 objectifs en cours, une série de 12 jours, la carte 108 kg sur 170 au squat avec la semaine en cours.">
+          <div class="phone"><div class="screen">
+            <div class="glass-bd"><img src="assets/img/bg-cage-tall.jpg" alt="" width="900" height="1500" loading="lazy"></div>
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg viewBox="0 0 70 13"><use href="#i-status"/></svg></span></div>
+            <div class="scr-pad" style="padding-top:calc(66*var(--u))">
+              <div class="mini-lbl">Mes objectifs</div>
+              <div class="big-title">2 en cours</div>
+              <div class="stat-bubble" style="margin-top:calc(16*var(--u))"><div><b>2</b><small>Actifs</small></div><div><b>12j</b><small>Streak</small></div><div><b>71%</b><small>Moy.</small></div></div>
+              <div class="g-add">+ Ajouter un objectif</div>
+              <div class="sec-head">En cours <i>2</i></div>
+              <div class="g-card">
+                <div class="g-row"><div class="g-val">108<small> / 170 kg</small></div><span class="g-emo">🏋️</span></div>
+                <div class="g-title">170 kg au squat</div>
+                <div class="g-chips"><span class="g-chip"><svg><use href="#i-people"/></svg>Mon cercle</span><span class="g-chip"><svg><use href="#i-calendar"/></svg>Lun, mer, ven</span></div>
+                <div class="g-gauge"><div class="gauge-track"><div class="gauge-fill" style="--p:64%"></div></div><b>64%</b></div>
+                <div class="week"><span class="hit">L</span><span>M</span><span class="hit">M</span><span>J</span><span class="today">V</span><span>S</span><span>D</span></div>
+                <div class="week-note">2 sur 3 séances prévues cette semaine</div>
+                <div class="g-actions"><span class="w">+ Mise à jour</span><span class="o"><svg viewBox="0 0 24 24"><use href="#i-dots"/></svg></span></div>
+              </div>
+            </div>
+            <div class="tabbar">
+              <div class="pill glass"><span><svg><use href="#i-home"/></svg></span><span class="on"><svg><use href="#i-grid"/></svg></span></div>
+              <span class="plus-btn"><svg><use href="#i-plus"/></svg></span>
+              <div class="pill glass"><span><svg><use href="#i-person-add"/></svg></span><span><svg><use href="#i-person"/></svg></span></div>
+            </div>
+          </div></div>
+        </div>
+        <figcaption>Tes objectifs<small>Ta semaine, séance par séance</small></figcaption>
+      </figure>
+
+      <!-- Profil -->
+      <figure class="shot">
+        <div class="phone-wrap" role="img" aria-label="Écran de démonstration du profil de Théo : série de 12 jours, 34 posts, 9 amis, sa phrase et ses badges.">
+          <div class="phone"><div class="screen">
+            <div class="profile-bd"></div>
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg viewBox="0 0 70 13"><use href="#i-status"/></svg></span></div>
+            <div class="profile-hero">
+              <div class="p-name">Théo</div>
+              <div class="p-handle">@theo</div>
+              <div class="p-since">Membre depuis septembre 2026</div>
+            </div>
+            <div style="padding:0 calc(20*var(--u))">
+              <div class="stat-bubble glass"><div><b>12j</b><small>Streak</small></div><div><b>34</b><small>Posts</small></div><div><b>9</b><small>Amis</small></div></div>
+              <div class="about glass"><span class="mini-lbl">À propos</span><p>Objectif de l'été : 200 kg au deadlift.</p></div>
+              <div class="sec-head">Badges <i>7</i></div>
+              <div class="badge-row">
+                <img src="assets/badges/premier-pas.png" alt="" width="240" height="240" loading="lazy">
+                <img src="assets/badges/en-feu.png" alt="" width="240" height="240" loading="lazy">
+                <img src="assets/badges/semaine-parfaite.png" alt="" width="240" height="240" loading="lazy">
+                <img src="assets/badges/en-duo.png" alt="" width="240" height="240" loading="lazy">
+                <img src="assets/badges/regulier.png" alt="" width="240" height="240" loading="lazy">
+              </div>
+            </div>
+            <div class="tabbar">
+              <div class="pill glass"><span><svg><use href="#i-home"/></svg></span><span><svg><use href="#i-grid"/></svg></span></div>
+              <span class="plus-btn"><svg><use href="#i-plus"/></svg></span>
+              <div class="pill glass"><span><svg><use href="#i-person-add"/></svg></span><span class="on"><svg><use href="#i-person"/></svg></span></div>
+            </div>
+          </div></div>
+        </div>
+        <figcaption>Ton profil<small>Ta série, tes badges, ta preuve</small></figcaption>
+      </figure>
+
+      <!-- Activité -->
+      <figure class="shot">
+        <div class="phone-wrap" role="img" aria-label="Écran de démonstration de l'activité : une demande d'ami, un défi reçu, la régularité du cercle à 7 sur 11 et des réactions regroupées.">
+          <div class="phone"><div class="screen">
+            <div class="glass-bd"><img src="assets/img/bg-cage-tall.jpg" alt="" width="900" height="1500" loading="lazy"></div>
+            <div class="sb"><span>9:41</span><span class="sb-icons"><svg viewBox="0 0 70 13"><use href="#i-status"/></svg></span></div>
+            <div class="scr-pad" style="padding-top:calc(66*var(--u))">
+              <div class="big-title">Activité</div>
+              <div class="act-sub">2 à traiter</div>
+              <div class="mini-lbl" style="margin:calc(18*var(--u)) 0 calc(10*var(--u))">À traiter</div>
+              <div class="act-row"><span class="av">M</span><p><b>Maël</b> veut rejoindre ton cercle<small>il y a 2 h</small></p><span class="accept">Accepter</span></div>
+              <div class="act-row"><span class="av">H</span><p><b>Hugo</b> te défie 🔥<small>Duel d'une semaine</small></p><span class="accept">Voir</span></div>
+              <div class="g-card" style="padding:calc(16*var(--u)) calc(18*var(--u));border-radius:calc(24*var(--u));margin:calc(4*var(--u)) 0 calc(10*var(--u))">
+                <div class="mini-lbl">Ton cercle cette semaine</div>
+                <div class="g-val" style="font-size:calc(30*var(--u));margin-top:calc(6*var(--u))">7<small> / 11</small> <small style="font-size:calc(14*var(--u))">ont posté</small></div>
+                <div class="g-gauge" style="margin-top:calc(10*var(--u))"><div class="gauge-track"><div class="gauge-fill" style="--p:64%"></div></div></div>
+              </div>
+              <div class="act-row"><span class="av">S</span><p><b>Sarah, Nathan</b> et 2 autres ont réagi 🔥💪❤️ à ton post<small>3 h</small></p><span class="thumb"><img src="assets/img/post-rack.jpg" alt="" width="720" height="960" loading="lazy"></span></div>
+            </div>
+          </div></div>
+        </div>
+        <figcaption>Ton activité<small>Ce qui t'attend, en un coup d'œil</small></figcaption>
+      </figure>
+    </div>
+    <div class="gallery-ctrl">
+      <button type="button" data-gallery-prev aria-label="Écran précédent"><svg aria-hidden="true"><use href="#i-chevron-left"/></svg></button>
+      <button type="button" data-gallery-next aria-label="Écran suivant"><svg aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
+    </div>
+    <p class="fine gallery-note">Écrans reconstruits pour la démonstration, avec des prénoms et des chiffres fictifs.</p>
+  </div>
+</section>
+
+<!-- 8. FAQ -->
+<section class="section" id="faq" aria-labelledby="titre-faq">
+  <div class="wrap faq-grid">
+    <div class="faq-side">
+      <h2 class="h2 reveal" id="titre-faq">Tes questions.</h2>
+      <p class="lead reveal">Une autre question&nbsp;? Écris-nous à <a href="mailto:reizapp.contact@gmail.com" style="color:#fff">reizapp.contact@gmail.com</a>.</p>
+    </div>
+    <div class="faq-list">
+      <details class="faq-item" name="faq" open>
+        <summary data-track="faq_quoi">Qu'est-ce que Reiz&nbsp;?<span class="pm" aria-hidden="true"><svg><use href="#i-plus"/></svg></span></summary>
+        <div class="answer"><p>Reiz est le réseau social de tes objectifs sportifs. Tu fixes un objectif chiffré, tu postes chaque séance en photo ou en vidéo, et tes amis voient ta progression, réagissent et s'entraînent avec toi.</p></div>
+      </details>
+      <details class="faq-item" name="faq">
+        <summary data-track="faq_qui">À qui s'adresse l'appli&nbsp;?<span class="pm" aria-hidden="true"><svg><use href="#i-plus"/></svg></span></summary>
+        <div class="answer"><p>À tous ceux qui s'entraînent et veulent tenir sur la durée : salle, course, vélo, natation, boxe. Elle prend tout son sens avec quelques amis qui s'entraînent aussi, même chacun de son côté.</p></div>
+      </details>
+      <details class="faq-item" name="faq">
+        <summary data-track="faq_progression">Comment fonctionne la progression&nbsp;?<span class="pm" aria-hidden="true"><svg><use href="#i-plus"/></svg></span></summary>
+        <div class="answer"><p>Chaque objectif a une cible dans sa vraie unité, par exemple 170 kg ou 50 km. À chaque séance postée, tu indiques ta nouvelle valeur et la jauge avance. Tes jours postés d'affilée font ta série, et tes publications débloquent des badges qui évoluent sur six niveaux.</p></div>
+      </details>
+      <details class="faq-item" name="faq">
+        <summary data-track="faq_vie_privee">Qui voit mes séances&nbsp;?<span class="pm" aria-hidden="true"><svg><use href="#i-plus"/></svg></span></summary>
+        <div class="answer"><p>Toi seul décides, objectif par objectif : <strong>Mon cercle</strong> (tes amis, le réglage par défaut), <strong>Cercle proche</strong> (les amis que tu as choisis), <strong>Privé</strong> (toi uniquement) ou <strong>Public</strong> (tous les utilisateurs de Reiz). Tu peux changer d'avis à tout moment.</p></div>
+      </details>
+      <details class="faq-item" name="faq">
+        <summary data-track="faq_prix">L'appli est-elle gratuite&nbsp;?<span class="pm" aria-hidden="true"><svg><use href="#i-plus"/></svg></span></summary>
+        <div class="answer"><p>Oui, Reiz se télécharge gratuitement sur l'App Store.</p></div>
+      </details>
+      <details class="faq-item" name="faq">
+        <summary data-track="faq_ou">Où télécharger Reiz&nbsp;?<span class="pm" aria-hidden="true"><svg><use href="#i-plus"/></svg></span></summary>
+        <div class="answer">
+          <p data-prelaunch>Reiz arrive sur l'App Store. La date de sortie dépend de la validation d'Apple : <a href="#rejoindre">laisse ton e-mail</a> et on te prévient dès que l'appli est en ligne. Tu peux aussi suivre <a href="https://www.instagram.com/reiz_officiel" rel="noopener" target="_blank">@reiz_officiel</a> sur Instagram.</p>
+          <p data-live>Reiz est disponible sur l'App Store : <a href="#" data-store-link data-track="faq_store">télécharge-la ici</a>.</p>
+        </div>
+      </details>
+      <details class="faq-item" name="faq">
+        <summary data-track="faq_appareils">Sur quels appareils&nbsp;?<span class="pm" aria-hidden="true"><svg><use href="#i-plus"/></svg></span></summary>
+        <div class="answer"><p>Reiz sort d'abord sur iPhone. Une version Android est en préparation, sans date pour l'instant.</p></div>
+      </details>
+      <details class="faq-item" name="faq">
+        <summary data-track="faq_donnees">Que faites-vous de mes données&nbsp;?<span class="pm" aria-hidden="true"><svg><use href="#i-plus"/></svg></span></summary>
+        <div class="answer"><p>Elles servent à faire marcher l'appli, rien d'autre : pas de publicité, pas de revente. Tout est détaillé dans la <a href="confidentialite.html">politique de confidentialité</a>, et tu peux <a href="suppression-compte.html">supprimer ton compte</a> à tout moment.</p></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- 9. APPEL FINAL -->
+<section class="final" id="rejoindre" aria-labelledby="titre-final">
+  <div class="final-bg" aria-hidden="true"><img src="assets/img/bg-airbike-wide.jpg" alt="" width="1600" height="1000" loading="lazy"></div>
+  <div class="final-stickers" aria-hidden="true">
+    <div class="sticker" style="top:14%; left:8%; --rot:-8deg; --d:-2s"><picture><source srcset="assets/badges/semaine-parfaite.avif" type="image/avif"><img src="assets/badges/semaine-parfaite.png" alt="" width="240" height="240" loading="lazy"></picture></div>
+    <div class="sticker" style="bottom:12%; right:8%; --rot:9deg; --d:-4s"><picture><source srcset="assets/badges/inarretable.avif" type="image/avif"><img src="assets/badges/inarretable.png" alt="" width="240" height="240" loading="lazy"></picture></div>
+  </div>
+  <div class="wrap final-inner">
+    <h2 class="display is-italic" id="titre-final">Rejoins ton cercle.</h2>
+    <div class="final-line" aria-hidden="true"><i></i></div>
+    <p class="lead" data-prelaunch>Sois prévenu le jour où Reiz sort, et embarque tes potes dès la première séance.</p>
+    <p class="lead" data-live>Reiz est sur l'App Store. Crée ton premier objectif en moins d'une minute.</p>
+    <form class="waitlist" data-waitlist="final" novalidate>
+      <div class="waitlist-row glass">
+        <label class="sr-only" for="email-final">Ton adresse e-mail</label>
+        <input id="email-final" name="email" type="email" inputmode="email" autocomplete="email" placeholder="ton@email.com" required maxlength="254" aria-describedby="msg-final">
+        <input class="hp" type="text" name="site" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="btn" type="submit"><span class="btn-label">Préviens-moi à la sortie</span></button>
+      </div>
+      <div class="waitlist-done glass" role="status">
+        <span class="check"><svg aria-hidden="true"><use href="#i-check"/></svg></span>
+        <span><strong>C'est noté.</strong><span>On t'écrit le jour où Reiz sort sur l'App Store.</span></span>
+      </div>
+      <p class="waitlist-msg" id="msg-final" aria-live="polite">Ton e-mail sert uniquement à te prévenir de la sortie. <a href="confidentialite.html#liste-sortie">En savoir plus</a></p>
+    </form>
+    <a class="btn store-cta" href="#" data-store-link data-track="final_store">Télécharger Reiz sur l'App Store</a>
+    <a class="link-arrow ig-link" href="https://www.instagram.com/reiz_officiel" target="_blank" rel="noopener" data-track="instagram">
+      <svg aria-hidden="true"><use href="#i-instagram"/></svg>Suivre @reiz_officiel sur Instagram
+    </a>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <svg viewBox="0 0 157.21 55.57" role="img" aria-label="Reiz"><use href="#logo"/></svg>
+        <span class="tag">Rise to your goals</span>
+        <p class="fine" style="max-width:26em">Le réseau social de tes objectifs sportifs. Bientôt sur iPhone.</p>
+      </div>
+      <nav aria-labelledby="f-site">
+        <h2 id="f-site">Le site</h2>
+        <ul>
+          <li><a href="#concept">Le concept</a></li>
+          <li><a href="#fonctionnalites">Fonctionnalités</a></li>
+          <li><a href="#badges">Badges</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </nav>
+      <div>
+        <h2>Contact</h2>
+        <ul>
+          <li><a class="ig-link" href="mailto:reizapp.contact@gmail.com"><svg aria-hidden="true"><use href="#i-mail"/></svg>reizapp.contact@gmail.com</a></li>
+          <li><a class="ig-link" href="https://www.instagram.com/reiz_officiel" target="_blank" rel="noopener" data-track="instagram_footer"><svg aria-hidden="true"><use href="#i-instagram"/></svg>@reiz_officiel</a></li>
+        </ul>
+      </div>
+      <nav aria-labelledby="f-legal">
+        <h2 id="f-legal">Légal</h2>
+        <ul>
+          <li><a href="mentions-legales.html">Mentions légales</a></li>
+          <li><a href="confidentialite.html">Confidentialité</a></li>
+          <li><a href="cgu.html">Conditions d'utilisation</a></li>
+          <li><a href="suppression-compte.html">Supprimer mon compte</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Reiz</span>
+      <span>Écrans et prénoms des démonstrations fictifs. Photos prises en salle par l'équipe Reiz.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/main.js" defer></script>
+</body>
+</html>

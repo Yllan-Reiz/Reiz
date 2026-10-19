@@ -1,0 +1,673 @@
+<style>
+.rz { container-type: inline-size; font-family: var(--font-anthropic-sans); color: var(--color-fg); display: grid; gap: var(--cds-gap-xl); padding-block: var(--cds-pad-md) var(--cds-pad-xl); }
+.rz-head { display: grid; gap: var(--cds-gap-sm); }
+.rz-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); line-height: 1.15; margin: 0; text-wrap: balance; }
+.rz-lede { margin: 0; font-size: var(--cds-font-size-body); color: var(--color-fg-muted); max-width: 68ch; line-height: 1.55; }
+.rz-lede .rz-em { color: var(--color-fg); font-variant-numeric: tabular-nums; }
+.rz-nav { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs); margin-top: var(--cds-gap-xs); }
+.rz-btn { font: inherit; font-size: var(--cds-font-size-caption); padding: var(--cds-pad-xs) var(--cds-pad-sm); border: 1px solid var(--color-border-line); border-radius: 999px; background: var(--color-panel); color: var(--color-fg); cursor: pointer; }
+.rz-btn:hover { border-color: var(--color-fg-muted); }
+.rz-btn:focus-visible, .rz-search:focus-visible, .rz-sort:focus-visible, .rz-check input:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+.rz-section { display: grid; gap: var(--cds-gap-md); scroll-margin-top: var(--cds-pad-lg); }
+.rz-section-head { display: grid; gap: var(--cds-gap-xs); }
+.rz-h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+.rz-h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 0; }
+.rz-note { margin: 0; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.5; max-width: 76ch; }
+.rz-note a { color: var(--color-fg); }
+.rz-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.5rem), 1fr)); gap: var(--cds-gap-md); }
+.rz-tiles-sm { grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); }
+.rz-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); }
+.rz-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: grid; gap: var(--cds-gap-sm); align-content: start; min-width: 0; }
+.rz-card-sm { padding: var(--cds-pad-md); gap: var(--cds-gap-xs); }
+.rz-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.rz-num { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.rz-num-sm { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-heading); line-height: 1.2; font-variant-numeric: tabular-nums; }
+.rz-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.45; font-variant-numeric: tabular-nums; }
+.rz-trend { display: inline-block; margin-left: var(--cds-gap-xs); font-size: var(--cds-font-size-caption); }
+.rz-trend.up { color: var(--color-ok); }
+.rz-trend.down { color: var(--color-bad); }
+.rz-trend.flat { color: var(--color-fg-muted); }
+.rz-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm) var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.rz-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.rz-swatch { width: 10px; height: 10px; border-radius: 999px; display: inline-block; flex: none; }
+.rz-chart { position: relative; min-height: 210px; }
+.rz-chart svg { display: block; overflow: visible; }
+.rz-fail { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: inherit; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.rz-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+.rz-tip { position: absolute; top: 0; z-index: 2; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); display: grid; gap: 3px; min-width: 9rem; white-space: nowrap; }
+.rz-tip-title { color: var(--cds-text-secondary); }
+.rz-tip-line { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.rz-tip-line b { margin-left: auto; padding-left: var(--cds-gap-sm); font-weight: var(--cds-font-weight-medium); }
+.rz-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--cds-gap-sm); }
+.rz-search { font: inherit; font-size: var(--cds-font-size-caption); padding: var(--cds-pad-xs) var(--cds-pad-sm); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-bg); color: var(--color-fg); min-width: 0; flex: 1 1 12rem; max-width: 20rem; }
+.rz-check { display: inline-flex; align-items: center; gap: 6px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); cursor: pointer; }
+.rz-scroll { overflow: auto; max-height: 34rem; }
+.rz-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+.rz-table th { position: sticky; top: 0; background: var(--color-panel); text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); border-bottom: 1px solid var(--color-border-line); padding: 0; white-space: nowrap; }
+.rz-table th.num, .rz-table td.num { text-align: right; }
+.rz-sort { font: inherit; color: inherit; background: none; border: 0; padding: 8px 10px; cursor: pointer; width: 100%; text-align: inherit; }
+.rz-sort::after { content: ""; display: inline-block; width: 1em; }
+th[aria-sort="ascending"] .rz-sort::after { content: " ↑"; }
+th[aria-sort="descending"] .rz-sort::after { content: " ↓"; }
+.rz-table td { padding: 8px 10px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.rz-table tbody tr:last-child td { border-bottom: 0; }
+.rz-table td.rz-key { font-weight: var(--cds-font-weight-medium); }
+.rz-muted { color: var(--color-fg-muted); }
+.rz-pill { display: inline-block; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; font-size: var(--cds-font-size-caption); line-height: 1.5; }
+.rz-pill.ok { color: var(--color-ok); }
+.rz-pill.warn { color: var(--color-warn); }
+.rz-pill.bad { color: var(--color-bad); }
+.rz-pill.idle { color: var(--color-fg-muted); }
+.rz-pill.test { color: var(--color-fg-muted); border-style: dashed; }
+.rz-pill.fg { color: var(--color-fg); }
+.rz-cellbar { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; width: 100%; }
+.rz-cellbar i { display: block; height: 6px; border-radius: 999px; background: var(--cds-chart-muted); }
+.rz-meter { height: 10px; border-radius: 999px; background: var(--color-bg); border: 1px solid var(--color-border-line); overflow: hidden; }
+.rz-meter i { display: block; height: 100%; border-radius: 999px; }
+.rz-split { display: flex; height: 14px; gap: 2px; border-radius: 999px; overflow: hidden; }
+.rz-split i { display: block; height: 100%; min-width: 2px; }
+.rz-copied { font-size: var(--cds-font-size-caption); color: var(--color-ok); }
+.rz-copybox { width: 100%; min-height: 4rem; font: inherit; font-size: var(--cds-font-size-caption); background: var(--color-bg); color: var(--color-fg); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-xs); }
+[data-dash-source-state=empty] { color: transparent; }
+[data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+@container (max-width: 640px) { .rz-sec { display: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .rz-chart.rz-drawn svg { animation: rz-in var(--cds-dur-slow) var(--cds-ease-out); }
+  @keyframes rz-in { from { opacity: 0; } to { opacity: 1; } }
+}
+</style>
+
+<div class="rz">
+  <header class="rz-hero" id="apercu">
+    <div class="rz-hero-bg" aria-hidden="true"></div>
+    <div class="rz-brand">
+      <svg viewBox="342.34 269.85 157.21 55.57" fill="currentColor" role="img" aria-label="Reiz"><!--LOGO--></svg>
+      <span class="rz-tag">Back-office</span>
+    </div>
+    <h1 class="rz-title">Ce qui se passe<br><em>dans Reiz.</em></h1>
+    <p class="rz-lede">
+      <span class="rz-em dash-skeleton" data-source="kpis" data-field="members" data-row="0">—</span> membres inscrits dans l’app, dont
+      <span class="rz-em dash-skeleton" data-source="kpis" data-field="active_7d" data-row="0">—</span> actifs ces 7 derniers jours.
+      <span class="rz-em dash-skeleton" data-source="kpis" data-field="waitlist" data-row="0">—</span> personnes attendent la sortie sur la liste du site.
+      Les fichiers occupent <span class="rz-em dash-skeleton" data-source="kpis" data-field="files_quota_pct" data-row="0" data-fmt="dec2">—</span> % du stockage inclus.
+    </p>
+    <nav class="rz-nav" aria-label="Sections">
+      <button class="rz-btn" type="button" data-go="membres">Membres</button>
+      <button class="rz-btn" type="button" data-go="liste-attente">Liste d’attente</button>
+      <button class="rz-btn" type="button" data-go="stockage">Stockage</button>
+      <button class="rz-btn" type="button" data-go="sante">Santé du back-end</button>
+    </nav>
+  </header>
+
+  <section class="rz-section" id="chiffres">
+    <div class="rz-tiles">
+      <div class="rz-card" id="tile-membres">
+        <div class="rz-label">Membres inscrits</div>
+        <div class="rz-num dash-skeleton" data-source="kpis" data-field="members" data-row="0">—</div>
+        <div class="rz-sub">+<span data-source="kpis" data-field="members_new_7d" data-row="0">—</span> en 7 jours, +<span data-source="kpis" data-field="members_new_30d" data-row="0">—</span> en 30 jours</div>
+      </div>
+      <div class="rz-card" id="tile-actifs">
+        <div class="rz-label">Actifs sur 7 jours</div>
+        <div><span class="rz-num dash-skeleton" data-source="kpis" data-field="active_7d" data-row="0">—</span><span class="rz-trend" id="trend-actifs"></span></div>
+        <div class="rz-sub"><span data-source="kpis" data-field="active_prev_7d" data-row="0">—</span> la semaine d’avant, <span data-source="kpis" data-field="active_24h" data-row="0">—</span> sur les dernières 24 h</div>
+      </div>
+      <div class="rz-card" id="tile-attente">
+        <div class="rz-label">Liste d’attente</div>
+        <div class="rz-num dash-skeleton" data-source="kpis" data-field="waitlist" data-row="0">—</div>
+        <div class="rz-sub">+<span data-source="kpis" data-field="waitlist_new_7d" data-row="0">—</span> en 7 jours, <span data-source="kpis" data-field="waitlist_joined" data-row="0">—</span> déjà dans l’app</div>
+      </div>
+      <div class="rz-card" id="tile-posts">
+        <div class="rz-label">Posts sur 7 jours</div>
+        <div><span class="rz-num dash-skeleton" data-source="kpis" data-field="posts_7d" data-row="0">—</span><span class="rz-trend" id="trend-posts"></span></div>
+        <div class="rz-sub"><span data-source="kpis" data-field="posts_prev_7d" data-row="0">—</span> la semaine d’avant</div>
+      </div>
+      <div class="rz-card" id="tile-notifs">
+        <div class="rz-label">Notifications activées</div>
+        <div class="rz-num dash-skeleton" data-source="kpis" data-field="push_on" data-row="0">—</div>
+        <div class="rz-sub">membres qui reçoivent les rappels et alertes</div>
+      </div>
+    </div>
+    <p class="rz-note">Un membre est actif s’il a publié, commenté, réagi ou pointé à la salle. Les <span data-source="kpis" data-field="test_accounts" data-row="0">—</span> comptes test (démo Apple, testuser) sont exclus des chiffres et des courbes.</p>
+
+    <div class="rz-grid">
+      <div class="rz-card" id="carte-arrivees">
+        <h3 class="rz-h3">Arrivées par jour</h3>
+        <p class="rz-note">Inscriptions dans l’app et e-mails laissés sur le site, 60 derniers jours, heure de Paris.</p>
+        <div class="rz-legend" data-source="daily">
+          <span><i class="rz-swatch" id="sw-signups"></i>Inscrits dans l’app</span>
+          <span><i class="rz-swatch" id="sw-waitlist"></i>Liste d’attente</span>
+        </div>
+        <div class="rz-chart" id="chart-arrivees" data-source="daily"></div>
+      </div>
+      <div class="rz-card" id="carte-actifs">
+        <h3 class="rz-h3">Membres actifs par jour</h3>
+        <p class="rz-note">Membres distincts qui ont publié, commenté, réagi ou pointé ce jour-là. Survolez une barre pour voir les posts.</p>
+        <div class="rz-chart" id="chart-actifs" data-source="daily"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="rz-section" id="membres">
+    <div class="rz-section-head">
+      <h2 class="rz-h2">Membres</h2>
+      <p class="rz-note">Tous les comptes créés dans l’app, du plus récent au plus ancien. Statut : actif sous 2 jours, calme sous 7 jours, inactif au-delà, sans activité s’il n’a encore rien publié ni réagi.</p>
+    </div>
+    <div class="rz-card">
+      <div class="rz-toolbar">
+        <input class="rz-search" id="search-membres" type="search" placeholder="Chercher un pseudo ou un nom" aria-label="Chercher un membre">
+        <label class="rz-check" for="hide-tests"><input type="checkbox" id="hide-tests" checked> Masquer les comptes test</label>
+        <span class="rz-sub" id="count-membres"></span>
+      </div>
+      <div class="rz-scroll">
+        <table class="rz-table" id="table-membres" data-source="members" data-row-key="username">
+          <thead><tr>
+            <th data-field="username"><button class="rz-sort" type="button">Pseudo</button></th>
+            <th data-field="name" class="rz-sec"><button class="rz-sort" type="button">Nom</button></th>
+            <th data-field="status"><button class="rz-sort" type="button">Statut</button></th>
+            <th data-field="joined"><button class="rz-sort" type="button">Inscrit le</button></th>
+            <th data-field="last_activity" class="rz-sec"><button class="rz-sort" type="button">Dernière activité</button></th>
+            <th data-field="posts" class="num"><button class="rz-sort" type="button">Posts</button></th>
+            <th data-field="objectives" class="num rz-sec"><button class="rz-sort" type="button">Objectifs</button></th>
+            <th data-field="friends" class="num rz-sec"><button class="rz-sort" type="button">Amis</button></th>
+            <th data-field="signin" class="rz-sec"><button class="rz-sort" type="button">Connexion</button></th>
+            <th data-field="push" class="rz-sec"><button class="rz-sort" type="button">Notifs</button></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="rz-section" id="liste-attente">
+    <div class="rz-section-head">
+      <h2 class="rz-h2">Liste d’attente</h2>
+      <p class="rz-note">Les e-mails laissés sur reiz-landing.netlify.app, le lien de la bio Instagram. « Inscrit dans l’app » veut dire que la même adresse a déjà créé un compte.</p>
+    </div>
+    <div class="rz-card">
+      <div class="rz-toolbar">
+        <button class="rz-btn" type="button" id="copy-emails">Copier les e-mails en attente</button>
+        <span class="rz-copied" id="copy-status" aria-live="polite"></span>
+      </div>
+      <textarea class="rz-copybox" id="copy-box" readonly hidden aria-label="E-mails en attente"></textarea>
+      <div class="rz-scroll">
+        <table class="rz-table" id="table-attente" data-source="waitlist" data-row-key="email">
+          <thead><tr>
+            <th data-field="email"><button class="rz-sort" type="button">E-mail</button></th>
+            <th data-field="joined"><button class="rz-sort" type="button">Laissé le</button></th>
+            <th data-field="status"><button class="rz-sort" type="button">Statut</button></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="rz-section" id="stockage">
+    <div class="rz-section-head">
+      <h2 class="rz-h2">Stockage</h2>
+      <p class="rz-note">Le projet Supabase est au forfait Pro : 100 Go de fichiers et 8 Go de base de données inclus.</p>
+    </div>
+    <div class="rz-grid">
+      <div class="rz-card" id="carte-fichiers">
+        <div class="rz-label">Fichiers (photos et vidéos des posts)</div>
+        <div class="rz-num"><span class="dash-skeleton" data-source="kpis" data-field="files_mb" data-row="0" data-fmt="dec1">—</span> Mo</div>
+        <div class="rz-meter" data-source="kpis"><i id="meter-files"></i></div>
+        <div class="rz-sub"><span data-source="kpis" data-field="files_quota_pct" data-row="0" data-fmt="dec2">—</span> % des 100 Go inclus</div>
+      </div>
+      <div class="rz-card" id="carte-base">
+        <div class="rz-label">Base de données (comptes, posts, commentaires, notifications)</div>
+        <div class="rz-num"><span class="dash-skeleton" data-source="kpis" data-field="db_mb" data-row="0" data-fmt="dec1">—</span> Mo</div>
+        <div class="rz-meter" data-source="kpis"><i id="meter-db"></i></div>
+        <div class="rz-sub"><span data-source="kpis" data-field="db_quota_pct" data-row="0" data-fmt="dec2">—</span> % des 8 Go inclus</div>
+      </div>
+    </div>
+    <div class="rz-grid">
+      <div class="rz-card" id="carte-types">
+        <h3 class="rz-h3">Vidéos ou photos</h3>
+        <div class="rz-split" id="split-kinds" data-source="storage_kinds" aria-hidden="true"></div>
+        <table class="rz-table" id="table-kinds" data-source="storage_kinds" data-row-key="kind">
+          <thead><tr>
+            <th data-field="kind"><button class="rz-sort" type="button">Type</button></th>
+            <th data-field="files" class="num"><button class="rz-sort" type="button">Fichiers</button></th>
+            <th data-field="mb" class="num"><button class="rz-sort" type="button">Mo</button></th>
+            <th data-field="avg_mb" class="num"><button class="rz-sort" type="button">Mo par fichier</button></th>
+            <th data-field="mb_7d" class="num rz-sec"><button class="rz-sort" type="button">Ajouté en 7 j</button></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="rz-note">La bande passante sortante (egress) ne se lit pas depuis la base. Elle se suit sur la <a href="https://supabase.com/dashboard/org/paakostaczeyopinmwxd/usage" target="_blank" rel="noopener">page Usage de Supabase</a> : le forfait Pro en inclut 250 Go par mois. Ce sont surtout les vidéos qui la consomment, car le fil les relit à chaque affichage.</p>
+      </div>
+      <div class="rz-card" id="carte-gros">
+        <h3 class="rz-h3">Les fichiers les plus lourds</h3>
+        <div class="rz-scroll">
+          <table class="rz-table" id="table-gros" data-source="big_files" data-row-key="file">
+            <thead><tr>
+              <th data-field="owner"><button class="rz-sort" type="button">Membre</button></th>
+              <th data-field="kind"><button class="rz-sort" type="button">Type</button></th>
+              <th data-field="mb" class="num"><button class="rz-sort" type="button">Mo</button></th>
+              <th data-field="added"><button class="rz-sort" type="button">Ajouté le</button></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="rz-section" id="sante">
+    <div class="rz-section-head">
+      <h2 class="rz-h2">Santé du back-end</h2>
+      <p class="rz-note">Ce que Supabase a reçu des téléphones sur les dernières 24 heures, les tâches automatiques et le contenu total de l’app.</p>
+    </div>
+    <div class="rz-tiles rz-tiles-sm">
+      <div class="rz-card rz-card-sm"><div class="rz-label">Requêtes en 24 h</div><div class="rz-num-sm dash-skeleton" data-source="traffic_24h" data-field="requests" data-row="0">—</div></div>
+      <div class="rz-card rz-card-sm"><div class="rz-label">Depuis un iPhone</div><div class="rz-num-sm dash-skeleton" data-source="traffic_24h" data-field="ios" data-row="0">—</div></div>
+      <div class="rz-card rz-card-sm"><div class="rz-label">Depuis Android</div><div class="rz-num-sm dash-skeleton" data-source="traffic_24h" data-field="android" data-row="0">—</div></div>
+      <div class="rz-card rz-card-sm"><div class="rz-label">Refusées (4xx)</div><div class="rz-num-sm dash-skeleton" data-source="traffic_24h" data-field="errors_4xx" data-row="0">—</div></div>
+      <div class="rz-card rz-card-sm"><div class="rz-label">Pannes serveur (5xx)</div><div class="rz-num-sm dash-skeleton" id="num-5xx" data-source="traffic_24h" data-field="errors_5xx" data-row="0">—</div></div>
+      <div class="rz-card rz-card-sm"><div class="rz-label">Réponse moyenne (ms)</div><div class="rz-num-sm dash-skeleton" data-source="traffic_24h" data-field="avg_ms" data-row="0">—</div></div>
+    </div>
+    <div class="rz-grid">
+      <div class="rz-card" id="carte-trafic">
+        <h3 class="rz-h3">Requêtes par heure</h3>
+        <p class="rz-note">Dernières 24 heures, heure de Paris. Une requête refusée est souvent une session expirée, rarement une panne.</p>
+        <div class="rz-legend" data-source="traffic_hours">
+          <span><i class="rz-swatch" id="sw-served"></i>Servies</span>
+          <span><i class="rz-swatch" id="sw-errors"></i>Refusées ou en erreur</span>
+        </div>
+        <div class="rz-chart" id="chart-trafic" data-source="traffic_hours"></div>
+      </div>
+      <div class="rz-card" id="carte-taches">
+        <h3 class="rz-h3">Tâches automatiques</h3>
+        <p class="rz-note">Les rappels et clôtures lancés chaque jour par la base. Heures de Paris.</p>
+        <div class="rz-scroll">
+          <table class="rz-table" id="table-taches" data-source="crons" data-row-key="job">
+            <thead><tr>
+              <th data-field="label"><button class="rz-sort" type="button">Tâche</button></th>
+              <th data-field="state"><button class="rz-sort" type="button">État</button></th>
+              <th data-field="last_run"><button class="rz-sort" type="button">Dernier passage</button></th>
+              <th data-field="failures_7d" class="num rz-sec"><button class="rz-sort" type="button">Échecs 7 j</button></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="rz-section-head"><h3 class="rz-h3">Contenu de l’app depuis le début</h3></div>
+    <div class="rz-tiles rz-tiles-sm" id="contenu">
+      <div class="rz-card rz-card-sm"><div class="rz-label">Posts</div><div class="rz-num-sm dash-skeleton" data-source="content" data-field="posts" data-row="0">—</div></div>
+      <div class="rz-card rz-card-sm"><div class="rz-label">Commentaires</div><div class="rz-num-sm dash-skeleton" data-source="content" data-field="comments" data-row="0">—</div></div>
+      <div class="rz-card rz-card-sm"><div class="rz-label">Réactions</div><div class="rz-num-sm dash-skeleton" data-source="content" data-field="reactions" data-row="0">—</div></div>
+      <div class="rz-card rz-card-sm"><div class="rz-label">Objectifs</div><div class="rz-num-sm dash-skeleton" data-source="content" data-field="objectives" data-row="0">—</div></div>
+      <div class="rz-card rz-card-sm"><div class="rz-label">Amitiés</div><div class="rz-num-sm dash-skeleton" data-source="content" data-field="friendships" data-row="0">—</div><div class="rz-sub"><span data-source="content" data-field="pending_requests" data-row="0">—</span> demandes en attente</div></div>
+      <div class="rz-card rz-card-sm"><div class="rz-label">Pointages à la salle</div><div class="rz-num-sm dash-skeleton" data-source="content" data-field="gym_checkins" data-row="0">—</div></div>
+      <div class="rz-card rz-card-sm"><div class="rz-label">Défis duo</div><div class="rz-num-sm dash-skeleton" data-source="content" data-field="duels" data-row="0">—</div></div>
+      <div class="rz-card rz-card-sm"><div class="rz-label">Notifications envoyées</div><div class="rz-num-sm dash-skeleton" data-source="content" data-field="notifications" data-row="0">—</div></div>
+      <div class="rz-card rz-card-sm"><div class="rz-label">Signalements</div><div class="rz-num-sm dash-skeleton" data-source="content" data-field="reports" data-row="0">—</div><div class="rz-sub"><span data-source="content" data-field="reports_7d" data-row="0">—</span> cette semaine, <span data-source="content" data-field="blocks" data-row="0">—</span> blocages</div></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const supabaseRows = ({ answer }) => {
+  const text = typeof answer === 'string' ? answer : answer && typeof answer.result === 'string' ? answer.result : null;
+  if (text === null) {
+    if (Array.isArray(answer)) return answer;
+    const err = answer && answer.error;
+    if (err) throw new Error(typeof err === 'string' ? err : err.message || JSON.stringify(err));
+    throw new Error('Unexpected answer from Supabase, keys: ' + Object.keys(answer || {}).join(', '));
+  }
+  const found = text.match(/<untrusted-data-([0-9a-f-]+)>([\s\S]*?)<\/untrusted-data-\1>/);
+  if (!found) throw new Error(text.slice(0, 400));
+  let body = JSON.parse(found[2].trim());
+  if (body && !Array.isArray(body) && Array.isArray(body.result)) body = body.result;
+  if (!Array.isArray(body)) throw new Error('Supabase answered without rows');
+  const keepText = new Set(['username', 'name', 'email', 'file', 'job', 'label', 'schedule', 'owner', 'hour', 'day', 'joined', 'added', 'last_activity', 'last_run', 'kind', 'status', 'state', 'signin', 'push']);
+  return body.map((row) => Object.fromEntries(Object.entries(row).map(([k, v]) => [k, typeof v === 'string' && !keepText.has(k) && /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v])));
+};
+const sqlNote = 'Supabase wraps the SQL result in a text block; this reads the rows out of it and turns numeric text into numbers.';
+dash.loader('kpis', { description: sqlNote, fn: supabaseRows });
+dash.loader('daily', { description: sqlNote, fn: supabaseRows });
+dash.loader('members', { description: sqlNote, fn: supabaseRows });
+dash.loader('waitlist', { description: sqlNote, fn: supabaseRows });
+dash.loader('storage_kinds', { description: sqlNote, fn: supabaseRows });
+dash.loader('big_files', { description: sqlNote, fn: supabaseRows });
+dash.loader('content', { description: sqlNote, fn: supabaseRows });
+dash.loader('crons', { description: sqlNote, fn: supabaseRows });
+dash.loader('traffic_hours', { description: 'Supabase wraps the log query result in a text block; this reads the rows out of it.', fn: supabaseRows });
+dash.loader('traffic_24h', { description: 'Supabase wraps the log query result in a text block; this reads the rows out of it.', fn: supabaseRows });
+</script>
+
+<script>
+const fr = new Intl.NumberFormat('fr-FR');
+const fr1 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const fr2 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
+const FMT = { int: (v) => fr.format(v), dec1: (v) => fr1.format(v), dec2: (v) => fr2.format(v) };
+const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+const dayParts = (s) => s.slice(0, 10).split('-').map(Number);
+const fmtDay = (s) => { if (!s) return ''; const [y, m, d] = dayParts(s); return d + ' ' + MONTHS[m - 1] + ' ' + y; };
+const fmtDayShort = (s) => { if (!s) return ''; const [, m, d] = dayParts(s); return d + ' ' + MONTHS[m - 1]; };
+const fmtStamp = (s) => s ? fmtDayShort(s) + ', ' + s.slice(11, 13) + ' h ' + s.slice(14, 16) : '';
+const fmtHour = (s) => Number(s.slice(11, 13)) + ' h';
+const ok = (id) => dash.data(id).status === 'ok';
+const rowsOf = (id) => (ok(id) ? dash.data(id).data : []);
+const failed = (id) => { const st = dash.data(id).status; return st === 'error' || st === 'connect' || st === 'declined'; };
+
+const STATUS_PILL = { 'Actif': 'ok', 'Calme': 'warn', 'Inactif': 'idle', 'Sans activité': 'idle', 'Compte test': 'test', 'En attente': 'fg', 'Inscrit dans l’app': 'ok', 'Test': 'test', 'OK': 'ok', 'Échec': 'bad', 'Désactivée': 'warn', 'Jamais lancée': 'warn' };
+
+function fillSingles() {
+  document.querySelectorAll('.rz [data-source][data-field][data-row]').forEach((el) => {
+    const ds = dash.data(el.dataset.source);
+    if (ds.status === 'loading') return;
+    el.classList.remove('dash-skeleton');
+    const row = ds.status === 'ok' ? ds.data[Number(el.dataset.row)] : null;
+    const v = row ? row[el.dataset.field] : null;
+    el.textContent = v == null || v === '' ? '—' : (FMT[el.dataset.fmt || 'int'] || FMT.int)(v);
+  });
+}
+
+function trend(el, now, before) {
+  el.className = 'rz-trend';
+  el.textContent = '';
+  if (now == null || before == null) return;
+  if (now > before) { el.classList.add('up'); el.textContent = 'en hausse'; }
+  else if (now < before) { el.classList.add('down'); el.textContent = 'en baisse'; }
+  else { el.classList.add('flat'); el.textContent = 'stable'; }
+}
+
+function showFail(box) {
+  box.replaceChildren();
+  const p = document.createElement('div');
+  p.className = 'rz-fail';
+  p.textContent = 'Échec du chargement';
+  box.appendChild(p);
+}
+
+function barChart(box, rows, cfg) {
+  box.replaceChildren();
+  const W = box.clientWidth;
+  if (!W || !rows.length) return;
+  const H = 210, mt = 8, mb = 24, mr = 4;
+  const total = (r) => d3.sum(cfg.keys, (k) => +r[k.field] || 0);
+  const y = d3.scaleLinear([0, Math.max(1, d3.max(rows, total))], [H - mb, mt]).nice();
+  const ticks = y.ticks(4).filter(Number.isInteger);
+  const svg = d3.select(box).append('svg').attr('width', '100%').attr('height', H).attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', cfg.label);
+  const probe = svg.append('g');
+  const widths = ticks.map((t) => probe.append('text').attr('font-size', 11).text(fr.format(t)).node().getComputedTextLength());
+  probe.remove();
+  const ml = Math.ceil(d3.max(widths) || 10) + 8;
+  const x = d3.scaleBand(rows.map((r) => r[cfg.x]), [ml, W - mr]).paddingInner(0.22).paddingOuter(0.05);
+  const grid = svg.append('g');
+  ticks.forEach((t) => {
+    grid.append('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y(t)).attr('y2', y(t)).style('stroke', t === 0 ? 'var(--cds-chart-axis)' : 'var(--cds-chart-grid)').attr('stroke-width', 1);
+    grid.append('text').attr('x', ml - 8).attr('y', y(t)).attr('dy', '0.32em').attr('text-anchor', 'end').attr('font-size', 11).style('fill', 'var(--color-fg-muted)').text(fr.format(t));
+  });
+  const bw = x.bandwidth();
+  const bars = svg.append('g');
+  rows.forEach((r) => {
+    let acc = 0;
+    cfg.keys.forEach((k) => {
+      const v = +r[k.field] || 0;
+      if (!v) return;
+      const top = y(acc + v), bottom = y(acc);
+      const gap = acc > 0 ? 2 : 0;
+      bars.append('rect').attr('class', 'rz-bar').attr('data-x', r[cfg.x]).attr('x', x(r[cfg.x])).attr('width', bw).attr('y', top).attr('height', Math.max(1, bottom - top - gap)).attr('rx', Math.min(3, bw / 2)).style('fill', k.color);
+      acc += v;
+    });
+  });
+  const step = Math.max(1, Math.ceil(64 / x.step()));
+  const last = rows.length - 1;
+  rows.forEach((r, i) => {
+    if ((last - i) % step !== 0) return;
+    svg.append('text').attr('x', x(r[cfg.x]) + bw / 2).attr('y', H - 6).attr('text-anchor', i === last ? 'end' : 'middle').attr('font-size', 11).style('fill', 'var(--color-fg-muted)').text(cfg.tick(r[cfg.x]));
+  });
+  const tip = document.createElement('div');
+  tip.className = 'rz-tip';
+  tip.hidden = true;
+  box.appendChild(tip);
+  const hit = svg.append('g');
+  rows.forEach((r) => {
+    hit.append('rect').attr('x', x(r[cfg.x]) - (x.step() - bw) / 2).attr('width', x.step()).attr('y', mt).attr('height', H - mt - mb).style('fill', 'transparent')
+      .on('mouseenter', () => {
+        bars.selectAll('.rz-bar').style('opacity', function () { return this.getAttribute('data-x') === r[cfg.x] ? 1 : 0.45; });
+        tip.replaceChildren();
+        const t = document.createElement('div');
+        t.className = 'rz-tip-title';
+        t.textContent = cfg.title(r[cfg.x]);
+        tip.appendChild(t);
+        cfg.keys.concat(cfg.extra || []).forEach((k) => {
+          const line = document.createElement('div');
+          line.className = 'rz-tip-line';
+          if (k.color && cfg.keys.length > 1) { const s = document.createElement('i'); s.className = 'rz-swatch'; s.style.background = k.color; line.appendChild(s); }
+          const name = document.createElement('span');
+          name.textContent = k.label;
+          const val = document.createElement('b');
+          val.textContent = fr.format(+r[k.field] || 0);
+          line.append(name, val);
+          tip.appendChild(line);
+        });
+        tip.hidden = false;
+        const cx = x(r[cfg.x]) + bw / 2;
+        const tw = tip.offsetWidth;
+        tip.style.left = Math.max(0, Math.min(W - tw, cx - tw / 2)) + 'px';
+        tip.style.top = '0px';
+      })
+      .on('mouseleave', () => { tip.hidden = true; bars.selectAll('.rz-bar').style('opacity', 1); });
+  });
+  box.classList.add('rz-drawn');
+}
+
+const tables = {};
+function setupTable(id, cfg) {
+  const table = document.getElementById(id);
+  const state = { sort: cfg.sort, dir: cfg.dir || 'descending', cfg, table };
+  tables[id] = state;
+  table.querySelectorAll('th[data-field]').forEach((th) => {
+    th.querySelector('.rz-sort').addEventListener('click', () => {
+      const f = th.dataset.field;
+      state.dir = state.sort === f && state.dir === 'descending' ? 'ascending' : 'descending';
+      state.sort = f;
+      renderTable(id);
+    });
+  });
+  return state;
+}
+function renderTable(id) {
+  const state = tables[id];
+  const { cfg, table } = state;
+  const ds = dash.data(cfg.source);
+  const tbody = table.querySelector('tbody');
+  tbody.replaceChildren();
+  table.querySelectorAll('th[data-field]').forEach((th) => {
+    if (th.dataset.field === state.sort) th.setAttribute('aria-sort', state.dir); else th.removeAttribute('aria-sort');
+  });
+  if (ds.status !== 'ok') {
+    const tr = tbody.insertRow();
+    const td = tr.insertCell();
+    td.colSpan = table.querySelectorAll('th').length;
+    if (failed(cfg.source)) { const f = document.createElement('div'); f.className = 'rz-fail'; f.textContent = 'Échec du chargement'; td.appendChild(f); }
+    else { td.className = 'dash-skeleton'; td.textContent = ' '; }
+    return [];
+  }
+  let rows = ds.data.slice();
+  if (cfg.filter) rows = rows.filter(cfg.filter);
+  if (state.sort) {
+    const f = state.sort, mult = state.dir === 'ascending' ? 1 : -1;
+    rows.sort((a, b) => {
+      const av = a[f], bv = b[f];
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return (typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv), 'fr')) * mult;
+    });
+  }
+  const cols = [...table.querySelectorAll('th[data-field]')];
+  const ctx = cfg.context ? cfg.context(ds.data) : {};
+  rows.forEach((r) => {
+    const tr = tbody.insertRow();
+    if (cfg.dataKey) tr.dataset.key = r[cfg.dataKey];
+    cols.forEach((th) => {
+      const f = th.dataset.field;
+      const td = tr.insertCell();
+      td.className = th.className;
+      const render = cfg.render && cfg.render[f];
+      if (render) render(td, r[f], r, ctx);
+      else td.textContent = r[f] == null ? '—' : typeof r[f] === 'number' ? fr.format(r[f]) : r[f];
+    });
+  });
+  return rows;
+}
+const pill = (td, v) => {
+  const s = document.createElement('span');
+  s.className = 'rz-pill ' + (STATUS_PILL[v] || 'idle');
+  s.textContent = v;
+  td.appendChild(s);
+};
+
+const C = dash.colors;
+document.getElementById('sw-signups').style.background = C[0];
+document.getElementById('sw-waitlist').style.background = C[1];
+document.getElementById('sw-served').style.background = 'var(--cds-chart-muted)';
+document.getElementById('sw-errors').style.background = 'var(--cds-chart-status-critical)';
+
+const search = document.getElementById('search-membres');
+const hideTests = document.getElementById('hide-tests');
+setupTable('table-membres', {
+  source: 'members', sort: 'joined',
+  filter: (r) => (!hideTests.checked || r.status !== 'Compte test') && (!search.value.trim() || [r.username, r.name].join(' ').toLowerCase().includes(search.value.trim().toLowerCase())),
+  context: (all) => ({ maxPosts: d3.max(all, (r) => r.posts) || 1 }),
+  render: {
+    username: (td, v) => { td.classList.add('rz-key'); td.textContent = v; },
+    name: (td, v) => { td.textContent = v || '—'; },
+    status: pill,
+    joined: (td, v) => { td.textContent = fmtDay(v); },
+    last_activity: (td, v) => { td.textContent = v ? fmtStamp(v) : '—'; if (!v) td.classList.add('rz-muted'); },
+    posts: (td, v, r, ctx) => {
+      const w = document.createElement('span'); w.className = 'rz-cellbar';
+      const bar = document.createElement('i'); bar.style.width = Math.round(40 * v / ctx.maxPosts) + 'px';
+      const n = document.createElement('span'); n.textContent = fr.format(v);
+      w.append(bar, n); td.appendChild(w);
+    },
+    push: (td, v) => { td.textContent = v; if (v !== 'Oui') td.classList.add('rz-muted'); },
+  },
+});
+search.addEventListener('input', () => updateMembers());
+hideTests.addEventListener('change', () => updateMembers());
+function updateMembers() {
+  const shown = renderTable('table-membres');
+  const all = rowsOf('members');
+  document.getElementById('count-membres').textContent = ok('members') ? shown.length + ' sur ' + all.length + ' comptes affichés' : '';
+}
+
+setupTable('table-attente', {
+  source: 'waitlist', sort: 'joined',
+  render: {
+    email: (td, v) => { td.classList.add('rz-key'); td.textContent = v; },
+    joined: (td, v) => { td.textContent = fmtStamp(v); },
+    status: pill,
+  },
+});
+const copyBtn = document.getElementById('copy-emails');
+const copyStatus = document.getElementById('copy-status');
+const copyBox = document.getElementById('copy-box');
+copyBtn.addEventListener('click', () => {
+  const emails = rowsOf('waitlist').filter((r) => r.status === 'En attente').map((r) => r.email);
+  if (!emails.length) { copyStatus.textContent = 'Aucun e-mail en attente.'; return; }
+  const text = emails.join(', ');
+  const fallback = () => { copyBox.value = text; copyBox.hidden = false; copyBox.focus(); copyBox.select(); copyStatus.textContent = 'Sélectionnés ci-dessous, copiez-les avec Cmd+C.'; };
+  try {
+    navigator.clipboard.writeText(text).then(() => { copyBox.hidden = true; copyStatus.textContent = emails.length + ' e-mails copiés.'; }, fallback);
+  } catch (e) { fallback(); }
+});
+
+setupTable('table-kinds', {
+  source: 'storage_kinds', sort: 'mb',
+  render: {
+    kind: (td, v) => { td.classList.add('rz-key'); td.textContent = v; },
+    mb: (td, v) => { td.textContent = fr1.format(v); },
+    avg_mb: (td, v) => { td.textContent = fr2.format(v); },
+    mb_7d: (td, v) => { td.textContent = fr1.format(v); },
+  },
+});
+setupTable('table-gros', {
+  source: 'big_files', sort: 'mb', dataKey: 'file',
+  render: {
+    mb: (td, v) => { td.textContent = fr1.format(v); },
+    added: (td, v) => { td.textContent = fmtDay(v); },
+  },
+});
+setupTable('table-taches', {
+  source: 'crons', sort: null, dataKey: 'job',
+  render: {
+    label: (td, v) => { td.textContent = v; },
+    state: pill,
+    last_run: (td, v) => { td.textContent = v ? fmtStamp(v) : '—'; },
+    failures_7d: (td, v) => { td.textContent = fr.format(v); if (v > 0) td.style.color = 'var(--color-bad)'; },
+  },
+});
+
+const KIND_COLORS = { 'Vidéos': C[0], 'Photos': C[1], 'Autres': 'var(--cds-chart-muted)' };
+
+function drawCharts() {
+  const arrivees = document.getElementById('chart-arrivees');
+  const actifs = document.getElementById('chart-actifs');
+  if (failed('daily')) { showFail(arrivees); showFail(actifs); }
+  else if (ok('daily')) {
+    const daily = rowsOf('daily');
+    barChart(arrivees, daily, {
+      label: 'Arrivées par jour', x: 'day', tick: fmtDayShort, title: fmtDay,
+      keys: [{ field: 'signups', label: 'Inscrits dans l’app', color: C[0] }, { field: 'waitlist', label: 'Liste d’attente', color: C[1] }],
+    });
+    barChart(actifs, daily, {
+      label: 'Membres actifs par jour', x: 'day', tick: fmtDayShort, title: fmtDay,
+      keys: [{ field: 'active', label: 'Membres actifs', color: C[0] }],
+      extra: [{ field: 'posts', label: 'Posts publiés' }],
+    });
+  }
+  const trafic = document.getElementById('chart-trafic');
+  if (failed('traffic_hours')) showFail(trafic);
+  else if (ok('traffic_hours')) {
+    barChart(trafic, rowsOf('traffic_hours'), {
+      label: 'Requêtes par heure', x: 'hour', tick: fmtHour, title: (h) => fmtDayShort(h) + ', ' + fmtHour(h),
+      keys: [{ field: 'served', label: 'Servies', color: 'var(--cds-chart-muted)' }, { field: 'errors', label: 'Refusées ou en erreur', color: 'var(--cds-chart-status-critical)' }],
+    });
+  }
+}
+
+function drawStorage() {
+  const k = rowsOf('kpis')[0];
+  const meter = (id, pct) => { const el = document.getElementById(id); el.style.width = k ? Math.min(100, Math.max(0.8, pct)) + '%' : '0'; el.style.background = pct >= 80 ? 'var(--cds-chart-status-critical)' : C[0]; };
+  meter('meter-files', k ? k.files_quota_pct : 0);
+  meter('meter-db', k ? k.db_quota_pct : 0);
+  const split = document.getElementById('split-kinds');
+  split.replaceChildren();
+  const kinds = rowsOf('storage_kinds');
+  const sum = d3.sum(kinds, (r) => r.mb) || 1;
+  kinds.forEach((r) => { const i = document.createElement('i'); i.style.width = (100 * r.mb / sum) + '%'; i.style.background = KIND_COLORS[r.kind] || 'var(--cds-chart-muted)'; split.appendChild(i); });
+}
+
+const navTo = (el) => { if (!el) return; el.scrollIntoView({ behavior: 'smooth', block: 'start' }); dash.setLink(el.id); };
+document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => navTo(document.getElementById(b.dataset.go))));
+
+let linked = false;
+dash.onData(() => {
+  fillSingles();
+  const k = rowsOf('kpis')[0];
+  trend(document.getElementById('trend-actifs'), k && k.active_7d, k && k.active_prev_7d);
+  trend(document.getElementById('trend-posts'), k && k.posts_7d, k && k.posts_prev_7d);
+  const t = rowsOf('traffic_24h')[0];
+  document.getElementById('num-5xx').style.color = t && t.errors_5xx > 0 ? 'var(--color-bad)' : '';
+  drawCharts();
+  drawStorage();
+  updateMembers();
+  renderTable('table-attente');
+  renderTable('table-kinds');
+  renderTable('table-gros');
+  renderTable('table-taches');
+  if (!linked && ok('kpis')) {
+    linked = true;
+    const named = location.hash && document.getElementById(location.hash.slice(1));
+    if (named) navTo(named);
+  }
+});
+</script>

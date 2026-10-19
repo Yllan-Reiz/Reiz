@@ -45,3 +45,7 @@ yarn-error.*
 
 # Vidéos produites (design/) : trop lourdes pour GitHub (limite 100 Mo par fichier), elles restent sur le disque
 design/**/*.mp4
+
+# Tableau de bord : données réelles (e-mails de la liste d attente, chiffres des membres), régénérées par dashboard/build/make.mjs, ne jamais publier
+dashboard/build/docs/
+dashboard/build/writes.json
