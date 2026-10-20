@@ -224,7 +224,7 @@ export async function uploadVideo(
 // ---------- URLs signées, avec mémoire ----------
 
 type Signed = { url: string; at: number };
-const SIGNED_KEY = 'reiz.signed.v1';
+const SIGNED_KEY = 'reiz.signed.v2';
 const memory = new Map<string, Signed>();
 let hydrated: Promise<void> | null = null;
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
@@ -274,9 +274,12 @@ const isImagePath = (p: string) => /\.(jpe?g|png|webp)$/i.test(p);
 const keyOf = (path: string, width?: number) => (width ? `${width}|${path}` : path);
 
 /** Un seul chemin, avec réduction demandée au serveur quand c'est possible. */
+// PIÈGE : avec `width` seul, Supabase découpe par défaut (resize « cover ») une BANDE de cette largeur sur toute la
+// hauteur de l'original (un avatar carré de 1054 px devenait 200 x 1054) : les photos apparaissaient zoomées au centre.
+// `resize: 'contain'` garde les proportions (1054 x 1054 -> 200 x 200). Mesuré le 21/10/2026.
 async function signOneRaw(path: string, width?: number): Promise<string | null> {
   if (width && transformOk && isImagePath(path)) {
-    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, EXPIRES_IN, { transform: { width, quality: 75 } });
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, EXPIRES_IN, { transform: { width, quality: 75, resize: 'contain' } });
     if (!error && data?.signedUrl) return data.signedUrl;
     // La réduction a échoué : si l'original, lui, se signe, c'est la fonction qui est indisponible.
     const plain = await supabase.storage.from(BUCKET).createSignedUrl(path, EXPIRES_IN);
