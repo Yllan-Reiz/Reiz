@@ -568,7 +568,7 @@ export function HistoryCarousel({ posts, onOpen, emptyText }: { posts: Update[];
   if (posts.length === 0) return <Text style={{ color: '#777', fontSize: 13, paddingHorizontal: GUTTER }}>{emptyText}</Text>;
   const sorted = [...posts].sort((a, b) => (b.pinned_at ? 1 : 0) - (a.pinned_at ? 1 : 0));
   return (
-    <FloatyCarousel cardW={250} overlap={30} paddingTop={8} paddingBottom={40}>
+    <FloatyCarousel cardW={300} overlap={36} paddingTop={8} paddingBottom={44}>
       {sorted.map((p, i) => {
         const video = isVideo(p.photo_url);
         return (
@@ -576,7 +576,7 @@ export function HistoryCarousel({ posts, onOpen, emptyText }: { posts: Update[];
             key={p.id}
             activeOpacity={0.9}
             onPress={() => onOpen(p)}
-            style={{ width: 250, height: 340 }}
+            style={{ width: 300, height: 410 }}
           >
             <GlassSurface radius={30} style={{ flex: 1 }}>
               {p.photo_url && !video

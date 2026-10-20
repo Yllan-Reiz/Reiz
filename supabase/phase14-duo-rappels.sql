@@ -6,8 +6,10 @@
 -- Cette table garde ce qui a déjà été envoyé : un rappel ne part qu'une fois.
 
 create table if not exists public.duo_reminders (
-  update_id uuid not null references public.updates(id) on delete cascade,
-  user_id   uuid not null references public.users(id) on delete cascade,
+  -- PAS de « references » : une table liée à updates ET à users devient une table de liaison pour l'API REST et rend
+  -- ambiguë la lecture « post + auteur » (erreur 300, fil et profil vides). Même piège que comment_likes et phase 8.
+  update_id uuid not null,
+  user_id   uuid not null,
   stage     smallint not null check (stage in (1, 2)),
   sent_at   timestamptz not null default now(),
   primary key (update_id, user_id, stage)
