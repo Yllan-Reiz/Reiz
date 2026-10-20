@@ -493,18 +493,19 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   );
 
   if (viewingFriendId) return <FriendProfileScreen key={viewingFriendId} userId={viewingFriendId} onClose={() => setProfileStack(st => st.slice(0, -1))} onOpenProfile={openProfile} onDuo={(id) => onPost({ duoWith: id })} />;
-  if (showActivity) {
-    return (
-      <ActivityScreen
-        currentUserId={userId}
-        backdropUrl={myAvatar}
-        onClose={() => { setShowActivity(false); setUnreadCount(0); setAppBadge(0); }}
-        onViewProfile={openProfile}
-        onOpenFriends={() => { setShowActivity(false); setUnreadCount(0); setTab('friends'); }}
-        onDuoReply={(authorId) => onPost({ duoWith: authorId })}
-      />
-    );
-  }
+  // L'activité s'ouvre PAR-DESSUS la page où tu es (le fil, les objectifs, les amis...) : le verre floute cette
+  // page au lieu de la remplacer par un fond à part. Elle reste montée dessous, tu la retrouves intacte en fermant.
+  const activityLayer = showActivity ? (
+    <ActivityScreen
+      overlay
+      currentUserId={userId}
+      backdropUrl={myAvatar}
+      onClose={() => { setShowActivity(false); setUnreadCount(0); setAppBadge(0); }}
+      onViewProfile={openProfile}
+      onOpenFriends={() => { setShowActivity(false); setUnreadCount(0); setTab('friends'); }}
+      onDuoReply={(authorId) => onPost({ duoWith: authorId })}
+    />
+  ) : null;
 
   return (
     <View style={s.container}>
@@ -744,6 +745,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
           <NavTab icon="person" active={tab === 'profile'} onPress={() => setTab('profile')} />
         </View>
       </View>
+      {activityLayer}
     </View>
   );
 }

@@ -83,7 +83,7 @@ export const s = StyleSheet.create({
   feedPhotoWrap: { position: 'relative', backgroundColor: '#141414', borderRadius: 22, overflow: 'hidden' },
   // Format portrait 4:5, comme une photo prise au téléphone : l'image respire.
   // Format BeReal : portrait 3:4.
-  feedPhoto: { width: '100%', aspectRatio: 3 / 4 },
+  feedPhoto: { width: '100%', aspectRatio: 4 / 5.6 },
   brHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 2, paddingBottom: 10 },
   brSub: { fontSize: 12, color: '#8a8a8a', marginTop: 1 },
   brBelow: { paddingHorizontal: 2, paddingTop: 12, gap: 6 },

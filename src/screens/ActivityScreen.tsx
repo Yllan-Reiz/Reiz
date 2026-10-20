@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Image, ActivityIndicator, RefreshControl, ScrollView, Alert } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, FlatList, Image, ActivityIndicator, RefreshControl, ScrollView, Alert, Animated, Easing, StyleSheet } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
@@ -11,6 +12,7 @@ import { FeedCard } from '../components/FeedCard';
 import { GlassCard } from '../components/GlassSurface';
 import { GlassBackdrop, GlassIconButton } from '../components/ProfileSections';
 import { Faces } from '../components/CloseCircleCard';
+import { VideoPoster } from '../components/VideoPoster';
 import { CircleRhythmCard } from '../components/CircleRhythmCard';
 import { loadPost } from '../lib/posts';
 import { loadDuels, Duel } from '../lib/duel';
@@ -153,7 +155,8 @@ function ActivityRow({ e, onPress, onAvatar }: { e: Entry; onPress: () => void; 
           </View>
 
           {thumb && isVideo(thumb) ? (
-            <View style={{ width: 54, height: 54, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 54, height: 54, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+              <VideoPoster uri={thumb} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
               <Ionicons name="play" size={18} color="#ddd" />
             </View>
           ) : thumb ? (
@@ -189,7 +192,9 @@ function ActionCard({ icon, title, sub, button, faces, onPress }: { icon: any; t
   );
 }
 
-export function ActivityScreen({ currentUserId, backdropUrl, onClose, onViewProfile, onOpenFriends, onDuoReply }: {
+export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, onViewProfile, onOpenFriends, onDuoReply }: {
+  /** true : s'affiche par-dessus la page en cours (floutée) au lieu d'un fond à part. */
+  overlay?: boolean;
   currentUserId: string | null;
   /** Ta photo de profil, pour le fond de verre. */
   backdropUrl?: string | null;
@@ -199,6 +204,9 @@ export function ActivityScreen({ currentUserId, backdropUrl, onClose, onViewProf
   onDuoReply?: (authorId: string) => void;
 }) {
   const insets = useSafeAreaInsets();
+  // Apparition en fondu (le flou de la page dessous monte doucement).
+  const appear = useRef(new Animated.Value(overlay ? 0 : 1)).current;
+  useEffect(() => { if (overlay) Animated.timing(appear, { toValue: 1, duration: 220, easing: Easing.bezier(0.23, 1, 0.32, 1), useNativeDriver: true }).start(); }, [overlay, appear]);
   const [items, setItems] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -350,8 +358,13 @@ export function ActivityScreen({ currentUserId, backdropUrl, onClose, onViewProf
   );
 
   return (
-    <View style={s.container}>
-      <GlassBackdrop avatarUrl={backdropUrl ?? null} />
+    <Animated.View style={[s.container, overlay && { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'transparent', opacity: appear }]}>
+      {overlay ? (
+        <>
+          <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
+          <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10,10,10,0.38)' }]} />
+        </>
+      ) : <GlassBackdrop avatarUrl={backdropUrl ?? null} />}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: GUTTER, paddingTop: insets.top + 8, paddingBottom: 8 }}>
         <GlassIconButton icon="chevron-back" label="Retour" onPress={onClose} />
         {openingPost && <ActivityIndicator color="#fff" size="small" />}
@@ -386,6 +399,6 @@ export function ActivityScreen({ currentUserId, backdropUrl, onClose, onViewProf
           }}
         />
       )}
-    </View>
+    </Animated.View>
   );
 }

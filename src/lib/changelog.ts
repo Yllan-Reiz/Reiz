@@ -31,6 +31,8 @@ export const CHANGELOG: {
     { emoji: '🔴', title: "Pastille sur l'icône", text: "Un nombre rouge sur l'icône de Reiz quand tu as des notifications non lues, comme sur les autres réseaux." },
     { emoji: '🖼️', title: 'Ta photo de profil en grand', text: 'Elle est nette en haut de ton profil, puis passe derrière la page en se floutant quand tu défiles.' },
     { emoji: '📲', title: 'Story plus simple', text: "Ton lien d'invitation est prêt à copier, pour le coller dans le sticker « Lien » d'Instagram et rendre ta story cliquable." },
+    { emoji: '🎬', title: 'Tes vidéos dans l\'historique', text: "Les vidéos montrent enfin leur image au lieu d'un carré gris, dans ton historique et dans l'activité. Les posts sont aussi plus grands." },
+    { emoji: '🌫️', title: "Activité par-dessus ta page", text: "Quand tu ouvres l'activité, elle se pose en verre sur la page où tu étais." },
     { emoji: '⚡', title: "Plus rapide", text: "Le fil s'affiche tout de suite à l'ouverture et les photos se chargent plus légères." },
     { emoji: '🤝', title: 'Correction', text: "La carte « Vous deux » et le bouton pour proposer un duo apparaissent enfin sur le profil de tes amis." },
   ],

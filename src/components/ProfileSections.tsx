@@ -8,6 +8,7 @@ import { isVideo } from '../lib/storage';
 import { GUTTER, dayKeysFor, currentWeekKeys, hasSchedule, DAY_LETTERS } from '../constants';
 import { badgeImage } from '../lib/badgeImages';
 import { BADGE_RULES, MAX_LEVEL } from '../lib/badgeLevels';
+import { VideoPoster } from './VideoPoster';
 import { GlassSurface } from './GlassSurface';
 import { DuoStats } from '../lib/duo';
 import { s, F } from '../styles';
@@ -567,7 +568,7 @@ export function HistoryCarousel({ posts, onOpen, emptyText }: { posts: Update[];
   if (posts.length === 0) return <Text style={{ color: '#777', fontSize: 13, paddingHorizontal: GUTTER }}>{emptyText}</Text>;
   const sorted = [...posts].sort((a, b) => (b.pinned_at ? 1 : 0) - (a.pinned_at ? 1 : 0));
   return (
-    <FloatyCarousel cardW={200} overlap={26} paddingTop={8} paddingBottom={36}>
+    <FloatyCarousel cardW={250} overlap={30} paddingTop={8} paddingBottom={40}>
       {sorted.map((p, i) => {
         const video = isVideo(p.photo_url);
         return (
@@ -575,14 +576,23 @@ export function HistoryCarousel({ posts, onOpen, emptyText }: { posts: Update[];
             key={p.id}
             activeOpacity={0.9}
             onPress={() => onOpen(p)}
-            style={{ width: 200, height: 270 }}
+            style={{ width: 250, height: 340 }}
           >
             <GlassSurface radius={30} style={{ flex: 1 }}>
               {p.photo_url && !video
                 ? <Image source={{ uri: p.photo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                : <LinearGradient colors={['#2c2c2c', '#141414']} style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-                    {video ? <Ionicons name="play-circle" size={54} color="rgba(255,255,255,0.8)" /> : <Text style={{ fontSize: 46 }}>{p.objectives?.emoji || '🎯'}</Text>}
-                  </LinearGradient>}
+                : video && p.photo_url
+                  ? (
+                    <>
+                      <VideoPoster uri={p.photo_url} style={StyleSheet.absoluteFill} fallback={<LinearGradient colors={['#2c2c2c', '#141414']} style={StyleSheet.absoluteFill} />} />
+                      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+                        <Ionicons name="play-circle" size={54} color="rgba(255,255,255,0.85)" />
+                      </View>
+                    </>
+                  )
+                  : <LinearGradient colors={['#2c2c2c', '#141414']} style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+                      <Text style={{ fontSize: 46 }}>{p.objectives?.emoji || '🎯'}</Text>
+                    </LinearGradient>}
               <LinearGradient colors={['rgba(0,0,0,0.35)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.78)']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} pointerEvents="none" />
               <View style={{ position: 'absolute', top: 12, left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <GlassSurface radius={14} variant="clear" style={{ paddingHorizontal: 10, height: 28, justifyContent: 'center' }}>
@@ -727,6 +737,8 @@ function PostTile({ p, width, height, onPress, showPin }: { p: Update; width: nu
     <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={{ width, height, borderRadius: 10, overflow: 'hidden', backgroundColor: '#141414' }}>
       {p.photo_url && !video ? (
         <Image source={{ uri: p.photo_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+      ) : video && p.photo_url ? (
+        <VideoPoster uri={p.photo_url} style={{ width: '100%', height: '100%' }} fallback={<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 26 }}>{emoji}</Text></View>} />
       ) : (
         // Vidéo ou post sans média : tuile sombre avec l'emoji de l'objectif.
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 6 }}>
