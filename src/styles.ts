@@ -80,7 +80,8 @@ export const s = StyleSheet.create({
   // à montrer ce qui appartient à quoi.
   feedCard: { marginBottom: 32 },
   // Fond posé sous la photo : le fondu part d'une surface, pas d'un trou noir.
-  feedPhotoWrap: { position: 'relative', backgroundColor: '#141414', borderRadius: 22, overflow: 'hidden' },
+  // marginHorizontal négatif : la photo déborde de la gouttière du fil et occupe presque toute la largeur de l'écran.
+  feedPhotoWrap: { position: 'relative', backgroundColor: '#141414', borderRadius: 22, overflow: 'hidden', marginHorizontal: -12 },
   // Format portrait 4:5, comme une photo prise au téléphone : l'image respire.
   // Format BeReal : portrait 3:4.
   feedPhoto: { width: '100%', aspectRatio: 2 / 3 },
