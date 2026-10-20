@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AUTO_DETECTION } from '../constants';
 
 // Nouveautés montrées UNE SEULE FOIS, dans une page qui s'ouvre au lancement de l'app après une mise
 // à jour (voir components/WhatsNewModal.tsx).
@@ -20,8 +21,10 @@ export const CHANGELOG: {
   items: [
     { emoji: '⚔️', title: 'Le duel de la semaine', text: "Défie un ami depuis son profil. Pendant 7 jours, celui qui s'entraîne sur le plus de jours gagne." },
     { emoji: '📅', title: "Tes jours d'entraînement", text: "Choisis les jours où tu t'entraînes quand tu crées un objectif. Plus de rappel le dimanche si tu te reposes, et ton cercle voit ton planning." },
-    { emoji: '⭐', title: 'Ton cercle proche', text: "Mis en avant partout : une carte dans le fil, l'étoile à droite de chaque ami, une bulle sur ton profil. Tes proches sont prévenus quand tu arrives à la salle." },
-    { emoji: '📍', title: 'La carte « À la salle »', text: "Enregistre ta salle une fois : ton cercle proche est prévenu à chaque fois que tu y arrives." },
+    { emoji: '⭐', title: 'Ton cercle proche', text: "Mis en avant partout : une carte dans le fil, l'étoile à droite de chaque ami, une bulle sur ton profil. " + (AUTO_DETECTION ? 'Tes proches sont prévenus quand tu arrives à la salle.' : "Tes proches sont prévenus quand tu touches « Je suis à la salle ».") },
+    AUTO_DETECTION
+      ? { emoji: '📍', title: 'La carte « À la salle »', text: "Enregistre ta salle une fois : ton cercle proche est prévenu à chaque fois que tu y arrives." }
+      : { emoji: '📍', title: 'La carte « À la salle »', text: "Un tap sur « Je suis à la salle » et ton cercle proche sait que tu t'entraînes. Il peut venir te rejoindre." },
     { emoji: '🏅', title: 'Badges à 6 niveaux', text: 'Touche un badge pour voir le prochain palier.' },
     { emoji: '🔥', title: 'Des encouragements', text: "Un message quand tu approches d'un objectif ou après quelques jours sans poster. Réglable dans Réglages, Notifications." },
     { emoji: '💬', title: "Un centre d'activité plus clair", text: "Plus d'espace, des phrases courtes, les réactions regroupées, et en haut ce qui attend ta réponse (demandes d'ami, défis) et la régularité de ton cercle : qui a posté cette semaine, qui est à relancer." },

@@ -8,7 +8,7 @@
    Lien prévu : https://apps.apple.com/fr/app/id6814173335
    ============================================================ */
 const CONFIG = {
-  appStoreUrl: '',
+  appStoreUrl: 'https://apps.apple.com/fr/app/reiz-objectifs-entre-amis/id6814173335',
   supabaseUrl: 'https://vpaizbtetwsnvbpmeuab.supabase.co',
   // Clé publique « publishable » : faite pour être dans une page web.
   // La table waitlist n'accepte que des insertions (RLS), personne ne peut la lire depuis le site.

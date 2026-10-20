@@ -108,3 +108,17 @@ export const GLASS_FRIENDS = true;
 
 // Accueil d'un compte tout neuf (profil, objectif, notifications, amis). false = l'ancienne fenêtre « Retrouve tes amis » seule.
 export const WELCOME_FLOW = true;
+
+// Détection automatique de l'arrivée à la salle (iPhone). Le module de localisation d'origine exige le droit
+// d'arrière-plan « location » (refusé par Apple, guideline 2.5.4) et fait fermer l'app sans lui : sur les builds
+// 1.0.0 (dont celui de l'App Store) seul le bouton manuel « Je suis à la salle » reste. Le module est corrigé en
+// natif à partir du build 1.0.1 (patches/expo-location). On lit la version du BINAIRE installé, pas celle de la
+// mise à jour à distance : un même code JS se comporte donc bien sur les deux.
+const AUTO_FIXED_FROM = [1, 0, 1];
+const binaryVersion = String(Constants.nativeAppVersion ?? Constants.expoConfig?.version ?? '1.0.0')
+  .split('.').map(n => parseInt(n, 10) || 0);
+const atLeast = (v: number[], min: number[]) => {
+  for (let i = 0; i < min.length; i++) { if ((v[i] || 0) !== min[i]) return (v[i] || 0) > min[i]; }
+  return true;
+};
+export const AUTO_DETECTION = atLeast(binaryVersion, AUTO_FIXED_FROM);
