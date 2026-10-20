@@ -1,4 +1,5 @@
 import { Linking, Platform } from 'react-native';
+import { requireOptionalNativeModule } from 'expo';
 import { supabase } from './supabase';
 import { signAvatars } from './storage';
 import { sha256Hex } from './sha256';
@@ -13,9 +14,21 @@ import { inviteUrl, LANDING_URL } from '../constants';
 // `expo-contacts` est un module natif livré avec la version 1.1.0 : on le charge à la demande. Dans un build
 // plus ancien il n'existe pas, `contactsAvailable()` renvoie false et toute la fonction reste cachée.
 
+// PIÈGE (cause du plantage du 21/10/2026 sur le build 10) : un `require` d'un module dont la partie native
+// n'existe pas dans le binaire LÈVE UNE ERREUR FATALE chez Metro (`ErrorUtils.reportFatalError`), même entouré
+// d'un try/catch, dès qu'il est appelé en dehors du chargement d'un module. Il faut donc vérifier que le module
+// natif existe AVANT de charger `expo-contacts`. `requireOptionalNativeModule` renvoie null sans rien lever.
+let cached: any | null | undefined;
 function native(): any | null {
-  try { return require('expo-contacts'); } catch { return null; }
+  if (cached !== undefined) return cached;
+  try {
+    cached = requireOptionalNativeModule(NATIVE_NAME) ? require('expo-contacts') : null;
+  } catch {
+    cached = null;
+  }
+  return cached;
 }
+const NATIVE_NAME = 'ExpoContacts';
 
 export const contactsAvailable = () => { const m = native(); return !!m && typeof m.getContactsAsync === 'function'; };
 
