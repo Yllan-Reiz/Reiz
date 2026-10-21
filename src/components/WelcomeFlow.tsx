@@ -190,7 +190,9 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
       if (!alive) return;
       const p: any = row.data || {};
       initial.current = { name: p.full_name || '', bio: p.bio || '' };
-      setUserId(user.id); setUsername(p.username ?? null); setName(p.full_name || ''); setBio(p.bio || '');
+      // « Athlète » = nom de secours d'un compte Apple ou Google sans prénom (voir ensureProfile) : on laisse le champ vide.
+      const placeholder = !p.full_name || p.full_name === 'Athlète';
+      setUserId(user.id); setUsername(p.username ?? null); setName(placeholder ? '' : p.full_name); setBio(p.bio || '');
       setAvatar(p.avatar_url ? await signOne(p.avatar_url, { width: 300 }).catch(() => null) : null);
       const list: StepId[] = ['profile'];
       if (preview || !objs.count) list.push('objective');
@@ -264,6 +266,20 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
     const { error } = await supabase.from('users').update(patch).eq('id', userId);
     if (error) { Alert.alert('Erreur', frError(error)); return false; }
     wrote.current = true;
+    // Pseudo de secours (« athlete », « user1234 »...) : on le refait d'après le prénom, il sert au lien d'invitation.
+    if (patch.full_name && username && /^(athlete|user)\d*$/.test(username)) {
+      const first = patch.full_name.split(' ')[0];
+      const base = first.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+      if (base) {
+        let candidate = base;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const r = await supabase.from('users').update({ username: candidate }).eq('id', userId);
+          if (!r.error) { setUsername(candidate); break; }
+          if (r.error.code !== '23505') break;
+          candidate = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
+        }
+      }
+    }
     initial.current = { name: patch.full_name ?? initial.current.name, bio: patch.bio ?? initial.current.bio };
     return true;
   };
