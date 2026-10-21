@@ -8,6 +8,7 @@ import { signAvatars } from '../lib/storage';
 import { LEGAL_DOCS, LegalDoc, SUPPORT_EMAIL } from '../lib/legal';
 import { PresencePanel } from '../components/PresencePanel';
 import { WelcomeModal } from '../components/WelcomeFlow';
+import { contactsAvailable } from '../lib/contacts';
 import { APP_VERSION, WELCOME_FLOW } from '../constants';
 import { F } from '../styles';
 
@@ -41,6 +42,25 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
       setEncourage(!error && data ? (data as any).notif_encouragement !== false : null);
     });
   }, [visible]);
+
+  // « Me proposer à mes contacts » (users.discoverable) : quelqu'un qui a ton e-mail dans son carnet peut te trouver
+  // avec « Retrouver mes contacts ». Visible seulement dans une version qui a la fonction. null = pas chargé ou colonne absente.
+  const [discoverable, setDiscoverable] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!visible || !contactsAvailable()) return;
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data, error } = await supabase.from('users').select('discoverable').eq('id', user.id).single();
+      setDiscoverable(!error && data ? (data as any).discoverable !== false : null);
+    });
+  }, [visible]);
+  const toggleDiscoverable = async (value: boolean) => {
+    setDiscoverable(value);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase.from('users').update({ discoverable: value }).eq('id', user.id);
+    if (error) { setDiscoverable(!value); Alert.alert('Erreur', frError(error)); }
+  };
 
   const toggleEncourage = async (value: boolean) => {
     setEncourage(value);
@@ -101,10 +121,11 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
 
             <Section title="CONFIDENTIALITÉ">
               <Row icon="star-outline" label="Mon cercle proche" onPress={() => { onClose(); setTimeout(onCloseFriends, 350); }} />
+              {discoverable !== null && <ToggleRow icon="people-outline" label="Me proposer à mes contacts" value={discoverable} onChange={toggleDiscoverable} />}
               <Row icon="ban-outline" label="Utilisateurs bloqués" onPress={() => setView('blocked')} />
               <Row icon="download-outline" label="Exporter mes données" onPress={exportData} last />
             </Section>
-            <Text style={st.hint}>La visibilité de chaque objectif se règle depuis le menu « … » de l'objectif.</Text>
+            <Text style={st.hint}>{discoverable !== null ? "Désactivé, les personnes qui ont ton e-mail dans leurs contacts ne te trouvent plus avec « Retrouver mes contacts ». " : ''}La visibilité de chaque objectif se règle depuis le menu « … » de l'objectif.</Text>
 
             <Section title="ENTRAÎNEMENT">
               <Row icon="location-outline" label="Prévenir mon cercle proche" value="Salle et lieux" onPress={() => setView('presence')} last />

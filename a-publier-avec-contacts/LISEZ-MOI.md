@@ -55,12 +55,11 @@ Le texte d'autorisation affiché par iOS est déjà dans `app.json` :
 - Autorisation Android : le plugin `expo-contacts` ajoute READ_CONTACTS ET WRITE_CONTACTS. Reiz ne fait que lire : ajouter
   `android.permission.WRITE_CONTACTS` à `blockedPermissions` dans `app.json` avant de lancer le build Android (sinon Google demandera de la justifier).
 
-## 4. À décider avant la sortie : pouvoir ne pas être retrouvé
+## 4. Pouvoir ne pas être retrouvé : FAIT
 
-Aujourd'hui toute personne qui a ton e-mail dans son carnet peut te trouver sur Reiz (prénom, pseudo, photo). La politique le dit,
-mais il n'existe pas de réglage pour s'y opposer, et les réseaux sociaux en proposent un. Proposition : une case dans Réglages
-« Me proposer aux personnes qui ont mon e-mail » (activée par défaut), reliée à une colonne `users.discoverable` que `match_contacts`
-respecterait. Petit travail (une colonne, un filtre SQL, une ligne dans Réglages). À ajouter à la politique si on le fait.
+Colonne `users.discoverable` (défaut vrai) et réglage « Me proposer à mes contacts » dans Réglages, Confidentialité (visible seulement
+dans une version qui a Contacts). `match_contacts` ne renvoie plus les comptes qui l'ont coupé. SQL : `supabase/phase15-contacts-visibles.sql`
+(déjà exécuté). La politique le dit.
 
 ## Liste du jour J
 
