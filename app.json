@@ -2,7 +2,7 @@
   "expo": {
     "name": "Reiz",
     "slug": "reiz",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -23,6 +23,7 @@
       "package": "com.yllan.reiz",
       "blockedPermissions": [
         "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.WRITE_CONTACTS",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION"
       ],
@@ -80,7 +81,7 @@
     },
     "updates": {
       "url": "https://u.expo.dev/69071c24-329f-4426-b10b-8b5fbe280564",
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 3000
     }
   }
 }

@@ -1,0 +1,33 @@
+diff --git a/node_modules/expo-location/ios/LocationModule.swift b/node_modules/expo-location/ios/LocationModule.swift
+index fe49dd8..3c12b8e 100644
+--- a/node_modules/expo-location/ios/LocationModule.swift
++++ b/node_modules/expo-location/ios/LocationModule.swift
+@@ -201,9 +201,9 @@ public final class LocationModule: Module {
+       guard CLLocationManager.isMonitoringAvailable(for: CLCircularRegion.self) else {
+         throw Exceptions.GeofencingUnavailable()
+       }
+-      guard try taskManager.hasBackgroundModeEnabled("location") else {
+-        throw Exceptions.LocationUpdatesUnavailable()
+-      }
++      // REIZ : la surveillance d'une zone (region monitoring) n'a pas besoin du mode d'arrière-plan « location »
++      // (UIBackgroundModes), que l'App Store refuse sans fonction de position continue (guideline 2.5.4).
++      // Garde d'origine retirée : elle bloquait toute détection d'arrivée dès que ce mode est absent.
+ 
+       try taskManager.registerTask(withName: taskName, consumer: EXGeofencingTaskConsumer.self, options: options)
+     }
+diff --git a/node_modules/expo-location/ios/TaskConsumers/EXGeofencingTaskConsumer.m b/node_modules/expo-location/ios/TaskConsumers/EXGeofencingTaskConsumer.m
+index 7e6482e..29f2a56 100644
+--- a/node_modules/expo-location/ios/TaskConsumers/EXGeofencingTaskConsumer.m
++++ b/node_modules/expo-location/ios/TaskConsumers/EXGeofencingTaskConsumer.m
+@@ -71,7 +71,10 @@ - (void)startMonitoringRegionsForTask:(id<EXTaskInterface>)task
+     self->_regionStates = regionStates;
+ 
+     locationManager.delegate = self;
+-    locationManager.allowsBackgroundLocationUpdates = YES;
++    // REIZ : n'activer les mises à jour de position en arrière-plan que si le mode « location » est déclaré, sinon
++    // CoreLocation lève une exception et l'app se ferme. La surveillance de zone fonctionne sans.
++    NSArray *reizBackgroundModes = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"UIBackgroundModes"];
++    locationManager.allowsBackgroundLocationUpdates = [reizBackgroundModes containsObject:@"location"];
+     locationManager.pausesLocationUpdatesAutomatically = NO;
+ 
+     for (NSDictionary *regionDict in regions) {
