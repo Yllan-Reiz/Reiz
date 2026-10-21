@@ -31,3 +31,23 @@ node render.mjs feature
 ```
 
 Les textes et les écrans sont dans `store.html` (tableau `SLIDES`). Règle d'écriture : aucun tiret cadratin, aucun point médian.
+
+
+## Version 2 (21/10/2026) : 10 visuels avec les écrans de l'app actuelle
+
+Fichiers : `bande2.html` (la page, copie de `bande.html` avec les nouveaux écrans) et `render.mjs` (presets `bande10` et `bande10play`).
+Ancienne version (8 visuels) gardée intacte : `bande.html`, `out/final/`.
+
+Ordre : 1 fil (photo pleine largeur), 2 création d'objectif (jours d'entraînement), 3 publication, 4 réactions, 5 duo,
+6 duel de la semaine (nouveau), 7 centre d'activité et régularité du cercle (nouveau), 8 badges à 6 niveaux,
+9 profil, 10 accueil (appel à l'action).
+
+```bash
+cd ~/Desktop/Reiz/design/store
+node render.mjs bande10        # 10 panneaux 1284 x 2778 dans out/bande10/
+node render.mjs bande10play    # 10 panneaux 1284 x 2568 dans out/bande10-play/
+```
+
+Sorties prêtes : `out/final2/app-store-6.5` (1284 x 2778), `app-store-6.9` (1320 x 2868), `google-play` (1080 x 2160),
+obtenues avec ffmpeg (`scale` + `crop`). L'App Store accepte jusqu'à 10 captures. Image de présentation Google Play
+(1024 x 500) : inchangée dans `out/final/google-play/`.

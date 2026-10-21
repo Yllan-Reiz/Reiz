@@ -17,6 +17,8 @@ const PRESETS = {
   play: { dir: 'play', w: 1080, h: 1920, p: 'play' },
   bandeplay: { dir: 'bande-play', w: 1284, h: 2568, stageH: 2778, p: 'play', page: 'bande.html', panels: 8, stripW: 8 * 1284 },
   bande: { dir: 'bande', w: 1284, h: 2778, p: 'ios', page: 'bande.html', panels: 8, stripW: 8 * 1284 },
+  bande10: { dir: 'bande10', w: 1284, h: 2778, p: 'ios', page: 'bande2.html', panels: 10, stripW: 10 * 1284 },
+  bande10play: { dir: 'bande10-play', w: 1284, h: 2568, stageH: 2778, p: 'play', page: 'bande2.html', panels: 10, stripW: 10 * 1284 },
   feature: { dir: 'play', w: 1024, h: 500, p: 'play', page: 'bande.html', extra: '&f=1', file: 'feature-1024x500.png' },
 };
 const [presetName = 'ios65', ...nums] = process.argv.slice(2);
