@@ -18,3 +18,4 @@ Prénoms fictifs. Les photos ne montrent aucun logo de marque mis en avant.
 - bg-run-sunset.jpg : https://images.unsplash.com/photo-1581889470536-467bdbe30cd0
 - bg-run-blue.jpg : https://images.unsplash.com/photo-1552674605-db6ffd4facb5
 - post-run-groupe.jpg : https://images.unsplash.com/photo-1760315972424-1637530daead
+- gif-celebration.jpg : https://images.unsplash.com/photo-1764152082840-5a8e61a45ee7

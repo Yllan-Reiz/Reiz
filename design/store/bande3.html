@@ -284,6 +284,7 @@ body.play .sb .tm{left:34px}
 .arow .th{width:54px;height:54px;border-radius:12px;background-size:cover;background-position:center;flex:none}
 .arow.new::after{content:"";position:absolute}
 .faces{display:flex}.faces .a{width:34px;height:34px;border-radius:17px;border:2px solid #1c1c1e;background:#2a2a2a;margin-left:-10px;display:flex;align-items:center;justify-content:center;font:800 12px/1 Inter}.faces .a:first-child{margin-left:0}
+.em{font-family:'Apple Color Emoji'}
 .lvl{display:flex;gap:6px;margin-top:14px}.lvl i{width:14px;height:14px;border-radius:7px;background:#2a2a2a}.lvl i.on{background:#fff}
 </style>
 </head>
@@ -504,7 +505,7 @@ function activityScreen() {
   </div></div>`;
 }
 
-const U = { sled: 'assets/unsplash/post-sled.jpg', fentes: 'assets/unsplash/post-fentes.jpg', runG: 'assets/unsplash/post-run-groupe.jpg', runH: 'assets/unsplash/post-run-homme.jpg', bgSunset: 'assets/unsplash/bg-run-sunset.jpg', bgBlue: 'assets/unsplash/bg-run-blue.jpg' };
+const U = { sled: 'assets/unsplash/post-sled.jpg', fentes: 'assets/unsplash/post-fentes.jpg', runG: 'assets/unsplash/post-run-groupe.jpg', gif: 'assets/unsplash/gif-celebration.jpg', runH: 'assets/unsplash/post-run-homme.jpg', bgSunset: 'assets/unsplash/bg-run-sunset.jpg', bgBlue: 'assets/unsplash/bg-run-blue.jpg' };
 const bgCover = (f, pos) => `<div style="position:absolute;inset:0;background:url(${f}) ${pos}/cover"></div>`;
 /* ---------- v3 (22/10/2026) : écrans de la 1.0.1 (fond noir, verre, accueil par discipline, Amis = découverte) ---------- */
 Object.assign(GL, { fwd: 0xf133, search: 0xf55f, share: 0xf572, barbell: 0xf173, play: 0xf4c6, cut: 0xf29c, pcircle: 0xf4aa, flag: 0xf311, tag: 0xf4eb, link: 0xf3b8, wa: 0xf425, bubble: 0xf211, flash: 0xf316 });
@@ -557,10 +558,10 @@ const trimChip = () => {
    </div></div>`;
 };
 
-const gifBubble = (who, img) => `<div class="fl cbub" style="width:220px;padding:10px"><div style="font:700 12px/15px Inter;color:#9a9aa2;margin:0 4px 6px">${who}</div><div style="position:relative;height:150px;border-radius:14px;background:url(${img}) 50% 40%/cover"><span style="position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.6);border-radius:6px;padding:3px 7px;font:800 11px/13px Inter;letter-spacing:.5px">GIF</span></div></div>`;
+const gifBubble = (who, img, cap) => `<div class="fl cbub" style="width:236px;padding:10px"><div style="font:700 12px/15px Inter;color:#9a9aa2;margin:0 4px 6px">${who}</div><div style="position:relative;height:184px;border-radius:14px;overflow:hidden;background:url(${img}) 56% 38%/170%"><span style="position:absolute;right:8px;top:8px;background:rgba(0,0,0,.6);border-radius:6px;padding:3px 7px;font:800 11px/13px Inter;letter-spacing:.5px">GIF</span><div style="position:absolute;left:0;right:0;bottom:12px;text-align:center;font:900 30px/1 Inter;letter-spacing:-.5px;color:#fff;-webkit-text-stroke:1.6px #000;paint-order:stroke fill;text-shadow:0 3px 0 #000">${cap}</div></div></div>`;
 
 function activityV3() {
-  const row = (ini, kind, html, time, ctx, thumb) => `<div style="display:flex;align-items:center;gap:12px;padding:9px 0"><div style="position:relative;width:44px;height:44px;flex:none">${ava(ini, 44, 'background:rgba(255,255,255,.14)')}<div style="position:absolute;right:-3px;bottom:-3px;width:19px;height:19px;border-radius:10px;background:#fff;border:2px solid #111;display:flex;align-items:center;justify-content:center;color:#000;font-size:9px">${I(kind)}</div></div><div style="flex:1;min-width:0"><div style="font:400 14px/19px Inter">${html} <span style="color:rgba(255,255,255,.4);font-size:12px">${time}</span></div><div style="font:400 12.5px/17px Inter;color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ctx}</div></div>${thumb ? `<div style="width:44px;height:44px;border-radius:10px;background:url(${thumb}) center/cover;flex:none"></div>` : ''}</div>`;
+  const row = (ini, kind, html, time, ctx, thumb) => `<div style="display:flex;align-items:center;gap:12px;padding:9px 0"><div style="position:relative;width:44px;height:44px;flex:none">${ava(ini, 44, 'background:rgba(255,255,255,.14)')}<div style="position:absolute;right:-3px;bottom:-3px;width:19px;height:19px;border-radius:10px;background:#fff;border:2px solid #111;display:flex;align-items:center;justify-content:center;color:#000;font-size:9px">${I(kind)}</div></div><div style="flex:1;min-width:0"><div style="font:400 14px/19px Inter">${html} <span style="color:rgba(255,255,255,.4);font-size:12px;white-space:nowrap">${time}</span></div><div style="font:400 12.5px/17px Inter;color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ctx}</div></div>${thumb ? `<div style="width:44px;height:44px;border-radius:10px;background:url(${thumb}) center/cover;flex:none"></div>` : ''}</div>`;
   const card = (inner, mt = 10) => `<div class="glass" style="border-radius:22px;margin-top:${mt}px">${inner}</div>`;
   const btn = (t, dark) => `<div style="height:34px;border-radius:17px;padding:0 14px;background:${dark ? 'rgba(255,255,255,.14)' : '#fff'};color:${dark ? '#fff' : '#000'};display:flex;align-items:center;font:800 13px/1 Inter;flex:none">${t}</div>`;
   const rel = (ini, n, e, b, dark) => `<div style="display:flex;align-items:center;gap:10px;margin-top:10px">${ava(ini, 32)}<div style="flex:1;font:700 14px/17px Inter">${n} <span style="font-weight:400;color:rgba(255,255,255,.55);font-size:13px">${e}</span></div>${btn(b, dark)}</div>`;
@@ -568,16 +569,16 @@ function activityV3() {
   ${statusBar()}${glassBtn('back', 16, 60)}
   <div style="position:absolute;left:16px;right:16px;top:116px">
    <div style="font:900 28px/34px Inter;letter-spacing:-.8px">Activité</div><div style="font:400 14px/17px Inter;color:rgba(255,255,255,.6);margin-top:2px">1 à traiter</div>
-   ${card(`<div style="display:flex;align-items:center;gap:12px;padding:12px 12px 12px 14px">${ava('T', 38)}<div style="flex:1"><div style="font:700 15px/18px Inter">Théo te défie ⚔️</div><div style="font:400 12px/15px Inter;color:rgba(255,255,255,.6);margin-top:1px">Un duel d'une semaine</div></div>${btn('Répondre')}</div>`, 14)}
+   ${card(`<div style="display:flex;align-items:center;gap:12px;padding:12px 12px 12px 14px">${ava('Y', 38)}<div style="flex:1"><div style="font:700 15px/18px Inter">Yanis te défie</div><div style="font:400 12px/15px Inter;color:rgba(255,255,255,.6);margin-top:1px">Un duel d'une semaine</div></div>${btn('Répondre')}</div>`, 14)}
    ${card(`<div style="padding:14px 14px 16px"><div style="display:flex;align-items:center;gap:6px;font:700 10px/12px Inter;letter-spacing:1.5px;color:rgba(255,255,255,.55)"><span class="ion" style="font-size:12px;color:#fff">${String.fromCodePoint(GL.flame)}</span>TON CERCLE CETTE SEMAINE</div>
      <div style="display:flex;align-items:baseline;gap:8px;margin-top:8px"><b style="font:900 34px/38px Inter;letter-spacing:-1px">8</b><span style="font:400 15px/18px Inter;color:rgba(255,255,255,.6)">/ 12 ont posté</span></div>
      <div style="height:6px;border-radius:3px;background:rgba(255,255,255,.14);margin-top:8px;overflow:hidden"><i style="display:block;width:66%;height:100%;background:#fff;border-radius:3px"></i></div>
      ${rel('M', 'Maël', 'rien depuis 6 j', 'Relancer')}${rel('I', 'Inès', '5 j', 'Relancé ✓', true)}</div>`)}
-   ${card(`<div style="display:flex;align-items:center;gap:12px;padding:12px 14px">${ava('H', 38)}<div style="flex:1"><div style="font:700 15px/18px Inter">Duel contre Hugo</div><div style="font:400 12px/15px Inter;color:rgba(255,255,255,.6);margin-top:1px">Tu mènes 4 à 3, 4 jours restants</div></div><span style="font-size:18px">⚔️</span></div>`)}
-   ${card(`<div style="display:flex;align-items:center;gap:12px;padding:12px 14px"><div style="width:38px;height:38px;border-radius:19px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:17px">⚔️</div><div style="flex:1"><div style="font:700 15px/18px Inter">Défier un ami</div><div style="font:400 12px/15px Inter;color:rgba(255,255,255,.6);margin-top:1px">Un duel d'une semaine, le plus régulier gagne</div></div><span class="ion" style="font-size:18px;color:rgba(255,255,255,.5)">${String.fromCodePoint(GL.chev)}</span></div>`)}
+   ${card(`<div style="display:flex;align-items:center;gap:12px;padding:12px 14px">${ava('H', 38)}<div style="flex:1"><div style="font:700 15px/18px Inter">Duel contre Hugo</div><div style="font:400 12px/15px Inter;color:rgba(255,255,255,.6);margin-top:1px">Tu mènes 4 à 3, 4 jours restants</div></div><span class="ion" style="font-size:18px;color:rgba(255,255,255,.5)">${String.fromCodePoint(GL.chev)}</span></div>`)}
+   ${card(`<div style="display:flex;align-items:center;gap:12px;padding:12px 14px"><div style="width:38px;height:38px;border-radius:19px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:18px">${I('flash')}</div><div style="flex:1"><div style="font:700 15px/18px Inter">Défier un ami</div><div style="font:400 12px/15px Inter;color:rgba(255,255,255,.6);margin-top:1px">Un duel d'une semaine, le plus régulier gagne</div></div><span class="ion" style="font-size:18px;color:rgba(255,255,255,.5)">${String.fromCodePoint(GL.chev)}</span></div>`)}
    <div style="font:700 11px/13px Inter;letter-spacing:1.5px;color:rgba(255,255,255,.55);margin:18px 0 2px">AUJOURD'HUI</div>
    ${row('K', 'camera', '<b>Karim</b> a posté', '2 min', '🏃 Courir 50 km', U.runG)}
-   ${row('H', 'heart', '<b>Hugo, Inès</b> et 2 autres ont réagi 🔥', '1 h', 'À ton post 🛷 Préparer un HYROX', U.sled)}
+   ${row('H', 'heart', '<b>Hugo, Inès</b> et 2 autres ont réagi', '1 h', 'À ton post 🛷 Préparer un HYROX', U.fentes)}
   </div></div>`;
 }
 
@@ -627,26 +628,24 @@ const P1 = panel(0, 'background:#050506', bgImg('assets/bg-p1.jpg') + shade(.62,
  + `<div class="eyebrow" style="left:98px;top:330px">Le réseau social des sportifs.</div>`
  + `<div class="hl" style="left:90px;top:430px;font-size:198px;transform:skewX(-6deg);transform-origin:0 100%"><span>Ton</span><br><span>cercle</span><br><span>te regarde.</span></div>`
  + phone(sFeed1, 690, 2230, 980, 5, 'dark', 5)
- + big(notif('Sarah a réagi 🔥', 'Sur 🛷 Préparer un HYROX', 0, 0, 296), 56, 1600, 2.3, 13)
- + sticker('en-feu', 36, 1010, 330, -14)
- + sticker('semaine-parfaite', 1056, 1150, 430, 10, 15);
+ + big(notif('Nathan a posté sa séance 🛷', 'Préparer un HYROX : 11 / 16 séances', 0, 0, 296), 56, 1600, 2.3, 13)
+ + sticker('en-feu', 36, 1010, 330, -14);
 
 /* 2. Clair : choisis ta discipline */
 const P2 = panel(1, LIGHT, lightGlow)
  + T('Choisis ta<br>discipline.', X(1), 200, 176, 'width:1284px;text-align:center;color:#0a0a0a')
  + S('Musculation, HYROX, running, sports de combat... Reiz prépare ton premier objectif.', X(1) + 130, 560, 1024, '#6b6b76', 'center')
  + phone(sportPick(), X(1) + 642, 1960, 940, 0, 'dark', 5)
- + big(pill('<span>🛷 HYROX</span>', 0, 0), X(1) + 30, 1300, 2.2, 13)
- + big(pill('<span>🥋 Sports de combat</span>', 0, 0), X(1) + 560, 1640, 2.1, 13);
+ + big(pill('<span>🛷 HYROX</span>', 0, 0), X(1) + 30, 1950, 2.2, 13)
+ + big(pill('<span>🥋 Sports de combat</span>', 0, 0), X(1) + 560, 1400, 2.1, 13);
 
 /* 3. Sombre : fixe ton objectif */
 const P3 = panel(2, DARK, '')
  + T('Fixe ton<br>objectif.', X(2), 200, 176, 'width:1284px;text-align:center')
  + S('Un nom, un chiffre, tes jours d\'entraînement. Et c\'est parti.', X(2) + 150, 560, 984, 'rgba(255,255,255,.7)', 'center')
  + phone(create(), X(2) + 640, 1960, 940, 0, 'dark', 5)
- + gcChip(['108', '170', 'kg', '🏋️', '170 kg au squat', 3, 64], X(2) + 560, 2370, 6, 1.62, 9)
- + gcChip(['6', '10', 'km', '🏃', 'Courir 10 km', 2, 60], X(2) + 40, 2290, -7, 1.45, 8)
- + sticker('regulier', X(2) + 1050, 1380, 300, 12, 14);
+ + gcChip(['108', '170', 'kg', '🏋️', '170 kg au bench', 3, 64], X(2) + 560, 2370, 6, 1.62, 9)
+ + gcChip(['6', '10', 'km', '🏃', 'Courir 10 km', 2, 60], X(2) + 90, 2290, -7, 1.45, 8);
 
 /* 4. Verre sur photo : poste ta séance, vidéo coupée dans l'appli */
 const P4 = panel(3, 'background:#050506', bgImg('assets/bg-p3.jpg') + shade(.45, .05, .55))
@@ -654,7 +653,7 @@ const P4 = panel(3, 'background:#050506', bgImg('assets/bg-p3.jpg') + shade(.45,
  + T('ta séance.', X(3) + 104, 480, 150, 'font-weight:400;letter-spacing:-.04em')
  + S('Une photo ou une vidéo. Coupe-la en deux gestes, ton cercle voit tout.', X(3) + 104, 670, 960, 'rgba(255,255,255,.8)')
  + `<div style="position:absolute;left:${X(3) + 84}px;top:1120px;width:1116px;height:2100px;border-radius:120px;overflow:hidden;z-index:6;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,.07));border:2px solid rgba(255,255,255,.38);box-shadow:0 60px 140px rgba(0,0,0,.45)">${phone(postVideo(U.fentes, '50% 35%'), 558, 1060, 860, 0, 'dark', 5)}</div>`
- + big(trimChip(), X(3) + 40, 2160, 2.25, 13);
+ + big(trimChip(), X(3) + 213, 2170, 2.6, 13);
 
 /* 5. Clair : réactions, commentaires et GIF */
 const P5 = panel(4, LIGHT, lightGlow)
@@ -662,8 +661,8 @@ const P5 = panel(4, LIGHT, lightGlow)
  + S('Emojis, commentaires et GIF. Un fil rien que pour tes proches.', X(4) + 150, 510, 984, '#6b6b76', 'center')
  + phone(sReact, X(4) + 642, 1960, 900, 0, 'dark', 5)
  + big(`<div class="fl cbub" style="width:236px"><div style="font:700 12px/15px Inter;color:#9a9aa2;margin-bottom:2px">Hugo</div>Allez, plus que 11 km 🔥</div>`, X(4) + 30, 1560, 2.2, 13)
- + big(gifBubble('Inès', G.p6), X(4) + 760, 1880, 2.1, 13)
- + emo('🔥', X(4) - 70, 1180, 250, -14) + emo('💪', X(4) + 1010, 1060, 240, 16);
+ + big(gifBubble('Inès', U.gif, 'ALLEZ !!!'), X(4) + 770, 1700, 2.1, 13)
+ + emo('🔥', X(4) + 20, 830, 230, -14) + emo('💪', X(4) + 1010, 1060, 240, 16);
 
 /* 6. Sombre : duo */
 const P6 = panel(5, DARK, '')
@@ -671,7 +670,7 @@ const P6 = panel(5, DARK, '')
  + S('Postez chacun votre séance à moins d\'une heure : le duo est validé.', X(5) + 150, 560, 984, 'rgba(255,255,255,.7)', 'center')
  + phone(sDuo, X(5) + 642, 1960, 940, 0, 'dark', 5)
  + big(notif('Hugo t\'a identifié dans sa séance 🤝', 'Poste la tienne dans l\'heure pour valider le duo.', 0, 0, 352), X(5) + 20, 1530, 2.3, 13)
- + big(pill('<span>✓ Duo validé</span>', 0, 0), X(5) + 880, 2330, 2.2, 13);
+ + big(pill('<span>✓ Duo validé</span>', 0, 0), X(5) + 800, 2330, 2.2, 13);
 
 /* 7. Verre sur photo : activité, duel et relance */
 const P7 = panel(6, 'background:#050506', bgCover(U.bgSunset, '46% 50%') + shade(.5, .08, .6))
@@ -679,15 +678,14 @@ const P7 = panel(6, 'background:#050506', bgCover(U.bgSunset, '46% 50%') + shade
  + T('un ami.', X(6) + 104, 480, 150, 'font-weight:400;letter-spacing:-.04em')
  + S('Un duel d\'une semaine, et une relance pour ceux qui décrochent.', X(6) + 104, 670, 960, 'rgba(255,255,255,.8)')
  + phone(activityV3(), X(6) + 642, 2000, 940, 0, 'dark', 5)
- + big(notif('Théo te relance 💪', 'Poste ta prochaine séance.', 0, 0, 300), X(6) + 40, 2380, 2.3, 13)
- + sticker('acharne', X(6) + 990, 1020, 300, 12);
+ + sticker('acharne', X(6) + 960, 1020, 290, 12);
 
 /* 8. Clair : trouve ton cercle */
 const P8 = panel(7, LIGHT, lightGlow)
  + T('Trouve<br>ton cercle.', X(7), 200, 176, 'width:1284px;text-align:center;color:#0a0a0a')
  + S('Cherche par nom, par tag ou par sport. Retrouve tes contacts en un geste.', X(7) + 150, 560, 984, '#6b6b76', 'center')
  + phone(friendsScreen(), X(7) + 642, 1960, 940, 0, 'silver', 5)
- + sticker('en-duo', X(7) + 1030, 1280, 290, 12, 14);
+ + sticker('en-duo', X(7) + 980, 1280, 280, 12, 14);
 
 /* 9. Verre sur photo : badges */
 const P9 = panel(8, 'background:#050506', bgImg('assets/bg-p6.jpg') + shade(.5, .1, .6))
@@ -695,7 +693,7 @@ const P9 = panel(8, 'background:#050506', bgImg('assets/bg-p6.jpg') + shade(.5, 
  + T('tes badges.', X(8) + 104, 450, 150, 'font-weight:400;letter-spacing:-.04em')
  + S('Chaque badge a 6 niveaux. Touche-le pour voir le prochain palier.', X(8) + 104, 650, 960, 'rgba(255,255,255,.8)')
  + phone(badgesScreen(), X(8) + 642, 2000, 940, 0, 'dark', 5)
- + sticker('inarretable', X(8) + 30, 1120, 360, -12) + sticker('en-duo', X(8) + 940, 1020, 330, 12) + sticker('acharne', X(8) + 960, 2250, 300, -8);
+ + sticker('inarretable', X(8) + 10, 1560, 270, -12) + sticker('en-duo', X(8) + 1000, 1420, 270, 12) + sticker('acharne', X(8) + 990, 2350, 270, -8);
 
 /* 10. Sombre, photo : invite ton cercle (QR code) */
 const P10 = panel(9, 'background:#050506', bgCover(U.bgBlue, '38% 50%') + shade(.45, .15, .8))
