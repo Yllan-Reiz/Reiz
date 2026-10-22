@@ -152,7 +152,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     try { hidden = JSON.parse((await AsyncStorage.getItem(hiddenKey(uid))) || '[]'); } catch {}
     const excluded = new Set([uid, ...friendIds, ...blockedIds, ...hidden]);
     const out = new Map<string, any>();
-    const add = (u: any, reason: string, kind: 'contact' | 'mutual' | 'objective') => {
+    const add = (u: any, reason: string, kind: 'contact' | 'mutual' | 'objective' | 'sport') => {
       if (!u?.id || excluded.has(u.id) || out.has(u.id)) return;
       out.set(u.id, { id: u.id, full_name: u.full_name, username: u.username, avatar_url: u.avatar_url ?? null, reason, kind });
     };
@@ -167,6 +167,13 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
 
     const { data: mutual } = await supabase.rpc('suggest_friends', { p_limit: 12 });
     (mutual || []).forEach((u: any) => add(u, `${u.mutual} ami${u.mutual > 1 ? 's' : ''} en commun`, 'mutual'));
+
+    // Même sport que toi (celui de ton profil, choisi à l'accueil).
+    const { data: me } = await supabase.from('users').select('sport').eq('id', uid).maybeSingle();
+    if (me?.sport && me.sport !== 'autre') {
+      const { data: same } = await supabase.rpc('discover_people', { p_terms: [me.sport], p_limit: 10 });
+      ((same as any[]) || []).filter(u => u.reason?.startsWith('Sport')).forEach(u => add(u, `${u.reason.replace('Sport : ', '')}, comme toi`, 'sport'));
+    }
 
     const { data: myObjs } = await supabase.from('objectives').select('title').eq('user_id', uid);
     if (myObjs && myObjs.length > 0) {
@@ -215,7 +222,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     const results = ((data as any[]) || []).filter(u => !blockedIds.has(u.id)).map(u => ({
       ...u,
       reason: u.reason || (u.mutual > 0 ? `${u.mutual} ami${u.mutual > 1 ? 's' : ''} en commun` : `@${u.username}`),
-      kind: u.reason?.startsWith('Tag') ? 'tag' : u.reason?.startsWith('Objectif') ? 'objective' : u.mutual > 0 ? 'mutual' : 'name',
+      kind: u.reason?.startsWith('Sport') ? 'sport' : u.reason?.startsWith('Tag') ? 'tag' : u.reason?.startsWith('Objectif') ? 'objective' : u.mutual > 0 ? 'mutual' : 'name',
     }));
     const signed = await signAvatars(results.map(u => u.avatar_url));
     results.forEach(u => { if (u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });

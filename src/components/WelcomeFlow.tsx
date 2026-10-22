@@ -320,7 +320,11 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
     setSportIdx(i); setStartIdx(i);
     setTarget(sp.target); setDays(sp.days); setObjTitle(sp.title); setEditDays(false);
     setPhase('details');
-    if (!preview && userId) AsyncStorage.setItem(sportKey(userId), sp.id).catch(() => {});
+    if (!preview && userId) {
+      AsyncStorage.setItem(sportKey(userId), sp.id).catch(() => {});
+      // Le sport va aussi dans le profil : il s'affiche sous le nom et sert à la recherche par sport (onglet Amis).
+      supabase.from('users').update({ sport: sp.id }).eq('id', userId).then(() => { wrote.current = true; });
+    }
   };
 
   const createObjective = async (): Promise<boolean> => {

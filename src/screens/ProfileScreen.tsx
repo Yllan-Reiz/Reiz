@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Animated, TextInput, Alert, ActivityIndicator, RefreshControl, Modal, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Animated, TextInput, Alert, ActivityIndicator, RefreshControl, Modal, useWindowDimensions, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -15,6 +15,7 @@ import { PostViewer } from '../components/PostViewer';
 import { ProfileTags } from '../components/ProfileTags';
 import { PeopleListModal } from '../components/PeopleListModal';
 import { MyFriendsBubble } from '../components/MyFriendsBubble';
+import { SportBadge } from '../components/SportBadge';
 import { SettingsScreen } from './SettingsScreen';
 import { loadProfilePosts, loadPost } from '../lib/posts';
 import { selectObjectives } from '../lib/objectives';
@@ -58,7 +59,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
     const sinceISO = new Date(Date.now() - HEATMAP_MAX_DAYS * 24 * 60 * 60 * 1000).toISOString();
     setUserId(user.id);
     const [profileRes, objRes, updatesRes, friendsRes, allPosts] = await Promise.all([
-      supabase.from('users').select('full_name, username, created_at, avatar_url, bio').eq('id', user.id).single(),
+      supabase.from('users').select('full_name, username, created_at, avatar_url, bio, sport').eq('id', user.id).single(),
       selectObjectives('id, emoji, title, current_value, target_value, unit, visibility, duration_days, is_completed', cols => supabase.from('objectives').select(cols).eq('user_id', user.id).order('created_at', { ascending: false })),
       supabase.from('updates').select('objective_id, created_at').eq('user_id', user.id).gte('created_at', sinceISO),
       supabase.from('friendships').select('requester_id, receiver_id').or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`).eq('status', 'accepted'),
@@ -69,7 +70,17 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
       setProfile(profileRes.data);
       setNewName(profileRes.data.full_name);
       setNewBio(profileRes.data.bio || '');
-      setAvatarUrl(await signOne(profileRes.data.avatar_url, { width: 1200 }));
+      // La grande version (1200) met parfois 20 s à être préparée par le serveur : on montre tout de suite une
+      // petite version (souvent déjà en mémoire), puis on la remplace par la nette dès qu'elle est téléchargée.
+      const path = profileRes.data.avatar_url;
+      if (path) {
+        signOne(path, { width: 300 }).then(small => { if (small) setAvatarUrl(prev => prev ?? small); }).catch(() => {});
+        signOne(path, { width: 1200 }).then(async big => {
+          if (!big) return;
+          await Image.prefetch(big).catch(() => {});
+          setAvatarUrl(big);
+        }).catch(() => {});
+      } else setAvatarUrl(null);
     }
     if (objRes.data) setObjectives((objRes.data as Objective[]).map(inUnit));
     if (updatesRes.data) {
@@ -99,6 +110,15 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   const openPost = async (p: Update) => {
     const res = await loadPost(p.id, userId);
     if (res) setViewing(res);
+  };
+
+  // Changer son sport depuis la pastille sous le nom.
+  const changeSport = async (id: string | null) => {
+    if (!userId) return;
+    const before = profile?.sport ?? null;
+    setProfile((p: any) => ({ ...p, sport: id }));
+    const { error } = await supabase.from('users').update({ sport: id }).eq('id', userId);
+    if (error) { setProfile((p: any) => ({ ...p, sport: before })); Alert.alert('Erreur', "Impossible d'enregistrer ton sport pour le moment."); }
   };
 
   const handleSaveBio = async () => {
@@ -263,6 +283,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
             )}
             <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.78)', fontFamily: F.semibold, marginTop: 4 }}>@{profile?.username}</Text>
             <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontFamily: F.regular, marginTop: 2 }}>Membre depuis {memberSince}</Text>
+            <SportBadge sport={profile?.sport} editable onChange={changeSport} />
 
             <StatBubble items={[
               { value: `${streak}j`, label: 'Streak' },

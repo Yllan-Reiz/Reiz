@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Animated, Alert, ActivityIndicator, Modal, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Alert, ActivityIndicator, Modal, useWindowDimensions, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase, currentUser } from '../lib/supabase';
 import { calculateStreak, timeAgo, frError, inUnit } from '../lib/helpers';
@@ -9,6 +9,7 @@ import { Update, Objective, FeedMeta } from '../lib/types';
 import { ProfileHero, ProfileBackdrop, GlassIconButton, StatBubble, AboutBubble, BadgesSection, GoalCards, HistoryCarousel, AchievedList, SectionHeader, DuoBubble, computeBadges, isCompleted } from '../components/ProfileSections';
 import { PostViewer } from '../components/PostViewer';
 import { ProfileTags } from '../components/ProfileTags';
+import { SportBadge } from '../components/SportBadge';
 import { PeopleListModal } from '../components/PeopleListModal';
 import { loadProfilePosts, loadPost } from '../lib/posts';
 import { selectObjectives } from '../lib/objectives';
@@ -58,7 +59,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
         else setRelation({ kind: rel.requester_id === user.id ? 'sent' : 'received', id: rel.id });
       }
       const [profileRes, objRes, updatesRes, friendsRes] = await Promise.all([
-        supabase.from('users').select('full_name, username, created_at, avatar_url, bio').eq('id', userId).single(),
+        supabase.from('users').select('full_name, username, created_at, avatar_url, bio, sport').eq('id', userId).single(),
         selectObjectives('id, emoji, title, current_value, target_value, unit, visibility, duration_days, is_completed', cols => supabase.from('objectives').select(cols).eq('user_id', userId).neq('visibility', 'private').order('created_at', { ascending: false })),
         // La base ne renvoie que les posts que tu as le droit de voir (RLS).
         loadProfilePosts(userId),
@@ -66,7 +67,16 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
       ]);
       if (profileRes.data) {
         setProfile(profileRes.data);
-        setAvatarUrl(await signOne(profileRes.data.avatar_url, { width: 1200 }));
+        // Petite version tout de suite, la nette (lente à préparer côté serveur) dès qu'elle est téléchargée.
+        const path = profileRes.data.avatar_url;
+        if (path) {
+          signOne(path, { width: 300 }).then(small => { if (small) setAvatarUrl(prev => prev ?? small); }).catch(() => {});
+          signOne(path, { width: 1200 }).then(async big => {
+            if (!big) return;
+            await Image.prefetch(big).catch(() => {});
+            setAvatarUrl(big);
+          }).catch(() => {});
+        } else setAvatarUrl(null);
       }
       if (objRes.data) setObjectives((objRes.data as Objective[]).map(inUnit));
       setRecentUpdates(updatesRes.filter(u => u.objectives?.visibility !== 'private'));
@@ -215,6 +225,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
             <Text style={{ fontSize: 40, fontFamily: F.black, color: '#fff', textAlign: 'center', letterSpacing: -1.5, paddingHorizontal: GUTTER }} numberOfLines={2}>{profile?.full_name || 'Utilisateur'}</Text>
             <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.78)', fontFamily: F.semibold, marginTop: 4 }}>@{profile?.username}</Text>
             <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontFamily: F.regular, marginTop: 2 }}>Membre depuis {memberSince}</Text>
+            <SportBadge sport={profile?.sport} />
 
             {relation.kind !== 'friends' && (
               <TouchableOpacity

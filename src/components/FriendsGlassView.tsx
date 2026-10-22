@@ -59,13 +59,13 @@ function Row({ person, onPress, onLongPress, ring, right }: { person: Person; on
 
 // Les sports de l'accueil, avec les mots qu'on cherche dans les tags et les objectifs publics.
 const SPORT_SEARCH: { id: string; label: string; terms: string[] }[] = [
-  { id: 'musculation', label: 'Musculation', terms: ['muscu', 'salle', 'bench', 'squat', 'soulevé', 'terre', 'développé', 'powerlift', 'bodybuild'] },
-  { id: 'street', label: 'Street Workout', terms: ['street', 'calisthenics', 'traction', 'dips', 'muscle up', 'planche'] },
+  { id: 'musculation', label: 'Musculation', terms: ['musculation', 'muscu', 'salle', 'bench', 'squat', 'soulevé', 'terre', 'développé', 'powerlift', 'bodybuild'] },
+  { id: 'street', label: 'Street Workout', terms: ['street-workout', 'street', 'calisthenics', 'traction', 'dips', 'muscle up', 'planche'] },
   { id: 'hyrox', label: 'HYROX', terms: ['hyrox', 'crossfit', 'wod'] },
   { id: 'running', label: 'Running', terms: ['course', 'courir', 'running', 'run', 'marathon', 'semi', '10 km', 'trail'] },
-  { id: 'cyclisme', label: 'Cyclisme', terms: ['vélo', 'velo', 'cyclisme', 'bike', 'gravel'] },
+  { id: 'cyclisme', label: 'Cyclisme', terms: ['cyclisme', 'vélo', 'velo', 'cyclisme', 'bike', 'gravel'] },
   { id: 'boxe', label: 'Boxe', terms: ['boxe', 'box', 'mma', 'muay', 'kick'] },
-  { id: 'natation', label: 'Natation', terms: ['nage', 'natation', 'nager', 'piscine', 'swim'] },
+  { id: 'natation', label: 'Natation', terms: ['natation', 'nage', 'natation', 'nager', 'piscine', 'swim'] },
 ];
 
 export function FriendsGlassView(p: {
@@ -291,7 +291,7 @@ const label = { color: 'rgba(255,255,255,0.55)', fontSize: 12, fontFamily: F.bol
 
 /** Une personne à découvrir : photo, nom, @pseudo, la raison (contact, amis en commun, tag, objectif), Ajouter et ✕. */
 function DiscoverRow({ u, sent, onOpen, onAdd, onHide }: { u: any; sent: boolean; onOpen: () => void; onAdd: () => void; onHide?: () => void }) {
-  const icon = u.kind === 'contact' ? 'person-circle-outline' : u.kind === 'mutual' ? 'people-outline' : u.kind === 'tag' ? 'pricetag-outline' : u.kind === 'objective' ? 'flag-outline' : 'at-outline';
+  const icon = u.kind === 'sport' ? 'barbell-outline' : u.kind === 'contact' ? 'person-circle-outline' : u.kind === 'mutual' ? 'people-outline' : u.kind === 'tag' ? 'pricetag-outline' : u.kind === 'objective' ? 'flag-outline' : 'at-outline';
   return (
     <TouchableOpacity onPress={onOpen} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10 }}>
       <Avatar url={u.avatar_url} name={u.full_name} size={56} />
