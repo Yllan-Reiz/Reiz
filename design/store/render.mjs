@@ -19,6 +19,8 @@ const PRESETS = {
   bande: { dir: 'bande', w: 1284, h: 2778, p: 'ios', page: 'bande.html', panels: 8, stripW: 8 * 1284 },
   bande10: { dir: 'bande10', w: 1284, h: 2778, p: 'ios', page: 'bande2.html', panels: 10, stripW: 10 * 1284 },
   bande10play: { dir: 'bande10-play', w: 1284, h: 2568, stageH: 2778, p: 'play', page: 'bande2.html', panels: 10, stripW: 10 * 1284 },
+  bande3: { dir: 'bande3', w: 1284, h: 2778, p: 'ios', page: 'bande3.html', panels: 10, stripW: 10 * 1284 },
+  bande3play: { dir: 'bande3-play', w: 1284, h: 2568, stageH: 2778, p: 'play', page: 'bande3.html', panels: 10, stripW: 10 * 1284 },
   feature: { dir: 'play', w: 1024, h: 500, p: 'play', page: 'bande.html', extra: '&f=1', file: 'feature-1024x500.png' },
 };
 const [presetName = 'ios65', ...nums] = process.argv.slice(2);
@@ -30,7 +32,7 @@ fs.mkdirSync(OUT, { recursive: true });
 
 const PORT = 8800 + Math.floor(Math.random() * 150), DPORT = 9500 + Math.floor(Math.random() * 150);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const MIME = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.ttf': 'font/ttf', '.js': 'text/javascript', '.css': 'text/css' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.ttf': 'font/ttf', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
 const srv = http.createServer((q, s) => {
   const f = path.join(ROOT, decodeURIComponent(q.url.split('?')[0]));
   fs.readFile(f, (e, d) => { if (e) { s.writeHead(404); s.end(); return; } s.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream' }); s.end(d); });

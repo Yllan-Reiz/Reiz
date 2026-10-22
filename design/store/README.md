@@ -51,3 +51,17 @@ node render.mjs bande10play    # 10 panneaux 1284 x 2568 dans out/bande10-play/
 Sorties prêtes : `out/final2/app-store-6.5` (1284 x 2778), `app-store-6.9` (1320 x 2868), `google-play` (1080 x 2160),
 obtenues avec ffmpeg (`scale` + `crop`). L'App Store accepte jusqu'à 10 captures. Image de présentation Google Play
 (1024 x 500) : inchangée dans `out/final/google-play/`.
+
+## Version 3 (22/10/2026) : 10 visuels de la 1.0.1
+
+Fichier : `bande3.html` (copie de `bande2.html` avec les écrans de la 1.0.1), presets `bande3` et `bande3play` dans `render.mjs`.
+Ordre : 1 fil, 2 choix de la discipline (accueil, photo running Unsplash), 3 création d'objectif, 4 publication avec vidéo coupée,
+5 réactions, commentaires et GIF, 6 duo, 7 Activité (duel, relance, Défier un ami), 8 onglet Amis (recherche par sport),
+9 badges, 10 carte de partage avec QR code (il ouvre la fiche App Store, vérifié au décodage).
+
+```bash
+cd ~/Desktop/Reiz/design/store
+node render.mjs bande3         # 10 panneaux 1284 x 2778 dans out/bande3/
+```
+
+Sorties prêtes : `out/final3/app-store-6.5` (1284 x 2778) et `out/final3/app-store-6.9` (1320 x 2868, ffmpeg `scale` + `crop`).
