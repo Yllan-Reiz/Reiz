@@ -64,7 +64,7 @@ const SPORT_SEARCH: { id: string; label: string; terms: string[] }[] = [
   { id: 'hyrox', label: 'HYROX', terms: ['hyrox', 'crossfit', 'wod'] },
   { id: 'running', label: 'Running', terms: ['course', 'courir', 'running', 'run', 'marathon', 'semi', '10 km', 'trail'] },
   { id: 'cyclisme', label: 'Cyclisme', terms: ['cyclisme', 'vélo', 'velo', 'cyclisme', 'bike', 'gravel'] },
-  { id: 'boxe', label: 'Boxe', terms: ['boxe', 'box', 'mma', 'muay', 'kick'] },
+  { id: 'combat', label: 'Sports de combat', terms: ['combat', 'boxe', 'box', 'mma', 'jjb', 'jiu', 'grappling', 'judo', 'lutte', 'muay', 'kick', 'karaté', 'krav'] },
   { id: 'natation', label: 'Natation', terms: ['natation', 'nage', 'natation', 'nager', 'piscine', 'swim'] },
 ];
 
