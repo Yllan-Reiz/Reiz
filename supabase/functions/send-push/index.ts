@@ -91,6 +91,8 @@ Deno.serve(async (req) => {
 
   let title = '';
   let body = '';
+  // Un commentaire GIF est enregistré comme « [GIF] lien » : la notification dit juste « GIF ».
+  const said = (p?: string | null) => (/^\[GIF\] https:\/\//.test(p || '') ? 'GIF' : `« ${clip(p, 90)} »`);
   switch (n.type) {
     case 'reaction':
       title = `${name} a réagi ${n.emoji || ''}`.trim();
@@ -98,15 +100,20 @@ Deno.serve(async (req) => {
       break;
     case 'comment':
       title = `${name} a commenté ${onPost}`;
-      body = `« ${clip(n.preview, 90)} »`;
+      body = said(n.preview);
       break;
     case 'reply':
       title = `${name} t'a répondu`;
-      body = `« ${clip(n.preview, 90)} »`;
+      body = said(n.preview);
       break;
     case 'comment_like':
       title = `${name} a aimé ton commentaire ❤️`;
-      body = `« ${clip(n.preview, 90)} »`;
+      body = said(n.preview);
+      break;
+    case 'nudge':
+      // Un ami te relance (fonction nudge_friend, une fois par jour au plus).
+      title = `${name} te relance 💪`;
+      body = "Ça fait quelques jours sans séance. Poste la prochaine, ton cercle t'attend.";
       break;
     case 'friend_post':
       title = objLabel ? `${name} a posté : ${objLabel}` : `${name} vient de publier`;

@@ -11,12 +11,15 @@ import { GUTTER, hasSchedule, daysLabel } from '../constants';
 import { FeedCard } from '../components/FeedCard';
 import { GlassCard } from '../components/GlassSurface';
 import { GlassBackdrop, GlassIconButton } from '../components/ProfileSections';
-import { Faces } from '../components/CloseCircleCard';
+import { Faces, CloseCircleCard } from '../components/CloseCircleCard';
+import { PresenceCard } from '../components/PresenceCard';
+import { DuelBanner, ChallengeFriendButton } from '../components/DuelCard';
 import { VideoPoster } from '../components/VideoPoster';
 import { CircleRhythmCard } from '../components/CircleRhythmCard';
 import { loadPost } from '../lib/posts';
 import { loadDuels, Duel } from '../lib/duel';
 import { setAppBadge } from '../lib/badge';
+import { gifIdOf } from '../lib/giphy';
 
 type Row = ActivityItem & {
   updates?: { photo_url?: string | null; objectives?: { emoji?: string; title?: string } | null } | null;
@@ -56,7 +59,8 @@ function copyOf(e: Entry): { who: string; action: string; context?: string } {
   const { text: who, many } = whoLabel(e.rows);
   const post = n.updates?.objectives;
   const postLabel = post?.title ? `${post.emoji || ''} ${post.title}`.trim() : undefined;
-  const quote = n.preview ? `« ${clip(n.preview)} »` : undefined;
+  // Un commentaire GIF est enregistré comme un lien : on écrit « GIF » à la place.
+  const quote = n.preview ? (gifIdOf(n.preview) ? 'GIF' : `« ${clip(n.preview)} »`) : undefined;
   const verb = (one: string, plural: string) => (many ? plural : one);
   switch (n.type) {
     case 'reaction': {
@@ -66,6 +70,7 @@ function copyOf(e: Entry): { who: string; action: string; context?: string } {
     case 'comment_like': return { who, action: `${verb('a aimé', 'ont aimé')} ton commentaire`, context: quote };
     case 'comment': return { who, action: 'a commenté ton post', context: quote };
     case 'reply': return { who, action: "t'a répondu", context: quote };
+    case 'nudge': return { who, action: `${verb('te relance', 'te relancent')} 💪`, context: 'Poste ta prochaine séance' };
     case 'friend_post': {
       // La légende n'est ajoutée que si elle apporte quelque chose (souvent elle reprend le nom de l'objectif).
       const caption = n.preview && n.preview.trim().toLowerCase() !== (post?.title || '').trim().toLowerCase() ? clip(n.preview, 50) : '';
@@ -87,7 +92,7 @@ function copyOf(e: Entry): { who: string; action: string; context?: string } {
 
 // Petite pastille d'icône posée sur la photo : on repère le type d'un coup d'œil.
 const ICON: Record<string, any> = {
-  reaction: 'heart', comment_like: 'heart', comment: 'chatbubble', reply: 'chatbubble', friend_post: 'camera', tag_endorse: 'ribbon',
+  nudge: 'flash', reaction: 'heart', comment_like: 'heart', comment: 'chatbubble', reply: 'chatbubble', friend_post: 'camera', tag_endorse: 'ribbon',
   at_gym: 'location', duo_tag: 'people', friend_accept: 'checkmark', challenge_accept: 'flash', challenge_result: 'trophy', new_objective: 'flag',
 };
 
@@ -114,6 +119,7 @@ function Avatar({ url, name, size }: { url?: string | null; name: string; size: 
     : <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontSize: size * 0.4, fontFamily: F.bold }}>{name.charAt(0).toUpperCase()}</Text></View>;
 }
 
+// Une ligne compacte, sans carte : visage, une phrase, le contexte en petit, la vignette du post à droite.
 function ActivityRow({ e, onPress, onAvatar }: { e: Entry; onPress: () => void; onAvatar: () => void }) {
   const n = e.rows[0];
   const c = copyOf(e);
@@ -121,51 +127,44 @@ function ActivityRow({ e, onPress, onAvatar }: { e: Entry; onPress: () => void; 
   const thumb = n.updates?.photo_url;
   const faces = e.rows.slice(0, 3);
   return (
-    <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={{ marginBottom: 12 }}>
-      <GlassCard radius={26}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 }}>
-          {faces.length > 1 ? (
-            // Plusieurs personnes : leurs visages se chevauchent.
-            <View style={{ width: 56, flexDirection: 'row', alignItems: 'center' }}>
-              {faces.map((r, i) => (
-                <View key={r.id} style={{ marginLeft: i === 0 ? 0 : -18, borderRadius: 20, borderWidth: 2, borderColor: '#151515' }}>
-                  <Avatar url={r.actor?.avatar_url} name={r.actor?.full_name || '?'} size={36} />
-                </View>
-              ))}
+    <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 9 }}>
+      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: unread ? '#fff' : 'transparent', marginRight: -4 }} />
+      {faces.length > 1 ? (
+        <View style={{ width: 44, height: 44 }}>
+          {faces.slice(0, 2).map((r, i) => (
+            <View key={r.id} style={{ position: 'absolute', left: i * 12, top: i * 12, borderRadius: 17, borderWidth: 2, borderColor: '#111' }}>
+              <Avatar url={r.actor?.avatar_url} name={r.actor?.full_name || '?'} size={30} />
             </View>
-          ) : (
-            <TouchableOpacity onPress={onAvatar} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-              <View>
-                <Avatar url={n.actor?.avatar_url} name={n.actor?.full_name || '?'} size={52} />
-                {!!ICON[n.type] && (
-                  <View style={{ position: 'absolute', right: -3, bottom: -3, width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', borderWidth: 2, borderColor: '#151515', alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name={ICON[n.type]} size={11} color="#000" />
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          )}
-
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: '#fff', fontSize: 15, lineHeight: 21, fontFamily: F.regular }} numberOfLines={3}>
-              <Text style={{ fontFamily: F.bold }}>{c.who}</Text> {c.action}
-            </Text>
-            {!!c.context && <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 18, fontFamily: F.regular, marginTop: 3 }} numberOfLines={2}>{c.context}</Text>}
-            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontFamily: F.semibold, marginTop: 6 }}>{shortAgo(n.created_at)}</Text>
-          </View>
-
-          {thumb && isVideo(thumb) ? (
-            <View style={{ width: 54, height: 54, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              <VideoPoster uri={thumb} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-              <Ionicons name="play" size={18} color="#ddd" />
-            </View>
-          ) : thumb ? (
-            <Image source={{ uri: thumb }} style={{ width: 54, height: 54, borderRadius: 12, backgroundColor: '#1a1a1a' }} />
-          ) : null}
-
-          {unread && <View style={{ position: 'absolute', top: 12, right: 12, width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' }} />}
+          ))}
         </View>
-      </GlassCard>
+      ) : (
+        <TouchableOpacity onPress={onAvatar} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+          <View>
+            <Avatar url={n.actor?.avatar_url} name={n.actor?.full_name || '?'} size={44} />
+            {!!ICON[n.type] && (
+              <View style={{ position: 'absolute', right: -3, bottom: -3, width: 19, height: 19, borderRadius: 10, backgroundColor: '#fff', borderWidth: 2, borderColor: '#111', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name={ICON[n.type]} size={9} color="#000" />
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      )}
+
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: '#fff', fontSize: 14, lineHeight: 19, fontFamily: F.regular }} numberOfLines={2}>
+          <Text style={{ fontFamily: F.bold }}>{c.who}</Text> {c.action} <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{shortAgo(n.created_at)}</Text>
+        </Text>
+        {!!c.context && <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12.5, lineHeight: 17, fontFamily: F.regular, marginTop: 1 }} numberOfLines={1}>{c.context}</Text>}
+      </View>
+
+      {thumb && isVideo(thumb) ? (
+        <View style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          <VideoPoster uri={thumb} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+          <Ionicons name="play" size={15} color="#ddd" />
+        </View>
+      ) : thumb ? (
+        <Image source={{ uri: thumb }} style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: '#1a1a1a' }} />
+      ) : null}
     </TouchableOpacity>
   );
 }
@@ -173,20 +172,18 @@ function ActivityRow({ e, onPress, onAvatar }: { e: Entry; onPress: () => void; 
 /** Ce qui attend une réponse (demandes d'ami, défis reçus) : en tête, bien visible. */
 function ActionCard({ icon, title, sub, button, faces, onPress }: { icon: any; title: string; sub?: string; button: string; faces?: { id: string; full_name: string; avatar_url: string | null }[]; onPress: () => void }) {
   return (
-    <GlassCard radius={28} style={{ marginBottom: 12 }}>
-      <View style={{ padding: 18 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name={icon} size={13} color="rgba(255,255,255,0.55)" />
-          <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontFamily: F.bold, letterSpacing: 1.5 }}>À TRAITER</Text>
+    <GlassCard radius={22} style={{ marginBottom: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingLeft: 14, paddingRight: 12 }}>
+        {faces && faces.length > 0
+          ? <Faces people={faces} size={38} />
+          : <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}><Ionicons name={icon} size={18} color="#fff" /></View>}
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }} numberOfLines={1}>{title}</Text>
+          {!!sub && <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }} numberOfLines={1}>{sub}</Text>}
         </View>
-        <Text style={{ color: '#fff', fontSize: 20, fontFamily: F.black, letterSpacing: -0.4, marginTop: 8 }}>{title}</Text>
-        {!!sub && <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, lineHeight: 20, fontFamily: F.regular, marginTop: 3 }}>{sub}</Text>}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
-          {faces && faces.length > 0 ? <Faces people={faces} size={34} /> : <View />}
-          <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={{ height: 42, borderRadius: 21, paddingHorizontal: 22, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>{button}</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={{ height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: '#000', fontSize: 13, fontFamily: F.extrabold }}>{button}</Text>
+        </TouchableOpacity>
       </View>
     </GlassCard>
   );
@@ -326,9 +323,9 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
 
   const top = (
     <View>
-      <View style={{ paddingTop: 4, paddingBottom: 18 }}>
-        <Text style={{ color: '#fff', fontSize: 36, fontFamily: F.black, letterSpacing: -1.2 }}>Activité</Text>
-        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontFamily: F.regular, marginTop: 4 }}>
+      <View style={{ paddingTop: 2, paddingBottom: 14 }}>
+        <Text style={{ color: '#fff', fontSize: 28, fontFamily: F.black, letterSpacing: -0.8 }}>Activité</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, fontFamily: F.regular, marginTop: 2 }}>
           {requests.length + duelInvites.length > 0 ? `${requests.length + duelInvites.length} à traiter` : fresh > 0 ? `${fresh} nouveauté${fresh > 1 ? 's' : ''}` : 'Tout est à jour'}
         </Text>
       </View>
@@ -336,7 +333,7 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
         <ActionCard
           icon="person-add"
           title={requests.length === 1 ? `${requests[0].full_name} veut te rejoindre` : `${requests.length} demandes d'ami`}
-          sub={requests.length === 1 ? 'Accepte pour suivre ses progrès, et lui les tiens.' : whoLabel(requests.map(r => ({ actor: { full_name: r.full_name } } as Row))).text}
+          sub={requests.length === 1 ? 'Accepte pour suivre ses progrès' : whoLabel(requests.map(r => ({ actor: { full_name: r.full_name } } as Row))).text}
           button="Voir"
           faces={requests}
           onPress={onOpenFriends}
@@ -347,13 +344,18 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
           key={d.id}
           icon="flash"
           title={`${d.otherName.split(' ')[0]} te défie ⚔️`}
-          sub="Un duel d'une semaine : qui s'entraîne sur le plus de jours ?"
+          sub="Un duel d'une semaine"
           button="Répondre"
           faces={[{ id: d.otherId, full_name: d.otherName, avatar_url: d.otherAvatar }]}
           onPress={() => onViewProfile(d.otherId)}
         />
       ))}
+      {/* Ce qui était en haut du fil : le cercle, la salle, les duels. Compact, avant les notifications. */}
       <CircleRhythmCard onOpenProfile={onViewProfile} reloadKey={rhythmKey} />
+      <PresenceCard compact />
+      <DuelBanner onOpenProfile={onViewProfile} reloadKey={rhythmKey} />
+      <ChallengeFriendButton onSent={() => setRhythmKey(k => k + 1)} />
+      <CloseCircleCard onOpenProfile={onViewProfile} />
     </View>
   );
 
@@ -392,7 +394,7 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
           ) : null}
           renderItem={({ item: r }) => {
             if (r.kind === 'section') {
-              return <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5, marginTop: 22, marginBottom: 12 }}>{r.title.toUpperCase()}</Text>;
+              return <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5, marginTop: 18, marginBottom: 4 }}>{r.title.toUpperCase()}</Text>;
             }
             const n = r.e.rows[0];
             return <ActivityRow e={r.e} onPress={() => onPressItem(n)} onAvatar={() => n.actor_id && onViewProfile(n.actor_id)} />;

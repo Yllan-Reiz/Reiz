@@ -14,6 +14,7 @@ import { ProfileHero, ProfileBackdrop, GlassIconButton, StatBubble, AboutBubble,
 import { PostViewer } from '../components/PostViewer';
 import { ProfileTags } from '../components/ProfileTags';
 import { PeopleListModal } from '../components/PeopleListModal';
+import { MyFriendsBubble } from '../components/MyFriendsBubble';
 import { SettingsScreen } from './SettingsScreen';
 import { loadProfilePosts, loadPost } from '../lib/posts';
 import { selectObjectives } from '../lib/objectives';
@@ -305,6 +306,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
             {userId && <View style={{ alignSelf: 'stretch' }}><ProfileTags userId={userId} currentUserId={userId} own /></View>}
           </AboutBubble>
 
+          {/* Tes amis et ton cercle proche vivent ici (l'onglet Amis sert à en découvrir de nouveaux). */}
+          {userId && <MyFriendsBubble userId={userId} onOpen={() => setPeopleMode('friends')} reloadKey={peopleMode} />}
           <CloseCircleBubble onManage={() => setPeopleMode('close')} reloadKey={peopleMode} />
 
           {/* === Badges, puis objectifs en cours, puis historique des posts === */}

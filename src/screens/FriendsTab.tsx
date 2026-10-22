@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, RefreshControl, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase, currentUser } from '../lib/supabase';
 import { frError } from '../lib/helpers';
-import { signAvatars } from '../lib/storage';
+import { signAvatars, signOne } from '../lib/storage';
 import { useCloseCircle, setClose } from '../lib/closeCircle';
-import { contactsAvailable } from '../lib/contacts';
+import { contactsAvailable, contactsGranted, loadDeviceContacts, matchContacts } from '../lib/contacts';
+import { ShareProfileSheet } from '../components/ShareProfileSheet';
 import { ContactsScreen } from '../components/ContactsScreen';
 import { GlassSurface } from '../components/GlassSurface';
 import * as Haptics from 'expo-haptics';
@@ -28,6 +30,15 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   const [refreshingFriends, setRefreshingFriends] = useState(false);
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const [myUsername, setMyUsername] = useState<string | null>(null);
+  const [myName, setMyName] = useState('');
+  const [myAvatar, setMyAvatar] = useState<string | null>(null);
+  // La carte de partage façon BeReal (QR code, copier, WhatsApp, Messages).
+  const [shareOpen, setShareOpen] = useState(false);
+  // Demandes envoyées depuis les recommandations : le bouton passe à « Envoyé ».
+  const [sentIds, setSentIds] = useState<Set<string>>(new Set());
+  // Découverte : nouveaux inscrits, et le sport choisi dans les pastilles (recherche par mots du sport).
+  const [newMembers, setNewMembers] = useState<any[]>([]);
+  const [activeSport, setActiveSport] = useState<string | null>(null);
   // Mes contacts (module natif livré avec la 1.1.0 : l'entrée reste cachée sur les builds plus anciens).
   const [showContacts, setShowContacts] = useState(false);
   // Cercle proche : l'étoile à droite de chaque ami. Les proches passent en tête de liste.
@@ -41,7 +52,10 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   // Objectif en cours (jamais privé) pour personnaliser l'invitation.
   const [myTopObjective, setMyTopObjective] = useState<{ emoji: string; title: string } | null>(null);
 
-  const inviteFriends = async () => {
+  const inviteFriends = () => { Haptics.selectionAsync().catch(() => {}); setShareOpen(true); };
+
+  // Ancien partage en texte (gardé pour l'ancien affichage, GLASS_FRIENDS = false).
+  const inviteFriendsText = async () => {
     const hook = myTopObjective
       ? `Je me suis lancé un objectif : ${myTopObjective.title}.`
       : `Je me lance un nouveau défi.`;
@@ -75,8 +89,12 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       const user = await currentUser();
       if (user) {
         setCurrentUserId(user.id);
-        supabase.from('users').select('username').eq('id', user.id).single()
-          .then(({ data }) => { if (data) setMyUsername(data.username); });
+        supabase.from('users').select('username, full_name, avatar_url').eq('id', user.id).single()
+          .then(async ({ data }) => {
+            if (!data) return;
+            setMyUsername(data.username); setMyName(data.full_name || '');
+            if (data.avatar_url) setMyAvatar(await signOne(data.avatar_url, { width: 600 }).catch(() => null));
+          });
         // Objectif le plus récent non privé → personnalise le message d'invitation.
         supabase.from('objectives').select('emoji, title, visibility').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5)
           .then(({ data }) => {
@@ -120,61 +138,121 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       setFriends(accepted); setPending(pendingReqs);
       onPendingCount?.(pendingReqs.length);
       loadSuggestions(uid, accepted.map(f => f.id));
+      loadNewMembers();
     }
     setLoading(false);
   };
 
+  // Amis recommandés, du plus sûr au plus large : tes contacts déjà sur Reiz (seulement si l'autorisation est déjà
+  // donnée, jamais de demande ici), puis les amis de tes amis (fonction suggest_friends), puis le même objectif.
+  // Chaque personne n'apparaît qu'une fois, avec sa meilleure raison. Le ✕ la cache (mémorisé sur le téléphone).
+  const hiddenKey = (uid: string) => `reiz.suggest.hidden.${uid}`;
   const loadSuggestions = async (uid: string, friendIds: string[]) => {
-    const { data: myObjs } = await supabase.from('objectives').select('title').eq('user_id', uid);
-    if (!myObjs || myObjs.length === 0) return;
-    const myKeywords = myObjs.flatMap((o: any) => o.title.toLowerCase().split(/\s+/)).filter((w: string) => w.length > 3);
-    // Uniquement les objectifs publics : on ne révèle jamais les objectifs privés ou réservés aux amis.
-    const { data } = await supabase.from('objectives').select('user_id, title, users!inner(id, full_name, username, avatar_url)').neq('user_id', uid).eq('visibility', 'public').limit(40);
-    if (!data) return;
-    const excluded = new Set([uid, ...friendIds, ...blockedIds]);
-    const seen = new Set<string>();
-    const result: any[] = [];
-    for (const o of data as any[]) {
-      if (excluded.has(o.user_id) || seen.has(o.user_id)) continue;
-      seen.add(o.user_id);
-      const objWords = o.title.toLowerCase().split(/\s+/);
-      const match = myKeywords.some((k: string) => objWords.some((w: string) => w.includes(k) || k.includes(w)));
-      result.push({ ...o.users, objectiveTitle: o.title, match });
+    let hidden: string[] = [];
+    try { hidden = JSON.parse((await AsyncStorage.getItem(hiddenKey(uid))) || '[]'); } catch {}
+    const excluded = new Set([uid, ...friendIds, ...blockedIds, ...hidden]);
+    const out = new Map<string, any>();
+    const add = (u: any, reason: string, kind: 'contact' | 'mutual' | 'objective') => {
+      if (!u?.id || excluded.has(u.id) || out.has(u.id)) return;
+      out.set(u.id, { id: u.id, full_name: u.full_name, username: u.username, avatar_url: u.avatar_url ?? null, reason, kind });
+    };
+
+    if (contactsAvailable() && (await contactsGranted())) {
+      const res = await loadDeviceContacts().catch(() => null);
+      if (res?.status === 'ok') {
+        const matched = await matchContacts(res.contacts).catch(() => null);
+        (matched || []).forEach(m => add(m, 'Dans tes contacts', 'contact'));
+      }
     }
-    result.sort((a, b) => Number(b.match) - Number(a.match));
-    const top = result.slice(0, 6);
-    const signed = await signAvatars(top.map(u => u.avatar_url));
-    top.forEach(u => { if (u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });
+
+    const { data: mutual } = await supabase.rpc('suggest_friends', { p_limit: 12 });
+    (mutual || []).forEach((u: any) => add(u, `${u.mutual} ami${u.mutual > 1 ? 's' : ''} en commun`, 'mutual'));
+
+    const { data: myObjs } = await supabase.from('objectives').select('title').eq('user_id', uid);
+    if (myObjs && myObjs.length > 0) {
+      const myKeywords = myObjs.flatMap((o: any) => o.title.toLowerCase().split(/\s+/)).filter((w: string) => w.length > 3);
+      // Uniquement les objectifs publics : on ne révèle jamais les objectifs privés ou réservés aux amis.
+      const { data } = await supabase.from('objectives').select('user_id, title, users!inner(id, full_name, username, avatar_url)').neq('user_id', uid).eq('visibility', 'public').limit(40);
+      const rows = ((data as any[]) || []).map(o => {
+        const objWords = o.title.toLowerCase().split(/\s+/);
+        return { o, match: myKeywords.some((k: string) => objWords.some((w: string) => w.includes(k) || k.includes(w))) };
+      }).sort((a, b) => Number(b.match) - Number(a.match));
+      rows.forEach(({ o }) => add(o.users, `Objectif : ${o.title}`, 'objective'));
+    }
+
+    // Les avatars des contacts sont déjà signés par matchContacts ; les autres sont encore des chemins.
+    const top = [...out.values()].slice(0, 10);
+    const toSign = top.filter(u => u.kind !== 'contact').map(u => u.avatar_url);
+    const signed = await signAvatars(toSign);
+    top.forEach(u => { if (u.kind !== 'contact' && u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });
     setSuggestions(top);
+  };
+
+  const hideSuggestion = async (id: string) => {
+    Haptics.selectionAsync().catch(() => {});
+    setSuggestions(list => list.filter(u => u.id !== id));
+    if (!currentUserId) return;
+    try {
+      const prev: string[] = JSON.parse((await AsyncStorage.getItem(hiddenKey(currentUserId))) || '[]');
+      await AsyncStorage.setItem(hiddenKey(currentUserId), JSON.stringify([...new Set([...prev, id])].slice(-200)));
+    } catch {}
+  };
+
+  const addSuggested = async (id: string) => {
+    if (!currentUserId || sentIds.has(id)) return;
+    const { error } = await supabase.from('friendships').insert({ requester_id: currentUserId, receiver_id: id, status: 'pending' });
+    if (error && error.code !== '23505') { Alert.alert('Erreur', frError(error)); return; }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setSentIds(prev => new Set(prev).add(id));
+  };
+
+  // Recherche de nouvelles personnes : nom, @pseudo, tag de profil ou objectif public (fonction discover_people,
+  // qui écarte tes amis, les demandes en cours, les blocages et les comptes qui ne veulent pas être proposés).
+  // Tes amis qui correspondent sont listés à part, pour ouvrir leur profil.
+  const runDiscover = async (terms: string[]) => {
+    setSearching(true);
+    const { data } = await supabase.rpc('discover_people', { p_terms: terms, p_limit: 20 });
+    const results = ((data as any[]) || []).filter(u => !blockedIds.has(u.id)).map(u => ({
+      ...u,
+      reason: u.reason || (u.mutual > 0 ? `${u.mutual} ami${u.mutual > 1 ? 's' : ''} en commun` : `@${u.username}`),
+      kind: u.reason?.startsWith('Tag') ? 'tag' : u.reason?.startsWith('Objectif') ? 'objective' : u.mutual > 0 ? 'mutual' : 'name',
+    }));
+    const signed = await signAvatars(results.map(u => u.avatar_url));
+    results.forEach(u => { if (u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });
+    setSearchResults(results);
+    setSearching(false);
   };
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    // "@pseudo" fonctionne comme un code d'invitation ; on nettoie aussi les
-    // caractères qui casseraient le filtre "or" de Supabase (virgules, parenthèses).
+    setActiveSport(null);
     const q = query.trim().replace(/^@/, '').replace(/[,()%]/g, '');
     if (q.length < 2) { setSearchResults([]); return; }
-    setSearching(true);
-    let req = supabase.from('users').select('id, full_name, username, avatar_url')
-      .or(`full_name.ilike.%${q}%,username.ilike.%${q}%`)
-      .limit(8);
-    if (currentUserId) req = req.neq('id', currentUserId);
-    const { data, error } = await req;
-    if (!error && data) {
-      const results = data.filter((u: any) => !blockedIds.has(u.id));
-      const signed = await signAvatars(results.map((u: any) => u.avatar_url));
-      results.forEach((u: any) => { if (u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });
-      setSearchResults(results);
-    }
-    setSearching(false);
+    runDiscover([q]);
+  };
+
+  const searchSport = (id: string, label: string, terms: string[]) => {
+    Haptics.selectionAsync().catch(() => {});
+    if (activeSport === id) { setActiveSport(null); setSearchQuery(''); setSearchResults([]); return; }
+    setActiveSport(id);
+    setSearchQuery(label);
+    runDiscover(terms);
+  };
+
+  const loadNewMembers = async () => {
+    const { data } = await supabase.rpc('new_members', { p_limit: 10 });
+    const list = ((data as any[]) || []).filter(u => !blockedIds.has(u.id));
+    const signed = await signAvatars(list.map(u => u.avatar_url));
+    list.forEach(u => { if (u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });
+    setNewMembers(list);
   };
 
   const sendFriendRequest = async (receiverId: string) => {
     if (!currentUserId) return;
     const { error } = await supabase.from('friendships').insert({ requester_id: currentUserId, receiver_id: receiverId, status: 'pending' });
     if (error) { if (error.code === '23505') Alert.alert('Déjà envoyé', 'Une demande est déjà en cours.'); else Alert.alert('Erreur', frError(error)); return; }
-    Alert.alert('Demande envoyée', 'En attente de confirmation.');
-    setSearchResults([]); setSearchQuery('');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setSentIds(prev => new Set(prev).add(receiverId));
   };
 
   const acceptRequest = async (friendshipId: string) => {
@@ -220,10 +298,20 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
             setRefreshingFriends(false);
           }}
           onSearch={handleSearch}
-          onClearSearch={() => { setSearchQuery(''); setSearchResults([]); }}
+          onClearSearch={() => { setSearchQuery(''); setSearchResults([]); setActiveSport(null); }}
+          matchingFriends={searchQuery.trim().length >= 2 && !activeSport ? friends.filter(f => `${f.full_name} ${f.username}`.toLowerCase().includes(searchQuery.trim().replace(/^@/, '').toLowerCase())).slice(0, 5) : []}
+          newMembers={newMembers}
+          activeSport={activeSport}
+          onSport={searchSport}
           onViewProfile={onViewProfile}
           onToggleClose={toggleClose}
           onInvite={inviteFriends}
+          inviteLink={APP_STORE_URL.replace('https://', '')}
+          myAvatar={myAvatar}
+          myName={myName}
+          onHideSuggestion={hideSuggestion}
+          onAddSuggested={addSuggested}
+          sentIds={sentIds}
           onOpenContacts={contactsAvailable() ? () => setShowContacts(true) : undefined}
           onAccept={acceptRequest}
           onDecline={declineRequest}
@@ -233,6 +321,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
           bottomPad={navClearance(insets.bottom)}
         />
         <ContactsScreen visible={showContacts} onClose={() => setShowContacts(false)} />
+        <ShareProfileSheet visible={shareOpen} onClose={() => setShareOpen(false)} name={myName} username={myUsername} avatar={myAvatar} />
       </>
     );
   }
@@ -257,7 +346,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     >
 
       {/* Invitation du cercle */}
-      <TouchableOpacity style={s.myUpdate} onPress={inviteFriends} activeOpacity={0.85}>
+      <TouchableOpacity style={s.myUpdate} onPress={inviteFriendsText} activeOpacity={0.85}>
         <View style={s.myUpdateInfo}>
           <Text style={s.myUpdateTitle}>Invite ton cercle</Text>
           <Text style={s.myUpdateSub}>Reiz marche mieux quand tes proches te regardent</Text>

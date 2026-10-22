@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, PanResponder } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, PanResponder, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { supabase, currentUser } from '../lib/supabase';
 import { frError, inUnit } from '../lib/helpers';
 import { uploadImage, uploadVideo, compressVideo, signAvatars } from '../lib/storage';
+import { GlassIconButton } from '../components/ProfileSections';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Objective } from '../lib/types';
 import { QUICK_UNITS, GUTTER } from '../constants';
@@ -208,18 +210,20 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
   useEffect(() => { cleanTrimmed(); }, []);
 
   // Garde un média choisi (photo ou vidéo) après vérification de la durée et du poids.
-  // Vidéo trop longue : l'éditeur de rognage s'ouvre pour en garder 15 secondes (builds 1.0.1 et plus).
-  const acceptAsset = async (asset: ImagePicker.ImagePickerAsset) => {
+  // Vidéo de la galerie : l'éditeur s'ouvre toujours (couper, recadrer, couper le son...), builds 1.0.1 et plus.
+  // Trop longue, il faut couper pour continuer ; assez courte, « Annuler » garde la vidéo telle quelle.
+  const acceptAsset = async (asset: ImagePicker.ImagePickerAsset, openEditor = false) => {
     let uri = asset.uri;
     if (asset.type === 'video') {
-      if (asset.duration && asset.duration > (VIDEO_MAX_SEC + 0.5) * 1000) {
-        if (!trimAvailable()) {
-          Alert.alert('Vidéo trop longue', `${VIDEO_MAX_SEC} secondes maximum. Coupe-la puis réessaie.`);
-          return;
-        }
+      const tooLong = !!asset.duration && asset.duration > (VIDEO_MAX_SEC + 0.5) * 1000;
+      if (tooLong && !trimAvailable()) {
+        Alert.alert('Vidéo trop longue', `${VIDEO_MAX_SEC} secondes maximum. Coupe-la puis réessaie.`);
+        return;
+      }
+      if (trimAvailable() && (tooLong || openEditor)) {
         const cut = await trimVideo(uri, VIDEO_MAX_SEC);
-        if (!cut) return;
-        uri = cut;
+        if (!cut && tooLong) return;
+        if (cut) uri = cut;
       } else if (asset.fileSize && asset.fileSize > VIDEO_MAX_MB * 1024 * 1024) {
         Alert.alert('Vidéo trop lourde', 'Essaie une vidéo plus courte ou filme directement depuis Reiz.');
         return;
@@ -296,10 +300,10 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
             mediaTypes: ['videos'],
             videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
           });
-          if (!result.canceled) acceptAsset(result.assets[0]);
+          if (!result.canceled) acceptAsset(result.assets[0], true);
         }
       }] : []),
-      ...(photoUri && mediaType === 'video' && trimAvailable() ? [{ text: 'Couper la vidéo', onPress: recutVideo }] : []),
+      ...(photoUri && mediaType === 'video' && trimAvailable() ? [{ text: 'Modifier la vidéo', onPress: recutVideo }] : []),
       ...(photoUri ? [{ text: 'Retirer', style: 'destructive' as const, onPress: () => { setPhotoUri(null); setMediaType('image'); } }] : []),
       { text: 'Annuler', style: 'cancel' }
     ]);
@@ -411,12 +415,9 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
     // (automaticallyAdjustKeyboardInsets) : le champ touché reste visible, le
     // bouton reste sous le clavier. Android garde l'ancien comportement.
     <KeyboardAvoidingView style={s.container} behavior="height" enabled={Platform.OS === 'android'}>
-      <View style={[s.header, { paddingTop: insets.top + 6 }]}>
-        <TouchableOpacity style={s.backBtn} onPress={onBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="chevron-back" size={20} color="#888" />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Poste ta progression</Text>
-        <View style={{ width: 34 }} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: GUTTER, paddingTop: insets.top + 8, paddingBottom: 12 }}>
+        <GlassIconButton icon="chevron-back" label="Retour" onPress={onBack} />
+        <Text style={{ color: '#fff', fontSize: 22, fontFamily: F.black, letterSpacing: -0.5 }}>Poste ta progression</Text>
       </View>
 
       <ScrollView
@@ -436,8 +437,19 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
                 <View style={s.postPhotoChangeBadge}>
                   <Text style={s.postPhotoChangeText}>Changer</Text>
                 </View>
+                {/* Vidéo : bouton « Modifier » bien visible, qui rouvre l'éditeur (couper, recadrer, son, vitesse). */}
+                {mediaType === 'video' && trimAvailable() && (
+                  <TouchableOpacity onPress={recutVideo} activeOpacity={0.85} accessibilityLabel="Modifier la vidéo"
+                    style={[s.postPhotoChangeBadge, { right: undefined, left: 14, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', borderColor: '#fff' }]}>
+                    <Ionicons name="cut-outline" size={15} color="#000" />
+                    <Text style={[s.postPhotoChangeText, { color: '#000' }]}>Modifier</Text>
+                  </TouchableOpacity>
+                )}
               </>
             : <View style={s.postPhotoEmpty}>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="camera-outline" size={26} color="#fff" />
+                </View>
                 <Text style={s.postPhotoEmptyText}>Ajoute une photo ou une vidéo</Text>
                 <Text style={s.postPhotoEmptyHint}>Vidéo : {VIDEO_MAX_SEC} secondes max</Text>
               </View>
@@ -456,7 +468,6 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
               : <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.postObjScroll} contentContainerStyle={{ gap: 10, paddingHorizontal: GUTTER }}>
                   {objectives.map((o, i) => (
                     <TouchableOpacity key={o.id} style={[s.postObjCard, selectedObj === i && s.postObjCardActive]} onPress={() => setSelectedObj(i)}>
-                      <Text style={s.postObjEmoji}>{o.emoji}</Text>
                       <Text style={[s.postObjTitle, selectedObj === i && s.postObjTitleActive]} numberOfLines={2}>{o.title}</Text>
                     </TouchableOpacity>
                   ))}
@@ -465,7 +476,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
 
           {/* Avec qui ? (séance en duo) */}
           {dropped.length > 0 && (
-            <View style={{ marginTop: 20, backgroundColor: '#161616', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: '#2a2a2a' }}>
+            <View style={{ marginTop: 20, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
               <Text style={{ color: '#ddd', fontSize: 13, lineHeight: 18 }}>
                 {obj?.visibility === 'private' ? '🔒 Objectif privé' : '★ Objectif réservé à ton cercle proche'} : {dropped.map(f => f.full_name).join(' et ')} ne {dropped.length > 1 ? 'seront' : 'sera'} pas identifié{dropped.length > 1 ? 's' : ''}. Choisis un objectif visible par ton cercle pour poster en duo.
               </Text>
@@ -553,7 +564,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
               </TouchableOpacity>
             )}
             {isPercent && converting && (
-              <View style={{ backgroundColor: '#111', borderRadius: 20, padding: 16, marginTop: 10, gap: 12 }}>
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 24, padding: 16, marginTop: 10, gap: 12 }}>
                 <Text style={{ color: '#fff', fontSize: 14, fontFamily: F.semibold }}>Quel chiffre veux-tu atteindre ?</Text>
                 <View style={s.targetRow}>
                   <TextInput
@@ -599,7 +610,9 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
         </View>
       </ScrollView>
 
-      <View style={[s.ctaContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+      <View style={[s.ctaContainer, { backgroundColor: 'transparent', paddingTop: 28, paddingBottom: Math.max(insets.bottom, 20) }]}>
+        {/* Fondu sous le bouton : le contenu qui défile ne passe pas net derrière. */}
+        <LinearGradient pointerEvents="none" colors={['rgba(10,10,10,0)', 'rgba(10,10,10,0.85)']} locations={[0, 0.45]} style={StyleSheet.absoluteFill} />
         <TouchableOpacity
           style={[s.cta, (!obj || publishing || uploadingPhoto) && s.btnDisabled]}
           onPress={!obj || publishing || uploadingPhoto ? undefined : handlePublish}>

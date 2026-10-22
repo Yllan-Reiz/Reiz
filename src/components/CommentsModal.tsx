@@ -7,9 +7,25 @@ import { supabase } from '../lib/supabase';
 import { timeAgo, frError } from '../lib/helpers';
 import { signAvatars } from '../lib/storage';
 import { Comment } from '../lib/types';
+import { gifsAvailable, gifContent, gifIdOf, gifUrl, Gif } from '../lib/giphy';
+import { GifPicker } from './GifPicker';
 import { s, F } from '../styles';
 
 type Likes = Record<string, { count: number; mine: boolean }>;
+
+/** Un GIF de commentaire : il garde ses proportions (lues au chargement), 180 de large au plus. */
+function CommentGif({ id }: { id: string }) {
+  const [ratio, setRatio] = useState(1);
+  return (
+    <Image
+      source={{ uri: gifUrl(id) }}
+      onLoad={e => { const { width, height } = e.nativeEvent.source; if (width && height) setRatio(width / height); }}
+      style={{ width: 180, height: Math.round(180 / ratio), borderRadius: 12, marginTop: 4, backgroundColor: '#1a1a1a' }}
+      resizeMode="cover"
+      accessibilityLabel="GIF"
+    />
+  );
+}
 
 function CommentAvatar({ name, url, small }: { name?: string; url?: string | null; small?: boolean }) {
   const size = small ? 26 : 34;
@@ -38,6 +54,7 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
   const [sending, setSending] = useState(false);
+  const [gifOpen, setGifOpen] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
   const [keyboardPad, setKeyboardPad] = useState(0);
   const rootRef = useRef<View>(null);
@@ -120,20 +137,24 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
     if (!visible) { setReplyTo(null); setNewComment(''); }
   }, [visible, updateId]);
 
-  const handleSend = async () => {
-    if (!newComment.trim() || !currentUserId) return;
+  // Un GIF part tout de suite, comme dans une messagerie (le texte en cours d'écriture reste dans le champ).
+  const sendGif = (gif: Gif) => { setGifOpen(false); handleSend(gifContent(gif.id)); };
+
+  const handleSend = async (gif?: string) => {
+    const content = gif ?? newComment.trim();
+    if (!content || !currentUserId) return;
     setSending(true);
     const { error } = await supabase.from('comments').insert({
       update_id: updateId,
       user_id: currentUserId,
-      content: newComment.trim(),
+      content,
       parent_id: replyTo?.id ?? null,
     });
     setSending(false);
     if (!error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       const wasReply = !!replyTo;
-      setNewComment('');
+      if (!gif) setNewComment('');
       setReplyTo(null);
       await fetchComments(true);
       // Un nouveau commentaire racine arrive en bas : on y descend.
@@ -221,7 +242,7 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
         <View style={{ flex: 1 }}>
           <View style={s.commentContent}>
             <Text style={s.commentName} onPress={onOpenProfile ? () => goProfile(c.user_id) : undefined} suppressHighlighting>{c.users?.full_name || 'Utilisateur'}</Text>
-            <Text style={s.commentText}>{c.content}</Text>
+            {gifIdOf(c.content) ? <CommentGif id={gifIdOf(c.content)!} /> : <Text style={s.commentText}>{c.content}</Text>}
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 5, paddingLeft: 4 }}>
             <Text style={[s.commentTime, { marginTop: 0 }]}>{timeAgo(c.created_at)}</Text>
@@ -282,6 +303,16 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
           </View>
         )}
         <View style={[s.commentInputRow, { paddingBottom: keyboardPad > 0 ? 12 : Math.max(12, insets.bottom) }]}>
+          {gifsAvailable() && (
+            <TouchableOpacity
+              onPress={() => { Keyboard.dismiss(); setGifOpen(true); }}
+              disabled={sending}
+              accessibilityLabel="Ajouter un GIF"
+              style={{ height: 36, paddingHorizontal: 10, borderRadius: 18, borderWidth: 1.5, borderColor: '#2a2a2a', backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Text style={{ color: '#fff', fontSize: 12, fontFamily: F.black, letterSpacing: 0.5 }}>GIF</Text>
+            </TouchableOpacity>
+          )}
           <TextInput
             ref={inputRef}
             style={s.commentInput}
@@ -295,7 +326,7 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
           />
           <TouchableOpacity
             style={[s.sendBtn, (!newComment.trim() || sending) && s.sendBtnDisabled]}
-            onPress={sending || !newComment.trim() ? undefined : handleSend}
+            onPress={sending || !newComment.trim() ? undefined : () => handleSend()}
             accessibilityLabel="Envoyer"
           >
             {sending
@@ -304,6 +335,7 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
           </TouchableOpacity>
         </View>
       </View>
+      <GifPicker visible={gifOpen} onClose={() => setGifOpen(false)} onPick={sendGif} />
     </Modal>
   );
 }

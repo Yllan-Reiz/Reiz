@@ -1,8 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Image, AppState } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Image, AppState, Modal, ScrollView, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassSurface } from './GlassSurface';
-import { Duel, loadDuels, leaderLabel } from '../lib/duel';
+import { Duel, loadDuels, leaderLabel, proposeDuel } from '../lib/duel';
+import { loadCircleRhythm, FriendRhythm } from '../lib/rhythm';
 import { GUTTER } from '../constants';
 import { F } from '../styles';
 
@@ -153,9 +156,9 @@ export function DuelBanner({ onOpenProfile, reloadKey }: { onOpenProfile: (id: s
         const first = d.otherName.split(' ')[0];
         const invite = d.status === 'pending';
         return (
-          <TouchableOpacity key={d.id} onPress={() => onOpenProfile(d.otherId)} activeOpacity={0.85} style={{ marginBottom: 14 }} accessibilityLabel={invite ? `${first} te défie` : `Duel contre ${first}`}>
+          <TouchableOpacity key={d.id} onPress={() => onOpenProfile(d.otherId)} activeOpacity={0.85} style={{ marginBottom: 10 }} accessibilityLabel={invite ? `${first} te défie` : `Duel contre ${first}`}>
             <GlassSurface radius={22}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingLeft: 14, paddingRight: 12 }}>
                 {d.otherAvatar
                   ? <Image source={{ uri: d.otherAvatar }} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#222' }} />
                   : <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#222', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontFamily: F.bold }}>{first.charAt(0).toUpperCase()}</Text></View>}
@@ -173,5 +176,100 @@ export function DuelBanner({ onOpenProfile, reloadKey }: { onOpenProfile: (id: s
         );
       })}
     </View>
+  );
+}
+
+/**
+ * « Défier un ami » : choisir un ami dans la liste et lui lancer un duel d'une semaine, sans passer par son profil.
+ * Les amis déjà en duel avec toi (en cours ou en attente) sont grisés.
+ */
+export function ChallengeFriendButton({ onSent }: { onSent?: () => void }) {
+  const insets = useSafeAreaInsets();
+  const [open, setOpen] = useState(false);
+  const [friends, setFriends] = useState<FriendRhythm[] | null>(null);
+  const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
+  const [taken, setTaken] = useState<Set<string>>(new Set());
+
+  const show = async () => {
+    Haptics.selectionAsync().catch(() => {});
+    setOpen(true);
+    const [rh, duels] = await Promise.all([loadCircleRhythm().catch(() => null), loadDuels().catch(() => null)]);
+    setFriends(rh?.friends || []);
+    setTaken(new Set((duels || []).filter(d => d.status !== 'finished').map(d => d.otherId)));
+  };
+
+  const challenge = (f: FriendRhythm) => {
+    const first = f.full_name.split(' ')[0];
+    Alert.alert(`Défier ${first} ?`, `${first} recevra une notification. Le duel dure 7 jours dès qu'il accepte : celui qui s'entraîne sur le plus de jours gagne.`, [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Défier',
+        onPress: async () => {
+          setBusyIds(prev => new Set(prev).add(f.id));
+          const err = await proposeDuel(f.id);
+          setBusyIds(prev => { const n = new Set(prev); n.delete(f.id); return n; });
+          if (err) { Alert.alert('Défi', err); return; }
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+          setTaken(prev => new Set(prev).add(f.id));
+          onSent?.();
+        },
+      },
+    ]);
+  };
+
+  return (
+    <>
+      <TouchableOpacity onPress={show} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Défier un ami" style={{ marginBottom: 10 }}>
+        <GlassSurface radius={22}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingLeft: 14, paddingRight: 12 }}>
+            <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 17 }}>⚔️</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>Défier un ami</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }}>Un duel d'une semaine, le plus régulier gagne</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
+          </View>
+        </GlassSurface>
+      </TouchableOpacity>
+
+      <Modal visible={open} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: '#0a0a0a' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 }}>
+            <Text style={{ color: '#fff', fontSize: 24, fontFamily: F.black, letterSpacing: -0.6 }}>Défier un ami</Text>
+            <TouchableOpacity onPress={() => setOpen(false)} hitSlop={10}><Text style={{ color: '#aaa', fontSize: 14, fontFamily: F.semibold }}>Fermer</Text></TouchableOpacity>
+          </View>
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 20, fontFamily: F.regular, paddingHorizontal: 20, marginBottom: 8 }}>
+            7 jours. Chaque jour où tu postes une séance compte. Celui qui s'entraîne sur le plus de jours gagne.
+          </Text>
+          {friends === null ? <ActivityIndicator color="#fff" style={{ marginTop: 30 }} /> : (
+            <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 30 }}>
+              {friends.length === 0 && <Text style={{ color: '#888', fontSize: 14, textAlign: 'center', marginTop: 30 }}>Ajoute des amis pour les défier.</Text>}
+              {friends.map(f => {
+                const busy = busyIds.has(f.id);
+                const already = taken.has(f.id);
+                return (
+                  <View key={f.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 }}>
+                    {f.avatar_url
+                      ? <Image source={{ uri: f.avatar_url }} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#222' }} />
+                      : <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#222', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontFamily: F.bold }}>{f.full_name.charAt(0).toUpperCase()}</Text></View>}
+                    <Text style={{ flex: 1, color: '#fff', fontSize: 16, fontFamily: F.bold }} numberOfLines={1}>{f.full_name}</Text>
+                    <TouchableOpacity
+                      onPress={() => challenge(f)}
+                      disabled={busy || already}
+                      activeOpacity={0.85}
+                      style={{ height: 36, borderRadius: 18, paddingHorizontal: 16, backgroundColor: already ? 'transparent' : '#fff', borderWidth: already ? 1 : 0, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', minWidth: 86 }}
+                    >
+                      {busy ? <ActivityIndicator color="#000" size="small" /> : <Text style={{ color: already ? 'rgba(255,255,255,0.6)' : '#000', fontSize: 13, fontFamily: F.extrabold }}>{already ? 'En duel' : 'Défier'}</Text>}
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
+    </>
   );
 }

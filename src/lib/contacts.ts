@@ -37,6 +37,13 @@ export type LoadResult = { status: 'ok'; contacts: DeviceContact[] } | { status:
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** true si l'autorisation des contacts est DÉJÀ donnée (ne déclenche jamais la demande du système). */
+export async function contactsGranted(): Promise<boolean> {
+  const C = native();
+  if (!C) return false;
+  try { return (await C.getPermissionsAsync()).status === 'granted'; } catch { return false; }
+}
+
 /** Demande l'autorisation puis lit le carnet d'adresses (noms, e-mails, numéros), classé par nom. */
 export async function loadDeviceContacts(): Promise<LoadResult> {
   const C = native();

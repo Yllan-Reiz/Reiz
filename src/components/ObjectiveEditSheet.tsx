@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
+import { GlassSurface, GlassCard } from './GlassSurface';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
 import { Objective } from '../lib/types';
-import { ALL_DAYS, hasSchedule } from '../constants';
+import { ALL_DAYS, hasSchedule, GUTTER } from '../constants';
 import { TrainingDaysPicker } from './TrainingDays';
-import { s, F } from '../styles';
+import { F } from '../styles';
 
 // Modifier un objectif déjà créé : qui le voit, les jours où tu t'entraînes, ou le supprimer.
 // Même feuille depuis l'onglet des objectifs et depuis le profil.
@@ -72,43 +74,61 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
     setTimeout(() => onDelete(o), 350);
   };
 
+  // Même DA que les onglets : fond noir, sections en verre, choix actif en blanc.
   return (
     <Modal visible={!!objective} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={s.modalContainer}>
-        <View style={s.modalHeader}>
-          <TouchableOpacity onPress={onClose}><Text style={s.modalCancel}>Annuler</Text></TouchableOpacity>
-          <Text style={s.modalTitle}>Modifier</Text>
-          <TouchableOpacity onPress={saving ? undefined : save}>
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.modalSave}>Enregistrer</Text>}
+      <View style={{ flex: 1, backgroundColor: '#0a0a0a' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: GUTTER, paddingTop: 16, paddingBottom: 8 }}>
+          <TouchableOpacity onPress={onClose} accessibilityLabel="Annuler" hitSlop={8}>
+            <GlassSurface radius={20} variant="clear" style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="close" size={20} color="#fff" />
+            </GlassSurface>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={saving ? undefined : save} activeOpacity={0.85} style={{ height: 40, borderRadius: 20, paddingHorizontal: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', minWidth: 110 }}>
+            {saving ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>Enregistrer</Text>}
           </TouchableOpacity>
         </View>
-        <ScrollView style={s.modalBody} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: 60 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5 }}>MODIFIER L'OBJECTIF</Text>
           {!!objective && (
-            <Text style={{ color: '#fff', fontSize: 20, fontFamily: F.black, letterSpacing: -0.4, marginBottom: 6 }} numberOfLines={2}>{objective.emoji} {objective.title}</Text>
+            <Text style={{ color: '#fff', fontSize: 30, lineHeight: 34, fontFamily: F.black, letterSpacing: -0.9, marginTop: 6 }} numberOfLines={2}>{objective.title}</Text>
           )}
 
-          <View style={s.inputBlock}>
-            <Text style={s.inputLabel}>QUI VOIT ?</Text>
-            <View style={s.visToggle}>
-              {VISIBILITY.map(v => (
-                <TouchableOpacity key={v.key} style={[s.visOpt, visibility === v.key && s.visOptActive]} onPress={() => { Haptics.selectionAsync().catch(() => {}); setVisibility(v.key); }}>
-                  <Text style={[s.visOptText, visibility === v.key && s.visOptTextActive]}>{v.label}</Text>
-                </TouchableOpacity>
-              ))}
+          <GlassCard radius={28} style={{ marginTop: 22 }}>
+            <View style={{ padding: 18 }}>
+              <Text style={label}>QUI VOIT ?</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                {VISIBILITY.map(v => {
+                  const on = visibility === v.key;
+                  return (
+                    <TouchableOpacity key={v.key} onPress={() => { Haptics.selectionAsync().catch(() => {}); setVisibility(v.key); }} activeOpacity={0.85} accessibilityState={{ selected: on }}
+                      style={{ height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', backgroundColor: on ? '#fff' : 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: on ? '#fff' : 'rgba(255,255,255,0.14)' }}>
+                      <Text style={{ color: on ? '#000' : '#fff', fontSize: 14, fontFamily: F.bold }}>{v.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 18, fontFamily: F.regular, marginTop: 12 }}>{VIS_HINT[visibility]}</Text>
             </View>
-            <Text style={s.fieldHint}>{VIS_HINT[visibility]}</Text>
-          </View>
+          </GlassCard>
 
-          <View style={s.inputBlock}>
-            <Text style={s.inputLabel}>JOURS D'ENTRAÎNEMENT</Text>
-            <TrainingDaysPicker value={days} onChange={setDays} />
-          </View>
+          <GlassCard radius={28} style={{ marginTop: 14 }}>
+            <View style={{ padding: 18 }}>
+              <Text style={[label, { marginBottom: 12 }]}>JOURS D'ENTRAÎNEMENT</Text>
+              <TrainingDaysPicker value={days} onChange={setDays} />
+            </View>
+          </GlassCard>
 
-          <TouchableOpacity onPress={remove} activeOpacity={0.8} style={{ marginTop: 34, paddingVertical: 15, alignItems: 'center', borderRadius: 16, borderWidth: 1, borderColor: '#3a1a1a', backgroundColor: '#1a0f0f' }}>
-            <Text style={{ color: '#ff453a', fontSize: 15, fontFamily: F.bold }}>Supprimer l'objectif</Text>
+          <TouchableOpacity onPress={remove} activeOpacity={0.85} style={{ marginTop: 26 }} accessibilityRole="button">
+            <GlassSurface radius={20} tintColor="rgba(255,69,58,0.12)" style={{ height: 52, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, borderWidth: 1, borderColor: 'rgba(255,69,58,0.35)' }}>
+              <Ionicons name="trash-outline" size={18} color="#ff453a" />
+              <Text style={{ color: '#ff453a', fontSize: 15, fontFamily: F.bold }}>Supprimer l'objectif</Text>
+            </GlassSurface>
           </TouchableOpacity>
         </ScrollView>
       </View>
     </Modal>
   );
 }
+
+const label = { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5 } as const;

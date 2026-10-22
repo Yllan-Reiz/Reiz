@@ -241,10 +241,8 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
     onPinChanged?.();
   };
 
-  const openMenu = () => {
-    if (isMine) {
-      Alert.alert('Ton post', undefined, [
-        { text: 'Partager en story Instagram', onPress: () => setStoryData({
+  // Partager son post en story (aussi accessible par l'icône visible à côté du menu).
+  const shareStory = () => setStoryData({
             photoUri: u.photo_url || null,
             emoji: u.objectives?.emoji,
             title: u.objectives?.title || u.caption,
@@ -252,7 +250,12 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
             pct: pctValue,
             caption: u.caption,
             username: u.users?.username,
-          }) },
+          });
+
+  const openMenu = () => {
+    if (isMine) {
+      Alert.alert('Ton post', undefined, [
+        { text: 'Partager en story Instagram', onPress: shareStory },
         { text: pinned ? 'Retirer des épinglés' : 'Épingler sur mon profil', onPress: pinPost },
         { text: 'Supprimer le post', style: 'destructive', onPress: deletePost },
         { text: 'Annuler', style: 'cancel' },
@@ -306,9 +309,17 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
     );
   };
   const MenuBtn = () => (
-    <TouchableOpacity style={s.cardMenuBtn} onPress={openMenu} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-      <Ionicons name="ellipsis-horizontal" size={18} color="rgba(255,255,255,0.7)" />
-    </TouchableOpacity>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+      {/* Sur tes posts : le partage en story est visible, plus caché dans le menu. */}
+      {isMine && (
+        <TouchableOpacity style={s.cardMenuBtn} onPress={shareStory} hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }} accessibilityLabel="Partager en story Instagram">
+          <Ionicons name="paper-plane-outline" size={18} color="rgba(255,255,255,0.85)" />
+        </TouchableOpacity>
+      )}
+      <TouchableOpacity style={s.cardMenuBtn} onPress={openMenu} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }} accessibilityLabel="Plus d'options">
+        <Ionicons name="ellipsis-horizontal" size={18} color="rgba(255,255,255,0.7)" />
+      </TouchableOpacity>
+    </View>
   );
   // Mon emoji le plus récent : le bouton de réaction l'affiche à la place du smiley.
   const myLast = reactors.find(r => r.user_id === currentUserId)?.emoji;

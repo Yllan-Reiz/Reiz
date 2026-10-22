@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, Animated, Easing } from 'react-native';
+import { Text, Animated, Easing, TouchableOpacity, Alert } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { s } from '../styles';
 
@@ -34,8 +35,19 @@ export function FlameStreak({ streak }: { streak: number }) {
 
   const iconSize = streak >= 15 ? 18 : streak >= 8 ? 16 : streak >= 4 ? 15 : 13;
 
+  // Toucher la flamme explique la série : ce qu'elle compte et comment ne pas la perdre.
+  const explain = () => {
+    Haptics.selectionAsync().catch(() => {});
+    Alert.alert(
+      streak > 0 ? `🔥 ${streak} jour${streak > 1 ? 's' : ''} d'affilée` : 'Ta série',
+      streak > 0
+        ? `Tu as posté une séance ${streak} jour${streak > 1 ? 's' : ''} de suite. Poste aujourd'hui pour la garder : un jour sans post et elle repart à zéro.`
+        : "Poste une séance aujourd'hui pour lancer ta série. Chaque jour où tu postes la fait monter, ton cercle la voit sur ton profil.",
+    );
+  };
+
   return (
-    <View style={s.streakBadge}>
+    <TouchableOpacity style={s.streakBadge} onPress={explain} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={`Série de ${streak} jours, en savoir plus`} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
       <AnimatedIcon
         name="flame"
         size={iconSize}
@@ -43,6 +55,6 @@ export function FlameStreak({ streak }: { streak: number }) {
         style={{ transform: [{ scale }], opacity }}
       />
       <Text style={s.streakText}>{streak}j</Text>
-    </View>
+    </TouchableOpacity>
   );
 }

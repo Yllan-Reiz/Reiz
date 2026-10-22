@@ -11,7 +11,7 @@ import { signMany, signAvatars, signOne } from '../lib/storage';
 import { cacheGet, cacheSet } from '../lib/cache';
 import { setAppBadge } from '../lib/badge';
 import { selectObjectives } from '../lib/objectives';
-import { hasSchedule, daysLabel, trainsToday, GLASS_OBJECTIVES, GLASS_FRIENDS } from '../constants';
+import { hasSchedule, daysLabel, GLASS_OBJECTIVES, GLASS_FRIENDS } from '../constants';
 import { Update, Objective, FeedMeta } from '../lib/types';
 import { s, F } from '../styles';
 import { FlameStreak } from '../components/FlameStreak';
@@ -26,13 +26,9 @@ import { FriendProfileScreen } from './FriendProfileScreen';
 import { ActivityScreen } from './ActivityScreen';
 import { attachDuoNames, attachReactors } from '../lib/posts';
 import { validatedDuoIds } from '../lib/duo';
-import { PresenceCard } from '../components/PresenceCard';
-import { CloseCircleCard } from '../components/CloseCircleCard';
 import { ObjectiveEditSheet } from '../components/ObjectiveEditSheet';
 import { ObjectivesTab } from '../components/ObjectivesTab';
-import { GlassBackdrop } from '../components/ProfileSections';
 import { useCloseCircle } from '../lib/closeCircle';
-import { DuelBanner } from '../components/DuelCard';
 
 const PAGE_SIZE = 20;
 const FEED_WINDOW_HOURS = 24;
@@ -478,20 +474,6 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     </View>
   );
 
-  // « Poste ta progression » : seulement les jours où tu dois t'entraîner (planning des objectifs, tous les
-  // jours sans planning). Un objectif déjà atteint ne compte plus.
-  const showPostCTA = objectives.some(o => o.current_value < o.target_value && trainsToday(o.training_days));
-
-  const postCTA = (
-    <TouchableOpacity style={s.myUpdate} onPress={() => onPost()} activeOpacity={0.85}>
-      <View style={s.myUpdateInfo}>
-        <Text style={s.myUpdateTitle}>Poste ta progression</Text>
-        <Text style={s.myUpdateSub}>Ton cercle t'attend aujourd'hui</Text>
-      </View>
-      <View style={s.postedBadge}><Text style={s.postedBadgeText}>Publier →</Text></View>
-    </TouchableOpacity>
-  );
-
   if (viewingFriendId) return <FriendProfileScreen key={viewingFriendId} userId={viewingFriendId} onClose={() => setProfileStack(st => st.slice(0, -1))} onOpenProfile={openProfile} onDuo={(id) => onPost({ duoWith: id })} />;
   // L'activité s'ouvre PAR-DESSUS la page où tu es (le fil, les objectifs, les amis...) : le verre floute cette
   // page au lieu de la remplacer par un fond à part. Elle reste montée dessous, tu la retrouves intacte en fermant.
@@ -509,7 +491,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
 
   return (
     <View style={s.container}>
-      {((GLASS_OBJECTIVES && tab === 'objectives') || (GLASS_FRIENDS && tab === 'friends')) && <GlassBackdrop avatarUrl={myAvatar} />}
+      {/* Fond noir uni sur tous les onglets (demande de Yllan, 22/10/2026) : plus de photo floutée derrière, le verre
+          reste sur les cartes. Seule l'Activité garde le flou, celui de la page en dessous. */}
       <ObjectiveEditSheet
         objective={editing}
         onClose={() => setEditing(null)}
@@ -570,7 +553,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             // Android seulement : sur iOS, le détachement des vues hors écran fait
             // parfois apparaître des cartes vides quand elles ont des calques absolus.
             removeClippedSubviews={Platform.OS === 'android'}
-            ListHeaderComponent={needsActivation ? activationHeader : <View>{showPostCTA && postCTA}<CloseCircleCard onOpenProfile={openProfile} /><PresenceCard /><DuelBanner onOpenProfile={openProfile} reloadKey={refreshing} /></View>}
+            // Le fil commence directement par les posts : la salle, les duels et le cercle proche sont dans l'Activité (le cœur).
+            ListHeaderComponent={needsActivation ? activationHeader : null}
             ListEmptyComponent={
               loadingFeed ? (
                 <FeedSkeleton />

@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     .eq('id', comment.user_id)
     .single();
 
-  const preview = comment.content.length > 40
+  const preview = /^\[GIF\] https:\/\//.test(comment.content) ? 'GIF' : comment.content.length > 40
     ? comment.content.substring(0, 40) + '...'
     : comment.content;
 

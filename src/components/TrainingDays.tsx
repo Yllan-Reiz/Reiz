@@ -24,9 +24,9 @@ export function TrainingDaysPicker({ value, onChange }: { value: number[]; onCha
               onPress={() => toggle(d)}
               activeOpacity={0.8}
               accessibilityLabel={`${DAY_LONG[d - 1]}, ${on ? 'jour d\'entraînement' : 'jour de repos'}`}
-              style={{ width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? '#fff' : '#1a1a1a', borderWidth: 1.5, borderColor: on ? '#fff' : '#2a2a2a' }}
+              style={{ width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? '#fff' : 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: on ? '#fff' : 'rgba(255,255,255,0.16)' }}
             >
-              <Text style={{ color: on ? '#000' : '#777', fontSize: 15, fontFamily: F.extrabold }}>{DAY_LETTERS[d - 1]}</Text>
+              <Text style={{ color: on ? '#000' : 'rgba(255,255,255,0.75)', fontSize: 15, fontFamily: F.extrabold }}>{DAY_LETTERS[d - 1]}</Text>
             </TouchableOpacity>
           );
         })}
@@ -35,8 +35,8 @@ export function TrainingDaysPicker({ value, onChange }: { value: number[]; onCha
         {TRAINING_PRESETS.map(p => {
           const active = same(value, p.days);
           return (
-            <TouchableOpacity key={p.label} onPress={() => { Haptics.selectionAsync().catch(() => {}); onChange(p.days); }} style={[s.durationPill, active && s.durationPillActive]}>
-              <Text style={[s.durationPillText, active && s.durationPillTextActive]}>{p.label}</Text>
+            <TouchableOpacity key={p.label} onPress={() => { Haptics.selectionAsync().catch(() => {}); onChange(p.days); }} style={[s.durationPill, { backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.16)', borderWidth: 1 }, active && s.durationPillActive]}>
+              <Text style={[s.durationPillText, { color: 'rgba(255,255,255,0.85)' }, active && s.durationPillTextActive]}>{p.label}</Text>
             </TouchableOpacity>
           );
         })}

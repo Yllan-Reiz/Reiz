@@ -56,7 +56,7 @@ function PlaceChips({ places }: { places: Place[] }) {
   );
 }
 
-export function PresenceCard() {
+export function PresenceCard({ compact }: { compact?: boolean } = {}) {
   const [places, setPlaces] = useState<Place[]>([]);
   const [auto, setAuto] = useState(false);
   const [perm, setPerm] = useState<PermState | null>(null);
@@ -130,6 +130,41 @@ export function PresenceCard() {
       : detecting ? (perm && perm.bg !== 'granted' ? 'permission' : 'active')
         : places.length > 0 ? 'enable' : 'setup';
   const names = places.map(p => p.label).join(' ou ');
+
+  // Version courte (onglet Activité) : une ligne et un seul bouton, selon l'état.
+  if (compact) {
+    const c = {
+      setup: { t: 'Ta salle', sub: 'Ton cercle prévenu quand tu arrives', btn: 'Ajouter', go: () => setSheet('add') },
+      enable: { t: 'Détection coupée', sub: `${names} enregistrée`, btn: 'Activer', go: enable },
+      permission: { t: 'Autorisation manquante', sub: 'Choisis « Toujours » dans les réglages', btn: 'Réglages', go: openSettings },
+      active: { t: 'Détection activée', sub: names, btn: "J'y suis", go: manual },
+      manual: { t: 'Tu es à la salle ?', sub: 'Préviens ton cercle proche', btn: 'Prévenir', go: manual },
+    }[kind];
+    return (
+      <>
+        <TouchableOpacity activeOpacity={0.85} disabled={kind !== 'active'} onPress={() => setSheet('manage')} accessibilityLabel={kind === 'active' ? 'Gérer mes lieux' : undefined}>
+          <GlassSurface radius={22} style={{ marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingLeft: 14, paddingRight: 12 }}>
+              <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: kind === 'active' ? '#fff' : 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="location" size={18} color={kind === 'active' ? '#000' : '#fff'} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }} numberOfLines={1}>{c.t}</Text>
+                <Text style={{ color: circle === 0 ? '#ff9f43' : 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }} numberOfLines={1}>
+                  {circle === 0 ? 'Ton cercle proche est vide' : c.sub}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={c.go} activeOpacity={0.85} style={{ height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: '#000', fontSize: 13, fontFamily: F.extrabold }}>{c.btn}</Text>
+              </TouchableOpacity>
+            </View>
+          </GlassSurface>
+        </TouchableOpacity>
+        <PlaceSheet visible={sheet === 'add'} circle={circle} onClose={closeSheet} />
+        <ManageSheet visible={sheet === 'manage'} onClose={closeSheet} />
+      </>
+    );
+  }
 
   return (
     <>
