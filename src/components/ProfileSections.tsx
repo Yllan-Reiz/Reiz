@@ -9,6 +9,7 @@ import { GUTTER, dayKeysFor, currentWeekKeys, hasSchedule, DAY_LETTERS } from '.
 import { badgeImage } from '../lib/badgeImages';
 import { BADGE_RULES, MAX_LEVEL } from '../lib/badgeLevels';
 import { VideoPoster } from './VideoPoster';
+import { CachedImage } from './CachedImage';
 import { GlassSurface } from './GlassSurface';
 import { DuoStats } from '../lib/duo';
 import { s, F } from '../styles';
@@ -214,7 +215,7 @@ export function ProfileBackdrop({ avatarUrl, scrollY, height }: { avatarUrl: str
       {/* Photo nette en haut, qui s'efface au fil du défilement. */}
       <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, height, opacity: toSharp }}>
         {avatarUrl
-          ? <Image source={{ uri: avatarUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ? <CachedImage uri={avatarUrl} style={StyleSheet.absoluteFill} />
           : <LinearGradient colors={['#3a3a3a', '#141414']} style={StyleSheet.absoluteFill} />}
         <LinearGradient colors={['rgba(10,10,10,0.7)', 'rgba(10,10,10,0)']} locations={[0, 0.28]} style={StyleSheet.absoluteFill} />
         <LinearGradient colors={['rgba(10,10,10,0)', 'rgba(10,10,10,0.55)', '#0a0a0a']} locations={[0.38, 0.72, 1]} style={StyleSheet.absoluteFill} />

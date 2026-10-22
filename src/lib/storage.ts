@@ -8,12 +8,13 @@ import { supabase, SUPABASE_ANON_KEY, SUPABASE_URL } from './supabase';
 // fichier (ex: "a1b2.../1712345678.jpg"), jamais une URL, et on signe à la lecture.
 
 const BUCKET = 'updates';
-// Une URL signée est valable 24 h côté serveur et RÉUTILISÉE pendant 18 h côté téléphone. Pourquoi : une
+// Une URL signée est valable 7 jours côté serveur et RÉUTILISÉE pendant 6 jours côté téléphone (avant le 22/10/2026 :
+// 24 h et 18 h, donc chaque matin toutes les photos se retéléchargeaient et le serveur recalculait les versions réduites). Pourquoi : une
 // URL signée contient un jeton ; en re-signant à chaque ouverture, l'adresse de chaque photo changeait et
 // l'iPhone ne pouvait jamais réutiliser une photo déjà téléchargée (tout se retéléchargeait à chaque
 // lancement). Une adresse stable = la photo vient du cache de l'appareil, instantanément.
-const EXPIRES_IN = 24 * 60 * 60;
-const REUSE_MS = 18 * 60 * 60 * 1000;
+const EXPIRES_IN = 7 * 24 * 60 * 60;
+const REUSE_MS = 6 * 24 * 60 * 60 * 1000;
 
 /**
  * Les anciens enregistrements contiennent une URL publique complète.
