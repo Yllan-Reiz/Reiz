@@ -504,7 +504,7 @@ function activityScreen() {
   </div></div>`;
 }
 
-const U = { sled: 'assets/unsplash/post-sled.jpg', fentes: 'assets/unsplash/post-fentes.jpg', runF: 'assets/unsplash/post-run-femme.jpg', runH: 'assets/unsplash/post-run-homme.jpg', bgSunset: 'assets/unsplash/bg-run-sunset.jpg', bgBlue: 'assets/unsplash/bg-run-blue.jpg' };
+const U = { sled: 'assets/unsplash/post-sled.jpg', fentes: 'assets/unsplash/post-fentes.jpg', runG: 'assets/unsplash/post-run-groupe.jpg', runH: 'assets/unsplash/post-run-homme.jpg', bgSunset: 'assets/unsplash/bg-run-sunset.jpg', bgBlue: 'assets/unsplash/bg-run-blue.jpg' };
 const bgCover = (f, pos) => `<div style="position:absolute;inset:0;background:url(${f}) ${pos}/cover"></div>`;
 /* ---------- v3 (22/10/2026) : écrans de la 1.0.1 (fond noir, verre, accueil par discipline, Amis = découverte) ---------- */
 Object.assign(GL, { fwd: 0xf133, search: 0xf55f, share: 0xf572, barbell: 0xf173, play: 0xf4c6, cut: 0xf29c, pcircle: 0xf4aa, flag: 0xf311, tag: 0xf4eb, link: 0xf3b8, wa: 0xf425, bubble: 0xf211, flash: 0xf316 });
@@ -576,7 +576,7 @@ function activityV3() {
    ${card(`<div style="display:flex;align-items:center;gap:12px;padding:12px 14px">${ava('H', 38)}<div style="flex:1"><div style="font:700 15px/18px Inter">Duel contre Hugo</div><div style="font:400 12px/15px Inter;color:rgba(255,255,255,.6);margin-top:1px">Tu mènes 4 à 3, 4 jours restants</div></div><span style="font-size:18px">⚔️</span></div>`)}
    ${card(`<div style="display:flex;align-items:center;gap:12px;padding:12px 14px"><div style="width:38px;height:38px;border-radius:19px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:17px">⚔️</div><div style="flex:1"><div style="font:700 15px/18px Inter">Défier un ami</div><div style="font:400 12px/15px Inter;color:rgba(255,255,255,.6);margin-top:1px">Un duel d'une semaine, le plus régulier gagne</div></div><span class="ion" style="font-size:18px;color:rgba(255,255,255,.5)">${String.fromCodePoint(GL.chev)}</span></div>`)}
    <div style="font:700 11px/13px Inter;letter-spacing:1.5px;color:rgba(255,255,255,.55);margin:18px 0 2px">AUJOURD'HUI</div>
-   ${row('S', 'camera', '<b>Sarah</b> a posté', '2 min', '🏃 Courir 50 km', U.runF)}
+   ${row('K', 'camera', '<b>Karim</b> a posté', '2 min', '🏃 Courir 50 km', U.runG)}
    ${row('H', 'heart', '<b>Hugo, Inès</b> et 2 autres ont réagi 🔥', '1 h', 'À ton post 🛷 Préparer un HYROX', U.sled)}
   </div></div>`;
 }
@@ -618,7 +618,7 @@ function shareScreen() {
 
 const DARK = 'background:radial-gradient(70% 40% at 50% 62%,#14141a 0%,#050506 70%)';
 const sFeed1 = feed({ ini: 'N', name: 'Nathan', sub: '🛷 Préparer un HYROX, il y a 12 min', photo: U.sled, pos: '50% 45%', pct: 69, label: '11 / 16 séances', cap: 'Sled push, 4 x 25 m. Les jambes ont lâché au dernier.', cm: 'Voir les 7 commentaires', faces: [['S', '🔥'], ['I', '💪'], ['H', '👏'], ['M', '😮']], more: 3, wide: true });
-const sReact = feed({ ini: 'S', name: 'Sarah', sub: '🏃 Courir 50 km, il y a 8 min', photo: U.runF, pos: '50% 40%', pct: 78, label: '39 / 50 km', cap: '10 km ce matin. Plus que 11.', cm: 'Voir les 12 commentaires', quick: true, qon: '💪' });
+const sReact = feed({ ini: 'K', name: 'Karim', sub: '🏃 Courir 50 km, il y a 8 min', photo: U.runG, pos: '50% 50%', pct: 78, label: '39 / 50 km', cap: 'Semi ce matin avec le club. Plus que 11 km.', cm: 'Voir les 12 commentaires', quick: true, qon: '💪' });
 const sDuo = feed({ ini: 'H', name: 'Hugo', sub: '💪 Aller à la salle 4 fois, il y a 9 min', photo: G.p4, pos: '50% 60%', pct: 75, label: '3 / 4 séances', duo: { ini: ['T'], names: 'Théo' }, duoBtn: '🤝 Valide ton duo avec Hugo : encore 51 min', faces: [['T', '💪'], ['S', '🔥']], noAdd: true });
 
 /* 1. Sombre, photo : le fil */
