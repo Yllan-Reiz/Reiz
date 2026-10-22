@@ -295,10 +295,10 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
                 </View>
               </View>
             ) : (
-              <TouchableOpacity onPress={() => setEditingBio(true)} activeOpacity={0.8} style={{ alignItems: 'center' }}>
-                <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontFamily: F.bold, letterSpacing: 1.5, marginBottom: 6 }}>À PROPOS</Text>
+              <TouchableOpacity onPress={() => setEditingBio(true)} activeOpacity={0.8}>
+                <Text style={[s.sectionTitle, { marginTop: 0 }]}>À propos</Text>
                 {profile?.bio
-                  ? <Text style={{ fontSize: 15, color: '#fff', lineHeight: 22, fontFamily: F.regular, textAlign: 'center' }}>{profile.bio}</Text>
+                  ? <Text style={{ fontSize: 15, color: '#fff', lineHeight: 22, fontFamily: F.regular }}>{profile.bio}</Text>
                   : <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', fontFamily: F.regular }}>+ Ajoute une bio</Text>}
               </TouchableOpacity>
             )}
@@ -310,7 +310,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
           {/* === Badges, puis objectifs en cours, puis historique des posts === */}
           <BadgesSection badges={badges} own />
 
-          <View style={{ marginTop: 14 }}>
+          {/* Même écart (26) au-dessus de chaque section : Badges, En cours, Historique. */}
+          <View style={{ marginTop: 26 }}>
             {objectives.length === 0 ? (
               <View style={s.emptyState}>
                 <Text style={s.emptyStateTitle}>Pose ton premier objectif</Text>
@@ -328,7 +329,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
             )}
           </View>
 
-          <SectionHeader title="Historique" count={posts.length} style={{ paddingHorizontal: GUTTER, marginTop: 6 }} />
+          <SectionHeader title="Historique" count={posts.length} style={{ paddingHorizontal: GUTTER, marginTop: 26 }} />
           <HistoryCarousel posts={posts} onOpen={openPost} emptyText="Tes publications apparaîtront ici." />
 
           {deleting && <ActivityIndicator color="#ff3b30" size="small" style={{ marginTop: 16 }} />}

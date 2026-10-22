@@ -245,7 +245,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
     if (isMine) {
       Alert.alert('Ton post', undefined, [
         { text: 'Partager en story Instagram', onPress: () => setStoryData({
-            photoUri: u.photo_url && !isVideo(u.photo_url) ? u.photo_url : null,
+            photoUri: u.photo_url || null,
             emoji: u.objectives?.emoji,
             title: u.objectives?.title || u.caption,
             progressLabel: progressLabel,

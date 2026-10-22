@@ -3,11 +3,13 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityInd
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
 import { CGU_URL, PRIVACY_URL } from '../constants';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SocialAuthButtons } from '../components/SocialAuthButtons';
 import { s } from '../styles';
 
 export function Onboarding({ onNext }: { onNext: () => void }) {
   const [step, setStep] = useState(0);
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -86,7 +88,7 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
   if (showLogin) {
     return (
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <KeyboardAvoidingView style={s.obContainer} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={[s.obContainer, { paddingTop: insets.top + 16 }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <Text style={s.headline}>Bon retour</Text>
         <Text style={s.subtext}>Connecte-toi pour reprendre ta progression.</Text>
         <View style={s.inputBlock}>
@@ -114,7 +116,7 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
   const canGoNext = step < TOTAL_STEPS;
 
   return (
-    <KeyboardAvoidingView style={s.obContainer} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView style={[s.obContainer, { paddingTop: insets.top + 16 }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       {/* Zones de tap gauche/droite */}
       {step !== 4 && (
         <View style={s.obTapZones} pointerEvents="box-none">
@@ -180,7 +182,8 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
             <Text style={s.obBigTitle}>Crée ton compte et invite ton cercle.</Text>
             <Text style={s.obBody}>Gratuit. 2 minutes. Et quelqu'un dans ton entourage va le voir dès ce soir.</Text>
           </View>
-          <View style={s.obBottom}>
+          {/* Même place que les « Suivant » des écrans d'avant : le bouton ne saute pas. */}
+          <View style={s.obNextWrap}>
             <TouchableOpacity style={s.btn} onPress={next}><Text style={s.btnText}>Créer mon compte →</Text></TouchableOpacity>
           </View>
         </View>

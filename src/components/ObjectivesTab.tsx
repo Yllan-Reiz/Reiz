@@ -129,7 +129,7 @@ export function ObjectivesTab({ objectives, activity, streak, refreshing, onRefr
         { value: `${avg}%`, label: 'Moy.' },
       ]} />
 
-      <TouchableOpacity onPress={onAdd} activeOpacity={0.85} style={{ marginHorizontal: GUTTER, marginTop: 14, height: 54, borderRadius: 20, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+      <TouchableOpacity onPress={onAdd} activeOpacity={0.85} style={{ marginHorizontal: GUTTER, marginTop: 14, height: 50, borderRadius: 16, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
         <Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }}>+ Ajouter un objectif</Text>
       </TouchableOpacity>
 

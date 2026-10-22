@@ -246,8 +246,8 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
 
           {/* === À propos : bio + tags (tu peux valider ses tags d'un tap) === */}
           <AboutBubble>
-            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontFamily: F.bold, letterSpacing: 1.5, marginBottom: 6 }}>À PROPOS</Text>
-            <Text style={{ fontSize: 15, color: profile?.bio ? '#fff' : 'rgba(255,255,255,0.45)', lineHeight: 22, fontFamily: F.regular, textAlign: 'center' }}>
+            <Text style={[s.sectionTitle, { marginTop: 0 }]}>À propos</Text>
+            <Text style={{ fontSize: 15, color: profile?.bio ? '#fff' : 'rgba(255,255,255,0.45)', lineHeight: 22, fontFamily: F.regular }}>
               {profile?.bio || `${firstName} n'a pas encore écrit de bio.`}
             </Text>
             <View style={{ alignSelf: 'stretch' }}><ProfileTags userId={userId} currentUserId={currentUserId} own={false} /></View>
@@ -268,7 +268,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
 
           <BadgesSection badges={badges} own={false} />
 
-          <View style={{ marginTop: 14 }}>
+          <View style={{ marginTop: 26 }}>
             {ongoing.length === 0 && achieved.length === 0 ? (
               <Text style={{ color: '#888', fontSize: 13, paddingHorizontal: GUTTER }}>Pas d'objectif visible pour le moment.</Text>
             ) : (
@@ -280,7 +280,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
             )}
           </View>
 
-          <SectionHeader title="Historique" count={recentUpdates.length} style={{ paddingHorizontal: GUTTER, marginTop: 6 }} />
+          <SectionHeader title="Historique" count={recentUpdates.length} style={{ paddingHorizontal: GUTTER, marginTop: 26 }} />
           <HistoryCarousel posts={recentUpdates} onOpen={openPost} emptyText="Pas encore de publication visible." />
 
           <View style={{ height: 40 + insets.bottom }} />

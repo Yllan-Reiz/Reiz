@@ -86,7 +86,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
             <TextInput style={s.inputField} placeholder="100 kg au bench, ou tu bluffes ?" placeholderTextColor="#666" value={title} onChangeText={onTitle} autoCapitalize="sentences" maxLength={80} />
           </View>
 
-          <Text style={[s.inputLabel, s.inputLabelSpaced]}>EMOJI</Text>
+          <Text style={s.inputLabel}>EMOJI</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.emojiRow} contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }}>
             {EMOJI_LIST.map(e => (
               <TouchableOpacity
@@ -115,7 +115,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
                 {QUICK_UNITS.map(u => (
                   <TouchableOpacity
                     key={u}
-                    style={[s.durationPill, hasTarget && unit === u && s.durationPillActive]}
+                    style={[s.durationPill, { height: 48, justifyContent: 'center' }, hasTarget && unit === u && s.durationPillActive]}
                     onPress={() => { Haptics.selectionAsync().catch(() => {}); setTouched(true); setUnit(u); }}
                   >
                     <Text style={[s.durationPillText, hasTarget && unit === u && s.durationPillTextActive]}>{u}</Text>

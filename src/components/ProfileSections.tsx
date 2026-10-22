@@ -294,7 +294,7 @@ export function SectionHeader({ title, count, style }: { title: string; count?: 
 export function AboutBubble({ children }: { children: React.ReactNode }) {
   return (
     <GlassSurface radius={28} style={{ marginHorizontal: GUTTER, marginTop: 14 }}>
-      <View style={{ padding: 18, alignItems: 'center' }}>{children}</View>
+      <View style={{ padding: 18 }}>{children}</View>
     </GlassSurface>
   );
 }
@@ -480,7 +480,7 @@ export function WeekTracker({ days, done, everyDay }: { days: number[]; done: Se
   const planned = days.length;
   const doneCount = days.filter(d => done.has(keys[d - 1])).length;
   return (
-    <View style={{ marginTop: 6 }}>
+    <View style={{ marginTop: 14 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         {keys.map((k, i) => {
           const scheduled = days.includes(i + 1);
@@ -501,7 +501,7 @@ export function WeekTracker({ days, done, everyDay }: { days: number[]; done: Se
           );
         })}
       </View>
-      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.semibold, marginTop: 6 }} numberOfLines={1}>{everyDay ? `${doneCount} ${doneCount > 1 ? 'jours' : 'jour'} cette semaine` : `${doneCount} sur ${planned} séances prévues cette semaine`}</Text>
+      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.semibold, marginTop: 10 }} numberOfLines={1}>{everyDay ? `${doneCount} ${doneCount > 1 ? 'jours' : 'jour'} cette semaine` : `${doneCount} sur ${planned} séances cette semaine`}</Text>
     </View>
   );
 }

@@ -9,9 +9,10 @@ import { frError, inUnit } from '../lib/helpers';
 import { uploadImage, uploadVideo, compressVideo, signAvatars } from '../lib/storage';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Objective } from '../lib/types';
-import { QUICK_UNITS } from '../constants';
+import { QUICK_UNITS, GUTTER } from '../constants';
 import { ShareStoryModal, StoryData } from '../components/ShareStoryModal';
 import { loadDuoStats, ordinalDuo, DUO_WINDOW_MS } from '../lib/duo';
+import { trimAvailable, trimVideo, cleanTrimmed } from '../lib/videoTools';
 import { s, F } from '../styles';
 
 // Vidéo de progression : 15 s max, comme une story. Au-delà, le fichier pèse
@@ -203,14 +204,23 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
     setTyping(null); setConverting(false);
   }, [selectedObj, objectives]);
 
+  // Les morceaux rognés lors d'une publication précédente ne servent plus.
+  useEffect(() => { cleanTrimmed(); }, []);
+
   // Garde un média choisi (photo ou vidéo) après vérification de la durée et du poids.
-  const acceptAsset = (asset: ImagePicker.ImagePickerAsset) => {
+  // Vidéo trop longue : l'éditeur de rognage s'ouvre pour en garder 15 secondes (builds 1.0.1 et plus).
+  const acceptAsset = async (asset: ImagePicker.ImagePickerAsset) => {
+    let uri = asset.uri;
     if (asset.type === 'video') {
       if (asset.duration && asset.duration > (VIDEO_MAX_SEC + 0.5) * 1000) {
-        Alert.alert('Vidéo trop longue', `${VIDEO_MAX_SEC} secondes maximum. Coupe-la puis réessaie.`);
-        return;
-      }
-      if (asset.fileSize && asset.fileSize > VIDEO_MAX_MB * 1024 * 1024) {
+        if (!trimAvailable()) {
+          Alert.alert('Vidéo trop longue', `${VIDEO_MAX_SEC} secondes maximum. Coupe-la puis réessaie.`);
+          return;
+        }
+        const cut = await trimVideo(uri, VIDEO_MAX_SEC);
+        if (!cut) return;
+        uri = cut;
+      } else if (asset.fileSize && asset.fileSize > VIDEO_MAX_MB * 1024 * 1024) {
         Alert.alert('Vidéo trop lourde', 'Essaie une vidéo plus courte ou filme directement depuis Reiz.');
         return;
       }
@@ -218,7 +228,14 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
     } else {
       setMediaType('image');
     }
-    setPhotoUri(asset.uri);
+    setPhotoUri(uri);
+  };
+
+  // Recouper la vidéo déjà choisie (garder un autre passage, la raccourcir encore).
+  const recutVideo = async () => {
+    if (!photoUri) return;
+    const cut = await trimVideo(photoUri, VIDEO_MAX_SEC);
+    if (cut) setPhotoUri(cut);
   };
 
   const handlePickPhoto = async () => {
@@ -251,14 +268,17 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
         }
       },
       {
-        text: 'Importer depuis la galerie',
+        text: trimAvailable() ? 'Importer une photo' : 'Importer depuis la galerie',
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la galerie dans les réglages.'); return; }
+          const trim = trimAvailable();
           const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images', 'videos'],
+            // Avec l'éditeur de rognage, photos et vidéos ont chacune leur bouton : le recadrage
+            // d'iOS ne s'applique plus qu'aux photos, la coupe des vidéos passe par notre éditeur.
+            mediaTypes: trim ? ['images'] : ['images', 'videos'],
             quality: 0.7,
-            // Sur iPhone, allowsEditing permet aussi de couper une vidéo trop longue.
+            // Sans l'éditeur (build 1.0.0), allowsEditing permet aussi de couper une vidéo trop longue sur iPhone.
             allowsEditing: true,
             aspect: [4, 3],
             videoMaxDuration: VIDEO_MAX_SEC,
@@ -267,6 +287,19 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
           if (!result.canceled) acceptAsset(result.assets[0]);
         }
       },
+      ...(trimAvailable() ? [{
+        text: 'Importer une vidéo',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la galerie dans les réglages.'); return; }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['videos'],
+            videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
+          });
+          if (!result.canceled) acceptAsset(result.assets[0]);
+        }
+      }] : []),
+      ...(photoUri && mediaType === 'video' && trimAvailable() ? [{ text: 'Couper la vidéo', onPress: recutVideo }] : []),
       ...(photoUri ? [{ text: 'Retirer', style: 'destructive' as const, onPress: () => { setPhotoUri(null); setMediaType('image'); } }] : []),
       { text: 'Annuler', style: 'cancel' }
     ]);
@@ -332,7 +365,8 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       const fmtN = (n: number) => String(n).replace('.', ',');
       const storyData: StoryData = {
-        photoUri: mediaType === 'image' ? photoUri : null,
+        // Vidéo : la story en tire une image (voir ShareStoryModal).
+        photoUri,
         emoji: obj.emoji,
         title: obj.title,
         progressLabel: isPercent ? `${pct}%` : `${fmtN(value)} / ${fmtN(obj.target_value)} ${obj.unit}`,
@@ -419,7 +453,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
               ? <View style={s.postEmptyObj}>
                   <Text style={{ color: '#888', fontSize: 13 }}>Aucun objectif. Crée-en un dans "Mes objectifs".</Text>
                 </View>
-              : <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.postObjScroll} contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }}>
+              : <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.postObjScroll} contentContainerStyle={{ gap: 10, paddingHorizontal: GUTTER }}>
                   {objectives.map((o, i) => (
                     <TouchableOpacity key={o.id} style={[s.postObjCard, selectedObj === i && s.postObjCardActive]} onPress={() => setSelectedObj(i)}>
                       <Text style={s.postObjEmoji}>{o.emoji}</Text>
@@ -439,7 +473,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
           )}
           {canTag && <>
             <Text style={[s.postLabel, { marginTop: 28 }]}>AVEC QUI ? (FACULTATIF)</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ gap: 14, paddingHorizontal: 20 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -GUTTER }} contentContainerStyle={{ gap: 14, paddingHorizontal: GUTTER }}>
               {taggable.map(f => {
                 const on = withIds.includes(f.id);
                 return (

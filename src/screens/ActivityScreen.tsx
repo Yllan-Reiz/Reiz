@@ -358,7 +358,7 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
   );
 
   return (
-    <Animated.View style={[s.container, overlay && { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'transparent', opacity: appear }]}>
+    <Animated.View style={[s.container, overlay && { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'transparent', opacity: appear, zIndex: 20 }]}>
       {overlay ? (
         <>
           <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />

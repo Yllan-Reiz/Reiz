@@ -3,7 +3,7 @@ import { requireOptionalNativeModule } from 'expo';
 import { supabase } from './supabase';
 import { signAvatars } from './storage';
 import { sha256Hex } from './sha256';
-import { inviteUrl, LANDING_URL } from '../constants';
+import { APP_STORE_URL } from '../constants';
 
 // Tes contacts : retrouver ceux qui sont déjà sur Reiz, et inviter les autres.
 //
@@ -76,7 +76,7 @@ export async function matchContacts(contacts: DeviceContact[]): Promise<Matched[
 }
 
 export const inviteText = (username?: string | null) =>
-  `Je suis sur Reiz : mon cercle voit ma progression chaque jour. Rejoins-moi, on se motive. ${username ? inviteUrl(username) : LANDING_URL}`;
+  `Je suis sur Reiz : mon cercle voit ma progression chaque jour. Rejoins-moi, on se motive.${username ? ` Ajoute-moi : @${username}` : ''}\n${APP_STORE_URL}`;
 
 /** Ouvre Messages avec le numéro et le texte d'invitation déjà remplis (rien n'est envoyé sans ton tap sur « Envoyer »). */
 export function inviteBySms(phone: string, username?: string | null) {

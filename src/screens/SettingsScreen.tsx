@@ -128,7 +128,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
             <Text style={st.hint}>{discoverable !== null ? "Désactivé, les personnes qui ont ton e-mail dans leurs contacts ne te trouvent plus avec « Retrouver mes contacts ». " : ''}La visibilité de chaque objectif se règle depuis le menu « … » de l'objectif.</Text>
 
             <Section title="ENTRAÎNEMENT">
-              <Row icon="location-outline" label="Prévenir mon cercle proche" value="Salle et lieux" onPress={() => setView('presence')} last />
+              <Row icon="location-outline" label="Prévenir mon cercle proche" onPress={() => setView('presence')} last />
             </Section>
 
             <Section title="NOTIFICATIONS">
@@ -316,18 +316,19 @@ const st = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 52 },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { flex: 1, textAlign: 'center', color: '#fff', fontSize: 17, fontFamily: F.bold },
-  sectionTitle: { fontSize: 11, color: '#777', fontFamily: F.bold, letterSpacing: 1.5, marginBottom: 8, marginLeft: 4 },
+  sectionTitle: { fontSize: 11, color: '#777', fontFamily: F.bold, letterSpacing: 1.5, marginBottom: 8 },
   card: { backgroundColor: '#111', borderRadius: 18, borderWidth: 1, borderColor: '#1c1c1c', overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 15 },
+  // Même hauteur pour toutes les lignes, avec ou sans interrupteur.
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10, minHeight: 52 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: '#1c1c1c' },
   rowLabel: { color: '#fff', fontSize: 15, fontFamily: F.semibold, flexShrink: 1 },
   rowValue: { color: '#777', fontSize: 13, fontFamily: F.regular, flex: 1, textAlign: 'right' },
-  hint: { color: '#666', fontSize: 12, fontFamily: F.regular, lineHeight: 18, marginTop: 8, marginHorizontal: 4 },
+  hint: { color: '#666', fontSize: 12, fontFamily: F.regular, lineHeight: 18, marginTop: 8 },
   version: { color: '#555', fontSize: 12, fontFamily: F.regular, textAlign: 'center', marginTop: 28 },
   inputLabel: { fontSize: 10, color: '#888', letterSpacing: 1.5, fontFamily: F.bold, marginBottom: 6 },
   input: { backgroundColor: '#1a1a1a', borderWidth: 1.5, borderColor: '#2a2a2a', borderRadius: 14, padding: 14, fontSize: 14, color: '#fff', fontFamily: F.regular },
   error: { color: '#ff453a', fontSize: 12, fontFamily: F.regular, marginTop: 6 },
-  primaryBtn: { backgroundColor: '#fff', borderRadius: 16, padding: 15, alignItems: 'center', marginTop: 26 },
+  primaryBtn: { backgroundColor: '#fff', borderRadius: 16, minHeight: 50, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center', marginTop: 26 },
   primaryBtnText: { color: '#000', fontSize: 15, fontFamily: F.extrabold },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#222' },
   smallBtn: { backgroundColor: '#1e1e1e', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },

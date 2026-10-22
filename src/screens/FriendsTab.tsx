@@ -11,7 +11,7 @@ import { ContactsScreen } from '../components/ContactsScreen';
 import { GlassSurface } from '../components/GlassSurface';
 import * as Haptics from 'expo-haptics';
 import { Friend, PendingRequest } from '../lib/types';
-import { LANDING_URL, inviteUrl, GUTTER, navClearance, GLASS_FRIENDS } from '../constants';
+import { APP_STORE_URL, GUTTER, navClearance, GLASS_FRIENDS } from '../constants';
 import { FriendsGlassView } from '../components/FriendsGlassView';
 import { s, F } from '../styles';
 
@@ -48,14 +48,12 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     const closer = myTopObjective
       ? `Et toi, t'as le cran de me montrer le tien ?`
       : `Et toi, c'est quoi ton prochain objectif ?`;
-    // Lien d'invitation perso (deep link) : l'ami est auto-ajouté, plus de recherche manuelle.
-    // Repli sur la landing si le pseudo n'est pas encore chargé.
-    const link = myUsername ? inviteUrl(myUsername) : LANDING_URL;
+    // Lien direct vers l'App Store, et le pseudo pour m'ajouter une fois l'app installée.
     const message =
       `${hook}\n\n` +
       `Sur Reiz, mon cercle voit ma progression chaque jour. Pas d'excuse, pas d'abandon.\n\n` +
-      `Rejoins mon cercle en 1 tap :\n` +
-      `${link}\n\n` +
+      `Rejoins mon cercle${myUsername ? ` (ajoute-moi : @${myUsername})` : ''} :\n` +
+      `${APP_STORE_URL}\n\n` +
       `${closer}`;
     try {
       await Share.share({ message, title: 'Rejoins mon cercle sur Reiz' });

@@ -6,11 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
 import ViewShot, { captureRef } from 'react-native-view-shot';
-import { inviteUrl, LANDING_URL } from '../constants';
+import { APP_STORE_URL } from '../constants';
+import { isVideo } from '../lib/storage';
+import { videoStill } from '../lib/videoTools';
 import { F } from '../styles';
 
 export type StoryData = {
-  photoUri?: string | null;   // image seulement (une vidéo n'a pas d'aperçu : fond sombre)
+  photoUri?: string | null;   // image ou vidéo (on en tire une image ; sans le module : fond sombre)
   emoji?: string;
   title: string;
   progressLabel: string;      // « 150 / 170 kg »
@@ -37,11 +39,15 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
   const [loaded, setLoaded] = useState(0);
   const [busy, setBusy] = useState(false);
 
+  // Une vidéo devient son image du début (build 1.0.1 et plus) : la story ne part plus sur un fond gris.
+  const main = useStill(visible ? data?.photoUri : null);
+  const partner = useStill(visible ? data?.partnerPhotoUri : null);
+
   // On ne capture qu'une fois toutes les photos affichées (une ou deux en duo) :
   // sinon la carte partirait avec une moitié vide.
-  const need = data?.photoUri ? (data.partnerPhotoUri ? 2 : 1) : 0;
-  useEffect(() => { if (visible) setLoaded(0); }, [visible, data?.photoUri, data?.partnerPhotoUri]);
-  const ready = loaded >= need;
+  const need = main ? (partner ? 2 : 1) : 0;
+  useEffect(() => { if (visible) setLoaded(0); }, [visible, main, partner]);
+  const ready = main !== undefined && partner !== undefined && loaded >= need;
   if (!data) return null;
 
   // La carte garde toujours le ratio 9:16 et tient dans l'écran, boutons compris.
@@ -66,8 +72,8 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
   };
 
   const pct = Math.max(0, Math.min(100, data.pct || 0));
-  // Le lien d'invitation du créateur : celui qui le touche arrive sur la page-pont, qui ouvre l'app ou propose de la télécharger.
-  const link = data.username ? inviteUrl(data.username) : LANDING_URL;
+  // Le lien à coller dans le sticker : la fiche Reiz sur l'App Store.
+  const link = APP_STORE_URL;
   const shortLink = link.replace(/^https?:\/\//, '');
   // La feuille de partage iOS propose « Copier » : seule façon de copier sans module natif en plus.
   const copyLink = () => { Share.share({ message: link }).catch(() => {}); };
@@ -85,15 +91,15 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
 
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ViewShot ref={ref} style={{ width: cardW, height: cardH, borderRadius: 22 * k, overflow: 'hidden', backgroundColor: '#0a0a0a' }}>
-            {data.photoUri && data.partnerPhotoUri ? (
+            {main && partner ? (
               // Duo validé : les deux séances côte à côte, séparées par un filet blanc.
               <View style={{ position: 'absolute', width: cardW, height: cardH, flexDirection: 'row' }}>
-                <Image source={{ uri: data.photoUri }} style={{ width: cardW / 2, height: cardH }} resizeMode="cover" onLoadEnd={() => setLoaded(n => n + 1)} />
+                <Image source={{ uri: main }} style={{ width: cardW / 2, height: cardH }} resizeMode="cover" onLoadEnd={() => setLoaded(n => n + 1)} />
                 <View style={{ width: 2 * k, backgroundColor: '#fff' }} />
-                <Image source={{ uri: data.partnerPhotoUri }} style={{ flex: 1, height: cardH }} resizeMode="cover" onLoadEnd={() => setLoaded(n => n + 1)} />
+                <Image source={{ uri: partner }} style={{ flex: 1, height: cardH }} resizeMode="cover" onLoadEnd={() => setLoaded(n => n + 1)} />
               </View>
-            ) : data.photoUri
-              ? <Image source={{ uri: data.photoUri }} style={{ position: 'absolute', width: cardW, height: cardH }} resizeMode="cover" onLoadEnd={() => setLoaded(n => n + 1)} />
+            ) : main
+              ? <Image source={{ uri: main }} style={{ position: 'absolute', width: cardW, height: cardH }} resizeMode="cover" onLoadEnd={() => setLoaded(n => n + 1)} />
               : <LinearGradient colors={['#1b1b1b', '#0a0a0a']} style={{ position: 'absolute', width: cardW, height: cardH }} />}
             <LinearGradient colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0.25)', 'rgba(0,0,0,0.9)']} locations={[0, 0.3, 0.55, 1]} style={{ position: 'absolute', width: cardW, height: cardH }} />
 
@@ -153,4 +159,18 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
       </View>
     </Modal>
   );
+}
+
+// Image à afficher pour un média : la photo telle quelle, ou l'image tirée d'une vidéo.
+// undefined = en cours (la carte attend), null = rien à montrer (fond dégradé).
+function useStill(uri?: string | null): string | null | undefined {
+  const [still, setStill] = useState<string | null | undefined>(uri && isVideo(uri) ? undefined : uri || null);
+  useEffect(() => {
+    if (!uri || !isVideo(uri)) { setStill(uri || null); return; }
+    let alive = true;
+    setStill(undefined);
+    videoStill(uri).then(img => { if (alive) setStill(img); });
+    return () => { alive = false; };
+  }, [uri]);
+  return still;
 }

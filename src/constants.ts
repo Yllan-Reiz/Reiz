@@ -4,9 +4,10 @@ export const LANDING_URL = 'https://reiz-landing.netlify.app';
 export const CGU_URL = `${LANDING_URL}/cgu.html`;
 export const PRIVACY_URL = `${LANDING_URL}/confidentialite.html`;
 
-// Lien d'invitation : ouvre la page /invite.html qui route vers l'app (deep link).
-// Le ?ref=pseudo permet d'auto-envoyer la demande d'ami au parrain à l'inscription.
-export const inviteUrl = (username: string) => `${LANDING_URL}/invite.html?ref=${encodeURIComponent(username)}`;
+// Lien d'invitation (demande de Yllan, 22/10/2026) : directement la fiche App Store, plus la page du site.
+// Le pseudo est écrit dans le message à côté du lien : l'ami installe Reiz puis t'ajoute avec.
+// (L'ancien lien /invite.html?ref=pseudo ajoutait l'ami tout seul, mais seulement si Reiz était déjà installé.)
+export const APP_STORE_URL = 'https://apps.apple.com/app/id6814173335';
 
 export const EMOJI_LIST =['🎯','💪','🏋️','🏃','🚴','🏊','🥊','⚽','🏀','🎾','🧗','🤸','🥇','🔥','⚡','🚀','❤️','🍎','💧','😴'];
 
