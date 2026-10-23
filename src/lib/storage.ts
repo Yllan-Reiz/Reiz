@@ -281,12 +281,39 @@ const keyOf = (path: string, width?: number) => (width ? `${width}|${path}` : pa
 async function signOneRaw(path: string, width?: number): Promise<string | null> {
   if (width && transformOk && isImagePath(path)) {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, EXPIRES_IN, { transform: { width, quality: 75, resize: 'contain' } });
-    if (!error && data?.signedUrl) return data.signedUrl;
+    if (!error && data?.signedUrl && await transformServed(data.signedUrl)) return data.signedUrl;
     // La réduction a échoué : si l'original, lui, se signe, c'est la fonction qui est indisponible.
     const plain = await supabase.storage.from(BUCKET).createSignedUrl(path, EXPIRES_IN);
     if (plain.data?.signedUrl) transformOk = false;
     return plain.data?.signedUrl ?? null;
   }
+  const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, EXPIRES_IN);
+  return data?.signedUrl ?? null;
+}
+
+// Les photos réduites ont un quota mensuel chez Supabase (100 photos d'origine dans l'offre Pro). Plafond de dépense
+// activé et quota dépassé : Supabase peut les refuser (402) alors que le lien se signe sans erreur. On vérifie donc
+// une fois par session qu'une photo réduite arrive vraiment ; sinon, toute la session passe aux photos d'origine.
+let probe: Promise<boolean> | null = null;
+function transformServed(url: string): Promise<boolean> {
+  if (!probe) {
+    probe = fetch(url)
+      .then(r => { const ok = r.status < 400 || r.status === 404; if (!ok) transformOk = false; return ok; })
+      .catch(() => true); // pas de réseau : ce n'est pas la réduction qui est en cause
+  }
+  return probe;
+}
+
+/**
+ * Photo réduite refusée à l'affichage (quota, lien expiré) : l'adresse de la photo d'origine, neuve.
+ * null si ce n'était pas une photo réduite de Reiz.
+ */
+export async function originalFor(url: string): Promise<string | null> {
+  const m = url.match(/\/storage\/v1\/render\/image\/sign\/[^/]+\/([^?]+)/);
+  if (!m) return null;
+  const path = decodeURIComponent(m[1]);
+  transformOk = false;
+  [...memory.keys()].forEach(k => { if (k.endsWith(`|${path}`)) memory.delete(k); });
   const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, EXPIRES_IN);
   return data?.signedUrl ?? null;
 }

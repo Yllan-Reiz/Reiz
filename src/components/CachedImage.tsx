@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Image as RNImage, ImageStyle, StyleProp, ImageResizeMode } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
+import { originalFor } from '../lib/storage';
 
 // Image avec un vrai cache disque (expo-image), comme sur les réseaux sociaux : la photo est rangée sous le
 // chemin du FICHIER (l'adresse sans son jeton), pas sous l'adresse signée. Quand le jeton change (tous les
@@ -27,15 +29,26 @@ export function CachedImage({ uri, style, resizeMode = 'cover', onLoad, blurRadi
   onLoad?: () => void;
   blurRadius?: number;
 }) {
+  // Photo réduite refusée (quota Supabase, lien expiré) : on retente une fois avec la photo d'origine.
+  const [src, setSrc] = useState(uri);
+  const [retried, setRetried] = useState(false);
+  useEffect(() => { setSrc(uri); setRetried(false); }, [uri]);
+  const onError = () => {
+    if (retried) return;
+    setRetried(true);
+    originalFor(src).then(u => { if (u) setSrc(u); }).catch(() => {});
+  };
+
   const Img = expoImage();
-  if (!Img) return <RNImage source={{ uri }} style={style} resizeMode={resizeMode} onLoad={onLoad} blurRadius={blurRadius} />;
+  if (!Img) return <RNImage source={{ uri: src }} style={style} resizeMode={resizeMode} onLoad={onLoad} onError={onError} blurRadius={blurRadius} />;
   return (
     <Img
-      source={{ uri, cacheKey: stableKey(uri) }}
+      source={{ uri: src, cacheKey: stableKey(src) }}
       style={style}
       contentFit={resizeMode === 'contain' ? 'contain' : 'cover'}
       cachePolicy="memory-disk"
-      recyclingKey={stableKey(uri)}
+      recyclingKey={stableKey(src)}
+      onError={onError}
       transition={0}
       blurRadius={blurRadius}
       onLoad={onLoad}
