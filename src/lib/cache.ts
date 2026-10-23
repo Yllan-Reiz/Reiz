@@ -25,7 +25,7 @@ export function cacheSet(key: string, value: unknown): void {
 export async function cacheClearAll(): Promise<void> {
   try {
     const keys = await AsyncStorage.getAllKeys();
-    const mine = keys.filter(k => k.startsWith(PREFIX) || k === 'reiz.signed.v1');
+    const mine = keys.filter(k => k.startsWith(PREFIX) || k.startsWith('reiz.signed.'));
     if (mine.length) await AsyncStorage.multiRemove(mine);
   } catch {}
 }

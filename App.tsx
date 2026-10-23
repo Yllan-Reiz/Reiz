@@ -23,6 +23,9 @@ import { WELCOME_FLOW } from './src/constants';
 import { PostScreen } from './src/screens/PostScreen';
 import { registerLiveActivityToken, endExpiredLiveActivities } from './src/lib/liveActivity';
 
+// Au-delà, le fil est rechargé au retour dans l'app (liens de photos neufs, posts du jour).
+const STALE_AFTER_MS = 3 * 3600 * 1000;
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -83,7 +86,16 @@ function AppInner() {
     });
     // Une carte du duo dont l'heure est passée ne reste pas affichée.
     endExpiredLiveActivities();
-    const appStateSub = AppState.addEventListener('change', st => { if (st === 'active') endExpiredLiveActivities(); });
+    // Retour dans l'app après une longue absence : le fil affiché date d'hier, avec des liens de photos qui ont pu
+    // expirer (les photos ne chargeaient plus, vu dans les journaux du serveur le 23/10). On le recharge, liens neufs.
+    let backgroundAt = 0;
+    const appStateSub = AppState.addEventListener('change', st => {
+      if (st === 'background') backgroundAt = Date.now();
+      if (st !== 'active') return;
+      endExpiredLiveActivities();
+      if (backgroundAt && Date.now() - backgroundAt > STALE_AFTER_MS) setMainKey(k => k + 1);
+      backgroundAt = 0;
+    });
 
     // Apple / Google : la ligne `users` n'existe pas encore à la première connexion.
     // On la crée AVANT d'entrer dans l'app, sinon le fil se charge sans profil.
