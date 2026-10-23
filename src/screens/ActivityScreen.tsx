@@ -20,6 +20,7 @@ import { loadPost } from '../lib/posts';
 import { loadDuels, Duel } from '../lib/duel';
 import { setAppBadge } from '../lib/badge';
 import { gifIdOf } from '../lib/giphy';
+import { placeLabel, localizeDuelResult } from '../lib/helpers';
 import { t, tp, dirIcon } from '../i18n';
 
 type Row = ActivityItem & {
@@ -79,11 +80,11 @@ function copyOf(e: Entry): { who: string; action: string; context?: string } {
       return { who, action: t('activity.posted'), context: [postLabel, caption].filter(Boolean).join('  ') || undefined };
     }
     case 'tag_endorse': return { who, action: t('activity.endorsed'), context: n.preview || undefined };
-    case 'at_gym': return { who, action: t('activity.atGym', { place: n.preview || t('presence.defaultPlace') }), context: t('activity.atGymSub') };
+    case 'at_gym': return { who, action: t('activity.atGym', { place: placeLabel(n.preview) }), context: t('activity.atGymSub') };
     case 'duo_tag': return { who, action: t('activity.duoTag'), context: postLabel };
     case 'friend_accept': return { who, action: t('activity.accepted'), context: t('activity.acceptedSub') };
     case 'challenge_accept': return { who, action: t('activity.challengeAccepted'), context: t('activity.challengeAcceptedSub') };
-    case 'challenge_result': return { who, action: t('activity.challengeDone'), context: n.preview || undefined };
+    case 'challenge_result': return { who, action: t('activity.challengeDone'), context: localizeDuelResult(n.preview) || undefined };
     case 'new_objective': {
       const days = hasSchedule(n.objectives?.training_days) ? t('activity.trains', { days: daysLabel(n.objectives?.training_days, true) }) : undefined;
       return { who, action: t('activity.newObjective'), context: [n.objectives?.title ? `${n.objectives.emoji || ''} ${n.objectives.title}`.trim() : '', days].filter(Boolean).join('  ') || undefined };

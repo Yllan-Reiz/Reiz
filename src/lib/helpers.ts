@@ -47,6 +47,19 @@ export function localizeReason(reason?: string | null): string {
   return t('friends.reasonObjective', { title: m[2] });
 }
 
+// Résultat d'un défi écrit en français par le serveur (« Victoire 5 à 3 ») : réécrit dans la langue de l'app.
+export function localizeDuelResult(preview?: string | null): string {
+  const m = (preview || '').match(/^(Victoire|Défaite|Égalité) (\d+) à (\d+)$/);
+  if (!m) return preview || '';
+  const leader = m[1] === 'Victoire' ? t('duelCard.win') : m[1] === 'Défaite' ? t('duelCard.lose') : t('duelCard.draw');
+  return t('duelCard.score', { leader, a: m[2], b: m[3] });
+}
+
+// Lieu par défaut écrit dans la langue de celui qui prévient (« la salle », « the gym »...) : on affiche le nôtre.
+const DEFAULT_PLACES = ['la salle', 'the gym', 'el gimnasio', 'חדר הכושר'];
+export const placeLabel = (p?: string | null) =>
+  !p || DEFAULT_PLACES.includes(p.trim().toLowerCase()) ? t('presence.defaultPlace') : p;
+
 // « Eden », « Eden et Logan », « Eden, Logan et Théo » dans la langue de l'app.
 export function andList(names: string[]): string {
   if (names.length <= 1) return names[0] || '';
