@@ -148,23 +148,39 @@ export async function compressVideo(uri: string): Promise<string> {
     // Chargé à la demande : le module natif n'existe pas dans Expo Go (tests au simulateur),
     // et un import en tête de fichier ferait planter toute l'app là-bas.
     const { Video: VideoCompressor } = require('react-native-compressor');
+    // 720p à 1,5 Mb/s : environ 3 Mo pour 15 secondes, bien net sur un écran de téléphone (avant : 2,5 Mb/s, 4 à 6 Mo).
     return await VideoCompressor.compress(uri, {
       compressionMethod: 'manual',
       maxSize: 1280,
-      bitrate: 2_500_000,
+      bitrate: 1_500_000,
     });
   } catch {
     return uri;
   }
 }
 
-/** Envoie une image et renvoie son chemin de stockage (à enregistrer en base). */
+/**
+ * Photo allégée AVANT l'envoi, sur le téléphone : 1440 px au plus (720 px pour une photo de profil), JPEG qualité 0,72.
+ * Ce qui est stocké est déjà léger (150 à 300 Ko au lieu de 1 à 2 Mo) : moins d'espace, et des photos légères même
+ * quand Supabase ne fournit pas de version réduite (quota dépassé). Sans le module : la photo telle quelle.
+ */
+export async function compressImage(uri: string, maxSide: number): Promise<string> {
+  try {
+    const { Image: ImageCompressor } = require('react-native-compressor');
+    return await ImageCompressor.compress(uri, { compressionMethod: 'manual', maxWidth: maxSide, maxHeight: maxSide, quality: 0.72, output: 'jpg' });
+  } catch {
+    return uri;
+  }
+}
+
+/** Envoie une image (allégée d'abord) et renvoie son chemin de stockage (à enregistrer en base). */
 export async function uploadImage(
   path: string,
   uri: string,
   upsert = false
 ): Promise<{ path: string | null; error: { message?: string } | null }> {
-  return uploadFile(path, uri, 'image/jpeg', upsert);
+  const light = await compressImage(uri, path.startsWith('avatars/') ? 720 : 1440);
+  return uploadFile(path, light, 'image/jpeg', upsert);
 }
 
 /** Envoie un fichier quelconque (photo ou vidéo) et renvoie son chemin de stockage. */
@@ -293,7 +309,8 @@ async function signOneRaw(path: string, width?: number): Promise<string | null> 
 
 // Les photos réduites ont un quota mensuel chez Supabase (100 photos d'origine dans l'offre Pro). Plafond de dépense
 // activé et quota dépassé : Supabase peut les refuser (402) alors que le lien se signe sans erreur. On vérifie donc
-// une fois par session qu'une photo réduite arrive vraiment ; sinon, toute la session passe aux photos d'origine.
+// une fois par session qu'une photo réduite arrive vraiment ; sinon, toute la session passe aux photos d'origine,
+// qui sont elles-mêmes allégées depuis la 1.0.1 (compressImage à l'envoi).
 let probe: Promise<boolean> | null = null;
 function transformServed(url: string): Promise<boolean> {
   if (!probe) {
