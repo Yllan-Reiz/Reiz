@@ -1,6 +1,6 @@
 import { Linking } from 'react-native';
 import { supabase } from './supabase';
-import { t } from '../i18n';
+import { t, lang } from '../i18n';
 
 // Connexion avec Google via Supabase (OAuth + PKCE), sans module natif :
 // on ouvre l'URL Google dans Safari, Google renvoie vers reiz://auth-callback?code=...
@@ -36,7 +36,7 @@ export async function ensureProfile(user: { id: string; user_metadata?: any; ema
   const base = first.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '') || 'user';
   let username = base;
   for (let attempt = 0; attempt < 5; attempt++) {
-    const { error } = await supabase.from('users').insert({ id: user.id, username, full_name: first });
+    const { error } = await supabase.from('users').insert({ id: user.id, username, full_name: first, language: lang() });
     if (!error || error.code !== '23505') { pendingName = null; return; }
     username = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
   }

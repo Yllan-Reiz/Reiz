@@ -21,7 +21,7 @@ import { LocationScene } from './LocationScene';
 import { TrainingDaysPicker } from './TrainingDays';
 import { GlassCard, GlassSurface } from './GlassSurface';
 import { F } from '../styles';
-import { t, unitLabel } from '../i18n';
+import { t, unitLabel, dirIcon } from '../i18n';
 
 // L'accueil d'un compte tout neuf : quelques écrans plein cadre, un seul geste par écran, comme les
 // applis sociales qu'on garde. Le but est d'arriver dans le fil avec un profil, un objectif et au moins
@@ -121,7 +121,7 @@ function Primary({ label, icon, iconRight, onPress, disabled, busy }: { label: s
         <>
           {!!icon && !iconRight && <Ionicons name={icon} size={20} color={fg} />}
           <Text style={{ color: fg, fontSize: 17, fontFamily: F.extrabold }}>{label}</Text>
-          {!!icon && iconRight && <Ionicons name={icon} size={20} color={fg} />}
+          {!!icon && iconRight && <Ionicons name={dirIcon(icon)} size={20} color={fg} />}
         </>
       )}
     </TouchableOpacity>
@@ -453,7 +453,7 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
           {/* Barre du haut : retour, progression, passer. Sur l'écran profil, elle flotte par-dessus la photo. */}
           <View style={[{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 12, height: 40 }, bleed && { position: 'absolute', top: insets.top + 8, left: 0, right: 0, zIndex: 5 }]}>
             <TouchableOpacity onPress={back} disabled={idx === 0 && phase !== 'details'} hitSlop={10} accessibilityLabel={t('common.back')} style={{ width: 28, opacity: idx === 0 && phase !== 'details' ? 0 : 1 }}>
-              <Ionicons name="chevron-back" size={24} color="#fff" />
+              <Ionicons name={dirIcon('chevron-back')} size={24} color="#fff" />
             </TouchableOpacity>
             <View style={{ flex: 1, flexDirection: 'row', gap: 6 }}>
               {Array.from({ length: total }).map((_, i) => (

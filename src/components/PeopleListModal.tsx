@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { signAvatars } from '../lib/storage';
 import { setClose } from '../lib/closeCircle';
 import { s, F } from '../styles';
-import { t, tp } from '../i18n';
+import { t, tp, dirIcon } from '../i18n';
 
 type Person = { id: string; full_name: string; username: string; avatar_url?: string | null };
 
@@ -125,7 +125,7 @@ export function PeopleListModal({ visible, userId, currentUserId, mode, onClose,
                       <Ionicons name={isClose ? 'star' : 'star-outline'} size={18} color={isClose ? '#000' : '#ccc'} />
                     </TouchableOpacity>
                   ) : !isMe ? (
-                    <Ionicons name="chevron-forward" size={18} color="#555" />
+                    <Ionicons name={dirIcon('chevron-forward')} size={18} color="#555" />
                   ) : null}
                 </TouchableOpacity>
               );

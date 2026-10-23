@@ -6,7 +6,7 @@ import { CGU_URL, PRIVACY_URL } from '../constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SocialAuthButtons } from '../components/SocialAuthButtons';
 import { s } from '../styles';
-import { t } from '../i18n';
+import { t, lang } from '../i18n';
 
 export function Onboarding({ onNext }: { onNext: () => void }) {
   const [step, setStep] = useState(0);
@@ -44,7 +44,7 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
     let inserted = false;
     while (attempt < 4 && !inserted) {
       const { error: insErr } = await supabase.from('users').insert({
-        id: data.user.id, username, full_name: trimmedName,
+        id: data.user.id, username, full_name: trimmedName, language: lang(),
       });
       if (!insErr) { inserted = true; break; }
       if (insErr.code === '23505') {

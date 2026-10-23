@@ -29,7 +29,7 @@ import { validatedDuoIds } from '../lib/duo';
 import { ObjectiveEditSheet } from '../components/ObjectiveEditSheet';
 import { ObjectivesTab } from '../components/ObjectivesTab';
 import { useCloseCircle } from '../lib/closeCircle';
-import { t, unitLabel } from '../i18n';
+import { t, unitLabel, dirIcon, isRTL } from '../i18n';
 
 const PAGE_SIZE = 20;
 const FEED_WINDOW_HOURS = 24;
@@ -61,9 +61,11 @@ function GlassBubble({ visible, pillWidth, anim, icon }: {
   if (!visible) return null;
   const slot = (pillWidth - 12) / 2;
   const bubbleSize = 48;
+  // En hébreu la pastille part du bord droit (left devient right) : on la décale vers la gauche.
+  const dir = isRTL() ? -1 : 1;
   const translateX = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [6 + slot / 2 - bubbleSize / 2, 6 + slot + slot / 2 - bubbleSize / 2],
+    outputRange: [dir * (6 + slot / 2 - bubbleSize / 2), dir * (6 + slot + slot / 2 - bubbleSize / 2)],
   });
   // Mi-parcours : la pastille s'allonge un peu et s'aplatit — volume conservé.
   const scaleX = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1], extrapolate: 'clamp' });
@@ -455,7 +457,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
           </Text>
           <Text style={{ color: '#777', fontSize: 12, marginTop: 1 }}>{t('main.stepObjectiveSub')}</Text>
         </View>
-        {!hasObjective && <Ionicons name="chevron-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />}
+        {!hasObjective && <Ionicons name={dirIcon('chevron-forward')} size={18} color="#fff" style={{ marginLeft: 8 }} />}
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -470,7 +472,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
           </Text>
           <Text style={{ color: '#777', fontSize: 12, marginTop: 1 }}>{t('main.inviteCircleSub')}</Text>
         </View>
-        {!hasFriend && <Ionicons name="chevron-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />}
+        {!hasFriend && <Ionicons name={dirIcon('chevron-forward')} size={18} color="#fff" style={{ marginLeft: 8 }} />}
       </TouchableOpacity>
     </View>
   );
@@ -628,6 +630,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         ) : (
         <ScrollView
           style={s.feed}
+          contentContainerStyle={s.feedPad}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1a1a1a" />}
         >

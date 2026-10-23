@@ -14,7 +14,7 @@ import { CachedImage } from './CachedImage';
 import { GlassSurface } from './GlassSurface';
 import { DuoStats } from '../lib/duo';
 import { s, F } from '../styles';
-import { t, tp, unitLabel, formatDate } from '../i18n';
+import { t, tp, unitLabel, formatDate, dirIcon } from '../i18n';
 
 // ============================================================
 // Badges : calculés à partir des posts et objectifs, rien en base.
@@ -252,7 +252,7 @@ export function GlassIconButton({ icon, onPress, label, style }: { icon: any; on
   return (
     <TouchableOpacity onPress={onPress} accessibilityLabel={label} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={style}>
       <GlassSurface radius={20} variant="clear" style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
-        <Ionicons name={icon} size={20} color="#fff" />
+        <Ionicons name={dirIcon(icon)} size={20} color="#fff" />
       </GlassSurface>
     </TouchableOpacity>
   );
@@ -265,7 +265,7 @@ export function StatBubble({ items, tinted }: { items: { value: string; label: s
       {tinted && <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: 26, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }]} />}
       <View style={{ flexDirection: 'row', paddingVertical: 14 }}>
         {items.map((x, i) => (
-          <TouchableOpacity key={x.label} style={{ flex: 1, alignItems: 'center', borderLeftWidth: i ? 1 : 0, borderLeftColor: 'rgba(255,255,255,0.16)' }} activeOpacity={x.onPress ? 0.7 : 1} onPress={x.onPress} disabled={!x.onPress}>
+          <TouchableOpacity key={x.label} style={{ flex: 1, alignItems: 'center', borderStartWidth: i ? 1 : 0, borderStartColor: 'rgba(255,255,255,0.16)' }} activeOpacity={x.onPress ? 0.7 : 1} onPress={x.onPress} disabled={!x.onPress}>
             <Text style={{ fontSize: 22, fontFamily: F.black, color: '#fff' }}>{x.value}</Text>
             <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', fontFamily: F.bold, marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.8 }}>{x.label}</Text>
           </TouchableOpacity>
@@ -385,7 +385,7 @@ function BadgesStripRow({ badges, onAll }: { badges: Badge[]; onAll: () => void 
         ))}
         <TouchableOpacity onPress={onAll} activeOpacity={0.8} accessibilityLabel={t('profileSec.seeAllBadges')}>
           <GlassSurface radius={32} style={{ width: 64, height: 64, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="chevron-forward" size={22} color="#fff" />
+            <Ionicons name={dirIcon('chevron-forward')} size={22} color="#fff" />
           </GlassSurface>
         </TouchableOpacity>
       </ScrollView>

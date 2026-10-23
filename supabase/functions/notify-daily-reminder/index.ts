@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { T, asLang, fill, names } from './texts.ts';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -7,7 +8,7 @@ const supabase = createClient(
 
 const DAY = 24 * 60 * 60 * 1000;
 const parisDay = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
-const first = (name?: string | null) => (name || '').split(' ')[0] || "Quelqu'un";
+const first = (name?: string | null, fallback = "Quelqu'un") => (name || '').split(' ')[0] || fallback;
 
 // Jour de la semaine à Paris, 1 = lundi ... 7 = dimanche (même numérotation que objectives.training_days).
 const isoDow = (d: Date) => {
@@ -25,12 +26,7 @@ function parisMidnightISO() {
   return new Date(paris.getTime() - offset).toISOString();
 }
 
-// « Enzo », « Enzo et Axel », « Enzo, Axel et 2 autres »
-function namesLabel(names: string[]) {
-  if (names.length === 1) return names[0];
-  if (names.length === 2) return `${names[0]} et ${names[1]}`;
-  return `${names[0]}, ${names[1]} et ${names.length - 2} autre${names.length > 3 ? 's' : ''}`;
-}
+// « Enzo », « Enzo et Axel », « Enzo, Axel et 2 autres » : names() de texts.ts, dans la langue de chacun.
 
 // Rappel de 19 h pour ceux qui n'ont pas posté, UNIQUEMENT les jours où ils s'entraînent (planning de
 // leurs objectifs, `training_days` ; sans planning = tous les jours). Le message le plus parlant gagne :
@@ -49,7 +45,7 @@ Deno.serve(async (req) => {
   const since40 = new Date(Date.now() - 40 * DAY).toISOString();
 
   const [usersRes, postedRes, objRes, friendsRes, updRes, duelRes, unreadRes] = await Promise.all([
-    supabase.from('users').select('id, full_name, push_token'),
+    supabase.from('users').select('id, full_name, push_token, language'),
     supabase.from('updates').select('user_id').gte('created_at', sinceISO),
     supabase.from('objectives').select('user_id, training_days'),
     supabase.from('friendships').select('requester_id, receiver_id').eq('status', 'accepted'),
@@ -120,15 +116,18 @@ Deno.serve(async (req) => {
         .map(id => nameOf.get(id))
         .filter(Boolean) as string[];
 
-      let title = "⏰ Pas encore posté aujourd'hui";
+      const lang = asLang(u.language);
+      const t = T[lang];
+      const who = names(lang, posted);
+      let title = t.dailyTitle;
       let body = posted.length > 0
-        ? `${namesLabel(posted)} ${posted.length > 1 ? 'ont' : 'a'} déjà posté aujourd'hui. Et toi ?`
-        : "Personne n'a encore posté dans ton cercle. Montre l'exemple.";
+        ? fill(posted.length > 1 ? t.dailyBodyPosted : t.dailyBodyPostedOne, { names: who })
+        : t.dailyBodyNobody;
 
       const streak = streakEndingYesterday(u.id);
       if (streak >= 3) {
-        title = `🔥 Ta série de ${streak} jours est en jeu`;
-        body = posted.length > 0 ? `Une séance et elle continue. ${namesLabel(posted)} ${posted.length > 1 ? 'ont' : 'a'} déjà posté.` : 'Une séance aujourd\'hui et elle continue.';
+        title = fill(t.dailyStreakTitle, { n: streak });
+        body = posted.length > 0 ? fill(posted.length > 1 ? t.dailyStreakBodyPosted : t.dailyStreakBodyPostedOne, { names: who }) : t.dailyStreakBody;
       }
 
       const duel = activeDuels.find(d => d.challenger_id === u.id || d.opponent_id === u.id);
@@ -138,10 +137,8 @@ Deno.serve(async (req) => {
         const to = new Date(duel.ends_at).getTime();
         const mine = duelScore(u.id, from, to);
         const theirs = duelScore(other, from, to);
-        title = `⚔️ Ton duel contre ${first(nameOf.get(other))}`;
-        body = mine < theirs ? `Il mène ${theirs} à ${mine}. Poste aujourd'hui pour revenir.`
-          : mine > theirs ? `Tu mènes ${mine} à ${theirs}. Poste aujourd'hui pour creuser l'écart.`
-          : `Égalité ${mine} à ${theirs}. Ta séance du jour fait la différence.`;
+        title = fill(t.dailyDuelTitle, { who: first(nameOf.get(other), t.someone) });
+        body = fill(mine < theirs ? t.dailyDuelBehind : mine > theirs ? t.dailyDuelAhead : t.dailyDuelTie, { mine, theirs });
       }
 
       // Le rappel n'est pas enregistré en base : on l'ajoute au nombre de non lus pour la pastille de l'icône.

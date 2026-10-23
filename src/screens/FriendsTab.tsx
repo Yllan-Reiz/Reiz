@@ -16,7 +16,7 @@ import { Friend, PendingRequest } from '../lib/types';
 import { APP_STORE_URL, GUTTER, navClearance, GLASS_FRIENDS } from '../constants';
 import { FriendsGlassView } from '../components/FriendsGlassView';
 import { s, F } from '../styles';
-import { t, tp } from '../i18n';
+import { t, tp, dirIcon } from '../i18n';
 
 export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (userId: string) => void; onPendingCount?: (n: number) => void }) {
   const insets = useSafeAreaInsets();
@@ -338,7 +338,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     <ScrollView
       style={s.feed}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: navClearance(insets.bottom) }}
+      contentContainerStyle={[s.feedPad, { paddingBottom: navClearance(insets.bottom) }]}
       refreshControl={
         <RefreshControl
           refreshing={refreshingFriends}
@@ -372,7 +372,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
                 <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>{t('friends.findContacts')}</Text>
                 <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }}>{t('friends.findContactsSub')}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.6)" />
+              <Ionicons name={dirIcon('chevron-forward')} size={18} color="rgba(255,255,255,0.6)" />
             </View>
           </GlassSurface>
         </TouchableOpacity>

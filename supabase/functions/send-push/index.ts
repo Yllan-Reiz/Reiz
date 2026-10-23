@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { T, asLang, fill, num, unit, locale, isDefaultPlace, duelResult, type Lang } from './texts.ts';
 
 // Point d'envoi unique des notifications push.
 // Chaque événement social (réaction, commentaire, post d'un ami...) est d'abord
@@ -51,7 +52,7 @@ async function apnsToken(): Promise<string | null> {
 type DuoExtras = { updateId: string; countLabel?: string; initials: string[]; moreCount: number };
 
 /** Lance la carte du duo sur l'iPhone de l'ami identifié. true = Apple l'a acceptée (pas besoin de la notification classique). */
-async function startDuoActivity(recipientId: string, actorId: string, name: string, objLabel: string, postedAt: string, extras: DuoExtras): Promise<boolean> {
+async function startDuoActivity(lang: Lang, timeZone: string, recipientId: string, actorId: string, name: string, objLabel: string, postedAt: string, extras: DuoExtras): Promise<boolean> {
   try {
     const { data } = await supabase.from('live_activity_tokens').select('token').eq('user_id', recipientId).maybeSingle();
     if (!data?.token) return false;
@@ -60,15 +61,16 @@ async function startDuoActivity(recipientId: string, actorId: string, name: stri
     const jwt = await apnsToken();
     if (!jwt) return false;
     const first = name.split(' ')[0];
+    const t = T[lang];
     const contentState = {
-      title: `${first} t'attend 🤝`,
-      subtitle: objLabel || 'Poste ta séance pour valider le duo',
+      title: fill(t.cardTitle, { first }),
+      subtitle: objLabel || t.cardSubtitle,
       timerEndDateInMilliseconds: deadline,
       imageName: 'reiz_logo',
       dynamicIslandImageName: 'reiz_logo',
     };
-    // L'heure du post, en heure de Paris (« 18:42 »), en haut à droite de la carte.
-    const timeLabel = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }).format(new Date(postedAt));
+    // L'heure du post (« 18:42 »), à l'heure de celui qui reçoit la carte, en haut à droite.
+    const timeLabel = new Intl.DateTimeFormat(locale(lang), { hour: '2-digit', minute: '2-digit', timeZone }).format(new Date(postedAt));
     const payload = {
       aps: {
         timestamp: Math.floor(Date.now() / 1000),
@@ -92,10 +94,12 @@ async function startDuoActivity(recipientId: string, actorId: string, name: stri
           initials: extras.initials,
           moreCount: extras.moreCount,
           timeLabel,
+          // « restant » à côté du compte à rebours, dans la langue de celui qui reçoit (carte de la version 1.1).
+          remainingLabel: t.cardRemaining,
         },
         alert: {
-          title: `${first} t'a identifié dans sa séance 🤝`,
-          body: objLabel ? `${objLabel}. Tu as une heure pour poster la tienne et valider le duo.` : "Tu as une heure pour poster la tienne et valider le duo.",
+          title: fill(t.duoTagTitle, { name: first }),
+          body: objLabel ? fill(t.cardAlertBodyObj, { obj: objLabel }) : t.cardAlertBody,
           sound: 'default',
         },
       },
@@ -115,7 +119,7 @@ async function startDuoActivity(recipientId: string, actorId: string, name: stri
       // Suivi de la carte : live-activity-tick la fera passer à l'orange puis au rouge, et la fermera.
       await supabase.from('live_activity_runs').upsert({
         update_id: extras.updateId, user_id: recipientId, deadline: new Date(deadline).toISOString(),
-        content: contentState, author_name: name, phase: 'vert', update_token: null,
+        content: contentState, author_name: name, phase: 'vert', update_token: null, lang,
       }, { onConflict: 'update_id,user_id' });
       return true;
     }
@@ -165,7 +169,7 @@ Deno.serve(async (req) => {
   }
 
   const [recipientRes, actorRes, updateRes] = await Promise.all([
-    supabase.from('users').select('push_token').eq('id', n.recipient_id).single(),
+    supabase.from('users').select('push_token, language, timezone').eq('id', n.recipient_id).single(),
     n.actor_id
       ? supabase.from('users').select('full_name').eq('id', n.actor_id).single()
       : Promise.resolve({ data: null }),
@@ -185,86 +189,90 @@ Deno.serve(async (req) => {
     .eq('recipient_id', n.recipient_id)
     .is('read_at', null);
 
-  const name = (actorRes.data as any)?.full_name || "Quelqu'un";
+  // Langue de celui qui reçoit (vide = français, comptes d'avant la version 1.1).
+  const lang = asLang((recipientRes.data as any)?.language);
+  const t = T[lang];
+  const name = (actorRes.data as any)?.full_name || t.someone;
   const upd = updateRes.data as any;
   const obj = upd?.objectives;
   const objLabel = obj ? `${obj.emoji || ''} ${obj.title}`.trim() : '';
-  const onPost = objLabel ? `ton post ${objLabel}` : 'ton post';
+  const onPost = objLabel ? fill(t.onPostObj, { obj: objLabel }) : t.onPost;
 
   // Progression lisible : « 3 / 4 séances » plutôt qu'un pourcentage abstrait.
   let progress = '';
   if (upd && obj) {
     const pct = Math.min(Number(upd.progress_value) || 0, 100);
     progress = obj.unit && obj.unit !== '%' && obj.target_value
-      ? `${Math.round((pct / 100) * obj.target_value * 10) / 10} / ${obj.target_value} ${obj.unit}`
+      ? `${num(lang, (pct / 100) * obj.target_value)} / ${num(lang, obj.target_value)} ${unit(lang, obj.unit)}`
       : `${pct} %`;
   }
 
   let title = '';
   let body = '';
   // Un commentaire GIF est enregistré comme « [GIF] lien » : la notification dit juste « GIF ».
-  const said = (p?: string | null) => (/^\[GIF\] https:\/\//.test(p || '') ? 'GIF' : `« ${clip(p, 90)} »`);
+  const said = (p?: string | null) => (/^\[GIF\] https:\/\//.test(p || '') ? t.gif : fill(t.quote, { text: clip(p, 90) }));
   switch (n.type) {
     case 'reaction':
-      title = `${name} a réagi ${n.emoji || ''}`.trim();
-      body = upd?.caption ? `Sur ${onPost} : « ${clip(upd.caption, 50)} »` : `Sur ${onPost}`;
+      title = fill(t.reactionTitle, { name, emoji: n.emoji || '' }).trim();
+      body = upd?.caption ? fill(t.reactionBodyCaption, { post: onPost, caption: clip(upd.caption, 50) }) : fill(t.reactionBody, { post: onPost });
       break;
     case 'comment':
-      title = `${name} a commenté ${onPost}`;
+      title = fill(t.commentTitle, { name, post: onPost });
       body = said(n.preview);
       break;
     case 'reply':
-      title = `${name} t'a répondu`;
+      title = fill(t.replyTitle, { name });
       body = said(n.preview);
       break;
     case 'comment_like':
-      title = `${name} a aimé ton commentaire ❤️`;
+      title = fill(t.commentLikeTitle, { name });
       body = said(n.preview);
       break;
     case 'nudge':
       // Un ami te relance (fonction nudge_friend, une fois par jour au plus).
-      title = `${name} te relance 💪`;
-      body = "Ça fait quelques jours sans séance. Poste la prochaine, ton cercle t'attend.";
+      title = fill(t.nudgeTitle, { name });
+      body = t.nudgeBody;
       break;
     case 'friend_post':
-      title = objLabel ? `${name} a posté : ${objLabel}` : `${name} vient de publier`;
-      body = [progress, upd?.caption ? `« ${clip(upd.caption, 60)} »` : ''].filter(Boolean).join('  ') || 'Viens voir sa progression et réagis.';
+      title = objLabel ? fill(t.friendPostTitleObj, { name, obj: objLabel }) : fill(t.friendPostTitle, { name });
+      body = [progress, upd?.caption ? fill(t.quote, { text: clip(upd.caption, 60) }) : ''].filter(Boolean).join('  ') || t.friendPostBody;
       break;
     case 'duo_tag':
-      title = `${name} t'a identifié dans sa séance 🤝`;
-      body = objLabel ? `${objLabel}. Poste la tienne dans l'heure pour valider le duo.` : "Poste la tienne dans l'heure pour valider le duo.";
+      title = fill(t.duoTagTitle, { name });
+      body = objLabel ? fill(t.duoTagBodyObj, { obj: objLabel }) : t.duoTagBody;
       break;
     case 'at_gym':
       // n.preview = nom du lieu choisi par la personne (« Basic-Fit »). Jamais de coordonnées.
-      title = n.preview ? `${name} est à ${clip(n.preview, 40)} 💪` : `${name} est à la salle 💪`;
-      body = `Viens t'entraîner avec ${name.split(' ')[0]}.`;
+      // Lieu par défaut (« la salle ») écrit dans la langue de celui qui prévient : réécrit dans celle de celui qui reçoit.
+      title = n.preview && !isDefaultPlace(n.preview) ? fill(t.atGymTitlePlace, { name, place: clip(n.preview, 40) }) : fill(t.atGymTitle, { name });
+      body = fill(t.atGymBody, { first: name.split(' ')[0] });
       break;
     case 'tag_endorse':
-      title = `${name} a validé ton tag`;
-      body = n.preview ? `« ${clip(n.preview, 40)} » sur ton profil` : 'Va voir ton profil.';
+      title = fill(t.tagEndorseTitle, { name });
+      body = n.preview ? fill(t.tagEndorseBodyTag, { tag: clip(n.preview, 40) }) : t.tagEndorseBody;
       break;
     case 'friend_request':
-      title = `${name} veut rejoindre ton cercle`;
-      body = 'Accepte pour suivre ses progrès, et lui les tiens.';
+      title = fill(t.friendRequestTitle, { name });
+      body = t.friendRequestBody;
       break;
     case 'friend_accept':
-      title = `${name} a accepté ta demande`;
-      body = 'Vous êtes dans le même cercle. Va voir ses objectifs.';
+      title = fill(t.friendAcceptTitle, { name });
+      body = t.friendAcceptBody;
       break;
     case 'challenge_invite':
-      title = `${name} te défie 🔥`;
-      body = "Un duel d'une semaine : qui s'entraîne sur le plus de jours ? Réponds dans l'appli.";
+      title = fill(t.challengeInviteTitle, { name });
+      body = t.challengeInviteBody;
       break;
     case 'challenge_accept':
-      title = `${name} relève ton défi 💪`;
-      body = "C'est parti pour 7 jours. Chaque jour où tu postes une séance compte.";
+      title = fill(t.challengeAcceptTitle, { name });
+      body = t.challengeAcceptBody;
       break;
     case 'challenge_result': {
       // n.preview = « Victoire 5 à 3 », « Défaite 3 à 5 » ou « Égalité 4 à 4 », déjà écrit du point de vue du destinataire.
-      const res = n.preview || '';
-      const icon = res.startsWith('Victoire') ? '🏆' : res.startsWith('Égalité') ? '🤝' : '💪';
-      title = `${icon} Défi terminé contre ${name}`;
-      body = res || 'Va voir le résultat.';
+      const res = duelResult(lang, n.preview);
+      const icon = res?.kind === 'win' ? '🏆' : res?.kind === 'draw' ? '🤝' : '💪';
+      title = fill(t.challengeResultTitle, { icon, name });
+      body = res?.text || n.preview || t.challengeResultBody;
       break;
     }
     default:
@@ -286,10 +294,10 @@ Deno.serve(async (req) => {
     if (obj) {
       const pct = Math.min(Number(upd.progress_value) || 0, 100);
       countLabel = obj.unit && obj.unit !== '%' && obj.target_value
-        ? `${Math.round((pct / 100) * obj.target_value * 10) / 10}/${obj.target_value}`.replace('.', ',')
+        ? `${num(lang, (pct / 100) * obj.target_value)}/${num(lang, obj.target_value)}`
         : `${pct}%`;
     }
-    if (await startDuoActivity(n.recipient_id, n.actor_id, name, objLabel, upd.created_at,
+    if (await startDuoActivity(lang, (recipientRes.data as any)?.timezone || 'Europe/Paris', n.recipient_id, n.actor_id, name, objLabel, upd.created_at,
         { updateId: n.update_id, countLabel, initials, moreCount: Math.max(0, names.length - 3) })) {
       return new Response('live activity');
     }

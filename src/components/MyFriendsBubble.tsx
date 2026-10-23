@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 import { signAvatars } from '../lib/storage';
 import { GUTTER } from '../constants';
 import { F } from '../styles';
-import { t, tp } from '../i18n';
+import { t, tp, dirIcon } from '../i18n';
 
 // Sur TON profil : tes amis (quelques visages, le nombre) et le bouton pour voir la liste complète, où l'on
 // gère aussi le cercle proche et où l'on retire un ami. L'onglet Amis, lui, sert à en trouver de nouveaux.
@@ -42,7 +42,7 @@ export function MyFriendsBubble({ userId, onOpen, reloadKey }: { userId: string;
             <Faces people={people} size={40} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: F.semibold }}>{count} {count > 1 ? 'amis' : 'ami'}</Text>
-              <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.5)" />
+              <Ionicons name={dirIcon('chevron-forward')} size={16} color="rgba(255,255,255,0.5)" />
             </View>
           </View>
         </View>

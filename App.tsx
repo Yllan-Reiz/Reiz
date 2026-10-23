@@ -22,6 +22,7 @@ import { WelcomeFlow, welcomePending } from './src/components/WelcomeFlow';
 import { WELCOME_FLOW } from './src/constants';
 import { PostScreen } from './src/screens/PostScreen';
 import { registerLiveActivityToken, endExpiredLiveActivities } from './src/lib/liveActivity';
+import { saveLanguage } from './src/lib/language';
 
 // Au-delà, le fil est rechargé au retour dans l'app (liens de photos neufs, posts du jour).
 const STALE_AFTER_MS = 3 * 3600 * 1000;
@@ -59,6 +60,7 @@ function AppInner() {
     registeredUserId.current = user.id;
     // Jeton de l'Activité en direct du duo : il ne demande aucune autorisation, on le range tout de suite.
     registerLiveActivityToken();
+    saveLanguage(user.id);
     if (await welcomePending(user)) return;
     registerForPushNotifications(user.id);
   };

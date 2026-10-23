@@ -8,7 +8,7 @@ import { Duel, loadDuels, leaderLabel, proposeDuel } from '../lib/duel';
 import { loadCircleRhythm, FriendRhythm } from '../lib/rhythm';
 import { GUTTER } from '../constants';
 import { F } from '../styles';
-import { t, tp } from '../i18n';
+import { t, tp, dirIcon } from '../i18n';
 
 // ============================================================
 // Défi duo : la carte du profil d'un ami (proposer, répondre, suivre, revanche)
@@ -170,7 +170,7 @@ export function DuelBanner({ onOpenProfile, reloadKey }: { onOpenProfile: (id: s
                   </Text>
                 </View>
                 <Text style={{ fontSize: 18 }}>⚔️</Text>
-                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.6)" />
+                <Ionicons name={dirIcon('chevron-forward')} size={18} color="rgba(255,255,255,0.6)" />
               </View>
             </GlassSurface>
           </TouchableOpacity>
@@ -230,7 +230,7 @@ export function ChallengeFriendButton({ onSent }: { onSent?: () => void }) {
               <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>{t('duelCard.challengeFriend')}</Text>
               <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }}>{t('duelCard.challengeFriendSub')}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
+            <Ionicons name={dirIcon('chevron-forward')} size={18} color="rgba(255,255,255,0.5)" />
           </View>
         </GlassSurface>
       </TouchableOpacity>

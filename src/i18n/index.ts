@@ -31,11 +31,19 @@ function asLang(code?: string | null): Lang | null {
 // Langues du téléphone, la préférée d'abord (iOS : celle réglée pour Reiz dans Réglages > Reiz > Langue).
 function deviceLangs(): string[] {
   try {
+    // Settings lit les préférences iOS (AppleLanguages) ; NativeModules.SettingsManager n'existe plus avec la
+    // nouvelle architecture de React Native. Intl donne la langue de la région en dernier recours.
+    const list: string[] = [];
     if (Platform.OS === 'ios') {
-      const s = NativeModules.SettingsManager?.settings || {};
-      return [...(s.AppleLanguages || []), s.AppleLocale].filter(Boolean);
+      const langs = Settings.get('AppleLanguages');
+      if (Array.isArray(langs)) list.push(...langs);
+      const loc = Settings.get('AppleLocale');
+      if (typeof loc === 'string') list.push(loc);
+    } else if (NativeModules.I18nManager?.localeIdentifier) {
+      list.push(NativeModules.I18nManager.localeIdentifier);
     }
-    return [NativeModules.I18nManager?.localeIdentifier].filter(Boolean);
+    try { list.push(Intl.DateTimeFormat().resolvedOptions().locale); } catch {}
+    return list.filter(Boolean);
   } catch {
     return [];
   }
@@ -161,6 +169,12 @@ export async function setLanguage(next: Lang | null) {
   dict = DICTS[current];
   syncDirection();
   await reloadApp();
+}
+
+// Icône qui indique un sens (chevron-back, arrow-forward...) : en hébreu, « retour » pointe à droite.
+export function dirIcon<N extends string>(name: N): N {
+  if (!isRTL()) return name;
+  return name.replace(/-(back|forward)(?=-|$)/, (_m, d) => (d === 'back' ? '-forward' : '-back')) as N;
 }
 
 // Dates et nombres dans la langue de l'app.

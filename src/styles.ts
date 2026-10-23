@@ -68,9 +68,12 @@ export const s = StyleSheet.create({
   streakBadge: { backgroundColor: '#1e1e1e', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: '#2a2a2a', flexDirection: 'row', alignItems: 'center', gap: 3 },
   streakFlame: { fontFamily: F.bold },
   streakText: { fontSize: 12, color: '#fff', fontFamily: F.bold },
-  feed: { flex: 1, paddingHorizontal: GUTTER, paddingTop: 8 },
+  // La marge horizontale va sur le CONTENU de la liste (feedPad), jamais sur la liste elle-même : en hébreu
+  // (droite à gauche), React Native décale sinon tout le contenu d'une marge de trop.
+  feed: { flex: 1, paddingTop: 8 },
+  feedPad: { paddingHorizontal: GUTTER },
   // Le fil démarre sous le fondu : avant, le fondu de 60px mangeait le haut du bouton « Publier ».
-  feedContent: { paddingTop: 4 },
+  feedContent: { paddingTop: 4, paddingHorizontal: GUTTER },
   feedTopFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 18 },
   myUpdate: { backgroundColor: '#111', borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   myUpdateInfo: { flex: 1 },

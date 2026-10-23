@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { T, asLang, fill, num as fmt, unit as unitIn, type Lang } from './texts.ts';
 
 // Encouragements personnels, une fois par matin (10 h 30 à Paris).
 // Deux situations, une seule notification par personne et par passage :
@@ -19,12 +20,12 @@ const DAY = 24 * 60 * 60 * 1000;
 const parisDay = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
 const daysBetween = (a: string, b: string) => Math.round((new Date(`${b}T12:00:00Z`).getTime() - new Date(`${a}T12:00:00Z`).getTime()) / DAY);
 
-const num = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
-// « 1 séances » → « 1 séance »
-const unitLabel = (unit: string, n: number) => (n === 1 && unit === 'séances' ? 'séance' : unit);
+// « 1 séances » → « 1 séance » (dans chaque langue).
+const ONE_SESSION: Record<Lang, string> = { fr: 'séance', en: 'session', es: 'sesión', he: 'אימון' };
+const unitLabel = (l: Lang, unit: string, n: number) => (n === 1 && unit === 'séances' ? ONE_SESSION[l] : unitIn(l, unit));
 // Jour de la semaine d'un jour Paris « AAAA-MM-JJ » : 1 = lundi ... 7 = dimanche.
 const isoDowOf = (day: string) => { const w = new Date(`${day}T12:00:00Z`).getUTCDay(); return w === 0 ? 7 : w; };
-const first = (name?: string | null) => (name || '').split(' ')[0] || "Quelqu'un";
+const first = (name?: string | null) => (name || '').split(' ')[0] || '';
 
 type Msg = { userId: string; kind: 'almost' | 'comeback'; ref: string; title: string; body: string; to: string };
 
@@ -43,7 +44,7 @@ Deno.serve(async (req) => {
   const since14 = new Date(now.getTime() - 14 * DAY).toISOString();
 
   const [usersRes, objRes, updRes, logRes, friendsRes, unreadRes] = await Promise.all([
-    supabase.from('users').select('id, full_name, username, push_token, notif_encouragement').not('push_token', 'is', null),
+    supabase.from('users').select('id, full_name, username, push_token, notif_encouragement, language').not('push_token', 'is', null),
     supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed, training_days'),
     supabase.from('updates').select('user_id, created_at').gte('created_at', since60),
     supabase.from('encouragement_log').select('user_id, kind, ref, sent_at').gte('sent_at', since14),
@@ -80,6 +81,9 @@ Deno.serve(async (req) => {
 
   const msgs: Msg[] = [];
   for (const u of users) {
+    const lang = asLang(u.language);
+    const t = T[lang];
+    const num = (n: number) => fmt(lang, n);
     const days = postDays.get(u.id) || new Set<string>();
     const objectives = objectivesOf.get(u.id) || [];
     if (objectives.length === 0) continue;               // pas encore lancé
@@ -107,8 +111,8 @@ Deno.serve(async (req) => {
       const pct = o.unit === '%';
       msgs.push({
         userId: u.id, kind: 'almost', ref: best.ref, to: u.push_token,
-        title: pct ? `Plus que ${num(left)} % 🔥` : `Plus que ${num(left)} ${unitLabel(o.unit, left)} 🔥`,
-        body: `« ${`${o.emoji || ''} ${o.title}`.trim()} » : ${num(o.current_value || 0)} / ${num(o.target_value)}${pct ? ' %' : ''}. Tu y es presque.`,
+        title: pct ? fill(t.almostTitlePct, { left: num(left) }) : fill(t.almostTitle, { left: num(left), unit: unitLabel(lang, o.unit, left) }),
+        body: fill(t.almostBody, { obj: `${o.emoji || ''} ${o.title}`.trim(), cur: num(o.current_value || 0), target: num(o.target_value), pct: pct ? ' %' : '' }),
       });
       continue;
     }
@@ -132,15 +136,15 @@ Deno.serve(async (req) => {
     const recentFriends = (friendsOf.get(u.id) || []).filter(fid => {
       const fd = postDays.get(fid);
       return fd && [...fd].some(d => daysBetween(d, today) <= 3);
-    }).map(fid => first(nameOf.get(fid)));
+    }).map(fid => first(nameOf.get(fid)) || t.someone);
     const friendLine = recentFriends.length === 1
-      ? `${recentFriends[0]} a posté ces derniers jours.`
-      : recentFriends.length > 1 ? `${recentFriends[0]} et ${recentFriends[1]} ont posté ces derniers jours.` : '';
+      ? fill(t.friendsPostedOne, { a: recentFriends[0] })
+      : recentFriends.length > 1 ? fill(t.friendsPostedTwo, { a: recentFriends[0], b: recentFriends[1] }) : '';
     const copy = gap === 3
-      ? { title: 'Ça fait 3 jours 👀', body: 'Une petite séance suffit pour relancer la machine.' }
+      ? { title: t.gap3Title, body: t.gap3Body }
       : gap === 7
-        ? { title: 'Une semaine sans poster', body: 'Reviens avec une séance, même courte.' }
-        : { title: 'Ton cercle pense à toi', body: 'Pose-toi un petit objectif et reprends en douceur.' };
+        ? { title: t.gap7Title, body: t.gap7Body }
+        : { title: t.gap14Title, body: t.gap14Body };
     msgs.push({ userId: u.id, kind: 'comeback', ref, to: u.push_token, title: copy.title, body: [copy.body, friendLine].filter(Boolean).join(' ') });
   }
 

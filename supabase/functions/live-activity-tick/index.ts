@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { T, asLang, fill } from './texts.ts';
 
 // Carte du duo (Activité en direct) : appelée toutes les minutes par pg_cron.
 // La carte ne se redessine que quand elle reçoit une mise à jour : on lui en envoie une quand elle passe
@@ -74,15 +75,16 @@ Deno.serve(async (req) => {
     const deadline = new Date(r.deadline).getTime();
     const phase = phaseAt(deadline, now);
     if (phase !== 'fin' && phase === r.phase) continue;
-    const who = (r.author_name || '').split(' ')[0] || 'Ton ami';
+    const t = T[asLang(r.lang)];
+    const who = (r.author_name || '').split(' ')[0] || t.yourFriend;
     const aps: Record<string, unknown> = {
       timestamp: Math.floor(now / 1000),
       event: phase === 'fin' ? 'end' : 'update',
       'content-state': r.content,
     };
     if (phase === 'fin') aps['dismissal-date'] = Math.floor(now / 1000);
-    if (phase === 'orange') aps.alert = { title: `⏳ Plus que 20 min pour ton duo avec ${who}`, body: 'Poste ta séance pour valider le duo.', sound: 'default' };
-    if (phase === 'rouge') aps.alert = { title: `⏳ Dernières minutes pour ton duo avec ${who}`, body: 'Poste ta séance maintenant pour valider le duo.', sound: 'default' };
+    if (phase === 'orange') aps.alert = { title: fill(t.cardOrangeTitle, { who }), body: t.cardOrangeBody, sound: 'default' };
+    if (phase === 'rouge') aps.alert = { title: fill(t.cardRedTitle, { who }), body: t.cardRedBody, sound: 'default' };
     report.push({ update: r.update_id, phase });
     if (dry) continue;
 

@@ -20,7 +20,7 @@ import { loadPost } from '../lib/posts';
 import { loadDuels, Duel } from '../lib/duel';
 import { setAppBadge } from '../lib/badge';
 import { gifIdOf } from '../lib/giphy';
-import { t, tp } from '../i18n';
+import { t, tp, dirIcon } from '../i18n';
 
 type Row = ActivityItem & {
   updates?: { photo_url?: string | null; objectives?: { emoji?: string; title?: string } | null } | null;
@@ -289,12 +289,12 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
       <View style={s.container}>
         <View style={[s.header, { paddingTop: insets.top + 6 }]}>
           <TouchableOpacity style={s.backBtn} onPress={() => setOpenPost(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={t('common.back')}>
-            <Ionicons name="chevron-back" size={20} color="#888" />
+            <Ionicons name={dirIcon('chevron-back')} size={20} color="#888" />
           </TouchableOpacity>
           <Text style={s.headerTitle}>{t('activity.post')}</Text>
           <View style={{ width: 34 }} />
         </View>
-        <ScrollView style={s.feed} contentContainerStyle={{ paddingBottom: 40 + insets.bottom }}>
+        <ScrollView style={s.feed} contentContainerStyle={[s.feedPad, { paddingBottom: 40 + insets.bottom }]}>
           <FeedCard
             u={openPost.u}
             meta={openPost.meta}

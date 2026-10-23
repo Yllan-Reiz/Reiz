@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { ALL_DAYS } from '../constants';
 import { F } from '../styles';
-import { t } from '../i18n';
+import { t, dirIcon } from '../i18n';
 
 // Choix de la discipline, à l'accueil : une grande photo par sport, plein écran, qu'on fait défiler au doigt.
 // La discipline choisie sert ensuite à préremplir le premier objectif (nom, unité, but, jours).
@@ -158,7 +158,7 @@ export function SportCarousel({ initialIndex = 0, bottomInset, onContinue, onSki
           style={{ backgroundColor: '#fff', borderRadius: 16, minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}
         >
           <Text style={{ color: '#000', fontSize: 17, fontFamily: F.extrabold }}>{t('common.continue')}</Text>
-          <Ionicons name="arrow-forward" size={20} color="#000" />
+          <Ionicons name={dirIcon('arrow-forward')} size={20} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity onPress={onSkip} activeOpacity={0.8} accessibilityRole="button" style={{ paddingVertical: 14, alignItems: 'center' }}>
           <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontFamily: F.semibold }}>{t('welcome.chooseLater')}</Text>

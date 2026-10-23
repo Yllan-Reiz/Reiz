@@ -11,7 +11,7 @@ import { WelcomeModal } from '../components/WelcomeFlow';
 import { contactsAvailable } from '../lib/contacts';
 import { APP_VERSION, WELCOME_FLOW } from '../constants';
 import { F } from '../styles';
-import { LANGS, lang, chosenLang, deviceLang, setLanguage, type Lang, t } from '../i18n';
+import { LANGS, lang, chosenLang, deviceLang, setLanguage, type Lang, t, dirIcon } from '../i18n';
 
 type View_ = 'root' | 'password' | 'blocked' | 'legal' | 'presence' | 'language';
 
@@ -103,7 +103,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
       <View style={{ flex: 1, backgroundColor: '#0a0a0a', paddingTop: insets.top }}>
         <View style={st.header}>
           <TouchableOpacity onPress={back} style={st.backBtn} accessibilityLabel={t('common.back')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name={view === 'root' ? 'close' : 'chevron-back'} size={24} color="#fff" />
+            <Ionicons name={view === 'root' ? 'close' : dirIcon('chevron-back')} size={24} color="#fff" />
           </TouchableOpacity>
           <Text style={st.headerTitle} numberOfLines={1}>{titles[view]}</Text>
           <View style={st.backBtn} />
@@ -190,7 +190,7 @@ function Row({ icon, label, value, onPress, danger, last }: { icon: any; label: 
       <Ionicons name={icon} size={20} color={danger ? '#ff453a' : '#bbb'} />
       <Text style={[st.rowLabel, { color }]} numberOfLines={1}>{label}</Text>
       {!!value ? <Text style={st.rowValue} numberOfLines={1}>{value}</Text> : <View style={{ flex: 1 }} />}
-      {!!onPress && !danger && <Ionicons name="chevron-forward" size={16} color="#555" />}
+      {!!onPress && !danger && <Ionicons name={dirIcon('chevron-forward')} size={16} color="#555" />}
     </TouchableOpacity>
   );
 }

@@ -1,20 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { T, asLang, type Lang } from './texts.ts';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SERVICE_KEY')!
 );
 
-const MESSAGES = [
-  'Ton cercle attend ta progression.',
-  'Les meilleurs ne s\'arrêtent jamais. Et toi ?',
-  'Montre à ton cercle ce dont tu es capable.',
-  'Ta streak t\'attend. Lance-toi.',
-  'Un petit update aujourd\'hui ? Tes amis regardent.',
-  'Ça fait un moment, où en es-tu ?',
-  'Chaque jour compte. Poste ta progression.',
-  'Ton cercle progresse. Tu ne veux pas rester en arrière ?',
-];
+// Messages dans texts.ts (T[langue].random), le même numéro tiré pour tout le monde, chacun dans sa langue.
 
 Deno.serve(async (req) => {
   // Protection conditionnelle : si CRON_SECRET est défini côté Supabase, on l'exige dans le header.
@@ -25,19 +17,20 @@ Deno.serve(async (req) => {
 
   const { data: users } = await supabase
     .from('users')
-    .select('push_token')
+    .select('push_token, language')
     .not('push_token', 'is', null);
 
   if (!users) return new Response('ok');
 
-  const randomBody = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
+  const pick = Math.floor(Math.random() * T.fr.random.length);
+  const bodyFor = (l: Lang) => T[l].random[pick] ?? T.fr.random[pick];
 
   const messages = users
     .filter(u => u.push_token)
     .map(u => ({
       to: u.push_token,
       title: 'Reiz',
-      body: randomBody,
+      body: bodyFor(asLang(u.language)),
       sound: 'default',
     }));
 

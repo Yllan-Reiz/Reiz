@@ -55,7 +55,7 @@ export function FlameStreak({ streak }: { streak: number }) {
         color="#fff"
         style={{ transform: [{ scale }], opacity }}
       />
-      <Text style={s.streakText}>{streak}j</Text>
+      <Text style={s.streakText}>{t('days.durationDays', { n: streak })}</Text>
     </TouchableOpacity>
   );
 }

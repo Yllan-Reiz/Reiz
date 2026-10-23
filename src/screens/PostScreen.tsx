@@ -18,7 +18,7 @@ import { trimAvailable, trimVideo, cleanTrimmed } from '../lib/videoTools';
 import { galleryAvailable, saveToGallery } from '../lib/saveToGallery';
 import { endAllLiveActivities } from '../lib/liveActivity';
 import { s, F } from '../styles';
-import { t, tp, unitLabel } from '../i18n';
+import { t, tp, unitLabel, isRTL } from '../i18n';
 
 // Vidéo de progression : 15 s max, comme une story. Au-delà, le fichier pèse
 // trop lourd pour la 4G et le fil devient une plateforme vidéo.
@@ -40,7 +40,11 @@ function ProgressSlider({ pct, onChange }: { pct: number; onChange: (ratio: numb
   const box = useRef({ x: 0, w: 1 });
   const cb = useRef(onChange);
   cb.current = onChange;
-  const at = (pageX: number) => cb.current(Math.max(0, Math.min(1, (pageX - box.current.x - THUMB / 2) / (box.current.w - THUMB))));
+  // En hébreu la barre se remplit depuis la droite : le doigt compte à partir du bord droit.
+  const at = (pageX: number) => {
+    const ratio = Math.max(0, Math.min(1, (pageX - box.current.x - THUMB / 2) / (box.current.w - THUMB)));
+    cb.current(isRTL() ? 1 - ratio : ratio);
+  };
   const pan = useRef(PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,

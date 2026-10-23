@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { T, asLang, fill } from './texts.ts';
 
 // Rappels d'un duo, façon BeReal : quand un ami t'a identifié dans sa séance, tu as 1 heure pour poster la tienne.
 // Deux rappels, si tu n'as pas encore posté :
@@ -14,10 +15,10 @@ const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SERVI
 const MIN = 60 * 1000;
 const WINDOW_MIN = 60;
 const STAGES = [
-  { stage: 1, from: 28, to: 38, left: 'environ 30 minutes' },
-  { stage: 2, from: 48, to: 58, left: 'environ 10 minutes' },
+  { stage: 1, from: 28, to: 38 },
+  { stage: 2, from: 48, to: 58 },
 ];
-const first = (n?: string | null) => (n || '').split(' ')[0] || "Ton ami";
+const first = (n?: string | null) => (n || '').split(' ')[0] || '';
 
 Deno.serve(async (req) => {
   const expected = Deno.env.get('CRON_SECRET');
@@ -46,7 +47,7 @@ Deno.serve(async (req) => {
   const { data: cards } = await supabase.from('live_activity_runs').select('update_id, user_id').in('update_id', ids).not('update_token', 'is', null);
   const withCard = new Set((cards || []).map(c => `${c.update_id}:${c.user_id}`));
 
-  type Todo = { postId: string; authorId: string; userId: string; stage: number; left: string };
+  type Todo = { postId: string; authorId: string; userId: string; stage: number };
   const todo: Todo[] = [];
   for (const p of posts) {
     const elapsed = (now.getTime() - new Date(p.created_at).getTime()) / MIN;
@@ -60,24 +61,27 @@ Deno.serve(async (req) => {
       const { count } = await supabase.from('updates').select('id', { count: 'exact', head: true })
         .eq('user_id', uid).contains('with_user_ids', [p.user_id]).gte('created_at', lo).lte('created_at', hi);
       if ((count || 0) > 0) continue;
-      todo.push({ postId: p.id, authorId: p.user_id, userId: uid, stage: st.stage, left: st.left });
+      todo.push({ postId: p.id, authorId: p.user_id, userId: uid, stage: st.stage });
     }
   }
   if (todo.length === 0) return new Response(dry ? '[]' : 'Rien à rappeler');
 
   const people = [...new Set(todo.flatMap(t => [t.authorId, t.userId]))];
-  const { data: users } = await supabase.from('users').select('id, full_name, push_token').in('id', people);
+  const { data: users } = await supabase.from('users').select('id, full_name, push_token, language').in('id', people);
   const byId = new Map((users || []).map(u => [u.id, u]));
   const { data: unreadRows } = await supabase.from('notifications').select('recipient_id').is('read_at', null).in('recipient_id', todo.map(t => t.userId));
   const unread = new Map<string, number>();
   (unreadRows || []).forEach((r: any) => unread.set(r.recipient_id, (unread.get(r.recipient_id) || 0) + 1));
 
   const msgs = todo.map(t => {
-    const who = first(byId.get(t.authorId)?.full_name);
+    // Dans la langue de celui qui reçoit le rappel.
+    const tx = T[asLang(byId.get(t.userId)?.language)];
+    const who = first(byId.get(t.authorId)?.full_name) || tx.yourFriend;
+    const left = t.stage === 1 ? tx.duoLeft30 : tx.duoLeft10;
     return {
       t, to: byId.get(t.userId)?.push_token as string | undefined,
-      title: t.stage === 1 ? `⏳ Ton duo avec ${who} expire bientôt` : `⏳ Dernière ligne droite pour ton duo avec ${who}`,
-      body: t.stage === 1 ? `Il te reste ${t.left} pour poster ta séance.` : `Il reste ${t.left} : poste ta séance maintenant pour valider le duo.`,
+      title: fill(t.stage === 1 ? tx.duoRemind1Title : tx.duoRemind2Title, { who }),
+      body: fill(t.stage === 1 ? tx.duoRemind1Body : tx.duoRemind2Body, { left }),
     };
   });
 

@@ -43,6 +43,8 @@ struct LiveActivityAttributes: ActivityAttributes {
   var initials: [String]?
   var moreCount: Int?
   var timeLabel: String?
+  // « restant », « left », « restante », « נותרו » : écrit par le serveur dans la langue de celui qui reçoit la carte.
+  var remainingLabel: String?
 
   enum DynamicIslandTimerType: String, Codable {
     case circular
@@ -159,6 +161,7 @@ private struct DuoBar: View {
 private struct RemainingText: View {
   let times: DuoTimes
   let phase: DuoPhase
+  var label: String? = nil
   var size: CGFloat = 14
 
   var body: some View {
@@ -167,7 +170,7 @@ private struct RemainingText: View {
         .monospacedDigit()
         .lineLimit(1)
         .frame(width: size * 3.25, alignment: .leading)
-      Text("restant")
+      Text(label ?? "restant")
     }
     .font(.system(size: size, weight: .semibold))
     .foregroundStyle(phase.main)
@@ -218,7 +221,7 @@ struct DuoLockScreenView: View {
             .foregroundStyle(.white.opacity(0.75))
         }
       }
-      RemainingText(times: times, phase: phase)
+      RemainingText(times: times, phase: phase, label: attributes.remainingLabel)
     }
     .padding(.horizontal, 18)
     .padding(.vertical, 16)
@@ -284,7 +287,7 @@ struct LiveActivityWidget: Widget {
         DynamicIslandExpandedRegion(.bottom) {
           VStack(alignment: .leading, spacing: 8) {
             DuoBar(times: times, phase: phase)
-            RemainingText(times: times, phase: phase, size: 13)
+            RemainingText(times: times, phase: phase, label: context.attributes.remainingLabel, size: 13)
           }
           .padding(.horizontal, 6)
           .padding(.top, 4)

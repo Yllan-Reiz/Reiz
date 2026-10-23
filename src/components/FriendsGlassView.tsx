@@ -5,7 +5,7 @@ import { SectionHeader } from './ProfileSections';
 import { Friend, PendingRequest } from '../lib/types';
 import { GUTTER } from '../constants';
 import { F } from '../styles';
-import { t, tp } from '../i18n';
+import { t, tp, dirIcon } from '../i18n';
 
 // L'onglet Amis = découvrir et ajouter des gens (comme sur les réseaux sociaux) : recherche par nom, tag ou sport,
 // invitation, demandes reçues, amis recommandés, nouveaux sur Reiz. Tes amis et ton cercle proche sont sur ton
@@ -166,7 +166,7 @@ export function FriendsGlassView(p: {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, height: 52 }}>
               <Ionicons name="person-circle-outline" size={22} color="#fff" />
               <Text style={{ flex: 1, color: '#fff', fontSize: 15, fontFamily: F.semibold }}>{t('friends.findContacts')}</Text>
-              <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
+              <Ionicons name={dirIcon('chevron-forward')} size={18} color="rgba(255,255,255,0.5)" />
             </View>
           </GlassCard>
         </TouchableOpacity>
