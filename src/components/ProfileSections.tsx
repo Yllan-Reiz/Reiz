@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Update, Objective } from '../lib/types';
 import { isVideo } from '../lib/storage';
+import { num } from '../lib/helpers';
 import { GUTTER, dayKeysFor, currentWeekKeys, hasSchedule, DAY_LETTERS } from '../constants';
 import { badgeImage } from '../lib/badgeImages';
 import { BADGE_RULES, MAX_LEVEL } from '../lib/badgeLevels';
@@ -13,6 +14,7 @@ import { CachedImage } from './CachedImage';
 import { GlassSurface } from './GlassSurface';
 import { DuoStats } from '../lib/duo';
 import { s, F } from '../styles';
+import { t, tp, unitLabel, formatDate } from '../i18n';
 
 // ============================================================
 // Badges : calculés à partir des posts et objectifs, rien en base.
@@ -49,18 +51,18 @@ export const isCompleted = (o: Objective & { is_completed?: boolean | null }) =>
   !!o.is_completed || (o.target_value > 0 && o.current_value >= o.target_value);
 
 const BADGE_META: { id: string; emoji: string; title: string }[] = [
-  { id: 'first', emoji: '🌱', title: 'Premier pas' },
-  { id: 's3', emoji: '🔥', title: 'En feu' },
-  { id: 's7', emoji: '⚡', title: 'Semaine parfaite' },
-  { id: 'goal', emoji: '🏆', title: 'Objectif atteint' },
-  { id: 'p10', emoji: '📸', title: 'Régulier' },
-  { id: 'video', emoji: '🎬', title: 'En action' },
-  { id: 'duo', emoji: '🤝', title: 'En duo' },
-  { id: 'duo5', emoji: '👯', title: 'Binôme' },
-  { id: 'early', emoji: '🌅', title: 'Lève-tôt' },
-  { id: 'night', emoji: '🌙', title: 'Couche-tard' },
-  { id: 's30', emoji: '👑', title: 'Inarrêtable' },
-  { id: 'p50', emoji: '💯', title: 'Acharné' },
+  { id: 'first', emoji: '🌱', title: t('badgeNames.first') },
+  { id: 's3', emoji: '🔥', title: t('badgeNames.s3') },
+  { id: 's7', emoji: '⚡', title: t('badgeNames.s7') },
+  { id: 'goal', emoji: '🏆', title: t('badgeNames.goal') },
+  { id: 'p10', emoji: '📸', title: t('badgeNames.p10') },
+  { id: 'video', emoji: '🎬', title: t('badgeNames.video') },
+  { id: 'duo', emoji: '🤝', title: t('badgeNames.duo') },
+  { id: 'duo5', emoji: '👯', title: t('badgeNames.duo5') },
+  { id: 'early', emoji: '🌅', title: t('badgeNames.early') },
+  { id: 'night', emoji: '🌙', title: t('badgeNames.night') },
+  { id: 's30', emoji: '👑', title: t('badgeNames.s30') },
+  { id: 'p50', emoji: '💯', title: t('badgeNames.p50') },
 ];
 
 export function computeBadges(posts: Update[], objectives: Objective[]): Badge[] {
@@ -99,9 +101,9 @@ export function BadgesStrip({ badges, own, grid, noTitle }: { badges: Badge[]; o
   const shown = own ? [...earned, ...badges.filter(b => !b.earned)] : earned;
   return (
     <View>
-      {!noTitle && <Text style={s.sectionTitle}>BADGES ({earned.length}/{badges.length})</Text>}
+      {!noTitle && <Text style={s.sectionTitle}>{t('profileSec.badgesCount', { n: earned.length, total: badges.length })}</Text>}
       {shown.length === 0 ? (
-        <Text style={{ color: '#777', fontSize: 13, marginBottom: 8 }}>Pas encore de badge.</Text>
+        <Text style={{ color: '#777', fontSize: 13, marginBottom: 8 }}>{t('profileSec.noBadge')}</Text>
       ) : grid ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 14 }}>
           {shown.map(b => (
@@ -133,7 +135,7 @@ export function BadgesStrip({ badges, own, grid, noTitle }: { badges: Badge[]; o
   );
 }
 
-const badgeLabel = (b: Badge) => (b.earned ? `${b.title}, niveau ${b.level} sur ${MAX_LEVEL}` : `${b.title}, à débloquer`);
+const badgeLabel = (b: Badge) => (b.earned ? t('profileSec.badgeLevelA11y', { title: b.title, level: b.level, max: MAX_LEVEL }) : t('profileSec.badgeLockedA11y', { title: b.title }));
 
 /** L'image du badge, avec en bas à droite une pastille de la couleur du badge qui porte son niveau. */
 function BadgeImage({ b, size }: { b: Badge; size: number }) {
@@ -167,10 +169,10 @@ function BadgeDetail({ badge, onClose }: { badge: Badge | null; onClose: () => v
             ))}
           </View>
           <Text style={{ color: badge.earned ? '#fff' : '#888', fontSize: 13, fontFamily: F.bold, marginTop: 10 }}>
-            {badge.earned ? `Niveau ${badge.level} sur ${MAX_LEVEL}` : 'À débloquer'}
+            {badge.earned ? t('profileSec.levelOf', { level: badge.level, max: MAX_LEVEL }) : t('profileSec.locked')}
           </Text>
           <Text style={{ color: '#aaa', fontSize: 14, fontFamily: F.regular, textAlign: 'center', lineHeight: 21, marginTop: 10 }}>
-            {maxed ? 'Niveau maximum atteint. Respect.' : `${badge.earned ? `Niveau ${badge.level + 1} : ` : ''}${badge.desc}`}
+            {maxed ? t('profileSec.maxed') : `${badge.earned ? t('profileSec.nextLevel', { level: badge.level + 1 }) : ''}${badge.desc}`}
           </Text>
           {!maxed && (
             <>
@@ -178,7 +180,7 @@ function BadgeDetail({ badge, onClose }: { badge: Badge | null; onClose: () => v
                 <View style={{ width: `${ratio * 100}%`, height: '100%', backgroundColor: badge.color, borderRadius: 4 }} />
               </View>
               <Text style={{ color: '#888', fontSize: 13, fontFamily: F.semibold, marginTop: 10 }}>
-                {badge.progress ? `Où tu en es : ${badge.progress}` : ''}
+                {badge.progress ? t('profileSec.whereYouAre', { progress: badge.progress }) : ''}
               </Text>
             </>
           )}
@@ -307,32 +309,32 @@ export function AboutBubble({ children }: { children: React.ReactNode }) {
 export function DuoBubble({ name, stats, onInvite }: { name: string; stats: DuoStats | null; onInvite: () => void }) {
   if (!stats) return null;
   const none = stats.validated === 0;
-  const last = stats.last ? new Date(stats.last).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
+  const last = stats.last ? formatDate(stats.last, { day: 'numeric', month: 'short' }) : '';
   return (
     <GlassSurface radius={28} style={{ marginHorizontal: GUTTER, marginTop: 14 }}>
       <View style={{ padding: 18 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontFamily: F.bold, letterSpacing: 1.5 }}>🤝  VOUS DEUX</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontFamily: F.bold, letterSpacing: 1.5 }}>{t('profileSec.youTwo')}</Text>
           {stats.weeks > 0 && (
             <View style={{ backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 12, paddingHorizontal: 10, height: 26, justifyContent: 'center' }}>
-              <Text style={{ color: '#fff', fontSize: 12, fontFamily: F.bold }}>🔥 {stats.weeks} {stats.weeks > 1 ? 'semaines' : 'semaine'} d'affilée</Text>
+              <Text style={{ color: '#fff', fontSize: 12, fontFamily: F.bold }}>{tp('profileSec.weeksStreak', stats.weeks)}</Text>
             </View>
           )}
         </View>
         {none ? (
           <Text style={{ color: '#fff', fontSize: 15, lineHeight: 22, fontFamily: F.regular, marginTop: 10 }}>
-            Pas encore de duo avec {name}. Lancez le premier : entraînez-vous ensemble et postez chacun votre séance à moins d'une heure d'écart pour le valider.
+            {t('profileSec.noDuo', { name })}
           </Text>
         ) : (
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 8 }}>
             <Text style={{ color: '#fff', fontSize: 40, fontFamily: F.black, letterSpacing: -1.2 }}>
-              {stats.validated}<Text style={{ fontSize: 16, fontFamily: F.semibold, color: 'rgba(255,255,255,0.65)', letterSpacing: 0 }}>{stats.validated > 1 ? '  duos validés' : '  duo validé'}</Text>
+              {stats.validated}<Text style={{ fontSize: 16, fontFamily: F.semibold, color: 'rgba(255,255,255,0.65)', letterSpacing: 0 }}>{'  ' + tp('profileSec.duosValidated', stats.validated)}</Text>
             </Text>
-            {!!last && <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, fontFamily: F.semibold, marginBottom: 7 }}>Dernier le {last}</Text>}
+            {!!last && <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, fontFamily: F.semibold, marginBottom: 7 }}>{t('profileSec.lastOn', { date: last })}</Text>}
           </View>
         )}
         <TouchableOpacity onPress={onInvite} activeOpacity={0.85} style={{ backgroundColor: '#fff', borderRadius: 16, paddingVertical: 13, alignItems: 'center', marginTop: 14 }}>
-          <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>{none ? `Proposer un duo à ${name}` : `Un nouveau duo avec ${name}`}</Text>
+          <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>{none ? t('profileSec.proposeDuo', { name }) : t('profileSec.newDuo', { name })}</Text>
         </TouchableOpacity>
       </View>
     </GlassSurface>
@@ -350,17 +352,17 @@ export function BadgesSection({ badges, own }: { badges: Badge[]; own: boolean }
   const row = own ? [...earned, ...badges.filter(b => !b.earned)] : earned;
   return (
     <View style={{ marginTop: 26 }}>
-      <SectionHeader title="Badges" count={earned.length} style={{ paddingHorizontal: GUTTER }} />
+      <SectionHeader title={t('profileSec.badges')} count={earned.length} style={{ paddingHorizontal: GUTTER }} />
       {row.length === 0 ? (
-        <Text style={{ color: '#777', fontSize: 13, paddingHorizontal: GUTTER }}>Pas encore de badge.</Text>
+        <Text style={{ color: '#777', fontSize: 13, paddingHorizontal: GUTTER }}>{t('profileSec.noBadge')}</Text>
       ) : (
         <BadgesStripRow badges={row} onAll={() => setAll(true)} />
       )}
       <Modal visible={all} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setAll(false)}>
         <View style={{ flex: 1, backgroundColor: '#0a0a0a', paddingTop: insets.top }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 56, justifyContent: 'space-between' }}>
-            <Text style={{ color: '#fff', fontSize: 22, fontFamily: F.black }}>Badges {earned.length}/{badges.length}</Text>
-            <GlassIconButton icon="close" label="Fermer" onPress={() => setAll(false)} />
+            <Text style={{ color: '#fff', fontSize: 22, fontFamily: F.black }}>{t('profileSec.badges')} {earned.length}/{badges.length}</Text>
+            <GlassIconButton icon="close" label={t('common.close')} onPress={() => setAll(false)} />
           </View>
           <ScrollView contentContainerStyle={{ padding: GUTTER, paddingBottom: insets.bottom + 40 }}>
             <BadgesStrip badges={badges} own={own} grid noTitle />
@@ -381,7 +383,7 @@ function BadgesStripRow({ badges, onAll }: { badges: Badge[]; onAll: () => void 
             <BadgeImage b={b} size={72} />
           </TouchableOpacity>
         ))}
-        <TouchableOpacity onPress={onAll} activeOpacity={0.8} accessibilityLabel="Voir tous les badges">
+        <TouchableOpacity onPress={onAll} activeOpacity={0.8} accessibilityLabel={t('profileSec.seeAllBadges')}>
           <GlassSurface radius={32} style={{ width: 64, height: 64, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="chevron-forward" size={22} color="#fff" />
           </GlassSurface>
@@ -502,7 +504,7 @@ export function WeekTracker({ days, done, everyDay }: { days: number[]; done: Se
           );
         })}
       </View>
-      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.semibold, marginTop: 10 }} numberOfLines={1}>{everyDay ? `${doneCount} ${doneCount > 1 ? 'jours' : 'jour'} cette semaine` : `${doneCount} sur ${planned} séances cette semaine`}</Text>
+      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.semibold, marginTop: 10 }} numberOfLines={1}>{everyDay ? tp('profileSec.daysThisWeek', doneCount) : tp('profileSec.sessionsThisWeek', planned, { done: doneCount })}</Text>
     </View>
   );
 }
@@ -532,7 +534,7 @@ export function GoalCards({ items, activity, onPress }: {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   <View>
                     <Text style={{ color: '#fff', fontSize: 24, fontFamily: F.black, letterSpacing: -0.5 }}>{inPct ? `${pct}%` : fmtNum(o.current_value)}{!inPct && <Text style={{ fontSize: 14, fontFamily: F.semibold, color: 'rgba(255,255,255,0.65)' }}>{` / ${fmtNum(o.target_value)}`}</Text>}</Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontFamily: F.semibold, marginTop: 1 }}>{inPct ? 'de l\'objectif' : o.unit}</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontFamily: F.semibold, marginTop: 1 }}>{inPct ? t('profileSec.ofGoal') : unitLabel(o.unit)}</Text>
                   </View>
                   <GlassSurface radius={26} variant="clear" style={{ width: 52, height: 52, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ fontSize: 24 }}>{o.emoji}</Text>
@@ -545,7 +547,7 @@ export function GoalCards({ items, activity, onPress }: {
                     : (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
                         <Ionicons name={vis.icon} size={12} color="rgba(255,255,255,0.6)" />
-                        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.semibold }} numberOfLines={1}>{doneWeek} {doneWeek > 1 ? 'jours' : 'jour'} cette semaine</Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.semibold }} numberOfLines={1}>{tp('profileSec.daysThisWeek', doneWeek)}</Text>
                       </View>
                     )}
                   <View style={{ height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.18)', marginTop: 10, overflow: 'hidden' }}>
@@ -622,14 +624,14 @@ export function AchievedList({ items }: { items: Objective[] }) {
   if (items.length === 0) return null;
   return (
     <View style={{ paddingHorizontal: GUTTER }}>
-      <SectionHeader title="Réussis" count={items.length} style={{ marginTop: 4 }} />
+      <SectionHeader title={t('profileSec.achieved')} count={items.length} style={{ marginTop: 4 }} />
       {items.map(o => (
         <GlassSurface key={o.id} radius={22} style={{ marginBottom: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
             <Text style={{ fontSize: 24 }}>{o.emoji}</Text>
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>{o.title}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular }}>{o.target_value} {o.unit} atteints</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular }}>{t('profileSec.reached', { n: o.target_value, unit: unitLabel(o.unit) })}</Text>
             </View>
             <Text style={{ fontSize: 22 }}>🏆</Text>
           </View>
@@ -644,12 +646,12 @@ export function AchievedList({ items }: { items: Objective[] }) {
 // ============================================================
 
 export const VIS_ICON: Record<string, { icon: any; label: string }> = {
-  friends: { icon: 'people-outline', label: 'Mon cercle' },
-  close: { icon: 'star-outline', label: 'Cercle proche' },
-  private: { icon: 'lock-closed-outline', label: 'Moi seul' },
-  public: { icon: 'globe-outline', label: 'Public' },
+  friends: { icon: 'people-outline', label: t('visLong.friends') },
+  close: { icon: 'star-outline', label: t('visLong.close') },
+  private: { icon: 'lock-closed-outline', label: t('visLong.private') },
+  public: { icon: 'globe-outline', label: t('visLong.public') },
 };
-export const fmtNum = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
+export const fmtNum = (n: number) => num(Math.round(n * 10) / 10);
 
 /**
  * Valeur en grand, jauge épaisse comme dans le fil, et les 7 derniers jours en pastilles
@@ -676,11 +678,11 @@ export function ObjectiveCard({ o, postedDays, daysCount, onMenu }: {
           <Text style={{ color: '#fff', fontSize: 16, fontFamily: F.bold }} numberOfLines={1}>{o.title}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
             <Ionicons name={vis.icon} size={12} color="#777" />
-            <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular }}>{vis.label}{infinite ? '' : `, ${o.duration_days} jours`}</Text>
+            <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular }}>{vis.label}{infinite ? '' : `, ${tp('profileSec.nDays', o.duration_days!)}`}</Text>
           </View>
         </View>
         {onMenu && (
-          <TouchableOpacity onPress={onMenu} accessibilityLabel={`Options de l'objectif ${o.title}`} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity onPress={onMenu} accessibilityLabel={t('profileSec.objOptions', { title: o.title })} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="ellipsis-horizontal" size={20} color="#777" />
           </TouchableOpacity>
         )}
@@ -689,7 +691,7 @@ export function ObjectiveCard({ o, postedDays, daysCount, onMenu }: {
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 18 }}>
         <Text style={{ color: '#fff', fontSize: 34, fontFamily: F.black, letterSpacing: -1 }} numberOfLines={1}>
           {inPct ? `${pct}%` : fmtNum(o.current_value)}
-          {!inPct && <Text style={{ color: '#777', fontSize: 16, fontFamily: F.semibold, letterSpacing: 0 }}>{` / ${fmtNum(o.target_value)} ${o.unit}`}</Text>}
+          {!inPct && <Text style={{ color: '#777', fontSize: 16, fontFamily: F.semibold, letterSpacing: 0 }}>{` / ${fmtNum(o.target_value)} ${unitLabel(o.unit)}`}</Text>}
         </Text>
         {!inPct && <Text style={{ color: '#aaa', fontSize: 14, fontFamily: F.bold, marginBottom: 5 }}>{pct}%</Text>}
       </View>
@@ -702,7 +704,7 @@ export function ObjectiveCard({ o, postedDays, daysCount, onMenu }: {
           const done = postedDays.has(d);
           const today = d === todayKey;
           const day = new Date(); day.setDate(day.getDate() - (6 - i));
-          const letter = ['D', 'L', 'M', 'M', 'J', 'V', 'S'][day.getDay()];
+          const letter = DAY_LETTERS[(day.getDay() + 6) % 7];
           return (
             <View key={d} style={{ alignItems: 'center', gap: 6 }}>
               <View style={{
@@ -718,7 +720,7 @@ export function ObjectiveCard({ o, postedDays, daysCount, onMenu }: {
         })}
       </View>
       <Text style={{ color: '#888', fontSize: 12, fontFamily: F.semibold, marginTop: 14 }}>
-        {doneThisWeek} {doneThisWeek > 1 ? 'jours' : 'jour'} cette semaine, {postedDays.size} {postedDays.size > 1 ? 'jours' : 'jour'} {infinite ? `sur les ${daysCount} derniers` : `sur ${daysCount}`}
+        {tp('profileSec.daysThisWeek', doneThisWeek)}, {tp(infinite ? 'profileSec.daysOfLast' : 'profileSec.daysOf', postedDays.size, { total: daysCount })}
       </Text>
     </View>
     </GlassSurface>
@@ -729,7 +731,7 @@ export function ObjectiveCard({ o, postedDays, daysCount, onMenu }: {
 // Vignettes de posts (épinglés + historique)
 // ============================================================
 
-const shortDate = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+const shortDate = (iso: string) => formatDate(iso, { day: 'numeric', month: 'short' });
 
 function PostTile({ p, width, height, onPress, showPin }: { p: Update; width: number; height: number; onPress: () => void; showPin?: boolean }) {
   const video = isVideo(p.photo_url);
@@ -774,7 +776,7 @@ export function PinnedRow({ posts, onOpen }: { posts: Update[]; onOpen: (p: Upda
   const tileW = (width - GUTTER * 2 - 16) / 3;
   return (
     <View>
-      <Text style={s.sectionTitle}>ÉPINGLÉS</Text>
+      <Text style={s.sectionTitle}>{t('profileSec.pinned')}</Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {pinned.map(p => <PostTile key={p.id} p={p} width={tileW} height={tileW * 1.33} onPress={() => onOpen(p)} showPin />)}
       </View>
@@ -789,7 +791,7 @@ export function PostsGrid({ posts, onOpen, emptyText }: { posts: Update[]; onOpe
   const tile = (width - GUTTER * 2 - gap * 2) / 3;
   return (
     <View>
-      <Text style={s.sectionTitle}>HISTORIQUE ({posts.length})</Text>
+      <Text style={s.sectionTitle}>{t('profileSec.history', { n: posts.length })}</Text>
       {posts.length === 0 ? (
         <Text style={{ color: '#777', fontSize: 13, paddingVertical: 12 }}>{emptyText}</Text>
       ) : (

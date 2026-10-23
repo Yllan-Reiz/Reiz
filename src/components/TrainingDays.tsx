@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { ALL_DAYS, DAY_LETTERS, DAY_LONG, TRAINING_PRESETS, daysLabel } from '../constants';
 import { F } from '../styles';
+import { t } from '../i18n';
 
 // Jours d'entraînement d'un objectif : 7 pastilles à toucher + quelques raccourcis.
 // Les rappels de l'app et ton cercle ne parlent que de ces jours-là (le dimanche de repos n'est plus relancé).
@@ -25,7 +26,7 @@ export function TrainingDaysPicker({ value, onChange }: { value: number[]; onCha
               key={d}
               onPress={() => toggle(d)}
               activeOpacity={0.8}
-              accessibilityLabel={`${DAY_LONG[d - 1]}, ${on ? 'jour d\'entraînement' : 'jour de repos'}`}
+              accessibilityLabel={`${DAY_LONG[d - 1]}, ${on ? t('objective.trainingDay') : t('objective.restDay')}`}
               style={{ flex: 1, maxWidth: 44, aspectRatio: 1, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? '#fff' : 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: on ? '#fff' : 'rgba(255,255,255,0.16)' }}
             >
               <Text style={{ color: on ? '#000' : 'rgba(255,255,255,0.75)', fontSize: 15, fontFamily: F.extrabold }} maxFontSizeMultiplier={1.2}>{DAY_LETTERS[d - 1]}</Text>
@@ -46,10 +47,10 @@ export function TrainingDaysPicker({ value, onChange }: { value: number[]; onCha
       </View>
       <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 18, fontFamily: F.regular, marginTop: 12 }}>
         {value.length === 0
-          ? 'Choisis au moins un jour.'
+          ? t('objective.pickOneDay')
           : value.length === 7
-            ? 'Tous les jours. Retire ceux où tu te reposes : tu ne seras relancé que les autres.'
-            : `Tu t'entraînes ${daysLabel(value, true)}. Tu ne seras relancé que ces jours-là, et ton cercle le saura.`}
+            ? t('objective.everyDayHint')
+            : t('objective.daysHint', { days: daysLabel(value, true) })}
       </Text>
     </View>
   );

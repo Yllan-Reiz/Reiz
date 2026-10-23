@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { supabase, currentUser } from '../lib/supabase';
-import { frError, inUnit } from '../lib/helpers';
+import { frError, inUnit, num, andList } from '../lib/helpers';
 import { uploadImage, uploadVideo, compressVideo, signAvatars } from '../lib/storage';
 import { GlassIconButton } from '../components/ProfileSections';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -18,6 +18,7 @@ import { trimAvailable, trimVideo, cleanTrimmed } from '../lib/videoTools';
 import { galleryAvailable, saveToGallery } from '../lib/saveToGallery';
 import { endAllLiveActivities } from '../lib/liveActivity';
 import { s, F } from '../styles';
+import { t, tp, unitLabel } from '../i18n';
 
 // Vidéo de progression : 15 s max, comme une story. Au-delà, le fichier pèse
 // trop lourd pour la 4G et le fil devient une plateforme vidéo.
@@ -57,7 +58,7 @@ function ProgressSlider({ pct, onChange }: { pct: number; onChange: (ratio: numb
       {...pan.panHandlers}
       style={{ width: '100%', height: 36, justifyContent: 'center', marginTop: 4 }}
       accessibilityRole="adjustable"
-      accessibilityLabel="Progression"
+      accessibilityLabel={t('post.progress')}
       accessibilityValue={{ min: 0, max: 100, now: pct }}
     >
       {/* Le rond s'arrête aux bords : la partie remplie suit son centre. */}
@@ -74,7 +75,7 @@ function ProgressSlider({ pct, onChange }: { pct: number; onChange: (ratio: numb
 }
 
 // 142.5 → « 142,5 » ; 4 → « 4 ».
-const fmt = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
+const fmt = (n: number) => num(Math.round(n * 10) / 10);
 
 // Séance en duo : 3 amis identifiés maximum (vérifié aussi côté serveur).
 const MAX_DUO = 3;
@@ -159,7 +160,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
     Haptics.selectionAsync().catch(() => {});
     setWithIds(prev => {
       if (prev.includes(id)) return prev.filter(x => x !== id);
-      if (prev.length >= MAX_DUO) { Alert.alert('Séance en duo', `${MAX_DUO} amis maximum.`); return prev; }
+      if (prev.length >= MAX_DUO) { Alert.alert(t('feed.duoSession'), t('post.maxFriends', { n: MAX_DUO })); return prev; }
       return [...prev, id];
     });
   };
@@ -186,12 +187,12 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
   // Objectif créé en % (« Barre à 170 kg » sans chiffre) : on lui donne une unité
   // et une cible, la progression déjà acquise est convertie.
   const convert = async () => {
-    const t = Number(convTarget.replace(',', '.'));
-    if (!obj || isNaN(t) || t <= 0) { Alert.alert('Erreur', 'Indique le chiffre à atteindre.'); return; }
-    const current = Math.round((pct / 100) * t * 10) / 10;
-    const { error } = await supabase.from('objectives').update({ unit: convUnit, target_value: t, current_value: current }).eq('id', obj.id);
-    if (error) { Alert.alert('Erreur', frError(error)); return; }
-    setObjectives(list => list.map(o => (o.id === obj.id ? { ...o, unit: convUnit, target_value: t, current_value: current } : o)));
+    const target = Number(convTarget.replace(',', '.'));
+    if (!obj || isNaN(target) || target <= 0) { Alert.alert(t('common.error'), t('post.convertNeedTarget')); return; }
+    const current = Math.round((pct / 100) * target * 10) / 10;
+    const { error } = await supabase.from('objectives').update({ unit: convUnit, target_value: target, current_value: current }).eq('id', obj.id);
+    if (error) { Alert.alert(t('common.error'), frError(error)); return; }
+    setObjectives(list => list.map(o => (o.id === obj.id ? { ...o, unit: convUnit, target_value: target, current_value: current } : o)));
     setConverting(false); setConvTarget('');
   };
   const pct = isPercent
@@ -222,7 +223,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
     if (asset.type === 'video') {
       const tooLong = !!asset.duration && asset.duration > (VIDEO_MAX_SEC + 0.5) * 1000;
       if (tooLong && !trimAvailable()) {
-        Alert.alert('Vidéo trop longue', `${VIDEO_MAX_SEC} secondes maximum. Coupe-la puis réessaie.`);
+        Alert.alert(t('post.videoTooLongTitle'), t('post.videoTooLongText', { n: VIDEO_MAX_SEC }));
         return;
       }
       if (trimAvailable() && (tooLong || openEditor)) {
@@ -230,7 +231,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
         if (!cut && tooLong) return;
         if (cut) uri = cut;
       } else if (asset.fileSize && asset.fileSize > VIDEO_MAX_MB * 1024 * 1024) {
-        Alert.alert('Vidéo trop lourde', 'Essaie une vidéo plus courte ou filme directement depuis Reiz.');
+        Alert.alert(t('post.videoTooBigTitle'), t('post.videoTooBigText'));
         return;
       }
       setMediaType('video');
@@ -246,8 +247,8 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
     if (!photoUri || savedToGallery) return;
     const r = await saveToGallery(photoUri);
     if (r === 'saved') { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); setSavedToGallery(true); }
-    else if (r === 'denied') Alert.alert('Galerie', "Autorise Reiz à ajouter des photos dans Réglages, Reiz, Photos.");
-    else Alert.alert('Galerie', "L'enregistrement n'a pas marché. Réessaie.");
+    else if (r === 'denied') Alert.alert(t('post.gallery'), t('post.galleryDenied'));
+    else Alert.alert(t('post.gallery'), t('post.galleryFailed'));
   };
 
   // Recouper la vidéo déjà choisie (garder un autre passage, la raccourcir encore).
@@ -260,12 +261,12 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
   const handlePickPhoto = async () => {
     const needCamera = async () => {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la caméra dans les réglages.'); return false; }
+      if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permCamera')); return false; }
       return true;
     };
-    Alert.alert('Photo ou vidéo', `Vidéo : ${VIDEO_MAX_SEC} secondes maximum`, [
+    Alert.alert(t('post.mediaTitle'), t('post.mediaSub', { n: VIDEO_MAX_SEC }), [
       {
-        text: 'Prendre une photo',
+        text: t('common.takePhoto'),
         onPress: async () => {
           if (!(await needCamera())) return;
           const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [4, 3] });
@@ -273,7 +274,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
         }
       },
       {
-        text: 'Filmer une vidéo',
+        text: t('post.recordVideo'),
         onPress: async () => {
           if (!(await needCamera())) return;
           const result = await ImagePicker.launchCameraAsync({
@@ -287,10 +288,10 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
         }
       },
       {
-        text: trimAvailable() ? 'Importer une photo' : 'Importer depuis la galerie',
+        text: trimAvailable() ? t('post.importPhoto') : t('common.pickFromLibrary'),
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la galerie dans les réglages.'); return; }
+          if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permLibrary')); return; }
           const trim = trimAvailable();
           const result = await ImagePicker.launchImageLibraryAsync({
             // Avec l'éditeur de rognage, photos et vidéos ont chacune leur bouton : le recadrage
@@ -307,10 +308,10 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
         }
       },
       ...(trimAvailable() ? [{
-        text: 'Importer une vidéo',
+        text: t('post.importVideo'),
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la galerie dans les réglages.'); return; }
+          if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permLibrary')); return; }
           const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['videos'],
             videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
@@ -318,9 +319,9 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
           if (!result.canceled) acceptAsset(result.assets[0], true);
         }
       }] : []),
-      ...(photoUri && mediaType === 'video' && trimAvailable() ? [{ text: 'Modifier la vidéo', onPress: recutVideo }] : []),
-      ...(photoUri ? [{ text: 'Retirer', style: 'destructive' as const, onPress: () => { setPhotoUri(null); setMediaType('image'); setFromCamera(false); } }] : []),
-      { text: 'Annuler', style: 'cancel' }
+      ...(photoUri && mediaType === 'video' && trimAvailable() ? [{ text: t('post.editVideo'), onPress: recutVideo }] : []),
+      ...(photoUri ? [{ text: t('common.remove'), style: 'destructive' as const, onPress: () => { setPhotoUri(null); setMediaType('image'); setFromCamera(false); } }] : []),
+      { text: t('common.cancel'), style: 'cancel' }
     ]);
   };
 
@@ -340,8 +341,8 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
       // Message précis pour les vidéos : « trop lourde » se corrige, « réessaie » non.
       const tooBig = /413|too large|exceeded the maximum/i.test(error.message || '');
       Alert.alert(
-        mediaType === 'video' ? "La vidéo n'a pas pu partir" : 'Erreur upload',
-        tooBig ? 'Vidéo trop lourde (50 Mo max). Filme un peu plus court ou en qualité réduite.' : frError(error),
+        mediaType === 'video' ? t('post.videoUploadFailed') : t('post.uploadFailed'),
+        tooBig ? t('post.videoTooBig50') : frError(error),
       );
       return null;
     }
@@ -350,15 +351,15 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
 
   // Sans photo ni vidéo, la séance perd tout son intérêt pour ton cercle : on te le dit (gentiment) avant de publier.
   const handlePublish = () => {
-    if (!obj) { Alert.alert('Erreur', 'Sélectionne un objectif.'); return; }
+    if (!obj) { Alert.alert(t('common.error'), t('post.pickObjective')); return; }
     if (photoUri) { publish(); return; }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
     Alert.alert(
-      'Pas de photo, pas de preuve 👀',
-      "Ton cercle va croire que tu étais sur le canapé. Une photo ou quelques secondes de vidéo, et personne ne pourra douter.",
+      t('post.noPhotoTitle'),
+      t('post.noPhotoText'),
       [
-        { text: 'Ajouter une photo', onPress: handlePickPhoto },
-        { text: 'Publier sans', style: 'destructive', onPress: publish },
+        { text: t('post.addPhoto'), onPress: handlePickPhoto },
+        { text: t('post.publishWithout'), style: 'destructive', onPress: publish },
       ],
     );
   };
@@ -367,7 +368,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
     if (!obj) return;
     setPublishing(true);
     const user = await currentUser();
-    if (!user) { setPublishing(false); Alert.alert('Erreur', 'Tu dois être connecté.'); return; }
+    if (!user) { setPublishing(false); Alert.alert(t('common.error'), t('post.mustBeSignedIn')); return; }
     let photoUrl: string | null = null;
     if (photoUri) {
       photoUrl = await uploadPhoto(photoUri, user.id);
@@ -394,18 +395,17 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
     setPublishing(false);
     if (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-      Alert.alert('Erreur', frError(error));
+      Alert.alert(t('common.error'), frError(error));
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       // Séance postée : la carte du duo (Activité en direct) n'a plus lieu d'être.
       endAllLiveActivities();
-      const fmtN = (n: number) => String(n).replace('.', ',');
       const storyData: StoryData = {
         // Vidéo : la story en tire une image (voir ShareStoryModal).
         photoUri,
         emoji: obj.emoji,
         title: obj.title,
-        progressLabel: isPercent ? `${pct}%` : `${fmtN(value)} / ${fmtN(obj.target_value)} ${obj.unit}`,
+        progressLabel: isPercent ? `${pct}%` : `${num(value)} / ${num(obj.target_value)} ${unitLabel(obj.unit)}`,
         pct,
         caption,
         username: (await supabase.from('users').select('username').eq('id', user.id).maybeSingle()).data?.username,
@@ -413,29 +413,29 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
       // Séance en duo : prénoms identifiés, et si c'est une réponse à un duo, le décompte
       // du binôme (« 3e duo avec Eden, 2 semaines d'affilée ») avec la photo de l'autre.
       const tagged = canTag ? friends.filter(f => withIds.includes(f.id) && taggable.some(t => t.id === f.id)) : [];
-      let title = 'Publié';
-      let message = 'Ta mise à jour est en ligne. Tu veux la partager en story pour faire découvrir Reiz ?';
+      let title = t('post.publishedTitle');
+      let message = t('post.publishedText');
       if (tagged.length > 0) {
-        storyData.duoNames = tagged.map(f => f.full_name.split(' ')[0]).join(' et ');
+        storyData.duoNames = andList(tagged.map(f => f.full_name.split(' ')[0]));
         if (duoWith && tagged.some(f => f.id === duoWith)) {
           const st = await loadDuoStats(user.id, duoWith).catch(() => null);
           const who = tagged.find(f => f.id === duoWith)!.full_name.split(' ')[0];
           // Validé « à l'instant » : le dernier duo compté est celui qu'on vient de poster.
           const justNow = !!st?.last && Date.now() - new Date(st.last).getTime() < 5 * 60 * 1000;
           if (st && !justNow) {
-            message = `Ta séance est publiée, mais le duo avec ${who} n'est pas validé : il faut poster à moins d'une heure d'écart. Partage-la quand même en story ?`;
+            message = t('post.duoNotValidated', { name: who });
           }
           if (st && justNow) {
-            title = 'Duo validé 🤝';
-            message = `${ordinalDuo(st.validated)} avec ${who}${st.weeks > 0 ? `, ${st.weeks} ${st.weeks > 1 ? 'semaines' : 'semaine'} d'affilée 🔥` : ''}. Partage votre duo en story ?`;
+            title = t('post.duoValidatedTitle');
+            message = t('post.duoValidatedText', { ordinal: ordinalDuo(st.validated), name: who, weeks: st.weeks > 0 ? tp('post.duoWeeks', st.weeks) : '' });
             storyData.partnerPhotoUri = st.partnerPhoto;
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
           }
         }
       }
       Alert.alert(title, message, [
-        { text: 'Partager en story', onPress: () => setStory(storyData) },
-        { text: 'Terminer', style: 'cancel', onPress: onPublish },
+        { text: t('post.shareStory'), onPress: () => setStory(storyData) },
+        { text: t('post.finish'), style: 'cancel', onPress: onPublish },
       ]);
     }
   };
@@ -448,8 +448,8 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
     // bouton reste sous le clavier. Android garde l'ancien comportement.
     <KeyboardAvoidingView style={s.container} behavior="height" enabled={Platform.OS === 'android'}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: GUTTER, paddingTop: insets.top + 8, paddingBottom: 12 }}>
-        <GlassIconButton icon="chevron-back" label="Retour" onPress={onBack} />
-        <Text style={{ color: '#fff', fontSize: 22, fontFamily: F.black, letterSpacing: -0.5 }}>Poste ta progression</Text>
+        <GlassIconButton icon="chevron-back" label={t('common.back')} onPress={onBack} />
+        <Text style={{ color: '#fff', fontSize: 22, fontFamily: F.black, letterSpacing: -0.5 }}>{t('post.title')}</Text>
       </View>
 
       <ScrollView
@@ -467,22 +467,22 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
                   ? <VideoPreview uri={photoUri} />
                   : <Image source={{ uri: photoUri }} style={s.postPhotoImg} resizeMode="cover" />}
                 <View style={s.postPhotoChangeBadge}>
-                  <Text style={s.postPhotoChangeText}>Changer</Text>
+                  <Text style={s.postPhotoChangeText}>{t('post.change')}</Text>
                 </View>
                 {/* Prise dans Reiz : la garder aussi dans la galerie de l'iPhone. */}
                 {fromCamera && galleryAvailable() && (
-                  <TouchableOpacity onPress={keepInGallery} disabled={savedToGallery} activeOpacity={0.85} accessibilityLabel={savedToGallery ? 'Enregistrée dans la galerie' : 'Enregistrer dans la galerie'}
+                  <TouchableOpacity onPress={keepInGallery} disabled={savedToGallery} activeOpacity={0.85} accessibilityLabel={savedToGallery ? t('post.savedToGallery') : t('post.saveToGallery')}
                     style={[s.postPhotoChangeBadge, { bottom: undefined, top: 14, flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
                     <Ionicons name={savedToGallery ? 'checkmark' : 'download-outline'} size={15} color="#fff" />
-                    <Text style={s.postPhotoChangeText}>{savedToGallery ? 'Enregistrée' : 'Enregistrer'}</Text>
+                    <Text style={s.postPhotoChangeText}>{savedToGallery ? t('post.saved') : t('common.save')}</Text>
                   </TouchableOpacity>
                 )}
                 {/* Vidéo : bouton « Modifier » bien visible, qui rouvre l'éditeur (couper, recadrer, son, vitesse). */}
                 {mediaType === 'video' && trimAvailable() && (
-                  <TouchableOpacity onPress={recutVideo} activeOpacity={0.85} accessibilityLabel="Modifier la vidéo"
+                  <TouchableOpacity onPress={recutVideo} activeOpacity={0.85} accessibilityLabel={t('post.editVideo')}
                     style={[s.postPhotoChangeBadge, { right: undefined, left: 14, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', borderColor: '#fff' }]}>
                     <Ionicons name="cut-outline" size={15} color="#000" />
-                    <Text style={[s.postPhotoChangeText, { color: '#000' }]}>Modifier</Text>
+                    <Text style={[s.postPhotoChangeText, { color: '#000' }]}>{t('common.edit')}</Text>
                   </TouchableOpacity>
                 )}
               </>
@@ -490,20 +490,20 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
                 <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name="camera-outline" size={26} color="#fff" />
                 </View>
-                <Text style={s.postPhotoEmptyText}>Ajoute une photo ou une vidéo</Text>
-                <Text style={s.postPhotoEmptyHint}>Vidéo : {VIDEO_MAX_SEC} secondes max</Text>
+                <Text style={s.postPhotoEmptyText}>{t('post.addMedia')}</Text>
+                <Text style={s.postPhotoEmptyHint}>{t('post.addMediaHint', { n: VIDEO_MAX_SEC })}</Text>
               </View>
           }
         </TouchableOpacity>
 
         <View style={s.postBody}>
           {/* Objectif */}
-          <Text style={s.postLabel}>OBJECTIF</Text>
+          <Text style={s.postLabel}>{t('post.objectiveLabel')}</Text>
           {loadingObj
             ? <ActivityIndicator color="#fff" style={{ marginBottom: 20 }} />
             : objectives.length === 0
               ? <View style={s.postEmptyObj}>
-                  <Text style={{ color: '#888', fontSize: 13 }}>Aucun objectif. Crée-en un dans "Mes objectifs".</Text>
+                  <Text style={{ color: '#888', fontSize: 13 }}>{t('post.noObjective')}</Text>
                 </View>
               : <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.postObjScroll} contentContainerStyle={{ gap: 10, paddingHorizontal: GUTTER }}>
                   {objectives.map((o, i) => (
@@ -518,17 +518,17 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
           {dropped.length > 0 && (
             <View style={{ marginTop: 20, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
               <Text style={{ color: '#ddd', fontSize: 13, lineHeight: 18 }}>
-                {obj?.visibility === 'private' ? '🔒 Objectif privé' : '★ Objectif réservé à ton cercle proche'} : {dropped.map(f => f.full_name).join(' et ')} ne {dropped.length > 1 ? 'seront' : 'sera'} pas identifié{dropped.length > 1 ? 's' : ''}. Choisis un objectif visible par ton cercle pour poster en duo.
+                {tp(obj?.visibility === 'private' ? 'post.droppedPrivate' : 'post.droppedClose', dropped.length, { names: andList(dropped.map(f => f.full_name)) })}
               </Text>
             </View>
           )}
           {canTag && <>
-            <Text style={[s.postLabel, { marginTop: 28 }]}>AVEC QUI ? (FACULTATIF)</Text>
+            <Text style={[s.postLabel, { marginTop: 28 }]}>{t('post.withWho')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -GUTTER }} contentContainerStyle={{ gap: 14, paddingHorizontal: GUTTER }}>
               {taggable.map(f => {
                 const on = withIds.includes(f.id);
                 return (
-                  <TouchableOpacity key={f.id} onPress={() => toggleWith(f.id)} activeOpacity={0.8} style={{ alignItems: 'center', width: 60 }} accessibilityLabel={`${on ? 'Retirer' : 'Identifier'} ${f.full_name}`}>
+                  <TouchableOpacity key={f.id} onPress={() => toggleWith(f.id)} activeOpacity={0.8} style={{ alignItems: 'center', width: 60 }} accessibilityLabel={t(on ? 'post.untag' : 'post.tag', { name: f.full_name })}>
                     <View style={{ width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: on ? '#fff' : 'transparent', padding: 2 }}>
                       {f.avatar_url
                         ? <Image source={{ uri: f.avatar_url }} style={{ width: '100%', height: '100%', borderRadius: 24 }} />
@@ -546,19 +546,19 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
             </ScrollView>
             {withIds.length > 0 && (
               <Text style={{ color: '#777', fontSize: 12, marginTop: 8 }}>
-                Ils seront prévenus et pourront poster leur séance en duo avec toi.
+                {t('post.taggedHint')}
               </Text>
             )}
           </>}
 
           {/* Progression */}
           {obj && <>
-            <Text style={[s.postLabel, { marginTop: 28 }]}>PROGRESSION</Text>
+            <Text style={[s.postLabel, { marginTop: 28 }]}>{t('post.progressLabel')}</Text>
             <View style={s.postProgressWrap}>
               <TouchableOpacity
                 style={s.postProgressBtn}
                 onPress={() => bump(-1)}
-                accessibilityLabel="Moins"
+                accessibilityLabel={t('common.less')}
               >
                 <Ionicons name="remove" size={22} color="#fff" />
               </TouchableOpacity>
@@ -578,34 +578,34 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
                     onSubmitEditing={commitTyping}
                   />
                 ) : (
-                  <TouchableOpacity onPress={() => setTyping('')} accessibilityLabel="Saisir le chiffre">
+                  <TouchableOpacity onPress={() => setTyping('')} accessibilityLabel={t('post.typeValue')}>
                     <Text style={s.postProgressPct}>
                       {fmt(value)}
-                      <Text style={{ fontSize: 16, color: '#888', fontFamily: F.bold }}>{isPercent ? ' %' : ` ${obj.unit}`}</Text>
+                      <Text style={{ fontSize: 16, color: '#888', fontFamily: F.bold }}>{isPercent ? ' %' : ` ${unitLabel(obj.unit)}`}</Text>
                     </Text>
                   </TouchableOpacity>
                 )}
                 <Text style={s.postProgressVal}>
-                  {isPercent ? 'Glisse la barre ou touche le chiffre' : `sur ${fmt(obj.target_value)} ${obj.unit}`}
+                  {isPercent ? t('post.slideHint') : t('post.outOf', { target: fmt(obj.target_value), unit: unitLabel(obj.unit) })}
                 </Text>
                 <ProgressSlider pct={pct} onChange={slideTo} />
               </View>
               <TouchableOpacity
                 style={s.postProgressBtn}
                 onPress={() => bump(1)}
-                accessibilityLabel="Plus"
+                accessibilityLabel={t('common.more')}
               >
                 <Ionicons name="add" size={22} color="#fff" />
               </TouchableOpacity>
             </View>
             {isPercent && !converting && (
               <TouchableOpacity onPress={() => setConverting(true)} style={{ paddingVertical: 12 }}>
-                <Text style={{ color: '#aaa', fontSize: 13, fontFamily: F.semibold }}>Choisir l'unité de cet objectif (kg, km, séances...)</Text>
+                <Text style={{ color: '#aaa', fontSize: 13, fontFamily: F.semibold }}>{t('post.pickUnit')}</Text>
               </TouchableOpacity>
             )}
             {isPercent && converting && (
               <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 24, padding: 16, marginTop: 10, gap: 12 }}>
-                <Text style={{ color: '#fff', fontSize: 14, fontFamily: F.semibold }}>Quel chiffre veux-tu atteindre ?</Text>
+                <Text style={{ color: '#fff', fontSize: 14, fontFamily: F.semibold }}>{t('post.whatTarget')}</Text>
                 <View style={s.targetRow}>
                   <TextInput
                     style={[s.inputField, s.targetInput]}
@@ -619,17 +619,17 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} keyboardShouldPersistTaps="handled">
                     {QUICK_UNITS.map(u => (
                       <TouchableOpacity key={u} style={[s.durationPill, convUnit === u && s.durationPillActive]} onPress={() => setConvUnit(u)}>
-                        <Text style={[s.durationPillText, convUnit === u && s.durationPillTextActive]}>{u}</Text>
+                        <Text style={[s.durationPillText, convUnit === u && s.durationPillTextActive]}>{unitLabel(u)}</Text>
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   <TouchableOpacity onPress={() => setConverting(false)} style={[s.durationPill, { flex: 1, alignItems: 'center' }]}>
-                    <Text style={s.durationPillText}>Annuler</Text>
+                    <Text style={s.durationPillText}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={convert} style={[s.durationPill, s.durationPillActive, { flex: 1, alignItems: 'center' }]}>
-                    <Text style={[s.durationPillText, s.durationPillTextActive]}>Valider</Text>
+                    <Text style={[s.durationPillText, s.durationPillTextActive]}>{t('common.validate')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -637,10 +637,10 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
           </>}
 
           {/* Caption */}
-          <Text style={[s.postLabel, { marginTop: 28 }]}>LÉGENDE</Text>
+          <Text style={[s.postLabel, { marginTop: 28 }]}>{t('post.captionLabel')}</Text>
           <TextInput
             style={s.postCaptionInput}
-            placeholder="Décris ta séance, ton ressenti..."
+            placeholder={t('post.captionPlaceholder')}
             placeholderTextColor="#666"
             value={caption}
             onChangeText={setCaption}
@@ -659,9 +659,9 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
           {publishing || uploadingPhoto
             ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <ActivityIndicator color="#000" />
-                {uploadingPhoto && mediaType === 'video' && <Text style={s.ctaText}>Compression et envoi de la vidéo...</Text>}
+                {uploadingPhoto && mediaType === 'video' && <Text style={s.ctaText}>{t('post.uploadingVideo')}</Text>}
               </View>
-            : <Text style={s.ctaText}>Publier</Text>}
+            : <Text style={s.ctaText}>{t('post.publish')}</Text>}
         </TouchableOpacity>
       </View>
       <ShareStoryModal visible={!!story} data={story} onClose={() => { setStory(null); onPublish(); }} />

@@ -12,6 +12,7 @@ import {
   announcePresence, ANNOUNCE_MESSAGES, AUTO_CONSENT, MAX_PLACES, COOLDOWN_HOURS, AUTO_SUPPORTED,
 } from '../lib/presence';
 import { F } from '../styles';
+import { t, tl } from '../i18n';
 
 // ============================================================
 // « À la salle » : la carte du fil qui met en avant l'alerte au cercle proche.
@@ -91,32 +92,32 @@ export function PresenceCard({ compact }: { compact?: boolean } = {}) {
   const manual = async () => {
     const saved = await loadPlaces();
     if (saved.length === 0) {
-      Alert.alert('Prévenir ton cercle proche ?', 'Ils recevront une alerte : tu es à la salle, ils peuvent venir te rejoindre.', [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Je suis à la salle', onPress: () => send('la salle') },
+      Alert.alert(t('presenceCard.askTitle'), t('presenceCard.askText'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('presenceCard.imAtGym'), onPress: () => send(t('presence.defaultPlace')) },
       ]);
       return;
     }
-    Alert.alert('Où es-tu ?', 'Ton cercle proche sera prévenu.', [
+    Alert.alert(t('presenceCard.whereTitle'), t('presenceCard.whereText'), [
       ...saved.map(p => ({ text: p.label, onPress: () => send(p.label) })),
-      { text: 'Un autre endroit', onPress: () => send('la salle') },
-      { text: 'Annuler', style: 'cancel' as const },
+      { text: t('presenceCard.elsewhere'), onPress: () => send(t('presence.defaultPlace')) },
+      { text: t('common.cancel'), style: 'cancel' as const },
     ]);
   };
 
   // Activer la détection quand un lieu existe déjà : consentement d'abord, autorisations du système ensuite.
   const enable = () => {
     Alert.alert(...AUTO_CONSENT, [
-      { text: 'Pas maintenant', style: 'cancel' },
+      { text: t('common.notNow'), style: 'cancel' },
       {
-        text: 'Continuer',
+        text: t('common.continue'),
         onPress: async () => {
           const r = await setAutoEnabled(true);
           await reload();
           if (r === 'denied') {
-            Alert.alert('Autorisation refusée', 'Pour activer la détection, choisis « Toujours » dans les réglages de localisation de Reiz.', [
-              { text: 'Annuler', style: 'cancel' },
-              { text: 'Ouvrir les réglages', onPress: openSettings },
+            Alert.alert(t('presenceCard.permRefusedTitle'), t('presenceCard.permRefusedText'), [
+              { text: t('common.cancel'), style: 'cancel' },
+              { text: t('common.openSettings'), onPress: openSettings },
             ]);
           }
         },
@@ -129,29 +130,29 @@ export function PresenceCard({ compact }: { compact?: boolean } = {}) {
     !AUTO_SUPPORTED ? 'manual'
       : detecting ? (perm && perm.bg !== 'granted' ? 'permission' : 'active')
         : places.length > 0 ? 'enable' : 'setup';
-  const names = places.map(p => p.label).join(' ou ');
+  const names = places.map(p => p.label).join(t('presenceCard.orSep'));
 
   // Version courte (onglet Activité) : une ligne et un seul bouton, selon l'état.
   if (compact) {
     const c = {
-      setup: { t: 'Ta salle', sub: 'Ton cercle prévenu quand tu arrives', btn: 'Ajouter', go: () => setSheet('add') },
-      enable: { t: 'Détection coupée', sub: `${names} enregistrée`, btn: 'Activer', go: enable },
-      permission: { t: 'Autorisation manquante', sub: 'Choisis « Toujours » dans les réglages', btn: 'Réglages', go: openSettings },
-      active: { t: 'Détection activée', sub: names, btn: "J'y suis", go: manual },
-      manual: { t: 'Tu es à la salle ?', sub: 'Préviens ton cercle proche', btn: 'Prévenir', go: manual },
+      setup: { title: t('presenceCard.cSetupT'), sub: t('presenceCard.cSetupSub'), btn: t('presenceCard.cSetupBtn'), go: () => setSheet('add') },
+      enable: { title: t('presenceCard.cEnableT'), sub: t('presenceCard.cEnableSub', { names }), btn: t('presenceCard.cEnableBtn'), go: enable },
+      permission: { title: t('presenceCard.cPermT'), sub: t('presenceCard.cPermSub'), btn: t('presenceCard.cPermBtn'), go: openSettings },
+      active: { title: t('presenceCard.detectionOn'), sub: names, btn: t('presenceCard.cActiveBtn'), go: manual },
+      manual: { title: t('presenceCard.cManualT'), sub: t('presenceCard.cManualSub'), btn: t('presenceCard.cManualBtn'), go: manual },
     }[kind];
     return (
       <>
-        <TouchableOpacity activeOpacity={0.85} disabled={kind !== 'active'} onPress={() => setSheet('manage')} accessibilityLabel={kind === 'active' ? 'Gérer mes lieux' : undefined}>
+        <TouchableOpacity activeOpacity={0.85} disabled={kind !== 'active'} onPress={() => setSheet('manage')} accessibilityLabel={kind === 'active' ? t('presenceCard.manageA11y') : undefined}>
           <GlassSurface radius={22} style={{ marginBottom: 10 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingLeft: 14, paddingRight: 12 }}>
               <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: kind === 'active' ? '#fff' : 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name="location" size={18} color={kind === 'active' ? '#000' : '#fff'} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }} numberOfLines={1}>{c.t}</Text>
+                <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }} numberOfLines={1}>{c.title}</Text>
                 <Text style={{ color: circle === 0 ? '#ff9f43' : 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }} numberOfLines={1}>
-                  {circle === 0 ? 'Ton cercle proche est vide' : c.sub}
+                  {circle === 0 ? t('presence.noCircleTitle') : c.sub}
                 </Text>
               </View>
               <TouchableOpacity onPress={c.go} activeOpacity={0.85} style={{ height: 34, borderRadius: 17, paddingHorizontal: 14, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
@@ -173,60 +174,60 @@ export function PresenceCard({ compact }: { compact?: boolean } = {}) {
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="location" size={13} color="rgba(255,255,255,0.55)" />
-              <Text style={label}>À LA SALLE</Text>
+              <Text style={label}>{t('presenceCard.label')}</Text>
             </View>
             {kind === 'active' && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 12, paddingHorizontal: 10, height: 26 }}>
                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' }} />
-                <Text style={{ color: '#fff', fontSize: 12, fontFamily: F.bold }}>Détection activée</Text>
+                <Text style={{ color: '#fff', fontSize: 12, fontFamily: F.bold }}>{t('presenceCard.detectionOn')}</Text>
               </View>
             )}
           </View>
 
           {kind === 'setup' && (
             <>
-              <Text style={title}>Préviens ton cercle quand tu arrives</Text>
-              <Text style={body}>Enregistre ta salle une fois. Quand tu y retournes, ton cercle proche reçoit une notification, sans rien toucher.</Text>
+              <Text style={title}>{t('presenceCard.setupTitle')}</Text>
+              <Text style={body}>{t('presenceCard.setupBody')}</Text>
             </>
           )}
           {kind === 'enable' && (
             <>
-              <Text style={title}>Plus qu'une étape</Text>
-              <Text style={body}>{names} est enregistrée. Active la détection pour que ton cercle soit prévenu à ton arrivée.</Text>
+              <Text style={title}>{t('presenceCard.enableTitle')}</Text>
+              <Text style={body}>{t('presenceCard.enableBody', { names })}</Text>
               <PlaceChips places={places} />
             </>
           )}
           {kind === 'permission' && (
             <>
-              <Text style={title}>Une autorisation manque</Text>
-              <Text style={body}>Choisis « Toujours » dans les réglages de localisation de Reiz, sinon la détection ne marche pas quand l'appli est fermée.</Text>
+              <Text style={title}>{t('presenceCard.permTitle')}</Text>
+              <Text style={body}>{t('presenceCard.permBody')}</Text>
               <PlaceChips places={places} />
             </>
           )}
           {kind === 'active' && (
             <>
-              <Text style={title}>Ton cercle te voit arriver</Text>
-              <Text style={body}>Quand tu arrives à {names}, ton cercle proche est prévenu. Une alerte toutes les {COOLDOWN_HOURS} heures au maximum.</Text>
+              <Text style={title}>{t('presenceCard.activeTitle')}</Text>
+              <Text style={body}>{t('presenceCard.activeBody', { names, n: COOLDOWN_HOURS })}</Text>
               <PlaceChips places={places} />
             </>
           )}
           {kind === 'manual' && (
             <>
-              <Text style={title}>Préviens ton cercle proche</Text>
-              <Text style={body}>Un tap et ils savent que tu t'entraînes. Ils peuvent venir te rejoindre.</Text>
+              <Text style={title}>{t('presenceCard.manualTitle')}</Text>
+              <Text style={body}>{t('presenceCard.manualBody')}</Text>
             </>
           )}
 
           {circle === 0 && (
-            <Text style={warning}>Ton cercle proche est vide : personne ne recevra l'alerte. Ajoute des amis dans Réglages, Mon cercle proche.</Text>
+            <Text style={warning}>{t('presenceCard.emptyCircleWarning')}</Text>
           )}
 
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-            {kind === 'setup' && <><Btn text="Ajouter ma salle" onPress={() => setSheet('add')} /><Btn text="Je suis à la salle" secondary onPress={manual} /></>}
-            {kind === 'enable' && <><Btn text="Activer la détection" onPress={enable} /><Btn text="Je suis à la salle" secondary onPress={manual} /></>}
-            {kind === 'permission' && <><Btn text="Ouvrir les réglages" onPress={openSettings} /><Btn text="Je suis à la salle" secondary onPress={manual} /></>}
-            {kind === 'active' && <><Btn text="Je suis à la salle" onPress={manual} /><Btn text="Gérer" secondary onPress={() => setSheet('manage')} /></>}
-            {kind === 'manual' && <Btn text="Je suis à la salle" onPress={manual} />}
+            {kind === 'setup' && <><Btn text={t('presenceCard.addGym')} onPress={() => setSheet('add')} /><Btn text={t('presenceCard.imAtGym')} secondary onPress={manual} /></>}
+            {kind === 'enable' && <><Btn text={t('welcome.enableDetection')} onPress={enable} /><Btn text={t('presenceCard.imAtGym')} secondary onPress={manual} /></>}
+            {kind === 'permission' && <><Btn text={t('common.openSettings')} onPress={openSettings} /><Btn text={t('presenceCard.imAtGym')} secondary onPress={manual} /></>}
+            {kind === 'active' && <><Btn text={t('presenceCard.imAtGym')} onPress={manual} /><Btn text={t('presenceCard.manage')} secondary onPress={() => setSheet('manage')} /></>}
+            {kind === 'manual' && <Btn text={t('presenceCard.imAtGym')} onPress={manual} />}
           </View>
         </View>
       </GlassSurface>
@@ -237,7 +238,7 @@ export function PresenceCard({ compact }: { compact?: boolean } = {}) {
   );
 }
 
-const SUGGESTIONS = ['Basic-Fit', 'Fitness Park', 'Ma salle', 'Stade'];
+const SUGGESTIONS = ['Basic-Fit', 'Fitness Park', t('welcome.myGym'), t('presenceCard.stadium')];
 
 /** Parcours guidé : se placer dans la salle, la nommer, tout activer en une fois. */
 function PlaceSheet({ visible, circle, onClose }: { visible: boolean; circle: number | null; onClose: () => void }) {
@@ -255,14 +256,14 @@ function PlaceSheet({ visible, circle, onClose }: { visible: boolean; circle: nu
     } catch (e: any) {
       setBusy(false);
       if (e?.message === 'denied') {
-        Alert.alert('Localisation refusée', 'Autorise la localisation de Reiz dans les réglages pour enregistrer ce lieu.', [
-          { text: 'Annuler', style: 'cancel' },
-          { text: 'Ouvrir les réglages', onPress: () => Linking.openSettings().catch(() => {}) },
+        Alert.alert(t('presenceCard.locRefusedTitle'), t('presenceCard.locRefusedText'), [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('common.openSettings'), onPress: () => Linking.openSettings().catch(() => {}) },
         ]);
       } else if (e?.message === 'max') {
-        Alert.alert('Lieux', `${MAX_PLACES} lieux maximum. Supprime-en un d'abord dans « Gérer ».`);
+        Alert.alert(t('presenceCard.placesTitle'), t('presenceCard.placesMax', { n: MAX_PLACES }));
       } else {
-        Alert.alert('Erreur', "Impossible de lire ta position. Réessaie dehors ou près d'une fenêtre.");
+        Alert.alert(t('common.error'), t('presenceCard.noPosition'));
       }
       return;
     }
@@ -277,36 +278,32 @@ function PlaceSheet({ visible, circle, onClose }: { visible: boolean; circle: nu
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: '#0a0a0a' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 16, paddingBottom: 0 }}>
-          <GlassIconButton icon="close" label="Fermer" onPress={onClose} />
+          <GlassIconButton icon="close" label={t('common.close')} onPress={onClose} />
         </View>
         <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }} showsVerticalScrollIndicator={false}>
           {done === null ? (
             <>
-              <Text style={{ color: '#fff', fontSize: 30, fontFamily: F.black, letterSpacing: -0.9 }}>Ajouter ma salle</Text>
+              <Text style={{ color: '#fff', fontSize: 30, fontFamily: F.black, letterSpacing: -0.9 }}>{t('presenceCard.addGym')}</Text>
               <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 15, lineHeight: 23, fontFamily: F.regular, marginTop: 10 }}>
-                Enregistre l'endroit où tu es. Quand tu y reviendras, ton cercle proche sera prévenu tout seul, même si l'appli est fermée.
+                {t('presenceCard.addGymBody')}
               </Text>
 
               <View style={{ marginTop: 22, gap: 14 }}>
-                {[
-                  "Mets-toi à l'intérieur de ta salle ou sur ton terrain.",
-                  'Donne-lui un nom.',
-                  "Autorise la localisation « Toujours » quand l'iPhone te le demande.",
-                ].map((t, i) => (
-                  <View key={t} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                {tl('presenceCard.addGymSteps').map((step, i) => (
+                  <View key={step} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                     <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
                       <Text style={{ color: '#fff', fontSize: 13, fontFamily: F.black }}>{i + 1}</Text>
                     </View>
-                    <Text style={{ flex: 1, color: '#ddd', fontSize: 14, lineHeight: 20, fontFamily: F.regular }}>{t}</Text>
+                    <Text style={{ flex: 1, color: '#ddd', fontSize: 14, lineHeight: 20, fontFamily: F.regular }}>{step}</Text>
                   </View>
                 ))}
               </View>
 
-              <Text style={{ fontSize: 11, color: '#777', fontFamily: F.bold, letterSpacing: 1.5, marginTop: 26, marginBottom: 8 }}>NOM DU LIEU</Text>
+              <Text style={{ fontSize: 11, color: '#777', fontFamily: F.bold, letterSpacing: 1.5, marginTop: 26, marginBottom: 8 }}>{t('presenceCard.placeNameLabel')}</Text>
               <TextInput
                 value={name}
                 onChangeText={setName}
-                placeholder="Basic-Fit, Stade..."
+                placeholder={t('presenceCard.placeNamePlaceholder')}
                 placeholderTextColor="#666"
                 maxLength={40}
                 returnKeyType="done"
@@ -322,14 +319,10 @@ function PlaceSheet({ visible, circle, onClose }: { visible: boolean; circle: nu
 
               <GlassSurface radius={22} style={{ marginTop: 24 }}>
                 <View style={{ padding: 16, gap: 10 }}>
-                  {[
-                    'Tes coordonnées restent sur ton téléphone. Elles ne sont jamais envoyées.',
-                    `Seul ton cercle proche est prévenu, une fois toutes les ${COOLDOWN_HOURS} heures au maximum.`,
-                    'Tu peux tout couper à tout moment.',
-                  ].map(t => (
-                    <View key={t} style={{ flexDirection: 'row', gap: 10 }}>
+                  {[t('presenceCard.promise1'), t('presenceCard.promise2', { n: COOLDOWN_HOURS }), t('presenceCard.promise3')].map(line => (
+                    <View key={line} style={{ flexDirection: 'row', gap: 10 }}>
                       <Ionicons name="checkmark-circle" size={18} color="#fff" style={{ marginTop: 1 }} />
-                      <Text style={{ flex: 1, color: '#ddd', fontSize: 13, lineHeight: 19, fontFamily: F.regular }}>{t}</Text>
+                      <Text style={{ flex: 1, color: '#ddd', fontSize: 13, lineHeight: 19, fontFamily: F.regular }}>{line}</Text>
                     </View>
                   ))}
                 </View>
@@ -337,12 +330,12 @@ function PlaceSheet({ visible, circle, onClose }: { visible: boolean; circle: nu
 
               {circle === 0 && (
                 <Text style={{ color: '#ff9f43', fontSize: 13, lineHeight: 19, fontFamily: F.semibold, marginTop: 16 }}>
-                  Ton cercle proche est vide : personne ne recevra l'alerte. Ajoute des amis dans Réglages, Mon cercle proche.
+                  {t('presenceCard.emptyCircleWarning')}
                 </Text>
               )}
 
               <TouchableOpacity onPress={busy ? undefined : save} activeOpacity={0.85} style={{ backgroundColor: '#fff', borderRadius: 18, paddingVertical: 16, alignItems: 'center', marginTop: 24 }}>
-                {busy ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }}>Autoriser et enregistrer ma salle</Text>}
+                {busy ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }}>{t('presenceCard.allowAndSave')}</Text>}
               </TouchableOpacity>
             </>
           ) : (
@@ -351,16 +344,16 @@ function PlaceSheet({ visible, circle, onClose }: { visible: boolean; circle: nu
                 <Ionicons name={done === 'ok' ? 'checkmark' : 'location'} size={40} color="#fff" />
               </GlassSurface>
               <Text style={{ color: '#fff', fontSize: 28, fontFamily: F.black, letterSpacing: -0.8, marginTop: 22, textAlign: 'center' }}>
-                Ta salle est enregistrée
+                {t('presenceCard.savedTitle')}
               </Text>
               <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 15, lineHeight: 23, fontFamily: F.regular, marginTop: 12, textAlign: 'center', paddingHorizontal: 12 }}>
                 {done === 'ok'
-                  ? 'La prochaine fois que tu y arrives, ton cercle proche est prévenu automatiquement.'
-                  : "Mais iPhone n'a pas accordé « Toujours » : sans lui, la détection ne marche pas quand l'appli est fermée. Choisis « Toujours » dans les réglages de localisation de Reiz."}
+                  ? t('presenceCard.savedOk')
+                  : t('presenceCard.savedNoAlways')}
               </Text>
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 28, alignSelf: 'stretch' }}>
-                {done === 'permission' && <Btn text="Ouvrir les réglages" onPress={() => Linking.openSettings().catch(() => {})} />}
-                <Btn text={done === 'ok' ? 'Terminé' : 'Plus tard'} secondary={done === 'permission'} onPress={onClose} />
+                {done === 'permission' && <Btn text={t('common.openSettings')} onPress={() => Linking.openSettings().catch(() => {})} />}
+                <Btn text={done === 'ok' ? t('common.done') : t('common.later')} secondary={done === 'permission'} onPress={onClose} />
               </View>
             </View>
           )}
@@ -377,7 +370,7 @@ function ManageSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: '#0a0a0a' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 16, paddingBottom: 0 }}>
-          <GlassIconButton icon="close" label="Fermer" onPress={onClose} />
+          <GlassIconButton icon="close" label={t('common.close')} onPress={onClose} />
         </View>
         <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={{ paddingBottom: insets.bottom }} showsVerticalScrollIndicator={false}>
           <PresencePanel />

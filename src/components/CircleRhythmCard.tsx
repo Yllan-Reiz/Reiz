@@ -7,6 +7,7 @@ import { GlassCard } from './GlassSurface';
 import { loadCircleRhythm, CircleRhythm, FriendRhythm } from '../lib/rhythm';
 import { DAY_LETTERS } from '../constants';
 import { F } from '../styles';
+import { t } from '../i18n';
 
 // « Ton cercle cette semaine » : la régularité de tes amis d'un coup d'œil. Combien ont posté, qui est à relancer,
 // et en touchant la carte, le détail jour par jour (L M M J V S D) de chacun.
@@ -23,14 +24,14 @@ function Face({ f, size }: { f: FriendRhythm; size: number }) {
 async function sendNudge(f: FriendRhythm): Promise<boolean> {
   const { data, error } = await supabase.rpc('nudge_friend', { p_friend: f.id });
   const first = f.full_name.split(' ')[0];
-  if (error) { Alert.alert('Relance', "Impossible d'envoyer la relance pour le moment."); return false; }
-  if (data === 'already') { Alert.alert('Déjà relancé', `Tu as déjà relancé ${first} aujourd'hui.`); return true; }
-  if (data !== 'sent') { Alert.alert('Relance', `${first} ne peut pas être relancé.`); return false; }
+  if (error) { Alert.alert(t('rhythm.nudge'), t('rhythm.nudgeFailed')); return false; }
+  if (data === 'already') { Alert.alert(t('rhythm.alreadyTitle'), t('rhythm.alreadyText', { name: first })); return true; }
+  if (data !== 'sent') { Alert.alert(t('rhythm.nudge'), t('rhythm.cannot', { name: first })); return false; }
   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
   return true;
 }
 
-const lastLabel = (f: FriendRhythm) => (f.daysAgo === null ? 'inactif' : f.daysAgo === 0 ? "aujourd'hui" : f.daysAgo === 1 ? 'hier' : `il y a ${f.daysAgo} j`);
+const lastLabel = (f: FriendRhythm) => (f.daysAgo === null ? t('rhythm.inactive') : f.daysAgo === 0 ? t('rhythm.today') : f.daysAgo === 1 ? t('rhythm.yesterday') : t('rhythm.daysAgo', { n: f.daysAgo }));
 
 function Week({ f }: { f: FriendRhythm }) {
   const todayIdx = (new Date().getDay() + 6) % 7;
@@ -63,18 +64,18 @@ export function CircleRhythmCard({ onOpenProfile, reloadKey }: { onOpenProfile: 
 
   return (
     <GlassCard radius={28} style={{ marginBottom: 12 }}>
-      <TouchableOpacity activeOpacity={0.85} onPress={() => { Haptics.selectionAsync().catch(() => {}); setOpen(o => !o); }} style={{ padding: 16 }} accessibilityLabel="Régularité de ton cercle, afficher le détail">
+      <TouchableOpacity activeOpacity={0.85} onPress={() => { Haptics.selectionAsync().catch(() => {}); setOpen(o => !o); }} style={{ padding: 16 }} accessibilityLabel={t('rhythm.a11y')}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="pulse" size={13} color="rgba(255,255,255,0.55)" />
-            <Text style={label}>TON CERCLE CETTE SEMAINE</Text>
+            <Text style={label}>{t('rhythm.title')}</Text>
           </View>
           <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color="rgba(255,255,255,0.5)" />
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 8 }}>
           <Text style={{ color: '#fff', fontSize: 28, fontFamily: F.black, letterSpacing: -0.8 }}>{data.active}<Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 17, fontFamily: F.semibold, letterSpacing: 0 }}>{` / ${data.total}`}</Text></Text>
-          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: F.regular }}>ont posté cette semaine</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: F.regular }}>{t('rhythm.postedThisWeek')}</Text>
         </View>
         <View style={{ height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.16)', marginTop: 8, overflow: 'hidden' }}>
           <View style={{ width: `${pct}%`, height: '100%', backgroundColor: '#fff', borderRadius: 4 }} />
@@ -82,7 +83,7 @@ export function CircleRhythmCard({ onOpenProfile, reloadKey }: { onOpenProfile: 
 
         {nudge.length > 0 ? (
           <View style={{ marginTop: 12 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontFamily: F.semibold }}>À relancer</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontFamily: F.semibold }}>{t('rhythm.toNudge')}</Text>
             {nudge.map(f => {
               const done = nudged.has(f.id);
               return (
@@ -90,23 +91,23 @@ export function CircleRhythmCard({ onOpenProfile, reloadKey }: { onOpenProfile: 
                   <TouchableOpacity onPress={() => onOpenProfile(f.id)} activeOpacity={0.8} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <Face f={f} size={30} />
                     <Text style={{ color: '#fff', fontSize: 14, fontFamily: F.semibold }} numberOfLines={1}>{f.full_name.split(' ')[0]}</Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontFamily: F.regular }}>{f.daysAgo === null ? 'inactif' : `${f.daysAgo} j sans séance`}</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontFamily: F.regular }}>{f.daysAgo === null ? t('rhythm.inactive') : t('rhythm.daysWithout', { n: f.daysAgo })}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => doNudge(f)}
                     disabled={done}
                     activeOpacity={0.85}
-                    accessibilityLabel={done ? `${f.full_name} relancé` : `Relancer ${f.full_name}`}
+                    accessibilityLabel={done ? t('rhythm.nudgedName', { name: f.full_name }) : t('rhythm.nudgeName', { name: f.full_name })}
                     style={{ height: 32, borderRadius: 16, paddingHorizontal: 14, backgroundColor: done ? 'transparent' : '#fff', borderWidth: done ? 1 : 0, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
                   >
-                    <Text style={{ color: done ? 'rgba(255,255,255,0.6)' : '#000', fontSize: 13, fontFamily: F.extrabold }}>{done ? 'Relancé' : 'Relancer'}</Text>
+                    <Text style={{ color: done ? 'rgba(255,255,255,0.6)' : '#000', fontSize: 13, fontFamily: F.extrabold }}>{done ? t('rhythm.nudged') : t('rhythm.nudgeBtn')}</Text>
                   </TouchableOpacity>
                 </View>
               );
             })}
           </View>
         ) : data.active > 0 ? (
-          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontFamily: F.semibold, marginTop: 14 }}>Tout le monde est en rythme 🔥</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontFamily: F.semibold, marginTop: 14 }}>{t('rhythm.allGood')}</Text>
         ) : null}
       </TouchableOpacity>
 

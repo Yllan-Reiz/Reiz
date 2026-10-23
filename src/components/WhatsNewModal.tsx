@@ -7,6 +7,7 @@ import { NewsVideo } from './NewsVideo';
 import { currentUser } from '../lib/supabase';
 import { CHANGELOG, changelogUnseen, markChangelogSeen } from '../lib/changelog';
 import { F, s as st } from '../styles';
+import { t } from '../i18n';
 
 // La page des nouveautés : elle s'ouvre UNE SEULE FOIS, au lancement de l'app après une mise à jour,
 // puis plus jamais pour cette version (lib/changelog.ts garde la version vue sur le téléphone).
@@ -37,7 +38,7 @@ export function WhatsNewModal() {
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
       <View style={{ flex: 1, backgroundColor: '#0a0a0a' }}>
         <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 32, paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
-          <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5 }}>NOUVEAUTÉS</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5 }}>{t('whatsNew.label')}</Text>
           <Text style={{ color: '#fff', fontSize: 34, fontFamily: F.black, letterSpacing: -1.1, marginTop: 8 }}>{CHANGELOG.title}</Text>
           <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 15, lineHeight: 22, fontFamily: F.regular, marginTop: 8 }}>{CHANGELOG.subtitle}</Text>
 
@@ -63,7 +64,7 @@ export function WhatsNewModal() {
           <LinearGradient colors={['rgba(10,10,10,0)', '#0a0a0a']} style={{ height: 28 }} pointerEvents="none" />
           <View style={{ paddingHorizontal: 24, paddingTop: 4, paddingBottom: insets.bottom + 16, backgroundColor: '#0a0a0a' }}>
             <TouchableOpacity onPress={close} activeOpacity={0.85} style={st.btn}>
-              <Text style={st.btnText}>C'est parti</Text>
+              <Text style={st.btnText}>{t('auth.letsGo')}</Text>
             </TouchableOpacity>
           </View>
         </View>

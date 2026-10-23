@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Gif, searchGifs, trendingGifs } from '../lib/giphy';
 import { F } from '../styles';
+import { t } from '../i18n';
 
 // La banque de GIF des commentaires : les tendances à l'ouverture, une recherche (en français), deux colonnes.
 // Toucher un GIF l'envoie. La mention « Powered by GIPHY » est demandée par les conditions de l'API.
@@ -55,7 +56,7 @@ export function GifPicker({ visible, onClose, onPick }: { visible: boolean; onCl
             <TextInput
               value={q}
               onChangeText={setQ}
-              placeholder="Chercher un GIF"
+              placeholder={t('gif.search')}
               placeholderTextColor="#666"
               autoFocus
               returnKeyType="search"
@@ -63,20 +64,20 @@ export function GifPicker({ visible, onClose, onPick }: { visible: boolean; onCl
               style={{ flex: 1, color: '#fff', fontSize: 15, fontFamily: F.regular }}
             />
             {!!q && (
-              <TouchableOpacity onPress={() => setQ('')} hitSlop={8} accessibilityLabel="Effacer la recherche">
+              <TouchableOpacity onPress={() => setQ('')} hitSlop={8} accessibilityLabel={t('friendsGlass.clearSearch')}>
                 <Ionicons name="close-circle" size={17} color="#666" />
               </TouchableOpacity>
             )}
           </View>
           <TouchableOpacity onPress={onClose} hitSlop={8}>
-            <Text style={{ color: '#aaa', fontSize: 14, fontFamily: F.semibold }}>Fermer</Text>
+            <Text style={{ color: '#aaa', fontSize: 14, fontFamily: F.semibold }}>{t('common.close')}</Text>
           </TouchableOpacity>
         </View>
 
         {failed ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
-            <Text style={{ color: '#fff', fontSize: 16, fontFamily: F.bold }}>GIF indisponibles</Text>
-            <Text style={{ color: '#888', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 6 }}>Vérifie ta connexion, ou réessaie dans un moment.</Text>
+            <Text style={{ color: '#fff', fontSize: 16, fontFamily: F.bold }}>{t('gif.unavailable')}</Text>
+            <Text style={{ color: '#888', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 6 }}>{t('gif.unavailableText')}</Text>
           </View>
         ) : (
           <FlatList
@@ -88,13 +89,13 @@ export function GifPicker({ visible, onClose, onPick }: { visible: boolean; onCl
             columnWrapperStyle={{ gap: GAP }}
             contentContainerStyle={{ paddingHorizontal: 16, gap: GAP, paddingBottom: insets.bottom + 48 }}
             ListEmptyComponent={loading ? <ActivityIndicator color="#fff" style={{ marginTop: 40 }} /> : (
-              <Text style={{ color: '#777', fontSize: 13, textAlign: 'center', marginTop: 40 }}>Aucun GIF trouvé.</Text>
+              <Text style={{ color: '#777', fontSize: 13, textAlign: 'center', marginTop: 40 }}>{t('gif.none')}</Text>
             )}
             renderItem={({ item }) => (
               <TouchableOpacity
                 activeOpacity={0.85}
                 onPress={() => { Haptics.selectionAsync().catch(() => {}); onPick(item); }}
-                accessibilityLabel="Envoyer ce GIF"
+                accessibilityLabel={t('gif.send')}
                 style={{ width: colW, height: Math.min(colW * 1.3, Math.max(colW * 0.6, colW * (item.height / item.width))), borderRadius: 12, overflow: 'hidden', backgroundColor: '#161616' }}
               >
                 <Image source={{ uri: item.preview }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />

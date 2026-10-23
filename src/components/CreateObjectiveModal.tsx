@@ -3,41 +3,43 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator,
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase, currentUser } from '../lib/supabase';
-import { frError, parseGoal } from '../lib/helpers';
+import { frError, parseGoal, num } from '../lib/helpers';
 import { QUICK_UNITS, ALL_DAYS, GUTTER } from '../constants';
 import { F } from '../styles';
 import { GlassSurface, GlassCard } from './GlassSurface';
 import { TrainingDaysPicker } from './TrainingDays';
+import { t, unitLabel } from '../i18n';
 
 // Créer un objectif. Même DA que « Modifier l'objectif » : fond noir, sections en verre, choix actif en blanc.
 const VISIBILITY = [
-  { key: 'friends', label: 'Mon cercle' },
-  { key: 'close', label: '★ Proches' },
-  { key: 'private', label: 'Privé' },
-  { key: 'public', label: 'Public' },
+  { key: 'friends', label: t('objective.visFriends') },
+  { key: 'close', label: t('objective.visClose') },
+  { key: 'private', label: t('vis.private') },
+  { key: 'public', label: t('vis.public') },
 ];
 const VIS_HINT: Record<string, string> = {
-  friends: 'Tous tes amis le voient.',
-  close: "Seuls les amis de ton cercle proche (marqués d'une étoile) le voient.",
-  private: 'Toi seul le vois.',
-  public: 'Tout le monde peut le voir.',
+  friends: t('objective.hintFriends'),
+  close: t('objective.hintClose'),
+  private: t('objective.hintPrivate'),
+  public: t('objective.hintPublic'),
 };
 
 // Plus de choix d'emoji à l'écran : il se déduit du nom (et de l'unité), 🎯 par défaut.
+// Mots en français, anglais, espagnol et hébreu.
 const EMOJI_RULES: [RegExp, string][] = [
   [/hyrox|sled|wall ?ball/i, '🛷'],
-  [/box|jjb|jiu|mma|judo|lutte|grappl|muay|kick|karat|krav|combat/i, '🥊'],
-  [/v[ée]lo|cycl|bike|gravel|spinning/i, '🚴'],
-  [/nag|natation|piscine|swim|longueur/i, '🏊'],
-  [/courir|course|run|marathon|semi|trail|footing|sprint|\bkm\b/i, '🏃'],
-  [/traction|dips|muscle.?up|street|calisth|pompe|planche/i, '🤸'],
-  [/escalad|grimp|bloc/i, '🧗'],
-  [/foot(?!ing)|soccer/i, '⚽'],
-  [/basket/i, '🏀'],
-  [/tennis|padel/i, '🎾'],
-  [/dorm|sommeil/i, '😴'],
-  [/\beau\b|boire|hydrat/i, '💧'],
-  [/bench|squat|terre|deadlift|d[ée]velopp|muscu|salle|halt[èe]re|\bkg\b|force|ferri/i, '🏋️'],
+  [/box|jjb|jiu|mma|judo|lutte|lucha|grappl|muay|kick|karat|krav|combat|אגרוף/i, '🥊'],
+  [/v[ée]lo|cycl|ciclis|bici|bike|gravel|spinning|אופניים/i, '🚴'],
+  [/nag|natation|nata|nadar|piscin|swim|longueur|שחי/i, '🏊'],
+  [/courir|course|correr|carrera|run|marathon|marat[oó]n|semi|trail|footing|sprint|\bkm\b|ריצ/i, '🏃'],
+  [/traction|dominad|dips|muscle.?up|pull.?up|push.?up|flexion|street|calisth|pompe|planche|מתח/i, '🤸'],
+  [/escalad|grimp|climb|bloc/i, '🧗'],
+  [/foot(?!ing)|f[uú]tbol|soccer|כדורגל/i, '⚽'],
+  [/basket|b[aá]squet|כדורסל/i, '🏀'],
+  [/tennis|tenis|padel|טניס/i, '🎾'],
+  [/dorm|sommeil|sleep|sue[ñn]o|שינה/i, '😴'],
+  [/\beau\b|boire|water|agua|hydrat|hidrat|מים/i, '💧'],
+  [/bench|squat|sentadilla|terre|deadlift|d[ée]velopp|muscu|salle|gym|halt[èe]re|pesas|\bkg\b|\blbs?\b|force|fuerza|strength|ferri|כושר/i, '🏋️'],
 ];
 const guessEmoji = (title: string, unit: string) => EMOJI_RULES.find(([r]) => r.test(`${title} ${unit}`))?.[1] ?? '🎯';
 
@@ -56,7 +58,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
     setTitle(text);
     if (touched) return;
     const g = parseGoal(text);
-    if (g) { setTargetValue(String(g.target).replace('.', ',')); setUnit(g.unit); }
+    if (g) { setTargetValue(num(g.target)); setUnit(g.unit); }
     else setTargetValue('');
   };
 
@@ -68,14 +70,14 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
   const finalTarget = Number(targetValue.replace(',', '.'));
 
   const handleCreate = async () => {
-    if (!title.trim()) { Alert.alert('Erreur', 'Donne un nom à ton objectif !'); return; }
-    if (!hasTarget) { Alert.alert('Il manque le chiffre', 'Indique combien tu vises : 170 kg, 4 séances, 10 km...'); return; }
+    if (!title.trim()) { Alert.alert(t('common.error'), t('objective.needName')); return; }
+    if (!hasTarget) { Alert.alert(t('objective.needTargetTitle'), t('objective.needTargetText')); return; }
     const target = finalTarget;
-    if (isNaN(target) || target <= 0) { Alert.alert('Erreur', 'Le nombre doit être supérieur à 0.'); return; }
-    if (days.length === 0) { Alert.alert('Jours d\'entraînement', 'Choisis au moins un jour où tu t\'entraînes.'); return; }
+    if (isNaN(target) || target <= 0) { Alert.alert(t('common.error'), t('objective.positive')); return; }
+    if (days.length === 0) { Alert.alert(t('welcome.daysTitle'), t('welcome.daysText')); return; }
     setSaving(true);
     const user = await currentUser();
-    if (!user) { setSaving(false); Alert.alert('Erreur', 'Tu dois être connecté.'); return; }
+    if (!user) { setSaving(false); Alert.alert(t('common.error'), t('post.mustBeSignedIn')); return; }
     const row = {
       user_id: user.id, title: title.trim(), emoji: guessEmoji(title, finalUnit),
       target_value: target, current_value: 0,
@@ -89,8 +91,8 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
       ({ error } = await supabase.from('objectives').insert(row));
     }
     setSaving(false);
-    if (error) { Alert.alert('Erreur', frError(error)); return; }
-    Alert.alert('Objectif créé', `"${title}" est ajouté à tes objectifs.`);
+    if (error) { Alert.alert(t('common.error'), frError(error)); return; }
+    Alert.alert(t('objective.createdTitle'), t('objective.createdText', { title }));
     reset(); onCreated();
   };
 
@@ -103,13 +105,13 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
           Sur iOS, la ScrollView gère le clavier elle-même. */}
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#0a0a0a' }} behavior="height" enabled={Platform.OS === 'android'}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: GUTTER, paddingTop: 16, paddingBottom: 8 }}>
-          <TouchableOpacity onPress={() => { reset(); onClose(); }} accessibilityLabel="Annuler" hitSlop={8}>
+          <TouchableOpacity onPress={() => { reset(); onClose(); }} accessibilityLabel={t('common.cancel')} hitSlop={8}>
             <GlassSurface radius={20} variant="clear" style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name="close" size={20} color="#fff" />
             </GlassSurface>
           </TouchableOpacity>
           <TouchableOpacity onPress={saving ? undefined : handleCreate} activeOpacity={0.85} accessibilityRole="button" style={{ height: 40, borderRadius: 20, paddingHorizontal: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', minWidth: 96 }}>
-            {saving ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }} maxFontSizeMultiplier={1.3}>Créer</Text>}
+            {saving ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }} maxFontSizeMultiplier={1.3}>{t('objective.create')}</Text>}
           </TouchableOpacity>
         </View>
 
@@ -120,15 +122,15 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
           automaticallyAdjustKeyboardInsets
           contentContainerStyle={{ paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: 60 }}
         >
-          <Text style={label}>NOUVEL OBJECTIF</Text>
-          <Text style={{ color: '#fff', fontSize: 30, lineHeight: 34, fontFamily: F.black, letterSpacing: -0.9, marginTop: 6 }} maxFontSizeMultiplier={1.2}>Fixe ton objectif</Text>
+          <Text style={label}>{t('objective.newLabel')}</Text>
+          <Text style={{ color: '#fff', fontSize: 30, lineHeight: 34, fontFamily: F.black, letterSpacing: -0.9, marginTop: 6 }} maxFontSizeMultiplier={1.2}>{t('objective.newTitle')}</Text>
 
           <GlassCard radius={28} style={{ marginTop: 22 }}>
             <View style={{ padding: 18 }}>
-              <Text style={label}>NOM DE L'OBJECTIF</Text>
+              <Text style={label}>{t('welcome.objNameLabel')}</Text>
               <TextInput
                 style={field}
-                placeholder="100 kg au bench, ou tu bluffes ?"
+                placeholder={t('objective.namePlaceholder')}
                 placeholderTextColor="rgba(255,255,255,0.4)"
                 value={title}
                 onChangeText={onTitle}
@@ -141,7 +143,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
           {/* Le chiffre visé et son unité */}
           <GlassCard radius={28} style={{ marginTop: 14 }}>
             <View style={{ padding: 18 }}>
-              <Text style={label}>COMBIEN ?</Text>
+              <Text style={label}>{t('objective.howMuch')}</Text>
               <TextInput
                 style={[field, { fontSize: 22, fontFamily: F.black }]}
                 placeholder="4"
@@ -156,29 +158,29 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
                   const on = hasTarget && unit === u;
                   return (
                     <TouchableOpacity key={u} onPress={() => pick(() => { setTouched(true); setUnit(u); })} activeOpacity={0.85} accessibilityState={{ selected: on }} style={chip(on)}>
-                      <Text style={chipText(on)} maxFontSizeMultiplier={1.3}>{u}</Text>
+                      <Text style={chipText(on)} maxFontSizeMultiplier={1.3}>{unitLabel(u)}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
               <Text style={hint}>
                 {hasTarget
-                  ? `Tu posteras ta progression en ${unit}, jusqu'à ${targetValue}.`
-                  : 'Le chiffre que tu vises et son unité : 170 kg, 4 séances, 10 km.'}
+                  ? t('objective.unitHint', { unit: unitLabel(unit), target: targetValue })
+                  : t('objective.unitHintEmpty')}
               </Text>
             </View>
           </GlassCard>
 
           <GlassCard radius={28} style={{ marginTop: 14 }}>
             <View style={{ padding: 18 }}>
-              <Text style={[label, { marginBottom: 12 }]}>JOURS D'ENTRAÎNEMENT</Text>
+              <Text style={[label, { marginBottom: 12 }]}>{t('welcome.daysLabel')}</Text>
               <TrainingDaysPicker value={days} onChange={setDays} />
             </View>
           </GlassCard>
 
           <GlassCard radius={28} style={{ marginTop: 14 }}>
             <View style={{ padding: 18 }}>
-              <Text style={label}>QUI VOIT ?</Text>
+              <Text style={label}>{t('objective.whoSees')}</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
                 {VISIBILITY.map(v => {
                   const on = visibility === v.key;

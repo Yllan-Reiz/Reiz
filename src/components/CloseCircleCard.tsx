@@ -7,6 +7,7 @@ import { PeopleListModal } from './PeopleListModal';
 import { currentUser } from '../lib/supabase';
 import { useCloseCircle, resetCloseCircle, CloseFriend } from '../lib/closeCircle';
 import { F } from '../styles';
+import { t, tp } from '../i18n';
 
 // Le cercle proche, mis en avant dans le fil tant qu'il est vide ou presque :
 //   0 proche  : grande carte qui explique à quoi ça sert, impossible à masquer ;
@@ -53,13 +54,13 @@ export function CloseCircleCard({ onOpenProfile }: { onOpenProfile?: (id: string
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="star" size={13} color="rgba(255,255,255,0.55)" />
-              <Text style={label}>CERCLE PROCHE</Text>
+              <Text style={label}>{t('closeCard.label')}</Text>
             </View>
             {!empty && (
               <TouchableOpacity
                 onPress={() => { setLater(true); AsyncStorage.setItem(LATER_KEY, String(Date.now())).catch(() => {}); }}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                accessibilityLabel="Masquer pendant 3 jours"
+                accessibilityLabel={t('closeCard.hide')}
               >
                 <Ionicons name="close" size={18} color="rgba(255,255,255,0.5)" />
               </TouchableOpacity>
@@ -67,17 +68,17 @@ export function CloseCircleCard({ onOpenProfile }: { onOpenProfile?: (id: string
           </View>
 
           <Text style={{ color: '#fff', fontSize: 24, fontFamily: F.black, letterSpacing: -0.6, marginTop: 10 }}>
-            {empty ? 'Crée ton cercle proche' : 'Ton cercle proche grandit'}
+            {empty ? t('closeCard.emptyTitle') : t('closeCard.growTitle')}
           </Text>
           <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14, lineHeight: 21, fontFamily: F.regular, marginTop: 8 }}>
             {empty
-              ? "Tes vrais partenaires d'entraînement. Ils sont prévenus quand tu arrives à la salle, voient les objectifs que tu leur réserves et te rejoignent en duo."
-              : `${list.length} ${list.length > 1 ? 'proches' : 'proche'} pour l'instant. Avec 3 personnes ou plus, l'alerte « je suis à la salle » prend tout son sens.`}
+              ? t('closeCard.emptyText')
+              : tp('closeCard.growText', list.length)}
           </Text>
           {!empty && <View style={{ marginTop: 12 }}><Faces people={list} /></View>}
 
           <TouchableOpacity onPress={() => setOpen(true)} activeOpacity={0.85} style={{ backgroundColor: '#fff', borderRadius: 16, paddingVertical: 13, alignItems: 'center', marginTop: 16 }}>
-            <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>{empty ? 'Choisir mes proches' : 'Ajouter des proches'}</Text>
+            <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>{empty ? t('closeCard.choose') : t('closeCard.add')}</Text>
           </TouchableOpacity>
         </View>
       </GlassSurface>

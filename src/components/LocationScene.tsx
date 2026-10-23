@@ -3,6 +3,7 @@ import { View, Text, Image, Animated, Easing, ImageSourcePropType } from 'react-
 import { Ionicons } from '@expo/vector-icons';
 import { GlassSurface } from './GlassSurface';
 import { F } from '../styles';
+import { t } from '../i18n';
 
 // L'illustration de l'étape « Ton lieu d'entraînement » de l'accueil : un plan de quartier sombre, ta salle
 // avec sa zone de détection qui pulse, et ta photo qui arrive dans la zone. À l'arrivée, la notification
@@ -67,7 +68,7 @@ export function LocationScene({ width, height = 264, fullBleed, cardTop = 12, av
 
   return (
     <View style={[{ width: W, height: H, overflow: 'hidden', backgroundColor: '#0e0e0e' }, !fullBleed && { borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }]}
-      accessible accessibilityLabel="Illustration : quand tu arrives à ta salle, ton cercle proche est prévenu">
+      accessible accessibilityLabel={t('locationScene.a11y')}>
       {/* Pâtés de maisons : quelques rectangles un peu plus clairs que le fond. */}
       {[
         [0.04, 0.06, 0.2, 0.42], [0.04, 0.72, 0.2, 0.26], [0.34, 0.04, 0.22, 0.2], [0.34, 0.72, 0.28, 0.3],
@@ -94,7 +95,7 @@ export function LocationScene({ width, height = 264, fullBleed, cardTop = 12, av
       </View>
       <View style={{ position: 'absolute', left: gym.x - 50, top: gym.y - 52, width: 100, alignItems: 'center' }}>
         <View style={{ backgroundColor: 'rgba(10,10,10,0.72)', borderRadius: 10, paddingHorizontal: 9, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
-          <Text style={{ color: '#fff', fontSize: 11, fontFamily: F.bold }}>Ma salle</Text>
+          <Text style={{ color: '#fff', fontSize: 11, fontFamily: F.bold }}>{t('welcome.myGym')}</Text>
         </View>
       </View>
 
@@ -110,8 +111,8 @@ export function LocationScene({ width, height = 264, fullBleed, cardTop = 12, av
             <Ionicons name="location" size={16} color="#000" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: '#fff', fontSize: 13.5, fontFamily: F.bold }} numberOfLines={1}>Tu es arrivé à ta salle</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }} numberOfLines={1}>Ton cercle proche est prévenu</Text>
+            <Text style={{ color: '#fff', fontSize: 13.5, fontFamily: F.bold }} numberOfLines={1}>{t('locationScene.arrived')}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }} numberOfLines={1}>{t('locationScene.notified')}</Text>
           </View>
           <View style={{ flexDirection: 'row' }}>
             {circle.slice(0, 3).map((src, i) => (

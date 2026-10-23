@@ -1,6 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from './supabase';
 import { setPendingName } from './googleAuth';
+import { t } from '../i18n';
 
 // Connexion avec Apple : jeton natif envoyé à Supabase (signInWithIdToken). Aucun navigateur.
 // Obligatoire sur l'App Store dès qu'une autre connexion tierce (Google) est proposée (règle 4.8).
@@ -16,13 +17,13 @@ export async function signInWithApple(): Promise<string | null> {
         AppleAuthentication.AppleAuthenticationScope.EMAIL,
       ],
     });
-    if (!cred.identityToken) return 'Connexion Apple impossible.';
+    if (!cred.identityToken) return t('auth.appleFailed');
     const first = cred.fullName?.givenName?.trim();
     if (first) setPendingName(first);
     const { error } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: cred.identityToken });
     return error ? error.message : null;
   } catch (e: any) {
     if (e?.code === 'ERR_REQUEST_CANCELED') return null;
-    return 'Connexion Apple impossible.';
+    return t('auth.appleFailed');
   }
 }

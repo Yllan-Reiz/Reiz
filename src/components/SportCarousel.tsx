@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { ALL_DAYS } from '../constants';
 import { F } from '../styles';
+import { t } from '../i18n';
 
 // Choix de la discipline, à l'accueil : une grande photo par sport, plein écran, qu'on fait défiler au doigt.
 // La discipline choisie sert ensuite à préremplir le premier objectif (nom, unité, but, jours).
@@ -26,14 +27,14 @@ export type Sport = {
 };
 
 export const SPORTS: Sport[] = [
-  { id: 'musculation', name: 'Musculation', description: 'Charges, séries, records. Ton cercle voit chaque kilo gagné.', photo: require('../../assets/sports/musculation.jpg'), emoji: '🏋️', title: 'Séances de musculation', unit: 'séances', target: 12, step: 1, days: [1, 3, 5] },
-  { id: 'street-workout', name: 'Street Workout', description: 'Tractions, dips, figures au poids du corps. La rue comme salle.', photo: require('../../assets/sports/street-workout.jpg'), emoji: '🤸', title: 'Street workout', unit: 'séances', target: 12, step: 1, days: [2, 4, 6] },
-  { id: 'hyrox', name: 'Hyrox', description: 'Course et ateliers fonctionnels. Prépare ta prochaine compétition.', photo: require('../../assets/sports/hyrox.jpg'), emoji: '🛷', title: 'Préparer un Hyrox', unit: 'séances', target: 16, step: 1, days: [1, 3, 5, 6] },
-  { id: 'running', name: 'Running', description: 'Du premier 5 km au marathon. Chaque sortie compte.', photo: require('../../assets/sports/running.jpg'), emoji: '🏃', title: 'Courir', unit: 'km', target: 50, step: 5, days: [2, 4, 6] },
-  { id: 'cyclisme', name: 'Cyclisme', description: 'Route, gravel ou home trainer. Accumule les kilomètres.', photo: require('../../assets/sports/cyclisme.jpg'), emoji: '🚴', title: 'Faire du vélo', unit: 'km', target: 100, step: 10, days: [6, 7] },
-  { id: 'combat', name: 'Sports de combat', description: 'Boxe, JJB, MMA, judo, lutte. Chaque séance sur le tapis compte.', photo: require('../../assets/sports/combat.jpg'), emoji: '🥋', title: 'Sports de combat', unit: 'séances', target: 12, step: 1, days: [1, 3, 5] },
-  { id: 'natation', name: 'Natation', description: 'Longueurs et technique. La régularité, même dans l\'eau.', photo: require('../../assets/sports/natation.jpg'), emoji: '🏊', title: 'Nager', unit: 'séances', target: 8, step: 1, days: [2, 5] },
-  { id: 'autre', name: 'Autre', description: 'Ton sport n\'est pas dans la liste ? Tu lui donnes son nom juste après.', photo: require('../../assets/sports/autre.jpg'), emoji: '🎯', title: '', unit: 'séances', target: 12, step: 1, days: ALL_DAYS },
+  { id: 'musculation', name: t('sports.musculation.name'), description: t('sports.musculation.description'), photo: require('../../assets/sports/musculation.jpg'), emoji: '🏋️', title: t('sports.musculation.title'), unit: 'séances', target: 12, step: 1, days: [1, 3, 5] },
+  { id: 'street-workout', name: t('sports.street-workout.name'), description: t('sports.street-workout.description'), photo: require('../../assets/sports/street-workout.jpg'), emoji: '🤸', title: t('sports.street-workout.title'), unit: 'séances', target: 12, step: 1, days: [2, 4, 6] },
+  { id: 'hyrox', name: t('sports.hyrox.name'), description: t('sports.hyrox.description'), photo: require('../../assets/sports/hyrox.jpg'), emoji: '🛷', title: t('sports.hyrox.title'), unit: 'séances', target: 16, step: 1, days: [1, 3, 5, 6] },
+  { id: 'running', name: t('sports.running.name'), description: t('sports.running.description'), photo: require('../../assets/sports/running.jpg'), emoji: '🏃', title: t('sports.running.title'), unit: 'km', target: 50, step: 5, days: [2, 4, 6] },
+  { id: 'cyclisme', name: t('sports.cyclisme.name'), description: t('sports.cyclisme.description'), photo: require('../../assets/sports/cyclisme.jpg'), emoji: '🚴', title: t('sports.cyclisme.title'), unit: 'km', target: 100, step: 10, days: [6, 7] },
+  { id: 'combat', name: t('sports.combat.name'), description: t('sports.combat.description'), photo: require('../../assets/sports/combat.jpg'), emoji: '🥋', title: t('sports.combat.title'), unit: 'séances', target: 12, step: 1, days: [1, 3, 5] },
+  { id: 'natation', name: t('sports.natation.name'), description: t('sports.natation.description'), photo: require('../../assets/sports/natation.jpg'), emoji: '🏊', title: t('sports.natation.title'), unit: 'séances', target: 8, step: 1, days: [2, 5] },
+  { id: 'autre', name: t('sports.autre.name'), description: t('sports.autre.description'), photo: require('../../assets/sports/autre.jpg'), emoji: '🎯', title: '', unit: 'séances', target: 12, step: 1, days: ALL_DAYS },
 ];
 
 // Hauteur réservée en bas aux commandes fixes (Continuer, Plus tard), hors encoche.
@@ -153,14 +154,14 @@ export function SportCarousel({ initialIndex = 0, bottomInset, onContinue, onSki
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}); onContinue(SPORTS[index], index); }}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel={`Continuer avec ${SPORTS[index].name}`}
+          accessibilityLabel={t('sports.continueWith', { name: SPORTS[index].name })}
           style={{ backgroundColor: '#fff', borderRadius: 16, minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}
         >
-          <Text style={{ color: '#000', fontSize: 17, fontFamily: F.extrabold }}>Continuer</Text>
+          <Text style={{ color: '#000', fontSize: 17, fontFamily: F.extrabold }}>{t('common.continue')}</Text>
           <Ionicons name="arrow-forward" size={20} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity onPress={onSkip} activeOpacity={0.8} accessibilityRole="button" style={{ paddingVertical: 14, alignItems: 'center' }}>
-          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontFamily: F.semibold }}>Je choisirai plus tard</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontFamily: F.semibold }}>{t('welcome.chooseLater')}</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -6,6 +6,7 @@ import { CGU_URL, PRIVACY_URL } from '../constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SocialAuthButtons } from '../components/SocialAuthButtons';
 import { s } from '../styles';
+import { t } from '../i18n';
 
 export function Onboarding({ onNext }: { onNext: () => void }) {
   const [step, setStep] = useState(0);
@@ -24,17 +25,17 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
   const handleSignUp = async () => {
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
-    if (!trimmedName || !trimmedEmail || !password) { Alert.alert('Erreur', 'Remplis tous les champs !'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) { Alert.alert('Erreur', 'Email invalide.'); return; }
-    if (password.length < 6) { Alert.alert('Erreur', 'Le mot de passe doit faire au moins 6 caractères.'); return; }
+    if (!trimmedName || !trimmedEmail || !password) { Alert.alert(t('common.error'), t('common.fillAll')); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) { Alert.alert(t('common.error'), t('auth.badEmail')); return; }
+    if (password.length < 6) { Alert.alert(t('common.error'), t('errors.passwordTooShort6')); return; }
 
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email: trimmedEmail, password,
       options: { data: { full_name: trimmedName } },
     });
-    if (error) { setLoading(false); Alert.alert('Erreur', frError(error)); return; }
-    if (!data.user) { setLoading(false); Alert.alert('Erreur', 'Compte non créé, réessaie.'); return; }
+    if (error) { setLoading(false); Alert.alert(t('common.error'), frError(error)); return; }
+    if (!data.user) { setLoading(false); Alert.alert(t('common.error'), t('auth.accountNotCreated')); return; }
 
     // Username unique : base + suffixe random si collision
     const base = trimmedName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
@@ -51,13 +52,13 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
         attempt++;
       } else {
         setLoading(false);
-        Alert.alert('Erreur', frError(insErr));
+        Alert.alert(t('common.error'), frError(insErr));
         return;
       }
     }
     if (!inserted) {
       setLoading(false);
-      Alert.alert('Erreur', "Impossible de créer ton profil. Réessaie.");
+      Alert.alert(t('common.error'), t('auth.profileNotCreated'));
       return;
     }
 
@@ -66,44 +67,44 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
     // Si confirmation email requise, pas de session → on ne navigue pas vers Main
     if (!data.session) {
       Alert.alert(
-        'Vérifie ta boîte mail',
-        `Un email a été envoyé à ${trimmedEmail}. Clique sur le lien pour confirmer ton compte, puis reviens te connecter.`,
-        [{ text: 'OK', onPress: () => setShowLogin(true) }]
+        t('auth.checkMailTitle'),
+        t('auth.checkMailText', { email: trimmedEmail }),
+        [{ text: t('common.ok'), onPress: () => setShowLogin(true) }]
       );
       return;
     }
 
     // Session active : onAuthStateChange va naviguer vers Main, l'alert reste informatif
-    Alert.alert('Bienvenue sur Reiz', '', [{ text: 'C\'est parti' }]);
+    Alert.alert(t('auth.welcomeTitle'), '', [{ text: t('auth.letsGo') }]);
   };
 
   const handleLogin = async () => {
-    if (!loginEmail || !loginPassword) { Alert.alert('Erreur', 'Remplis tous les champs !'); return; }
+    if (!loginEmail || !loginPassword) { Alert.alert(t('common.error'), t('common.fillAll')); return; }
     setLoginLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
     setLoginLoading(false);
-    if (error) Alert.alert('Erreur', frError(error));
+    if (error) Alert.alert(t('common.error'), frError(error));
   };
 
   if (showLogin) {
     return (
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView style={[s.obContainer, { paddingTop: insets.top + 16 }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Text style={s.headline}>Bon retour</Text>
-        <Text style={s.subtext}>Connecte-toi pour reprendre ta progression.</Text>
+        <Text style={s.headline}>{t('auth.welcomeBack')}</Text>
+        <Text style={s.subtext}>{t('auth.welcomeBackSub')}</Text>
         <View style={s.inputBlock}>
-          <Text style={s.inputLabel}>EMAIL</Text>
-          <TextInput style={s.inputField} placeholder="ton@email.com" placeholderTextColor="#666" value={loginEmail} onChangeText={setLoginEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
+          <Text style={s.inputLabel}>{t('auth.emailLabel')}</Text>
+          <TextInput style={s.inputField} placeholder={t('auth.emailPlaceholder')} placeholderTextColor="#666" value={loginEmail} onChangeText={setLoginEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
         </View>
         <View style={s.inputBlock}>
-          <Text style={s.inputLabel}>MOT DE PASSE</Text>
+          <Text style={s.inputLabel}>{t('auth.passwordLabel')}</Text>
           <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#666" value={loginPassword} onChangeText={setLoginPassword} secureTextEntry maxLength={72} />
         </View>
         <TouchableOpacity style={[s.btn, { marginTop: 8 }, loginLoading && s.btnDisabled]} onPress={loginLoading ? undefined : handleLogin}>
-          {loginLoading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Se connecter →</Text>}
+          {loginLoading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>{t('auth.signInArrow')}</Text>}
         </TouchableOpacity>
         <TouchableOpacity style={s.obBackBtn} onPress={() => setShowLogin(false)}>
-          <Text style={s.obBackText}>← Retour</Text>
+          <Text style={s.obBackText}>{t('common.backArrow')}</Text>
         </TouchableOpacity>
       </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
@@ -128,7 +129,7 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
       <View style={s.obTopRow}>
         {step === 4 && (
           <TouchableOpacity style={s.obBackArrow} onPress={() => setStep(3)}>
-            <Text style={s.obBackArrowText}>←</Text>
+            <Text style={s.obBackArrowText}>{t('common.backGlyph')}</Text>
           </TouchableOpacity>
         )}
         {step < TOTAL_STEPS && (
@@ -143,11 +144,11 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
       {step === 0 && (
         <View style={s.obScreen}>
           <View>
-            <Text style={s.obBigTitle}>Tes proches savent quand tu lâches ton entraînement.</Text>
-            <Text style={s.obBody}>Reiz transforme ton entourage en raison de ne pas lâcher.</Text>
+            <Text style={s.obBigTitle}>{t('onboarding.s1Title')}</Text>
+            <Text style={s.obBody}>{t('onboarding.s1Body')}</Text>
           </View>
           <View style={s.obNextWrap}>
-            <TouchableOpacity style={s.btn} onPress={next}><Text style={s.btnText}>Suivant →</Text></TouchableOpacity>
+            <TouchableOpacity style={s.btn} onPress={next}><Text style={s.btnText}>{t('common.nextArrow')}</Text></TouchableOpacity>
           </View>
         </View>
       )}
@@ -155,11 +156,11 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
       {step === 1 && (
         <View style={s.obScreen}>
           <View>
-            <Text style={s.obBigTitle}>Un cercle. Un objectif. Zéro excuse.</Text>
-            <Text style={s.obBody}>Tu choisis ton objectif sportif. Tu invites les personnes qui comptent. Ils voient ta progression chaque jour et toi la leur.</Text>
+            <Text style={s.obBigTitle}>{t('onboarding.s2Title')}</Text>
+            <Text style={s.obBody}>{t('onboarding.s2Body')}</Text>
           </View>
           <View style={s.obNextWrap}>
-            <TouchableOpacity style={s.btn} onPress={next}><Text style={s.btnText}>Suivant →</Text></TouchableOpacity>
+            <TouchableOpacity style={s.btn} onPress={next}><Text style={s.btnText}>{t('common.nextArrow')}</Text></TouchableOpacity>
           </View>
         </View>
       )}
@@ -167,11 +168,11 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
       {step === 2 && (
         <View style={s.obScreen}>
           <View>
-            <Text style={s.obBigTitle}>La discipline seul, ça ne tient pas.</Text>
-            <Text style={s.obBody}>Les applications de sport te demandent d'être motivé tout seul. Reiz, non. Quand quelqu'un que tu respectes regarde, tu te lèves.</Text>
+            <Text style={s.obBigTitle}>{t('onboarding.s3Title')}</Text>
+            <Text style={s.obBody}>{t('onboarding.s3Body')}</Text>
           </View>
           <View style={s.obNextWrap}>
-            <TouchableOpacity style={s.btn} onPress={next}><Text style={s.btnText}>Suivant →</Text></TouchableOpacity>
+            <TouchableOpacity style={s.btn} onPress={next}><Text style={s.btnText}>{t('common.nextArrow')}</Text></TouchableOpacity>
           </View>
         </View>
       )}
@@ -179,47 +180,47 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
       {step === 3 && (
         <View style={s.obScreen}>
           <View>
-            <Text style={s.obBigTitle}>Crée ton compte et invite ton cercle.</Text>
-            <Text style={s.obBody}>Gratuit. 2 minutes. Et quelqu'un dans ton entourage va le voir dès ce soir.</Text>
+            <Text style={s.obBigTitle}>{t('onboarding.s4Title')}</Text>
+            <Text style={s.obBody}>{t('onboarding.s4Body')}</Text>
           </View>
           {/* Même place que les « Suivant » des écrans d'avant : le bouton ne saute pas. */}
           <View style={s.obNextWrap}>
-            <TouchableOpacity style={s.btn} onPress={next}><Text style={s.btnText}>Créer mon compte →</Text></TouchableOpacity>
+            <TouchableOpacity style={s.btn} onPress={next}><Text style={s.btnText}>{t('onboarding.createArrow')}</Text></TouchableOpacity>
           </View>
         </View>
       )}
 
       {step < 3 && (
         <TouchableOpacity style={s.obLoginLink} onPress={() => setShowLogin(true)}>
-          <Text style={s.splashLogin}>Déjà un compte ? <Text style={s.splashLoginLink}>Se connecter</Text></Text>
+          <Text style={s.splashLogin}>{t('auth.haveAccount')} <Text style={s.splashLoginLink}>{t('auth.signIn')}</Text></Text>
         </TouchableOpacity>
       )}
 
       {step === 4 && (
         <ScrollView style={s.screen} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-          <Text style={s.headline}>Dernière étape.</Text>
-          <Text style={s.subtext}>Ton parcours commence maintenant.</Text>
+          <Text style={s.headline}>{t('onboarding.lastStep')}</Text>
+          <Text style={s.subtext}>{t('onboarding.lastStepSub')}</Text>
           <View style={s.inputBlock}>
-            <Text style={s.inputLabel}>PRÉNOM</Text>
-            <TextInput style={s.inputField} placeholder="Ton prénom" placeholderTextColor="#666" value={name} onChangeText={setName} autoCapitalize="words" maxLength={40} />
+            <Text style={s.inputLabel}>{t('onboarding.firstNameLabel')}</Text>
+            <TextInput style={s.inputField} placeholder={t('onboarding.firstNamePlaceholder')} placeholderTextColor="#666" value={name} onChangeText={setName} autoCapitalize="words" maxLength={40} />
           </View>
           <View style={s.inputBlock}>
-            <Text style={s.inputLabel}>EMAIL</Text>
-            <TextInput style={s.inputField} placeholder="ton@email.com" placeholderTextColor="#666" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
+            <Text style={s.inputLabel}>{t('auth.emailLabel')}</Text>
+            <TextInput style={s.inputField} placeholder={t('auth.emailPlaceholder')} placeholderTextColor="#666" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
           </View>
           <View style={s.inputBlock}>
-            <Text style={s.inputLabel}>MOT DE PASSE</Text>
+            <Text style={s.inputLabel}>{t('auth.passwordLabel')}</Text>
             <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#666" value={password} onChangeText={setPassword} secureTextEntry maxLength={72} />
           </View>
           <TouchableOpacity style={[s.btn, { marginTop: 8 }, loading && s.btnDisabled]} onPress={loading ? undefined : handleSignUp}>
-            {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Créer mon compte</Text>}
+            {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>{t('onboarding.create')}</Text>}
           </TouchableOpacity>
           <SocialAuthButtons mode="signup" />
           <Text style={s.legal}>
-            En créant un compte tu acceptes nos{' '}
-            <Text style={s.legalLink} onPress={() => Linking.openURL(CGU_URL).catch(() => {})}>CGU</Text>
-            {' '}et notre{' '}
-            <Text style={s.legalLink} onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}>politique de confidentialité</Text>
+            {t('onboarding.legalBefore')}{' '}
+            <Text style={s.legalLink} onPress={() => Linking.openURL(CGU_URL).catch(() => {})}>{t('onboarding.legalTerms')}</Text>
+            {' '}{t('onboarding.legalAnd')}{' '}
+            <Text style={s.legalLink} onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}>{t('onboarding.legalPrivacy')}</Text>
           </Text>
         </ScrollView>
       )}

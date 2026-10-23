@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { t, tl } from './i18n';
 // Landing officielle (Netlify) — utilisée par le lien CGU et les invitations.
 export const LANDING_URL = 'https://reiz-landing.netlify.app';
 export const CGU_URL = `${LANDING_URL}/cgu.html`;
@@ -20,11 +21,11 @@ export const UNITS = ['km', 'm', 'kg', 'lbs', 'min', 'h', 'x', 'reps', 'séances
 export const ITEM_H = 44;
 
 export const DURATION_OPTIONS: { label: string; value: number | null }[] = [
-  { label: '7j', value: 7 },
-  { label: '21j', value: 21 },
-  { label: '30j', value: 30 },
-  { label: '60j', value: 60 },
-  { label: '90j', value: 90 },
+  { label: t('days.durationDays', { n: 7 }), value: 7 },
+  { label: t('days.durationDays', { n: 21 }), value: 21 },
+  { label: t('days.durationDays', { n: 30 }), value: 30 },
+  { label: t('days.durationDays', { n: 60 }), value: 60 },
+  { label: t('days.durationDays', { n: 90 }), value: 90 },
   { label: '∞', value: null },
 ];
 
@@ -64,15 +65,15 @@ export const APP_VERSION = `${Constants.expoConfig?.version ?? '?'} (${Constants
 
 // Jours d'entraînement : 1 = lundi ... 7 = dimanche (comme `isodow` dans Postgres).
 // `null` ou liste vide = tous les jours (comportement d'origine, aucun objectif existant ne change).
-export const DAY_LETTERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-export const DAY_SHORT = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'];
-export const DAY_LONG = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+export const DAY_LETTERS = tl('days.letters');
+export const DAY_SHORT = tl('days.short');
+export const DAY_LONG = tl('days.long');
 export const ALL_DAYS = [1, 2, 3, 4, 5, 6, 7];
 export const TRAINING_PRESETS: { label: string; days: number[] }[] = [
-  { label: 'Tous les jours', days: ALL_DAYS },
-  { label: 'Lun, mer, ven', days: [1, 3, 5] },
-  { label: 'Lun, mar, jeu, sam', days: [1, 2, 4, 6] },
-  { label: 'Week-end', days: [6, 7] },
+  { label: t('days.presetEveryDay'), days: ALL_DAYS },
+  { label: t('days.presetMWF'), days: [1, 3, 5] },
+  { label: t('days.presetMTTS'), days: [1, 2, 4, 6] },
+  { label: t('days.presetWeekend'), days: [6, 7] },
 ];
 
 /** Vrai si l'objectif prévoit un planning (au moins un jour de repos). */
@@ -80,11 +81,11 @@ export const hasSchedule = (days?: number[] | null) => !!days && days.length > 0
 
 /** « tous les jours », « lun, mer, ven » ou, en version longue, « lundi, mercredi et vendredi ». */
 export function daysLabel(days?: number[] | null, long = false): string {
-  if (!hasSchedule(days)) return 'tous les jours';
+  if (!hasSchedule(days)) return t('days.everyDay');
   const sorted = [...days!].sort((a, b) => a - b);
   const names = sorted.map(d => (long ? DAY_LONG : DAY_SHORT)[d - 1]);
   if (!long || names.length === 1) return names.join(', ');
-  return `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}`;
+  return t('common.andJoin', { list: names.slice(0, -1).join(', '), last: names[names.length - 1] });
 }
 
 /** Les 7 jours de la semaine en cours (du lundi au dimanche), sous la même forme que `dayKeysFor`. */

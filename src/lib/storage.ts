@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase, SUPABASE_ANON_KEY, SUPABASE_URL } from './supabase';
+import { t } from '../i18n';
 
 // Le bucket "updates" est privé : les fichiers ne sont accessibles que via une
 // URL signée, valable un temps limité. On stocke donc en base le CHEMIN du
@@ -60,7 +61,7 @@ async function uploadViaFormData(
 ): Promise<{ path: string | null; error: { message?: string } | null }> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
-  if (!token) return { path: null, error: { message: 'Session expirée. Reconnecte-toi et réessaie.' } };
+  if (!token) return { path: null, error: { message: t('errors.sessionExpired') } };
 
   const form = new FormData();
   form.append('file', { uri, name: path.split('/').pop() || 'fichier', type: contentType } as any);
@@ -223,7 +224,7 @@ export async function uploadVideo(
   if (Platform.OS === 'android') return uploadAndroid(path, uri, contentType, false);
   try {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(path);
-    if (error || !data) return { path: null, error: error || { message: "Pas d'adresse d'envoi" } };
+    if (error || !data) return { path: null, error: error || { message: t('errors.noUploadUrl') } };
     const file = await (await fetch(uri)).blob();
     const res = await fetch(data.signedUrl, {
       method: 'PUT',

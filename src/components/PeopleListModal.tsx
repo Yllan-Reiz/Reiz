@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { signAvatars } from '../lib/storage';
 import { setClose } from '../lib/closeCircle';
 import { s, F } from '../styles';
+import { t, tp } from '../i18n';
 
 type Person = { id: string; full_name: string; username: string; avatar_url?: string | null };
 
@@ -55,14 +56,14 @@ export function PeopleListModal({ visible, userId, currentUserId, mode, onClose,
   // TES amis (ton profil) : l'étoile du cercle proche et « Retirer » sont ici, plus dans l'onglet Amis.
   const own = mode === 'friends' && userId === currentUserId;
   const remove = (p: Person) => {
-    Alert.alert('Retirer', `Retirer ${p.full_name} de tes amis ?`, [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('common.remove'), t('friends.removeConfirm', { name: p.full_name }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Retirer', style: 'destructive', onPress: async () => {
+        text: t('common.remove'), style: 'destructive', onPress: async () => {
           if (!currentUserId) return;
           const { error } = await supabase.from('friendships').delete()
             .or(`and(requester_id.eq.${currentUserId},receiver_id.eq.${p.id}),and(requester_id.eq.${p.id},receiver_id.eq.${currentUserId})`);
-          if (error) { Alert.alert('Erreur', "Impossible de retirer cet ami pour le moment."); return; }
+          if (error) { Alert.alert(t('common.error'), t('people.removeFailed')); return; }
           if (closeIds.has(p.id)) await setClose(p.id, false);
           setPeople(list => list.filter(x => x.id !== p.id));
         },
@@ -75,19 +76,19 @@ export function PeopleListModal({ visible, userId, currentUserId, mode, onClose,
       <View style={s.modalContainer}>
         <View style={s.modalHeader}>
           <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={s.modalCancel}>Fermer</Text>
+            <Text style={s.modalCancel}>{t('common.close')}</Text>
           </TouchableOpacity>
-          <Text style={s.modalTitle}>{mode === 'close' ? 'Cercle proche' : own ? `Mes amis · ${people.length}` : 'Amis'}</Text>
+          <Text style={s.modalTitle}>{mode === 'close' ? t('visLong.close') : own ? t('people.myFriends', { n: people.length }) : tp('profile.friends', 2)}</Text>
           <View style={{ width: 46 }} />
         </View>
         {own && people.length > 0 && (
           <Text style={{ color: '#888', fontSize: 13, paddingHorizontal: 20, paddingTop: 14, lineHeight: 18 }}>
-            L'étoile met un ami dans ton cercle proche. Garde le doigt appuyé sur un ami pour le retirer.
+            {t('people.starHint')}
           </Text>
         )}
         {mode === 'close' && (
           <Text style={{ color: '#888', fontSize: 13, paddingHorizontal: 20, paddingTop: 14, lineHeight: 18 }}>
-            Les objectifs réglés sur « Cercle proche » ne sont visibles que par les amis marqués d'une étoile. Ils ne savent pas qui d'autre est dans la liste.
+            {t('people.closeHint')}
           </Text>
         )}
         {loading ? (
@@ -97,7 +98,7 @@ export function PeopleListModal({ visible, userId, currentUserId, mode, onClose,
             data={people}
             keyExtractor={p => p.id}
             contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-            ListEmptyComponent={<Text style={{ color: '#777', textAlign: 'center', marginTop: 40 }}>Aucun ami pour l'instant.</Text>}
+            ListEmptyComponent={<Text style={{ color: '#777', textAlign: 'center', marginTop: 40 }}>{t('people.none')}</Text>}
             renderItem={({ item: p }) => {
               const isClose = closeIds.has(p.id);
               const isMe = p.id === currentUserId;
@@ -113,13 +114,13 @@ export function PeopleListModal({ visible, userId, currentUserId, mode, onClose,
                     ? <Image source={{ uri: p.avatar_url }} style={s.avImg} />
                     : <View style={s.av}><Text style={s.avText}>{p.full_name.charAt(0).toUpperCase()}</Text></View>}
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>{p.full_name}{isMe ? ' (toi)' : ''}</Text>
+                    <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>{p.full_name}{isMe ? t('people.me') : ''}</Text>
                     <Text style={{ color: '#888', fontSize: 12 }}>@{p.username}</Text>
                   </View>
                   {mode === 'close' ? (
                     <Ionicons name={isClose ? 'star' : 'star-outline'} size={22} color={isClose ? '#3ddc84' : '#555'} />
                   ) : own && !isMe ? (
-                    <TouchableOpacity onPress={() => toggleClose(p.id)} hitSlop={10} accessibilityLabel={isClose ? `Retirer ${p.full_name} du cercle proche` : `Ajouter ${p.full_name} au cercle proche`}
+                    <TouchableOpacity onPress={() => toggleClose(p.id)} hitSlop={10} accessibilityLabel={isClose ? t('friends.closeRemove', { name: p.full_name }) : t('friends.closeAdd', { name: p.full_name })}
                       style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: isClose ? '#fff' : 'rgba(255,255,255,0.12)' }}>
                       <Ionicons name={isClose ? 'star' : 'star-outline'} size={18} color={isClose ? '#000' : '#ccc'} />
                     </TouchableOpacity>

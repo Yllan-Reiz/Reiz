@@ -1,5 +1,6 @@
 import { NativeModules, TurboModuleRegistry } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
+import { t } from '../i18n';
 
 // Outils vidéo du 1.0.1 : l'éditeur de rognage (react-native-video-trim) et l'image extraite d'une vidéo
 // (expo-video-thumbnails). Deux modules natifs absents des builds 1.0.0 : même règle que contacts.ts, on
@@ -59,12 +60,12 @@ export function trimVideo(uri: string, maxSec: number): Promise<string | null> {
       theme: 'dark',
       trimmerColor: '#ffffff',
       handleIconColor: '#000000',
-      headerText: `Glisse les bords · ${maxSec} s max`,
+      headerText: t('video.trimHeader', { n: maxSec }),
       headerTextSize: 15,
       headerTextColor: '#ffffff',
-      cancelButtonText: 'Annuler',
-      saveButtonText: 'Valider',
-      trimmingText: 'Découpage…',
+      cancelButtonText: t('common.cancel'),
+      saveButtonText: t('common.validate'),
+      trimmingText: t('video.trimming'),
       enableCancelDialog: false,
       enableSaveDialog: false,
       // Outils au-dessus de la vidéo : recadrer, pivoter, retourner, couper le son, vitesse, annuler.
@@ -73,7 +74,7 @@ export function trimVideo(uri: string, maxSec: number): Promise<string | null> {
       zoomOnWaitingDuration: 3000,
       enableHapticFeedback: true,
       enableCancelTrimming: true,
-      cancelTrimmingButtonText: 'Arrêter',
+      cancelTrimmingButtonText: t('video.stop'),
       enableCancelTrimmingDialog: false,
       autoplay: true,
       closeWhenFinish: true,
@@ -83,9 +84,9 @@ export function trimVideo(uri: string, maxSec: number): Promise<string | null> {
       fullScreenModalIOS: true,
       durationFormat: 'mm:ss',
       alertOnFailToLoad: true,
-      alertOnFailTitle: 'Vidéo illisible',
-      alertOnFailMessage: "Impossible d'ouvrir cette vidéo. Essaie-en une autre.",
-      alertOnFailCloseText: 'OK',
+      alertOnFailTitle: t('video.unreadableTitle'),
+      alertOnFailMessage: t('video.unreadableText'),
+      alertOnFailCloseText: t('common.ok'),
     });
   });
 }

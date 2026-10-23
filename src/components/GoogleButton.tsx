@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Text, TouchableOpacity, Alert, ActivityIndicator, Image, View } from 'react-native';
 import { signInWithGoogle } from '../lib/googleAuth';
 import { F } from '../styles';
+import { t } from '../i18n';
 
 export type AuthMode = 'signin' | 'signup' | 'continue';
 
 const LABELS: Record<AuthMode, string> = {
-  signin: 'Se connecter avec Google',
-  signup: "S'inscrire avec Google",
-  continue: 'Continuer avec Google',
+  signin: t('auth.googleSignin'),
+  signup: t('auth.googleSignup'),
+  continue: t('auth.googleContinue'),
 };
 
 // Bouton officiel « Sign in with Google », thème sombre (charte Google) : fond #131314,
@@ -19,7 +20,7 @@ export function GoogleButton({ mode = 'continue' }: { mode?: AuthMode }) {
     setBusy(true);
     const err = await signInWithGoogle();
     setBusy(false);
-    if (err) Alert.alert('Erreur', err);
+    if (err) Alert.alert(t('common.error'), err);
   };
   return (
     <TouchableOpacity

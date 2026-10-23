@@ -11,8 +11,9 @@ import { WelcomeModal } from '../components/WelcomeFlow';
 import { contactsAvailable } from '../lib/contacts';
 import { APP_VERSION, WELCOME_FLOW } from '../constants';
 import { F } from '../styles';
+import { LANGS, lang, chosenLang, deviceLang, setLanguage, type Lang, t } from '../i18n';
 
-type View_ = 'root' | 'password' | 'blocked' | 'legal' | 'presence';
+type View_ = 'root' | 'password' | 'blocked' | 'legal' | 'presence' | 'language';
 
 // Page Réglages, organisée comme sur Instagram : Compte, Confidentialité, Notifications,
 // Légal, Aide, puis les actions sensibles tout en bas.
@@ -59,7 +60,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { error } = await supabase.from('users').update({ discoverable: value }).eq('id', user.id);
-    if (error) { setDiscoverable(!value); Alert.alert('Erreur', frError(error)); }
+    if (error) { setDiscoverable(!value); Alert.alert(t('common.error'), frError(error)); }
   };
 
   const toggleEncourage = async (value: boolean) => {
@@ -67,7 +68,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { error } = await supabase.from('users').update({ notif_encouragement: value }).eq('id', user.id);
-    if (error) { setEncourage(!value); Alert.alert('Erreur', frError(error)); }
+    if (error) { setEncourage(!value); Alert.alert(t('common.error'), frError(error)); }
   };
 
   useEffect(() => {
@@ -81,7 +82,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
   }, [visible]);
 
   const back = () => { if (view === 'root') onClose(); else setView('root'); };
-  const titles: Record<View_, string> = { root: 'Réglages', password: 'Mot de passe', blocked: 'Utilisateurs bloqués', legal: doc?.title || 'Légal', presence: 'Salle et lieux' };
+  const titles: Record<View_, string> = { root: t('settings.title'), password: t('settings.password'), blocked: t('settings.blocked'), legal: doc?.title || t('settings.legal'), presence: t('settings.presence'), language: t('settings.language') };
 
   const exportData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -92,7 +93,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
       supabase.from('updates').select('caption, progress_value, created_at').eq('user_id', user.id).order('created_at', { ascending: false }),
     ]);
     const payload = { email: user.email, profil: profile.data, objectifs: objectives.data, publications: updates.data };
-    Share.share({ message: JSON.stringify(payload, null, 2), title: 'Mes données Reiz' }).catch(() => {});
+    Share.share({ message: JSON.stringify(payload, null, 2), title: t('settings.myData') }).catch(() => {});
   };
 
   const openDoc = (d: LegalDoc) => { setDoc(d); setView('legal'); };
@@ -101,7 +102,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={back}>
       <View style={{ flex: 1, backgroundColor: '#0a0a0a', paddingTop: insets.top }}>
         <View style={st.header}>
-          <TouchableOpacity onPress={back} style={st.backBtn} accessibilityLabel="Retour" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity onPress={back} style={st.backBtn} accessibilityLabel={t('common.back')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name={view === 'root' ? 'close' : 'chevron-back'} size={24} color="#fff" />
           </TouchableOpacity>
           <Text style={st.headerTitle} numberOfLines={1}>{titles[view]}</Text>
@@ -110,47 +111,51 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
 
         {view === 'root' && (
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 40 }} showsVerticalScrollIndicator={false}>
-            <Section title="COMPTE">
-              <Row icon="person-outline" label="Modifier mon nom" onPress={() => { onClose(); setTimeout(onEditName, 350); }} />
-              <Row icon="create-outline" label="Modifier ma bio" onPress={() => { onClose(); setTimeout(onEditBio, 350); }} />
-              {!!email && <Row icon="mail-outline" label="Email" value={email} />}
+            <Section title={t('settings.secAccount')}>
+              <Row icon="person-outline" label={t('settings.editName')} onPress={() => { onClose(); setTimeout(onEditName, 350); }} />
+              <Row icon="create-outline" label={t('settings.editBio')} onPress={() => { onClose(); setTimeout(onEditBio, 350); }} />
+              {!!email && <Row icon="mail-outline" label={t('settings.email')} value={email} />}
               {provider === 'email'
-                ? <Row icon="key-outline" label="Changer le mot de passe" onPress={() => setView('password')} last />
-                : <Row icon="shield-checkmark-outline" label="Connexion" value={provider === 'apple' ? 'Apple' : provider === 'google' ? 'Google' : provider} last />}
+                ? <Row icon="key-outline" label={t('settings.changePassword')} onPress={() => setView('password')} last />
+                : <Row icon="shield-checkmark-outline" label={t('settings.signIn')} value={provider === 'apple' ? 'Apple' : provider === 'google' ? 'Google' : provider} last />}
             </Section>
 
-            <Section title="CONFIDENTIALITÉ">
-              <Row icon="star-outline" label="Mon cercle proche" onPress={() => { onClose(); setTimeout(onCloseFriends, 350); }} />
-              {discoverable !== null && <ToggleRow icon="people-outline" label="Me proposer à mes contacts" value={discoverable} onChange={toggleDiscoverable} />}
-              <Row icon="ban-outline" label="Utilisateurs bloqués" onPress={() => setView('blocked')} />
-              <Row icon="download-outline" label="Exporter mes données" onPress={exportData} last />
-            </Section>
-            <Text style={st.hint}>{discoverable !== null ? "Désactivé, les personnes qui ont ton e-mail dans leurs contacts ne te trouvent plus avec « Retrouver mes contacts ». " : ''}La visibilité de chaque objectif se règle depuis le menu « … » de l'objectif.</Text>
-
-            <Section title="ENTRAÎNEMENT">
-              <Row icon="location-outline" label="Prévenir mon cercle proche" onPress={() => setView('presence')} last />
+            <Section title={t('settings.secLanguage')}>
+              <Row icon="language-outline" label={t('settings.language')} value={LANGS.find(l => l.code === lang())?.name} onPress={() => setView('language')} last />
             </Section>
 
-            <Section title="NOTIFICATIONS">
-              {encourage !== null && <ToggleRow icon="flame-outline" label="Encouragements" value={encourage} onChange={toggleEncourage} />}
-              <Row icon="notifications-outline" label="Gérer les notifications" value="Réglages iPhone" onPress={() => Linking.openSettings().catch(() => {})} last />
+            <Section title={t('settings.secPrivacy')}>
+              <Row icon="star-outline" label={t('settings.closeCircle')} onPress={() => { onClose(); setTimeout(onCloseFriends, 350); }} />
+              {discoverable !== null && <ToggleRow icon="people-outline" label={t('settings.discoverable')} value={discoverable} onChange={toggleDiscoverable} />}
+              <Row icon="ban-outline" label={t('settings.blocked')} onPress={() => setView('blocked')} />
+              <Row icon="download-outline" label={t('settings.export')} onPress={exportData} last />
             </Section>
-            {encourage !== null && <Text style={st.hint}>Un message quand tu approches d'un objectif, ou après quelques jours sans poster. Un tous les 2 jours au maximum.</Text>}
+            <Text style={st.hint}>{discoverable !== null ? t('settings.discoverableHint') + ' ' : ''}{t('settings.visibilityHint')}</Text>
 
-            <Section title="LÉGAL">
+            <Section title={t('settings.secTraining')}>
+              <Row icon="location-outline" label={t('presencePanel.title')} onPress={() => setView('presence')} last />
+            </Section>
+
+            <Section title={t('settings.secNotifs')}>
+              {encourage !== null && <ToggleRow icon="flame-outline" label={t('settings.encouragements')} value={encourage} onChange={toggleEncourage} />}
+              <Row icon="notifications-outline" label={t('settings.manageNotifs')} value={t('settings.iphoneSettings')} onPress={() => Linking.openSettings().catch(() => {})} last />
+            </Section>
+            {encourage !== null && <Text style={st.hint}>{t('settings.encouragementsHint')}</Text>}
+
+            <Section title={t('settings.secLegal')}>
               {LEGAL_DOCS.map((d, i) => (
                 <Row key={d.id} icon={d.id === 'rules' ? 'people-outline' : d.id === 'privacy' ? 'lock-closed-outline' : 'document-text-outline'} label={d.title} onPress={() => openDoc(d)} last={i === LEGAL_DOCS.length - 1} />
               ))}
             </Section>
 
-            <Section title="AIDE">
-              {WELCOME_FLOW && <Row icon="sparkles-outline" label="Revoir l'accueil" value="Aperçu" onPress={() => setWelcome(true)} />}
-              <Row icon="chatbubble-ellipses-outline" label="Contacter le support" value={SUPPORT_EMAIL} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Reiz`).catch(() => {})} last />
+            <Section title={t('settings.secHelp')}>
+              {WELCOME_FLOW && <Row icon="sparkles-outline" label={t('settings.replayWelcome')} value={t('settings.preview')} onPress={() => setWelcome(true)} />}
+              <Row icon="chatbubble-ellipses-outline" label={t('settings.support')} value={SUPPORT_EMAIL} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Reiz`).catch(() => {})} last />
             </Section>
 
-            <Section title="SESSION">
-              <Row icon="log-out-outline" label="Se déconnecter" onPress={onSignOut} />
-              <Row icon="trash-outline" label="Supprimer mon compte" danger onPress={onDeleteAccount} last />
+            <Section title={t('settings.secSession')}>
+              <Row icon="log-out-outline" label={t('settings.signOut')} onPress={onSignOut} />
+              <Row icon="trash-outline" label={t('settings.deleteAccount')} danger onPress={onDeleteAccount} last />
             </Section>
 
             <Text style={st.version}>Reiz {APP_VERSION}</Text>
@@ -160,6 +165,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
         {view === 'password' && <PasswordForm onDone={() => setView('root')} />}
         {view === 'presence' && <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}><PresencePanel /></ScrollView>}
         {view === 'blocked' && <BlockedList />}
+        {view === 'language' && <LanguagePicker />}
         {view === 'legal' && doc && <LegalReader doc={doc} bottom={insets.bottom} />}
         {/* Aperçu de l'accueil des nouveaux comptes : rien n'est enregistré. */}
         <WelcomeModal visible={welcome} preview onClose={() => setWelcome(false)} />
@@ -213,21 +219,21 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
     setSaving(true);
     const { error } = await supabase.auth.updateUser({ password: pwd });
     setSaving(false);
-    if (error) { Alert.alert('Erreur', /same|different/i.test(error.message) ? "Choisis un mot de passe différent de l'ancien." : frError(error)); return; }
-    Alert.alert('Mot de passe modifié', 'Ton nouveau mot de passe est actif.');
+    if (error) { Alert.alert(t('common.error'), /same|different/i.test(error.message) ? t('settings.pwdSame') : frError(error)); return; }
+    Alert.alert(t('settings.pwdChanged'), t('settings.pwdChangedText'));
     onDone();
   };
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
-      <Text style={st.inputLabel}>NOUVEAU MOT DE PASSE</Text>
-      <TextInput style={st.input} value={pwd} onChangeText={setPwd} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" placeholder="8 caractères minimum" placeholderTextColor="#666" />
-      {tooShort && <Text style={st.error}>8 caractères minimum.</Text>}
-      <Text style={[st.inputLabel, { marginTop: 18 }]}>CONFIRMER</Text>
-      <TextInput style={st.input} value={confirm} onChangeText={setConfirm} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" placeholder="Retape le mot de passe" placeholderTextColor="#666" />
-      {mismatch && <Text style={st.error}>Les deux mots de passe ne sont pas identiques.</Text>}
+      <Text style={st.inputLabel}>{t('settings.newPwd')}</Text>
+      <TextInput style={st.input} value={pwd} onChangeText={setPwd} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" placeholder={t('settings.pwdMin')} placeholderTextColor="#666" />
+      {tooShort && <Text style={st.error}>{t('settings.pwdMinDot')}</Text>}
+      <Text style={[st.inputLabel, { marginTop: 18 }]}>{t('settings.confirm')}</Text>
+      <TextInput style={st.input} value={confirm} onChangeText={setConfirm} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" placeholder={t('settings.retype')} placeholderTextColor="#666" />
+      {mismatch && <Text style={st.error}>{t('settings.mismatch')}</Text>}
       <TouchableOpacity style={[st.primaryBtn, !ok && { backgroundColor: '#1e1e1e' }]} onPress={saving ? undefined : save} activeOpacity={ok ? 0.8 : 1}>
-        {saving ? <ActivityIndicator color="#000" /> : <Text style={[st.primaryBtnText, !ok && { color: '#666' }]}>Enregistrer</Text>}
+        {saving ? <ActivityIndicator color="#000" /> : <Text style={[st.primaryBtnText, !ok && { color: '#666' }]}>{t('common.save')}</Text>}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -254,14 +260,14 @@ function BlockedList() {
   }, []);
 
   const unblock = (p: Blocked) => {
-    Alert.alert(`Débloquer ${p.full_name} ?`, 'Vous pourrez de nouveau vous voir et vous envoyer une demande d\'ami.', [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('settings.unblockTitle', { name: p.full_name }), t('settings.unblockText'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Débloquer', onPress: async () => {
+        text: t('settings.unblock'), onPress: async () => {
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return;
           const { error } = await supabase.from('blocks').delete().eq('blocker_id', user.id).eq('blocked_id', p.id);
-          if (error) { Alert.alert('Erreur', frError(error)); return; }
+          if (error) { Alert.alert(t('common.error'), frError(error)); return; }
           setList(prev => (prev || []).filter(x => x.id !== p.id));
         },
       },
@@ -269,7 +275,7 @@ function BlockedList() {
   };
 
   if (list === null) return <ActivityIndicator color="#fff" style={{ marginTop: 40 }} />;
-  if (list.length === 0) return <Text style={[st.hint, { textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }]}>Tu n'as bloqué personne.</Text>;
+  if (list.length === 0) return <Text style={[st.hint, { textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }]}>{t('settings.noBlocked')}</Text>;
   return (
     <ScrollView contentContainerStyle={{ padding: 16 }}>
       <View style={st.card}>
@@ -282,7 +288,7 @@ function BlockedList() {
               <Text style={st.rowLabel} numberOfLines={1}>{p.full_name}</Text>
               <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular }}>@{p.username}</Text>
             </View>
-            <TouchableOpacity onPress={() => unblock(p)} style={st.smallBtn}><Text style={st.smallBtnText}>Débloquer</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => unblock(p)} style={st.smallBtn}><Text style={st.smallBtnText}>{t('settings.unblock')}</Text></TouchableOpacity>
           </View>
         ))}
       </View>
@@ -290,10 +296,42 @@ function BlockedList() {
   );
 }
 
+// Choix de la langue. « Langue du téléphone » suit le réglage de l'iPhone. Changer relance l'app.
+function LanguagePicker() {
+  const picked = chosenLang();
+  const options: { code: Lang | null; label: string; sub?: string }[] = [
+    { code: null, label: t('settings.phoneLanguage'), sub: LANGS.find(l => l.code === deviceLang())?.name },
+    ...LANGS.map(l => ({ code: l.code as Lang | null, label: l.name })),
+  ];
+  const choose = (code: Lang | null) => {
+    if (code === picked) return;
+    Alert.alert(t('settings.restartTitle'), t('settings.restartText'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('settings.restart'), onPress: () => { setLanguage(code); } },
+    ]);
+  };
+  return (
+    <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <View style={st.card}>
+        {options.map((o, i) => (
+          <TouchableOpacity key={o.code ?? 'device'} style={[st.row, i < options.length - 1 && st.rowBorder]} onPress={() => choose(o.code)} activeOpacity={0.7} accessibilityState={{ selected: o.code === picked }}>
+            <View style={{ flex: 1 }}>
+              <Text style={st.rowLabel} numberOfLines={1}>{o.label}</Text>
+              {!!o.sub && <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular, marginTop: 2 }}>{o.sub}</Text>}
+            </View>
+            {o.code === picked && <Ionicons name="checkmark" size={20} color="#fff" />}
+          </TouchableOpacity>
+        ))}
+      </View>
+      <Text style={[st.hint, { marginTop: 12 }]}>{t('settings.languageHint')}</Text>
+    </ScrollView>
+  );
+}
+
 function LegalReader({ doc, bottom }: { doc: LegalDoc; bottom: number }) {
   return (
     <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: bottom + 40 }} showsVerticalScrollIndicator={false}>
-      <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular, marginBottom: 14 }}>Dernière mise à jour : {doc.updated}</Text>
+      <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular, marginBottom: 14 }}>{t('settings.lastUpdate', { date: doc.updated })}</Text>
       {!!doc.intro && <Text style={st.legalIntro}>{doc.intro}</Text>}
       {doc.sections.map(sec => (
         <View key={sec.h} style={{ marginBottom: 22 }}>

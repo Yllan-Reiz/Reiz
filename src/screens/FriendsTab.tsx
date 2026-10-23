@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, Acti
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase, currentUser } from '../lib/supabase';
-import { frError } from '../lib/helpers';
+import { frError, sportName, localizeReason } from '../lib/helpers';
 import { signAvatars, signOne } from '../lib/storage';
 import { useCloseCircle, setClose } from '../lib/closeCircle';
 import { contactsAvailable, contactsGranted, loadDeviceContacts, matchContacts } from '../lib/contacts';
@@ -16,6 +16,7 @@ import { Friend, PendingRequest } from '../lib/types';
 import { APP_STORE_URL, GUTTER, navClearance, GLASS_FRIENDS } from '../constants';
 import { FriendsGlassView } from '../components/FriendsGlassView';
 import { s, F } from '../styles';
+import { t, tp } from '../i18n';
 
 export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (userId: string) => void; onPendingCount?: (n: number) => void }) {
   const insets = useSafeAreaInsets();
@@ -57,20 +58,20 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   // Ancien partage en texte (gardé pour l'ancien affichage, GLASS_FRIENDS = false).
   const inviteFriendsText = async () => {
     const hook = myTopObjective
-      ? `Je me suis lancé un objectif : ${myTopObjective.title}.`
-      : `Je me lance un nouveau défi.`;
+      ? t('friends.shareHookObj', { title: myTopObjective.title })
+      : t('friends.shareHook');
     const closer = myTopObjective
-      ? `Et toi, t'as le cran de me montrer le tien ?`
-      : `Et toi, c'est quoi ton prochain objectif ?`;
+      ? t('friends.shareCloserObj')
+      : t('friends.shareCloser');
     // Lien direct vers l'App Store, et le pseudo pour m'ajouter une fois l'app installée.
     const message =
       `${hook}\n\n` +
-      `Sur Reiz, mon cercle voit ma progression chaque jour. Pas d'excuse, pas d'abandon.\n\n` +
-      `Rejoins mon cercle${myUsername ? ` (ajoute-moi : @${myUsername})` : ''} :\n` +
+      `${t('friends.shareBody')}\n\n` +
+      `${myUsername ? t('friends.shareJoinUser', { username: myUsername }) : t('friends.shareJoin')}\n` +
       `${APP_STORE_URL}\n\n` +
       `${closer}`;
     try {
-      await Share.share({ message, title: 'Rejoins mon cercle sur Reiz' });
+      await Share.share({ message, title: t('friends.shareTitle') });
     } catch {}
   };
 
@@ -161,18 +162,18 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       const res = await loadDeviceContacts().catch(() => null);
       if (res?.status === 'ok') {
         const matched = await matchContacts(res.contacts).catch(() => null);
-        (matched || []).forEach(m => add(m, 'Dans tes contacts', 'contact'));
+        (matched || []).forEach(m => add(m, t('friends.inContacts'), 'contact'));
       }
     }
 
     const { data: mutual } = await supabase.rpc('suggest_friends', { p_limit: 12 });
-    (mutual || []).forEach((u: any) => add(u, `${u.mutual} ami${u.mutual > 1 ? 's' : ''} en commun`, 'mutual'));
+    (mutual || []).forEach((u: any) => add(u, tp('friends.mutual', u.mutual), 'mutual'));
 
     // Même sport que toi (celui de ton profil, choisi à l'accueil).
     const { data: me } = await supabase.from('users').select('sport').eq('id', uid).maybeSingle();
     if (me?.sport && me.sport !== 'autre') {
       const { data: same } = await supabase.rpc('discover_people', { p_terms: [me.sport], p_limit: 10 });
-      ((same as any[]) || []).filter(u => u.reason?.startsWith('Sport')).forEach(u => add(u, `${u.reason.replace('Sport : ', '')}, comme toi`, 'sport'));
+      ((same as any[]) || []).filter(u => u.reason?.startsWith('Sport')).forEach(u => add(u, t('friends.sameSport', { sport: sportName(u.reason.replace('Sport : ', '')) }), 'sport'));
     }
 
     const { data: myObjs } = await supabase.from('objectives').select('title').eq('user_id', uid);
@@ -184,7 +185,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
         const objWords = o.title.toLowerCase().split(/\s+/);
         return { o, match: myKeywords.some((k: string) => objWords.some((w: string) => w.includes(k) || k.includes(w))) };
       }).sort((a, b) => Number(b.match) - Number(a.match));
-      rows.forEach(({ o }) => add(o.users, `Objectif : ${o.title}`, 'objective'));
+      rows.forEach(({ o }) => add(o.users, t('friends.reasonObjective', { title: o.title }), 'objective'));
     }
 
     // Les avatars des contacts sont déjà signés par matchContacts ; les autres sont encore des chemins.
@@ -208,7 +209,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   const addSuggested = async (id: string) => {
     if (!currentUserId || sentIds.has(id)) return;
     const { error } = await supabase.from('friendships').insert({ requester_id: currentUserId, receiver_id: id, status: 'pending' });
-    if (error && error.code !== '23505') { Alert.alert('Erreur', frError(error)); return; }
+    if (error && error.code !== '23505') { Alert.alert(t('common.error'), frError(error)); return; }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setSentIds(prev => new Set(prev).add(id));
   };
@@ -221,7 +222,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     const { data } = await supabase.rpc('discover_people', { p_terms: terms, p_limit: 20 });
     const results = ((data as any[]) || []).filter(u => !blockedIds.has(u.id)).map(u => ({
       ...u,
-      reason: u.reason || (u.mutual > 0 ? `${u.mutual} ami${u.mutual > 1 ? 's' : ''} en commun` : `@${u.username}`),
+      reason: localizeReason(u.reason) || (u.mutual > 0 ? tp('friends.mutual', u.mutual) : `@${u.username}`),
       kind: u.reason?.startsWith('Sport') ? 'sport' : u.reason?.startsWith('Tag') ? 'tag' : u.reason?.startsWith('Objectif') ? 'objective' : u.mutual > 0 ? 'mutual' : 'name',
     }));
     const signed = await signAvatars(results.map(u => u.avatar_url));
@@ -257,7 +258,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   const sendFriendRequest = async (receiverId: string) => {
     if (!currentUserId) return;
     const { error } = await supabase.from('friendships').insert({ requester_id: currentUserId, receiver_id: receiverId, status: 'pending' });
-    if (error) { if (error.code === '23505') Alert.alert('Déjà envoyé', 'Une demande est déjà en cours.'); else Alert.alert('Erreur', frError(error)); return; }
+    if (error) { if (error.code === '23505') Alert.alert(t('friends.alreadySent'), t('friends.alreadySentText')); else Alert.alert(t('common.error'), frError(error)); return; }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setSentIds(prev => new Set(prev).add(receiverId));
   };
@@ -273,9 +274,9 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   };
 
   const removeFriend = async (friendshipId: string, friendName: string) => {
-    Alert.alert('Supprimer', `Retirer ${friendName} de tes amis ?`, [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Supprimer', style: 'destructive', onPress: async () => {
+    Alert.alert(t('common.delete'), t('friends.removeConfirm', { name: friendName }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => {
         await supabase.from('friendships').delete().eq('id', friendshipId);
         if (currentUserId) fetchFriends(currentUserId);
       }}
@@ -355,21 +356,21 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       {/* Invitation du cercle */}
       <TouchableOpacity style={s.myUpdate} onPress={inviteFriendsText} activeOpacity={0.85}>
         <View style={s.myUpdateInfo}>
-          <Text style={s.myUpdateTitle}>Invite ton cercle</Text>
-          <Text style={s.myUpdateSub}>Reiz marche mieux quand tes proches te regardent</Text>
+          <Text style={s.myUpdateTitle}>{t('friends.inviteTitle')}</Text>
+          <Text style={s.myUpdateSub}>{t('friends.inviteSub')}</Text>
         </View>
-        <View style={s.postedBadge}><Text style={s.postedBadgeText}>Partager →</Text></View>
+        <View style={s.postedBadge}><Text style={s.postedBadgeText}>{t('friends.shareArrow')}</Text></View>
       </TouchableOpacity>
 
       {/* Retrouver ses contacts sur Reiz et inviter les autres */}
       {contactsAvailable() && (
-        <TouchableOpacity onPress={() => setShowContacts(true)} activeOpacity={0.85} style={{ marginTop: 10 }} accessibilityLabel="Retrouver mes contacts sur Reiz">
+        <TouchableOpacity onPress={() => setShowContacts(true)} activeOpacity={0.85} style={{ marginTop: 10 }} accessibilityLabel={t('friends.findContactsA11y')}>
           <GlassSurface radius={22}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 }}>
               <Ionicons name="people" size={22} color="#fff" />
               <View style={{ flex: 1 }}>
-                <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>Retrouver mes contacts</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }}>Vois qui est déjà sur Reiz, invite les autres</Text>
+                <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>{t('friends.findContacts')}</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }}>{t('friends.findContactsSub')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.6)" />
             </View>
@@ -381,7 +382,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       {/* Barre de recherche */}
       <View style={s.searchBarActive}>
         <Ionicons name="search" size={16} color="#666" />
-        <TextInput style={s.searchInput} placeholder="Prénom ou @pseudo..." placeholderTextColor="#666" value={searchQuery} onChangeText={handleSearch} autoCapitalize="none" maxLength={40} />
+        <TextInput style={s.searchInput} placeholder={t('friends.searchPlaceholder')} placeholderTextColor="#666" value={searchQuery} onChangeText={handleSearch} autoCapitalize="none" maxLength={40} />
         {searchQuery.length > 0 && (
           <TouchableOpacity
             onPress={() => { setSearchQuery(''); setSearchResults([]); }}
@@ -400,8 +401,8 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
             <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>Personne à ce nom</Text>
-              <Text style={{ color: '#666', fontSize: 12, textAlign: 'center' }}>Vérifie l'orthographe, ou invite-le avec ton lien</Text>
+              <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>{t('friends.noResult')}</Text>
+              <Text style={{ color: '#666', fontSize: 12, textAlign: 'center' }}>{t('friends.noResultSub')}</Text>
             </>
           )}
         </View>
@@ -410,7 +411,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       {/* Résultats de recherche */}
       {searchResults.length > 0 && (
         <View style={{ marginBottom: 8 }}>
-          <Text style={s.sectionTitle}>RÉSULTATS</Text>
+          <Text style={s.sectionTitle}>{t('friends.results')}</Text>
           {searchResults.map((u) => (
             <TouchableOpacity key={u.id} style={s.friendRow} onPress={() => onViewProfile(u.id)} activeOpacity={0.8}>
               <RowAvatar url={u.avatar_url} name={u.full_name} />
@@ -422,7 +423,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
                 <View style={s.friendBadge}><Ionicons name="checkmark" size={14} color="#888" /></View>
               ) : (
                 <TouchableOpacity style={s.addFriendBtn} onPress={() => sendFriendRequest(u.id)}>
-                  <Text style={s.addFriendBtnText}>Ajouter</Text>
+                  <Text style={s.addFriendBtnText}>{t('friends.add')}</Text>
                 </TouchableOpacity>
               )}
             </TouchableOpacity>
@@ -433,7 +434,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       {/* Demandes reçues */}
       {pending.length > 0 && (
         <View style={{ marginBottom: 8 }}>
-          <Text style={s.sectionTitle}>DEMANDES REÇUES · {pending.length}</Text>
+          <Text style={s.sectionTitle}>{t('friends.requestsReceived', { n: pending.length })}</Text>
           {pending.map((p) => (
             <View key={p.friendship_id} style={s.friendRow}>
               <RowAvatar url={p.avatar_url} name={p.full_name} active />
@@ -458,7 +459,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       {/* Découverte par objectif commun */}
       {suggestions.length > 0 && (
         <View style={{ marginBottom: 8 }}>
-          <Text style={s.sectionTitle}>MÊME OBJECTIF</Text>
+          <Text style={s.sectionTitle}>{t('friends.sameObjective')}</Text>
           {/* La liste déborde jusqu'aux bords de l'écran (marginHorizontal négatif) :
               le padding interne la remet dans la gouttière. */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.suggestScroll} contentContainerStyle={{ gap: 12, paddingHorizontal: GUTTER }}>
@@ -468,7 +469,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
                 <Text style={s.suggestName} numberOfLines={1}>{u.full_name}</Text>
                 <Text style={s.suggestObj} numberOfLines={2}>{u.objectiveTitle}</Text>
                 <TouchableOpacity style={s.suggestAddBtn} onPress={() => sendFriendRequest(u.id)}>
-                  <Text style={s.suggestAddText}>Ajouter</Text>
+                  <Text style={s.suggestAddText}>{t('friends.add')}</Text>
                 </TouchableOpacity>
               </TouchableOpacity>
             ))}
@@ -477,20 +478,20 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       )}
 
       {/* Liste d'amis */}
-      <Text style={s.sectionTitle}>{friends.length > 0 ? `${friends.length} AMI${friends.length > 1 ? 'S' : ''}${closeIds.size > 0 ? `, DONT ${closeIds.size} PROCHE${closeIds.size > 1 ? 'S' : ''}` : ''}` : 'MES AMIS'}</Text>
+      <Text style={s.sectionTitle}>{friends.length > 0 ? `${tp('friends.countFriends', friends.length)}${closeIds.size > 0 ? tp('friends.countClose', closeIds.size) : ''}` : t('friends.myFriends')}</Text>
       {friends.length > 0 && (
         <Text style={{ color: '#777', fontSize: 12, lineHeight: 17, marginBottom: 10, marginTop: -4 }}>
-          Touche l'étoile pour mettre un ami dans ton <Text style={{ color: '#fff', fontFamily: F.bold }}>cercle proche</Text> : il est prévenu quand tu arrives à ta salle et voit les objectifs que tu lui réserves.
+          {t('friends.starHintBefore')} <Text style={{ color: '#fff', fontFamily: F.bold }}>{t('friends.starHintBold')}</Text>{t('friends.starHintAfter')}
         </Text>
       )}
       {loading ? (
         <View style={{ paddingTop: 20, alignItems: 'center' }}><ActivityIndicator color="#fff" /></View>
       ) : friends.length === 0 ? (
         <View style={{ paddingTop: 30, alignItems: 'center', gap: 8 }}>
-          <Text style={{ color: '#888', fontSize: 15, fontFamily: F.bold }}>Pas encore d'amis</Text>
-          <Text style={{ color: '#666', fontSize: 13 }}>Invite tes proches ou cherche-les par prénom</Text>
+          <Text style={{ color: '#888', fontSize: 15, fontFamily: F.bold }}>{t('friends.noFriends')}</Text>
+          <Text style={{ color: '#666', fontSize: 13 }}>{t('friends.noFriendsSub')}</Text>
           <TouchableOpacity style={s.emptyStateBtn} onPress={inviteFriends}>
-            <Text style={s.emptyStateBtnText}>Inviter mes amis →</Text>
+            <Text style={s.emptyStateBtnText}>{t('friends.inviteArrow')}</Text>
           </TouchableOpacity>
         </View>
       ) : [...friends].sort((a, b) => Number(closeIds.has(b.id)) - Number(closeIds.has(a.id))).map((f) => (
@@ -509,7 +510,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
           <TouchableOpacity
             onPress={() => toggleClose(f.id)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityLabel={closeIds.has(f.id) ? `Retirer ${f.full_name} du cercle proche` : `Ajouter ${f.full_name} au cercle proche`}
+            accessibilityLabel={closeIds.has(f.id) ? t('friends.closeRemove', { name: f.full_name }) : t('friends.closeAdd', { name: f.full_name })}
             style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: closeIds.has(f.id) ? '#fff' : '#1a1a1a' }}
           >
             <Ionicons name={closeIds.has(f.id) ? 'star' : 'star-outline'} size={17} color={closeIds.has(f.id) ? '#000' : '#888'} />

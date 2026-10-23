@@ -3,6 +3,7 @@ import { View, Pressable, StyleProp, ViewStyle } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { t } from '../i18n';
 
 // Vidéo courte d'une publication (15 s max), à la façon d'Instagram :
 // muette et en boucle, elle ne joue que si la carte est à l'écran (`active`),
@@ -33,7 +34,7 @@ function FeedVideoPlayer({ uri, style }: { uri: string; style?: StyleProp<ViewSt
     <Pressable
       style={style}
       onPress={() => { Haptics.selectionAsync().catch(() => {}); setMuted(m => !m); }}
-      accessibilityLabel={muted ? 'Activer le son' : 'Couper le son'}
+      accessibilityLabel={muted ? t('video.unmute') : t('video.mute')}
     >
       <VideoView
         player={player}

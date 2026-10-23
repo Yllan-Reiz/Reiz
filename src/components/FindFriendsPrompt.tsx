@@ -8,6 +8,7 @@ import { contactsAvailable } from '../lib/contacts';
 import { ContactsScreen } from './ContactsScreen';
 import { GlassSurface } from './GlassSurface';
 import { F } from '../styles';
+import { t } from '../i18n';
 
 // À l'inscription : « Retrouve tes amis ». S'ouvre UNE SEULE FOIS, pour un compte tout neuf (moins de 2 jours),
 // quelques secondes après l'arrivée dans l'app. Le système demande l'autorisation seulement si tu touches
@@ -39,19 +40,19 @@ export function FindFriendsPrompt() {
             <GlassSurface radius={48} style={{ width: 96, height: 96, alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name="people" size={42} color="#fff" />
             </GlassSurface>
-            <Text style={{ color: '#fff', fontSize: 32, fontFamily: F.black, letterSpacing: -1, marginTop: 24, textAlign: 'center' }}>Retrouve tes amis</Text>
+            <Text style={{ color: '#fff', fontSize: 32, fontFamily: F.black, letterSpacing: -1, marginTop: 24, textAlign: 'center' }}>{t('findFriends.title')}</Text>
             <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16, lineHeight: 24, fontFamily: F.regular, marginTop: 12, textAlign: 'center' }}>
-              Reiz est fait pour s'entraîner avec les gens qu'on connaît. Vois lesquels de tes contacts sont déjà là, et invite les autres en un tap.
+              {t('findFriends.text')}
             </Text>
             <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, lineHeight: 19, fontFamily: F.regular, marginTop: 14, textAlign: 'center' }}>
-              Tes contacts restent sur ton téléphone : Reiz ne les enregistre jamais.
+              {t('welcome.footContacts')}
             </Text>
           </View>
           <TouchableOpacity onPress={() => { setShow(false); setTimeout(() => setList(true), 400); }} activeOpacity={0.85} style={{ backgroundColor: '#fff', borderRadius: 18, paddingVertical: 16, alignItems: 'center', marginTop: 36 }}>
-            <Text style={{ color: '#000', fontSize: 16, fontFamily: F.extrabold }}>Trouver mes amis</Text>
+            <Text style={{ color: '#000', fontSize: 16, fontFamily: F.extrabold }}>{t('welcome.findFriends')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShow(false)} style={{ paddingVertical: 16, alignItems: 'center' }}>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontFamily: F.semibold }}>Plus tard</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontFamily: F.semibold }}>{t('common.later')}</Text>
           </TouchableOpacity>
         </View>
       </Modal>

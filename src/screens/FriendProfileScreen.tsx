@@ -17,6 +17,7 @@ import { loadDuoStats, DuoStats } from '../lib/duo';
 import { Duel, loadDuels, proposeDuel, answerDuel, withdrawDuel } from '../lib/duel';
 import { DuelCard } from '../components/DuelCard';
 import { s, F } from '../styles';
+import { t, tp, formatDate } from '../i18n';
 
 export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: { userId: string; onClose: () => void; onOpenProfile?: (id: string) => void; onDuo?: (friendId: string) => void }) {
   const insets = useSafeAreaInsets();
@@ -110,7 +111,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
     setRelBusy(true);
     const { error } = await supabase.from('friendships').insert({ requester_id: currentUserId, receiver_id: userId, status: 'pending' });
     setRelBusy(false);
-    if (error && !/duplicate key/i.test(error.message || '')) { Alert.alert('Erreur', frError(error)); return; }
+    if (error && !/duplicate key/i.test(error.message || '')) { Alert.alert(t('common.error'), frError(error)); return; }
     // Rechargement plutôt que « envoyée » d'office : si cette personne t'avait
     // déjà demandé, le serveur accepte directement et vous êtes amis.
     setReloadKey(k => k + 1);
@@ -121,7 +122,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
     setRelBusy(true);
     const { error } = await supabase.from('friendships').update({ status: 'accepted' }).eq('id', relation.id);
     setRelBusy(false);
-    if (error) { Alert.alert('Erreur', frError(error)); return; }
+    if (error) { Alert.alert(t('common.error'), frError(error)); return; }
     setReloadKey(k => k + 1);
   };
 
@@ -135,16 +136,16 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
   const runDuel = async (action: () => Promise<string | null>) => {
     setDuelBusy(true);
     const err = await action();
-    if (err) Alert.alert('Défi', err);
+    if (err) Alert.alert(t('duelCard.duel'), err);
     await refreshDuel();
     setDuelBusy(false);
   };
 
   const proposeToFriend = () => {
-    const first = profile?.full_name?.split(' ')[0] || 'cet ami';
-    Alert.alert(`Défier ${first} ?`, `${first} recevra une notification. Le défi dure 7 jours dès qu'il accepte.`, [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Défier', onPress: () => runDuel(() => proposeDuel(userId)) },
+    const first = profile?.full_name?.split(' ')[0] || t('friendProfile.thisFriend');
+    Alert.alert(t('duelCard.confirmTitle', { name: first }), t('friendProfile.duelConfirm', { name: first }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('duelCard.challenge'), onPress: () => runDuel(() => proposeDuel(userId)) },
     ]);
   };
 
@@ -152,26 +153,26 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
     const send = async (reason: string) => {
       if (!currentUserId) return;
       const { error } = await supabase.from('reports').insert({ reporter_id: currentUserId, reported_user_id: userId, reason });
-      if (error) Alert.alert('Erreur', frError(error));
-      else Alert.alert('Signalement envoyé', 'Ton signalement a bien été envoyé.');
+      if (error) Alert.alert(t('common.error'), frError(error));
+      else Alert.alert(t('feed.reportSentTitle'), t('friendProfile.reportSent'));
     };
-    Alert.alert('Signaler ce profil', 'Pourquoi signales-tu ce profil ?', [
-      { text: 'Spam', onPress: () => send('spam') },
-      { text: 'Comportement inapproprié', onPress: () => send('inapproprié') },
-      { text: 'Autre', onPress: () => send('autre') },
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('friendProfile.reportTitle'), t('friendProfile.reportWhy'), [
+      { text: t('common.spam'), onPress: () => send('spam') },
+      { text: t('friendProfile.inappropriate'), onPress: () => send('inapproprié') },
+      { text: t('common.other'), onPress: () => send('autre') },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
   const blockProfile = () => {
-    Alert.alert(`Bloquer ${profile?.full_name || 'cet utilisateur'}`, 'Vous ne verrez plus les contenus l\'un de l\'autre.', [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('feed.blockTitle', { name: profile?.full_name || t('friendProfile.thisUser') }), t('feed.blockText'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Bloquer', style: 'destructive',
+        text: t('common.block'), style: 'destructive',
         onPress: async () => {
           if (!currentUserId) return;
           const { error } = await supabase.from('blocks').insert({ blocker_id: currentUserId, blocked_id: userId });
-          if (error && !/duplicate key/i.test(error.message || '')) { Alert.alert('Erreur', frError(error)); return; }
+          if (error && !/duplicate key/i.test(error.message || '')) { Alert.alert(t('common.error'), frError(error)); return; }
           // On supprime aussi le lien d'amitié éventuel
           await supabase.from('friendships').delete().or(`and(requester_id.eq.${currentUserId},receiver_id.eq.${userId}),and(requester_id.eq.${userId},receiver_id.eq.${currentUserId})`);
           onClose();
@@ -181,10 +182,10 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
   };
 
   const openMenu = () => {
-    Alert.alert(profile?.full_name || 'Profil', undefined, [
-      { text: 'Signaler le profil', onPress: reportProfile },
-      { text: 'Bloquer', style: 'destructive', onPress: blockProfile },
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(profile?.full_name || t('friendProfile.profile'), undefined, [
+      { text: t('friendProfile.reportProfile'), onPress: reportProfile },
+      { text: t('common.block'), style: 'destructive', onPress: blockProfile },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
@@ -198,8 +199,8 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
   const ongoing = objectives.filter(o => !isCompleted(o));
   const achieved = objectives.filter(isCompleted);
   const badges = computeBadges(recentUpdates, objectives);
-  const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '';
-  const firstName = profile?.full_name?.split(' ')[0] || 'Cette personne';
+  const memberSince = profile?.created_at ? formatDate(profile.created_at, { month: 'long', year: 'numeric' }) : '';
+  const firstName = profile?.full_name?.split(' ')[0] || t('friendProfile.thisPerson');
   const topBtn = insets.top + 12;
 
   // Position de défilement : pilote le fondu photo nette -> photo floutée derrière la page.
@@ -219,12 +220,12 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
         >
           {/* === Même page que ton profil : photo plein écran, nom, bulle de verre à 3 zones === */}
           <ProfileHero height={heroH}>
-            <GlassIconButton icon="chevron-back" label="Retour" onPress={onClose} style={{ position: 'absolute', top: topBtn, left: GUTTER }} />
-            <GlassIconButton icon="ellipsis-horizontal" label="Options" onPress={openMenu} style={{ position: 'absolute', top: topBtn, right: GUTTER }} />
+            <GlassIconButton icon="chevron-back" label={t('common.back')} onPress={onClose} style={{ position: 'absolute', top: topBtn, left: GUTTER }} />
+            <GlassIconButton icon="ellipsis-horizontal" label={t('friendProfile.options')} onPress={openMenu} style={{ position: 'absolute', top: topBtn, right: GUTTER }} />
 
-            <Text style={{ fontSize: 40, fontFamily: F.black, color: '#fff', textAlign: 'center', letterSpacing: -1.5, paddingHorizontal: GUTTER }} numberOfLines={2}>{profile?.full_name || 'Utilisateur'}</Text>
+            <Text style={{ fontSize: 40, fontFamily: F.black, color: '#fff', textAlign: 'center', letterSpacing: -1.5, paddingHorizontal: GUTTER }} numberOfLines={2}>{profile?.full_name || t('common.user')}</Text>
             <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.78)', fontFamily: F.semibold, marginTop: 4 }}>@{profile?.username}</Text>
-            <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontFamily: F.regular, marginTop: 2 }}>Membre depuis {memberSince}</Text>
+            <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontFamily: F.regular, marginTop: 2 }}>{t('profile.memberSince', { date: memberSince })}</Text>
             <SportBadge sport={profile?.sport} />
 
             {relation.kind !== 'friends' && (
@@ -236,30 +237,30 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
                 {relBusy
                   ? <ActivityIndicator color="#000" size="small" />
                   : <Text style={{ color: relation.kind === 'sent' ? '#ccc' : '#000', fontSize: 14, fontFamily: F.bold }}>
-                      {relation.kind === 'sent' ? 'Demande envoyée' : relation.kind === 'received' ? 'Accepter sa demande' : 'Ajouter à mon cercle'}
+                      {relation.kind === 'sent' ? t('friendsGlass.requestSent') : relation.kind === 'received' ? t('friendProfile.acceptRequest') : t('friendProfile.addToCircle')}
                     </Text>}
               </TouchableOpacity>
             )}
 
             <StatBubble items={[
-              { value: `${streak}j`, label: 'Streak' },
-              { value: String(recentUpdates.length), label: 'Posts' },
+              { value: t('days.durationDays', { n: streak }), label: t('main.statStreak') },
+              { value: String(recentUpdates.length), label: t('profile.posts') },
               // La liste des amis n'est montrée qu'aux amis (règle du serveur, friends_of).
-              { value: String(friendCount), label: friendCount > 1 ? 'Amis' : 'Ami', onPress: relation.kind === 'friends' ? () => setShowFriends(true) : undefined },
+              { value: String(friendCount), label: tp('profile.friends', friendCount), onPress: relation.kind === 'friends' ? () => setShowFriends(true) : undefined },
             ]} />
           </ProfileHero>
 
           {relation.kind !== 'friends' && (
             <Text style={{ color: '#888', fontSize: 13, textAlign: 'center', marginTop: 14, paddingHorizontal: 28 }}>
-              Ses progrès sont réservés à son cercle. Ajoute {firstName} pour les suivre.
+              {t('friendProfile.reserved', { name: firstName })}
             </Text>
           )}
 
           {/* === À propos : bio + tags (tu peux valider ses tags d'un tap) === */}
           <AboutBubble>
-            <Text style={[s.sectionTitle, { marginTop: 0 }]}>À propos</Text>
+            <Text style={[s.sectionTitle, { marginTop: 0 }]}>{t('profile.about')}</Text>
             <Text style={{ fontSize: 15, color: profile?.bio ? '#fff' : 'rgba(255,255,255,0.45)', lineHeight: 22, fontFamily: F.regular }}>
-              {profile?.bio || `${firstName} n'a pas encore écrit de bio.`}
+              {profile?.bio || t('friendProfile.noBio', { name: firstName })}
             </Text>
             <View style={{ alignSelf: 'stretch' }}><ProfileTags userId={userId} currentUserId={currentUserId} own={false} /></View>
           </AboutBubble>
@@ -281,18 +282,18 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
 
           <View style={{ marginTop: 26 }}>
             {ongoing.length === 0 && achieved.length === 0 ? (
-              <Text style={{ color: '#888', fontSize: 13, paddingHorizontal: GUTTER }}>Pas d'objectif visible pour le moment.</Text>
+              <Text style={{ color: '#888', fontSize: 13, paddingHorizontal: GUTTER }}>{t('friendProfile.noObjective')}</Text>
             ) : (
               <>
-                {ongoing.length > 0 && <SectionHeader title="En cours" count={ongoing.length} style={{ paddingHorizontal: GUTTER }} />}
+                {ongoing.length > 0 && <SectionHeader title={t('profile.ongoing')} count={ongoing.length} style={{ paddingHorizontal: GUTTER }} />}
                 <GoalCards items={ongoing} activity={activityByObj} />
                 <AchievedList items={achieved} />
               </>
             )}
           </View>
 
-          <SectionHeader title="Historique" count={recentUpdates.length} style={{ paddingHorizontal: GUTTER, marginTop: 26 }} />
-          <HistoryCarousel posts={recentUpdates} onOpen={openPost} emptyText="Pas encore de publication visible." />
+          <SectionHeader title={t('profile.history')} count={recentUpdates.length} style={{ paddingHorizontal: GUTTER, marginTop: 26 }} />
+          <HistoryCarousel posts={recentUpdates} onOpen={openPost} emptyText={t('friendProfile.noPosts')} />
 
           <View style={{ height: 40 + insets.bottom }} />
         </Animated.ScrollView>

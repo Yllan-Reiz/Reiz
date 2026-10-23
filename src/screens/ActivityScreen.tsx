@@ -20,6 +20,7 @@ import { loadPost } from '../lib/posts';
 import { loadDuels, Duel } from '../lib/duel';
 import { setAppBadge } from '../lib/badge';
 import { gifIdOf } from '../lib/giphy';
+import { t, tp } from '../i18n';
 
 type Row = ActivityItem & {
   updates?: { photo_url?: string | null; objectives?: { emoji?: string; title?: string } | null } | null;
@@ -47,10 +48,10 @@ const clip = (txt: string, n = 70) => (txt.length > n ? txt.slice(0, n - 1) + '�
 
 /** « Eden », « Eden et Axel », « Eden, Axel et 3 autres ». */
 function whoLabel(rows: Row[]): { text: string; many: boolean } {
-  const names = [...new Set(rows.map(r => r.actor?.full_name || "Quelqu'un"))];
+  const names = [...new Set(rows.map(r => r.actor?.full_name || t('activity.someone')))];
   if (names.length === 1) return { text: names[0], many: false };
-  if (names.length === 2) return { text: `${names[0]} et ${names[1]}`, many: true };
-  return { text: `${names[0]}, ${names[1]} et ${names.length - 2} autre${names.length > 3 ? 's' : ''}`, many: true };
+  if (names.length === 2) return { text: t('common.andJoin', { list: names[0], last: names[1] }), many: true };
+  return { text: tp('activity.andOthers', names.length - 2, { a: names[0], b: names[1] }), many: true };
 }
 
 /** Une phrase courte (l'action) et une ligne de contexte, pour que chaque ligne se lise en une seconde. */
@@ -60,31 +61,32 @@ function copyOf(e: Entry): { who: string; action: string; context?: string } {
   const post = n.updates?.objectives;
   const postLabel = post?.title ? `${post.emoji || ''} ${post.title}`.trim() : undefined;
   // Un commentaire GIF est enregistré comme un lien : on écrit « GIF » à la place.
-  const quote = n.preview ? (gifIdOf(n.preview) ? 'GIF' : `« ${clip(n.preview)} »`) : undefined;
-  const verb = (one: string, plural: string) => (many ? plural : one);
+  const quote = n.preview ? (gifIdOf(n.preview) ? 'GIF' : t('activity.quote', { text: clip(n.preview) })) : undefined;
+  // Le verbe s'accorde : « Eden a réagi », « Eden et Axel ont réagi ».
+  const count = many ? 2 : 1;
   switch (n.type) {
     case 'reaction': {
       const emojis = [...new Set(e.rows.map(r => r.emoji).filter(Boolean))].slice(0, 4).join('');
-      return { who, action: `${verb('a réagi', 'ont réagi')} ${emojis} à ton post`.replace(/\s+/g, ' '), context: postLabel };
+      return { who, action: tp('activity.reacted', count, { emojis }).replace(/\s+/g, ' '), context: postLabel };
     }
-    case 'comment_like': return { who, action: `${verb('a aimé', 'ont aimé')} ton commentaire`, context: quote };
-    case 'comment': return { who, action: 'a commenté ton post', context: quote };
-    case 'reply': return { who, action: "t'a répondu", context: quote };
-    case 'nudge': return { who, action: `${verb('te relance', 'te relancent')} 💪`, context: 'Poste ta prochaine séance' };
+    case 'comment_like': return { who, action: tp('activity.likedComment', count), context: quote };
+    case 'comment': return { who, action: t('activity.commented'), context: quote };
+    case 'reply': return { who, action: t('activity.replied'), context: quote };
+    case 'nudge': return { who, action: tp('activity.nudged', count), context: t('activity.nudgedSub') };
     case 'friend_post': {
       // La légende n'est ajoutée que si elle apporte quelque chose (souvent elle reprend le nom de l'objectif).
       const caption = n.preview && n.preview.trim().toLowerCase() !== (post?.title || '').trim().toLowerCase() ? clip(n.preview, 50) : '';
-      return { who, action: 'a posté', context: [postLabel, caption].filter(Boolean).join('  ') || undefined };
+      return { who, action: t('activity.posted'), context: [postLabel, caption].filter(Boolean).join('  ') || undefined };
     }
-    case 'tag_endorse': return { who, action: 'a validé ton tag', context: n.preview || undefined };
-    case 'at_gym': return { who, action: `est à ${n.preview || 'la salle'}`, context: 'Viens le rejoindre 💪' };
-    case 'duo_tag': return { who, action: "t'a identifié dans sa séance 🤝", context: postLabel };
-    case 'friend_accept': return { who, action: 'a accepté ta demande', context: 'Vous êtes dans le même cercle.' };
-    case 'challenge_accept': return { who, action: 'relève ton défi ⚔️', context: "C'est parti pour 7 jours" };
-    case 'challenge_result': return { who, action: 'a terminé votre duel', context: n.preview || undefined };
+    case 'tag_endorse': return { who, action: t('activity.endorsed'), context: n.preview || undefined };
+    case 'at_gym': return { who, action: t('activity.atGym', { place: n.preview || t('presence.defaultPlace') }), context: t('activity.atGymSub') };
+    case 'duo_tag': return { who, action: t('activity.duoTag'), context: postLabel };
+    case 'friend_accept': return { who, action: t('activity.accepted'), context: t('activity.acceptedSub') };
+    case 'challenge_accept': return { who, action: t('activity.challengeAccepted'), context: t('activity.challengeAcceptedSub') };
+    case 'challenge_result': return { who, action: t('activity.challengeDone'), context: n.preview || undefined };
     case 'new_objective': {
-      const days = hasSchedule(n.objectives?.training_days) ? `Il s'entraîne ${daysLabel(n.objectives?.training_days, true)}` : undefined;
-      return { who, action: "s'est lancé un objectif", context: [n.objectives?.title ? `${n.objectives.emoji || ''} ${n.objectives.title}`.trim() : '', days].filter(Boolean).join('  ') || undefined };
+      const days = hasSchedule(n.objectives?.training_days) ? t('activity.trains', { days: daysLabel(n.objectives?.training_days, true) }) : undefined;
+      return { who, action: t('activity.newObjective'), context: [n.objectives?.title ? `${n.objectives.emoji || ''} ${n.objectives.title}`.trim() : '', days].filter(Boolean).join('  ') || undefined };
     }
     default: return { who, action: '' };
   }
@@ -99,18 +101,18 @@ const ICON: Record<string, any> = {
 /** « à l'instant », « 12 min », « 3 h », « 2 j » : court, pour ne pas encombrer la ligne. */
 function shortAgo(iso: string) {
   const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (sec < 60) return "à l'instant";
-  if (sec < 3600) return `${Math.floor(sec / 60)} min`;
-  if (sec < 86400) return `${Math.floor(sec / 3600)} h`;
-  return `${Math.floor(sec / 86400)} j`;
+  if (sec < 60) return t('activity.agoNow');
+  if (sec < 3600) return t('activity.agoMin', { n: Math.floor(sec / 60) });
+  if (sec < 86400) return t('activity.agoH', { n: Math.floor(sec / 3600) });
+  return t('activity.agoD', { n: Math.floor(sec / 86400) });
 }
 
 function sectionOf(iso: string) {
   const d = new Date(iso);
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  if (d >= today) return "Aujourd'hui";
-  if (Date.now() - d.getTime() < 7 * 24 * 3600 * 1000) return 'Cette semaine';
-  return 'Plus tôt';
+  if (d >= today) return t('activity.today');
+  if (Date.now() - d.getTime() < 7 * 24 * 3600 * 1000) return t('activity.thisWeek');
+  return t('activity.earlier');
 }
 
 function Avatar({ url, name, size }: { url?: string | null; name: string; size: number }) {
@@ -273,7 +275,7 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
     setOpeningPost(true);
     const res = await loadPost(updateId, currentUserId);
     setOpeningPost(false);
-    if (!res) { Alert.alert('Post introuvable', 'Il a peut-être été supprimé.'); return; }
+    if (!res) { Alert.alert(t('activity.postNotFound'), t('activity.postNotFoundText')); return; }
     setOpenPost({ ...res, comments });
   };
 
@@ -286,10 +288,10 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
     return (
       <View style={s.container}>
         <View style={[s.header, { paddingTop: insets.top + 6 }]}>
-          <TouchableOpacity style={s.backBtn} onPress={() => setOpenPost(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Retour">
+          <TouchableOpacity style={s.backBtn} onPress={() => setOpenPost(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={t('common.back')}>
             <Ionicons name="chevron-back" size={20} color="#888" />
           </TouchableOpacity>
-          <Text style={s.headerTitle}>Publication</Text>
+          <Text style={s.headerTitle}>{t('activity.post')}</Text>
           <View style={{ width: 34 }} />
         </View>
         <ScrollView style={s.feed} contentContainerStyle={{ paddingBottom: 40 + insets.bottom }}>
@@ -324,17 +326,17 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
   const top = (
     <View>
       <View style={{ paddingTop: 2, paddingBottom: 14 }}>
-        <Text style={{ color: '#fff', fontSize: 28, fontFamily: F.black, letterSpacing: -0.8 }}>Activité</Text>
+        <Text style={{ color: '#fff', fontSize: 28, fontFamily: F.black, letterSpacing: -0.8 }}>{t('main.activity')}</Text>
         <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, fontFamily: F.regular, marginTop: 2 }}>
-          {requests.length + duelInvites.length > 0 ? `${requests.length + duelInvites.length} à traiter` : fresh > 0 ? `${fresh} nouveauté${fresh > 1 ? 's' : ''}` : 'Tout est à jour'}
+          {requests.length + duelInvites.length > 0 ? t('activity.toHandle', { n: requests.length + duelInvites.length }) : fresh > 0 ? tp('activity.fresh', fresh) : t('activity.upToDate')}
         </Text>
       </View>
       {requests.length > 0 && (
         <ActionCard
           icon="person-add"
-          title={requests.length === 1 ? `${requests[0].full_name} veut te rejoindre` : `${requests.length} demandes d'ami`}
-          sub={requests.length === 1 ? 'Accepte pour suivre ses progrès' : whoLabel(requests.map(r => ({ actor: { full_name: r.full_name } } as Row))).text}
-          button="Voir"
+          title={requests.length === 1 ? t('activity.wantsToJoin', { name: requests[0].full_name }) : t('activity.requests', { n: requests.length })}
+          sub={requests.length === 1 ? t('activity.acceptToFollow') : whoLabel(requests.map(r => ({ actor: { full_name: r.full_name } } as Row))).text}
+          button={t('activity.see')}
           faces={requests}
           onPress={onOpenFriends}
         />
@@ -343,9 +345,9 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
         <ActionCard
           key={d.id}
           icon="flash"
-          title={`${d.otherName.split(' ')[0]} te défie ⚔️`}
-          sub="Un duel d'une semaine"
-          button="Répondre"
+          title={t('activity.challengesYou', { name: d.otherName.split(' ')[0] })}
+          sub={t('activity.weekDuel')}
+          button={t('activity.answer')}
           faces={[{ id: d.otherId, full_name: d.otherName, avatar_url: d.otherAvatar }]}
           onPress={() => onViewProfile(d.otherId)}
         />
@@ -368,7 +370,7 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
         </>
       ) : <GlassBackdrop avatarUrl={backdropUrl ?? null} />}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: GUTTER, paddingTop: insets.top + 8, paddingBottom: 8 }}>
-        <GlassIconButton icon="chevron-back" label="Retour" onPress={onClose} />
+        <GlassIconButton icon="chevron-back" label={t('common.back')} onPress={onClose} />
         {openingPost && <ActivityIndicator color="#fff" size="small" />}
       </View>
 
@@ -385,9 +387,9 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
           ListEmptyComponent={nothing ? (
             <GlassCard radius={28} style={{ marginTop: 6 }}>
               <View style={{ padding: 24, alignItems: 'center' }}>
-                <Text style={{ color: '#fff', fontSize: 20, fontFamily: F.black }}>Rien pour l'instant</Text>
+                <Text style={{ color: '#fff', fontSize: 20, fontFamily: F.black }}>{t('activity.emptyTitle')}</Text>
                 <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, lineHeight: 20, marginTop: 6, textAlign: 'center' }}>
-                  Les réactions, commentaires et posts de ton cercle s'afficheront ici.
+                  {t('activity.emptyText')}
                 </Text>
               </View>
             </GlassCard>

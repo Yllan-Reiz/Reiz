@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { supabase } from './supabase';
 import { AUTO_DETECTION } from '../constants';
+import { t } from '../i18n';
 
 // « Je suis à la salle » : prévenir le cercle proche quand on arrive à un lieu d'entraînement.
 //
@@ -55,7 +56,7 @@ export async function announcePresence(label: string, source: 'manual' | 'auto')
     if (!uid) return 'error';
     const { count } = await supabase.from('close_friends').select('id', { count: 'exact', head: true }).eq('owner_id', uid);
     if (!count) return 'no-circle';
-    const { data, error } = await supabase.from('presence').insert({ user_id: uid, place_label: label.trim().slice(0, 60) || 'la salle', source }).select('id');
+    const { data, error } = await supabase.from('presence').insert({ user_id: uid, place_label: label.trim().slice(0, 60) || t('presence.defaultPlace'), source }).select('id');
     if (error) return 'error';
     await AsyncStorage.setItem(LAST_KEY, String(Date.now()));
     // Aucune ligne renvoyée : le serveur a ignoré l'envoi (déjà prévenu récemment).
@@ -67,16 +68,16 @@ export async function announcePresence(label: string, source: 'manual' | 'auto')
 
 /** Texte du consentement affiché avant d'activer la détection : [titre, texte]. Partagé par la carte du fil et les Réglages. */
 export const AUTO_CONSENT: [string, string] = [
-  'Autoriser la localisation ?',
-  "Reiz utilisera ta position uniquement pour savoir quand tu arrives à un lieu que tu choisis (ta salle, ton stade), même quand l'appli est fermée.\n\nTes coordonnées restent sur ton téléphone. Seul « je suis arrivé » est envoyé à ton cercle proche.\n\niOS va te demander l'autorisation, puis te proposer « Toujours autoriser ». Tu peux tout couper dans Réglages à tout moment.",
+  t('presence.consentTitle'),
+  t('presence.consentText'),
 ];
 
 /** Message à afficher après un envoi : [titre, texte]. */
 export const ANNOUNCE_MESSAGES: Record<Announce, [string, string]> = {
-  sent: ['Cercle proche prévenu 💪', "Ils savent que tu es en train de t'entraîner."],
-  throttled: ['Déjà prévenu', `Une alerte toutes les ${COOLDOWN_HOURS} heures au maximum.`],
-  'no-circle': ['Ton cercle proche est vide', "Ajoute des amis à ton cercle proche (Réglages, Mon cercle proche) pour qu'ils reçoivent l'alerte."],
-  error: ['Erreur', 'Impossible de prévenir pour le moment. Réessaie.'],
+  sent: [t('presence.sentTitle'), t('presence.sentText')],
+  throttled: [t('presence.throttledTitle'), t('presence.throttledText', { n: COOLDOWN_HOURS })],
+  'no-circle': [t('presence.noCircleTitle'), t('presence.noCircleText')],
+  error: [t('common.error'), t('presence.errorText')],
 };
 
 // ---------- Autorisations ----------
@@ -137,7 +138,7 @@ export async function addPlaceHere(label: string): Promise<Place> {
   const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
   const place: Place = {
     id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-    label: label.trim().slice(0, 40) || 'À la salle',
+    label: label.trim().slice(0, 40) || t('presence.defaultPlaceLabel'),
     lat: pos.coords.latitude,
     lng: pos.coords.longitude,
     radius: DEFAULT_RADIUS,

@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { signAvatars } from '../lib/storage';
 import { GUTTER } from '../constants';
 import { F } from '../styles';
+import { t, tp } from '../i18n';
 
 // Sur TON profil : tes amis (quelques visages, le nombre) et le bouton pour voir la liste complète, où l'on
 // gère aussi le cercle proche et où l'on retire un ami. L'onglet Amis, lui, sert à en trouver de nouveaux.
@@ -30,12 +31,12 @@ export function MyFriendsBubble({ userId, onOpen, reloadKey }: { userId: string;
 
   if (people === null || count === 0) return null;
   return (
-    <TouchableOpacity onPress={onOpen} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={`Voir mes ${count} amis`}>
+    <TouchableOpacity onPress={onOpen} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={tp('myFriends.a11y', count)}>
       <GlassSurface radius={28} style={{ marginHorizontal: GUTTER, marginTop: 14 }}>
         <View style={{ padding: 18 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="people" size={13} color="rgba(255,255,255,0.55)" />
-            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontFamily: F.bold, letterSpacing: 1.5 }}>MES AMIS</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontFamily: F.bold, letterSpacing: 1.5 }}>{t('friends.myFriends')}</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
             <Faces people={people} size={40} />

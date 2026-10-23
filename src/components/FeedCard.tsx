@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Image, Alert, Animated, Easin
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
-import { timeAgo, frError, inUnit } from '../lib/helpers';
+import { timeAgo, frError, inUnit, num } from '../lib/helpers';
 import { Update, FeedMeta, Reactor } from '../lib/types';
 import { ALL_REACTION_EMOJIS } from '../constants';
 import { s, F } from '../styles';
@@ -15,6 +15,7 @@ import { togglePin } from '../lib/posts';
 import { DUO_WINDOW_MS } from '../lib/duo';
 import { ShareStoryModal, StoryData } from './ShareStoryModal';
 import { FloatingEmoji, nextFloatId } from './FloatingEmoji';
+import { t, tp, unitLabel } from '../i18n';
 
 // Ouverture/fermeture en fondu-montée. Le contenu reste monté le temps de la
 // sortie, sinon le panneau disparaît d'un coup sec.
@@ -111,7 +112,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   const objTarget = objIn?.target_value;
   const progressLabel = objUnit && objUnit !== '%' && objTarget
     // Valeur reconstituée depuis le % : pas de faux chiffre après la virgule (251,1 kg).
-    ? `${String(objTarget >= 10 ? Math.round((pctValue / 100) * objTarget) : Math.round((pctValue / 100) * objTarget * 10) / 10).replace('.', ',')} / ${String(objTarget).replace('.', ',')} ${objUnit}`
+    ? `${num(objTarget >= 10 ? Math.round((pctValue / 100) * objTarget) : Math.round((pctValue / 100) * objTarget * 10) / 10)} / ${num(objTarget)} ${unitLabel(objUnit)}`
     : `${pctValue}%`;
 
   const [reactions, setReactions] = useState<{ [emoji: string]: number }>(meta?.reactions || {});
@@ -163,25 +164,25 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
     }
   };
 
-  const uname = u.users?.full_name || 'Utilisateur';
+  const uname = u.users?.full_name || t('common.user');
   const duoNames = (u.with_users || []).map(w => w.full_name);
   const duoLabel = duoNames.length === 0 ? null
     : duoNames.length === 1 ? duoNames[0]
-    : `${duoNames.slice(0, -1).join(', ')} et ${duoNames[duoNames.length - 1]}`;
+    : t('common.andJoin', { list: duoNames.slice(0, -1).join(', '), last: duoNames[duoNames.length - 1] });
   const canDuoReply = !!onDuoReply && !!currentUserId && !!u.user_id && u.user_id !== currentUserId
     && (u.with_user_ids || []).includes(currentUserId);
   const isMine = !!currentUserId && u.user_id === currentUserId;
 
   const deletePost = () => {
-    Alert.alert('Supprimer ce post', 'Cette action est définitive.', [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('feed.deleteTitle'), t('feed.deleteText'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Supprimer', style: 'destructive',
+        text: t('common.delete'), style: 'destructive',
         onPress: async () => {
           await supabase.from('reactions').delete().eq('update_id', u.id);
           await supabase.from('comments').delete().eq('update_id', u.id);
           const { error } = await supabase.from('updates').delete().eq('id', u.id);
-          if (error) { Alert.alert('Erreur', frError(error)); return; }
+          if (error) { Alert.alert(t('common.error'), frError(error)); return; }
           onDeleted?.();
         },
       },
@@ -194,26 +195,26 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       const { error } = await supabase.from('reports').insert({
         reporter_id: currentUserId, update_id: u.id, reported_user_id: u.user_id, reason,
       });
-      if (error) Alert.alert('Erreur', frError(error));
-      else Alert.alert('Signalement envoyé', 'Ton signalement a bien été envoyé. Nous allons l\'examiner.');
+      if (error) Alert.alert(t('common.error'), frError(error));
+      else Alert.alert(t('feed.reportSentTitle'), t('feed.reportSentText'));
     };
-    Alert.alert('Signaler ce post', 'Pourquoi signales-tu ce contenu ?', [
-      { text: 'Spam', onPress: () => send('spam') },
-      { text: 'Contenu inapproprié', onPress: () => send('inapproprié') },
-      { text: 'Autre', onPress: () => send('autre') },
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('feed.reportTitle'), t('feed.reportWhy'), [
+      { text: t('common.spam'), onPress: () => send('spam') },
+      { text: t('feed.inappropriate'), onPress: () => send('inapproprié') },
+      { text: t('common.other'), onPress: () => send('autre') },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
   const blockUser = () => {
-    Alert.alert(`Bloquer ${uname}`, 'Vous ne verrez plus les contenus l\'un de l\'autre.', [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('feed.blockTitle', { name: uname }), t('feed.blockText'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Bloquer', style: 'destructive',
+        text: t('common.block'), style: 'destructive',
         onPress: async () => {
           if (!currentUserId || !u.user_id) return;
           const { error } = await supabase.from('blocks').insert({ blocker_id: currentUserId, blocked_id: u.user_id });
-          if (error && !/duplicate key/i.test(error.message || '')) { Alert.alert('Erreur', frError(error)); return; }
+          if (error && !/duplicate key/i.test(error.message || '')) { Alert.alert(t('common.error'), frError(error)); return; }
           onBlocked?.();
         },
       },
@@ -235,7 +236,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   const pinPost = async () => {
     if (!currentUserId) return;
     const err = await togglePin({ ...u, pinned_at: pinned ? 'x' : null }, currentUserId);
-    if (err) { Alert.alert('Épinglés', err); return; }
+    if (err) { Alert.alert(t('feed.pinned'), err); return; }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setPinned(p => !p);
     onPinChanged?.();
@@ -254,17 +255,17 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
 
   const openMenu = () => {
     if (isMine) {
-      Alert.alert('Ton post', undefined, [
-        { text: 'Partager en story Instagram', onPress: shareStory },
-        { text: pinned ? 'Retirer des épinglés' : 'Épingler sur mon profil', onPress: pinPost },
-        { text: 'Supprimer le post', style: 'destructive', onPress: deletePost },
-        { text: 'Annuler', style: 'cancel' },
+      Alert.alert(t('feed.yourPost'), undefined, [
+        { text: t('feed.shareStory'), onPress: shareStory },
+        { text: pinned ? t('feed.unpin') : t('feed.pin'), onPress: pinPost },
+        { text: t('feed.deletePost'), style: 'destructive', onPress: deletePost },
+        { text: t('common.cancel'), style: 'cancel' },
       ]);
     } else {
       Alert.alert(uname, undefined, [
-        { text: 'Signaler le post', onPress: reportPost },
-        { text: `Bloquer ${uname}`, style: 'destructive', onPress: blockUser },
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('feed.reportPost'), onPress: reportPost },
+        { text: t('feed.blockTitle', { name: uname }), style: 'destructive', onPress: blockUser },
+        { text: t('common.cancel'), style: 'cancel' },
       ]);
     }
   };
@@ -273,7 +274,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   const avatarUrl: string | undefined = u.users?.avatar_url;
   const openAuthor = onOpenProfile && u.user_id ? () => onOpenProfile(u.user_id!) : undefined;
   const Avatar = () => (
-    <TouchableOpacity onPress={openAuthor} disabled={!openAuthor} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityLabel={`Profil de ${uname}`}>
+    <TouchableOpacity onPress={openAuthor} disabled={!openAuthor} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityLabel={t('feed.profileOf', { name: uname })}>
       {avatarUrl
         ? <Image source={{ uri: avatarUrl }} style={s.avImg} />
         : <View style={s.av}><Text style={s.avText}>{initial}</Text></View>}
@@ -285,16 +286,16 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
     const withUsers = u.with_users || [];
     if (!onOpenProfile || withUsers.length === 0) return;
     if (withUsers.length === 1) { onOpenProfile(withUsers[0].id); return; }
-    Alert.alert('Séance en duo', undefined, [
+    Alert.alert(t('feed.duoSession'), undefined, [
       ...withUsers.map(w => ({ text: w.full_name, onPress: () => onOpenProfile(w.id) })),
-      { text: 'Annuler', style: 'cancel' as const },
+      { text: t('common.cancel'), style: 'cancel' as const },
     ]);
   };
   const Duo = () => {
     const withUsers = u.with_users || [];
     if (!duoLabel) return null;
     return (
-      <TouchableOpacity style={[s.duoRow, duoValidated && { backgroundColor: '#242424', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }]} onPress={openDuo} disabled={!onOpenProfile} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6 }} accessibilityLabel={`Séance avec ${duoLabel}`}>
+      <TouchableOpacity style={[s.duoRow, duoValidated && { backgroundColor: '#242424', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }]} onPress={openDuo} disabled={!onOpenProfile} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6 }} accessibilityLabel={t('feed.sessionWith', { names: duoLabel })}>
         <View style={{ flexDirection: 'row' }}>
           {withUsers.slice(0, 3).map((w, i) => (
             w.avatar_url
@@ -303,8 +304,8 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
           ))}
         </View>
         {duoValidated
-          ? <Text style={s.duoText} numberOfLines={1}><Text style={s.duoNames}>✓ Duo validé</Text> avec <Text style={s.duoNames}>{duoLabel}</Text></Text>
-          : <Text style={s.duoText} numberOfLines={1}>avec <Text style={s.duoNames}>{duoLabel}</Text></Text>}
+          ? <Text style={s.duoText} numberOfLines={1}><Text style={s.duoNames}>{t('feed.duoValidated')}</Text> {t('feed.with')} <Text style={s.duoNames}>{duoLabel}</Text></Text>
+          : <Text style={s.duoText} numberOfLines={1}>{t('feed.with')} <Text style={s.duoNames}>{duoLabel}</Text></Text>}
       </TouchableOpacity>
     );
   };
@@ -312,11 +313,11 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       {/* Sur tes posts : le partage en story est visible, plus caché dans le menu. */}
       {isMine && (
-        <TouchableOpacity style={s.cardMenuBtn} onPress={shareStory} hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }} accessibilityLabel="Partager en story Instagram">
+        <TouchableOpacity style={s.cardMenuBtn} onPress={shareStory} hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }} accessibilityLabel={t('feed.shareStory')}>
           <Ionicons name="paper-plane-outline" size={18} color="rgba(255,255,255,0.85)" />
         </TouchableOpacity>
       )}
-      <TouchableOpacity style={s.cardMenuBtn} onPress={openMenu} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }} accessibilityLabel="Plus d'options">
+      <TouchableOpacity style={s.cardMenuBtn} onPress={openMenu} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }} accessibilityLabel={t('feed.moreOptions')}>
         <Ionicons name="ellipsis-horizontal" size={18} color="rgba(255,255,255,0.7)" />
       </TouchableOpacity>
     </View>
@@ -330,7 +331,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   // Un visage par personne (son emoji le plus récent), comme sur BeReal.
   const faces = reactors.filter((r, i) => reactors.findIndex(x => x.user_id === r.user_id) === i);
   const Stack = () => faces.length === 0 ? null : (
-    <TouchableOpacity style={s.brStack} onPress={() => setShowReactors(true)} activeOpacity={0.8} accessibilityLabel="Voir les réactions">
+    <TouchableOpacity style={s.brStack} onPress={() => setShowReactors(true)} activeOpacity={0.8} accessibilityLabel={t('feed.seeReactions')}>
       {faces.slice(0, STACK_MAX).map((r, i) => (
         <View key={r.user_id} style={[s.brStackItem, i > 0 && { marginLeft: -12 }, { zIndex: STACK_MAX - i }]}>
           {r.avatar_url
@@ -355,11 +356,11 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       {showQuick ? (
         <View style={s.brQuickBar}>
           {QUICK_REACTIONS.map(e => (
-            <TouchableOpacity key={e} onPress={() => toggleReaction(e)} style={[s.brQuickItem, myReactions.includes(e) && s.brQuickItemOn]} accessibilityLabel={`Réagir ${e}`}>
+            <TouchableOpacity key={e} onPress={() => toggleReaction(e)} style={[s.brQuickItem, myReactions.includes(e) && s.brQuickItemOn]} accessibilityLabel={t('feed.reactWith', { emoji: e })}>
               <Text style={s.brQuickEmoji}>{e}</Text>
             </TouchableOpacity>
           ))}
-          <TouchableOpacity onPress={() => { setShowQuick(false); setShowEmojiPicker(true); }} style={s.brQuickItem} accessibilityLabel="Plus d'emojis">
+          <TouchableOpacity onPress={() => { setShowQuick(false); setShowEmojiPicker(true); }} style={s.brQuickItem} accessibilityLabel={t('feed.moreEmojis')}>
             <Ionicons name="add" size={22} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -367,7 +368,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
         <View style={s.brBottomRow} pointerEvents="box-none">
           <Stack />
           <View style={{ flex: 1 }} pointerEvents="none" />
-          <TouchableOpacity style={[s.brReactBtn, !!myLast && s.brReactBtnMine]} onPress={() => { Haptics.selectionAsync().catch(() => {}); setShowEmojiPicker(false); setShowQuick(true); }} activeOpacity={0.8} accessibilityLabel="Réagir">
+          <TouchableOpacity style={[s.brReactBtn, !!myLast && s.brReactBtnMine]} onPress={() => { Haptics.selectionAsync().catch(() => {}); setShowEmojiPicker(false); setShowQuick(true); }} activeOpacity={0.8} accessibilityLabel={t('feed.react')}>
             {myLast
               ? <Floaty index={2} style={{ fontSize: 22 }}>{myLast}</Floaty>
               : <Ionicons name="happy-outline" size={24} color="#fff" />}
@@ -404,8 +405,8 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
         <View style={s.cardMeta}>
           <Text style={s.cardName} onPress={openAuthor} suppressHighlighting numberOfLines={1}>{uname}{closeAuthor ? ' ★' : ''}</Text>
           <Text style={s.brSub} numberOfLines={1}>
-            {u.objectives?.title && u.caption?.trim().toLowerCase() !== u.objectives.title.trim().toLowerCase() ? `${u.objectives.emoji || ''} ${u.objectives.title}`.trim() + ' · ' : ''}{timeAgo(u.created_at).replace('Il y a', 'il y a')}
-            {u.objectives?.visibility === 'close' ? '  ★ Proche' : ''}
+            {u.objectives?.title && u.caption?.trim().toLowerCase() !== u.objectives.title.trim().toLowerCase() ? `${u.objectives.emoji || ''} ${u.objectives.title}`.trim() + ' · ' : ''}{timeAgo(u.created_at, true)}
+            {u.objectives?.visibility === 'close' ? `  ★ ${t('vis.close')}` : ''}
           </Text>
           <Duo />
         </View>
@@ -431,24 +432,24 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       <View style={s.brBelow}>
         <Gauge pct={pctValue} label={progressLabel} />
         {u.photo_url && u.caption ? <Text style={s.feedCaption}>{u.caption}</Text> : null}
-        <TouchableOpacity onPress={() => setShowComments(true)} hitSlop={{ top: 6, bottom: 6 }} accessibilityLabel="Commenter">
+        <TouchableOpacity onPress={() => setShowComments(true)} hitSlop={{ top: 6, bottom: 6 }} accessibilityLabel={t('feed.comment')}>
           {commentCount > 0 && (
             <Text style={s.brCommentsLink}>
-              {commentCount === 1 ? 'Voir le commentaire' : `Voir les ${commentCount} commentaires`}
+              {tp('feed.seeComments', commentCount)}
             </Text>
           )}
-          <Text style={s.brAddComment}>Ajouter un commentaire…</Text>
+          <Text style={s.brAddComment}>{t('feed.addComment')}</Text>
         </TouchableOpacity>
         {canDuoReply && (duoDone ? (
           <View style={[s.duoReplyBtn, s.duoReplyDone]}>
-            <Text style={s.duoReplyDoneText}>✓ Ta séance en duo est postée</Text>
+            <Text style={s.duoReplyDoneText}>{t('feed.duoPosted')}</Text>
           </View>
         ) : (
           <TouchableOpacity style={s.duoReplyBtn} onPress={() => onDuoReply!(u.user_id!)} activeOpacity={0.85}>
             <Text style={s.actionTextDuo}>
               {duoLeftMin > 0
-                ? `🤝 Valide ton duo avec ${uname.split(' ')[0]} : encore ${duoLeftMin} min`
-                : `🤝 Poster ta séance (duo hors délai)`}
+                ? t('feed.duoValidateLeft', { name: uname.split(' ')[0], n: duoLeftMin })
+                : t('feed.duoLate')}
             </Text>
           </TouchableOpacity>
         ))}
@@ -470,8 +471,8 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       <Modal visible={showReactors} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowReactors(false)}>
         <View style={s.modalContainer}>
           <View style={s.modalHeader}>
-            <TouchableOpacity onPress={() => setShowReactors(false)}><Text style={s.modalCancel}>Fermer</Text></TouchableOpacity>
-            <Text style={s.modalTitle}>Réactions</Text>
+            <TouchableOpacity onPress={() => setShowReactors(false)}><Text style={s.modalCancel}>{t('common.close')}</Text></TouchableOpacity>
+            <Text style={s.modalTitle}>{t('feed.reactions')}</Text>
             <View style={{ width: 50 }} />
           </View>
           <FlatList

@@ -5,6 +5,7 @@ import { StatBubble, SectionHeader, WeekTracker, VIS_ICON, fmtNum, isCompleted }
 import { Objective } from '../lib/types';
 import { ALL_DAYS, GUTTER, hasSchedule, daysLabel } from '../constants';
 import { F } from '../styles';
+import { t, unitLabel } from '../i18n';
 
 // L'onglet des objectifs dans le design du profil : bulle de verre à 3 zones, titres en gras, cartes de verre
 // avec la valeur en grand, la semaine en pastilles L M M J V S D, un bouton « Mise à jour » blanc.
@@ -49,7 +50,7 @@ function ObjectiveGlassCard({ o, done, activity, onUpdate, onEdit, onDelete }: {
             <View style={{ flex: 1, paddingRight: 12 }}>
               <Text style={{ color: '#fff', fontSize: 38, fontFamily: F.black, letterSpacing: -1.2 }} numberOfLines={1}>
                 {inPct ? `${pct}%` : fmtNum(o.current_value)}
-                {!inPct && <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 17, fontFamily: F.semibold, letterSpacing: 0 }}>{` / ${fmtNum(o.target_value)} ${o.unit}`}</Text>}
+                {!inPct && <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 17, fontFamily: F.semibold, letterSpacing: 0 }}>{` / ${fmtNum(o.target_value)} ${unitLabel(o.unit)}`}</Text>}
               </Text>
             </View>
             <Glass radius={28} variant="clear" style={{ width: 56, height: 56, alignItems: 'center', justifyContent: 'center' }}>
@@ -76,14 +77,14 @@ function ObjectiveGlassCard({ o, done, activity, onUpdate, onEdit, onDelete }: {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18 }}>
             {done ? (
               <View style={{ flex: 1, height: 46, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#fff', fontSize: 14, fontFamily: F.extrabold }}>🏆 Objectif atteint</Text>
+                <Text style={{ color: '#fff', fontSize: 14, fontFamily: F.extrabold }}>{t('objective.reachedBadge')}</Text>
               </View>
             ) : (
               <TouchableOpacity onPress={onUpdate} activeOpacity={0.85} style={{ flex: 1, height: 46, borderRadius: 16, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>+ Mise à jour</Text>
+                <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>{t('main.addUpdate')}</Text>
               </TouchableOpacity>
             )}
-            <MoreButton onPress={onEdit} label={`Modifier ${o.title}`} />
+            <MoreButton onPress={onEdit} label={t('main.editObj', { title: o.title })} />
           </View>
         </View>
       </Glass>
@@ -117,25 +118,25 @@ export function ObjectivesTab({ objectives, activity, streak, refreshing, onRefr
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1a1a1a" />}
     >
       <View style={{ paddingHorizontal: GUTTER, paddingTop: 8 }}>
-        <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontFamily: F.bold, letterSpacing: 1.5 }}>MES OBJECTIFS</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontFamily: F.bold, letterSpacing: 1.5 }}>{t('objective.myObjectives')}</Text>
         <Text style={{ color: '#fff', fontSize: 36, fontFamily: F.black, letterSpacing: -1.2, marginTop: 4 }}>
-          {ongoing.length} en cours
+          {t('objective.ongoingCount', { n: ongoing.length })}
         </Text>
       </View>
 
       <StatBubble tinted items={[
-        { value: String(objectives.length), label: 'Actifs' },
-        { value: `${streak}j`, label: 'Streak' },
-        { value: `${avg}%`, label: 'Moy.' },
+        { value: String(objectives.length), label: t('main.statActive') },
+        { value: t('days.durationDays', { n: streak }), label: t('main.statStreak') },
+        { value: `${avg}%`, label: t('main.statAvg') },
       ]} />
 
       <TouchableOpacity onPress={onAdd} activeOpacity={0.85} style={{ marginHorizontal: GUTTER, marginTop: 14, height: 50, borderRadius: 16, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }}>+ Ajouter un objectif</Text>
+        <Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }}>{t('main.addObjective')}</Text>
       </TouchableOpacity>
 
       {ongoing.length > 0 && (
         <View style={{ paddingHorizontal: GUTTER, marginTop: 26 }}>
-          <SectionHeader title="En cours" count={ongoing.length} />
+          <SectionHeader title={t('profile.ongoing')} count={ongoing.length} />
           {ongoing.map(o => (
             <ObjectiveGlassCard key={o.id} o={o} done={false} activity={activity[o.id] || none} onUpdate={onUpdate} onEdit={() => onEdit(o)} onDelete={() => onDelete(o)} />
           ))}
@@ -144,7 +145,7 @@ export function ObjectivesTab({ objectives, activity, streak, refreshing, onRefr
 
       {achieved.length > 0 && (
         <View style={{ paddingHorizontal: GUTTER, marginTop: 10 }}>
-          <SectionHeader title="Réussis" count={achieved.length} />
+          <SectionHeader title={t('profileSec.achieved')} count={achieved.length} />
           {achieved.map(o => (
             <ObjectiveGlassCard key={o.id} o={o} done activity={activity[o.id] || none} onUpdate={onUpdate} onEdit={() => onEdit(o)} onDelete={() => onDelete(o)} />
           ))}
@@ -152,7 +153,7 @@ export function ObjectivesTab({ objectives, activity, streak, refreshing, onRefr
       )}
 
       <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, textAlign: 'center', marginTop: 4, paddingHorizontal: 24 }}>
-        Touche « … » pour modifier un objectif. Appui long pour le supprimer.
+        {t('main.objHint')}
       </Text>
     </ScrollView>
   );

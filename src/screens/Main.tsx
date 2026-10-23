@@ -29,6 +29,7 @@ import { validatedDuoIds } from '../lib/duo';
 import { ObjectiveEditSheet } from '../components/ObjectiveEditSheet';
 import { ObjectivesTab } from '../components/ObjectivesTab';
 import { useCloseCircle } from '../lib/closeCircle';
+import { t, unitLabel } from '../i18n';
 
 const PAGE_SIZE = 20;
 const FEED_WINDOW_HOURS = 24;
@@ -330,17 +331,17 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   // Suppression d'objectif — supprime aussi les updates liées (au cas où la BDD n'a pas ON DELETE CASCADE)
   const handleDeleteObjective = (id: string, title: string) => {
     Alert.alert(
-      "Supprimer l'objectif",
-      `Supprimer "${title}" ? Toutes ses mises à jour seront aussi supprimées.`,
+      t('main.deleteObjTitle'),
+      t('main.deleteObjText', { title }),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             await supabase.from('updates').delete().eq('objective_id', id);
             const { error } = await supabase.from('objectives').delete().eq('id', id);
-            if (error) { Alert.alert('Erreur', frError(error)); return; }
+            if (error) { Alert.alert(t('common.error'), frError(error)); return; }
             fetchObjectives(true);
             if (userId) loadFeedPage(0, userId, true);
           }
@@ -439,8 +440,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
 
   const activationHeader = (
     <View style={{ backgroundColor: '#111', borderRadius: 20, padding: 18, marginBottom: 14 }}>
-      <Text style={{ color: '#fff', fontSize: 17, fontFamily: F.bold, marginBottom: 2 }}>Bienvenue sur Reiz</Text>
-      <Text style={{ color: '#888', fontSize: 13, marginBottom: 8 }}>Lance ton cercle en 2 étapes. Sans ça, ton feed reste vide.</Text>
+      <Text style={{ color: '#fff', fontSize: 17, fontFamily: F.bold, marginBottom: 2 }}>{t('main.welcomeTitle')}</Text>
+      <Text style={{ color: '#888', fontSize: 13, marginBottom: 8 }}>{t('main.welcomeSub')}</Text>
 
       <TouchableOpacity
         activeOpacity={0.8}
@@ -450,9 +451,9 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         <StepMarker done={hasObjective} step={1} />
         <View style={{ flex: 1 }}>
           <Text style={{ color: hasObjective ? '#666' : '#fff', fontSize: 15, fontFamily: F.bold, textDecorationLine: hasObjective ? 'line-through' : 'none' }}>
-            Crée ton premier objectif
+            {t('main.stepObjective')}
           </Text>
-          <Text style={{ color: '#777', fontSize: 12, marginTop: 1 }}>Ce que ton cercle va suivre chaque jour</Text>
+          <Text style={{ color: '#777', fontSize: 12, marginTop: 1 }}>{t('main.stepObjectiveSub')}</Text>
         </View>
         {!hasObjective && <Ionicons name="chevron-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />}
       </TouchableOpacity>
@@ -465,9 +466,9 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         <StepMarker done={hasFriend} step={2} />
         <View style={{ flex: 1 }}>
           <Text style={{ color: hasFriend ? '#666' : '#fff', fontSize: 15, fontFamily: F.bold, textDecorationLine: hasFriend ? 'line-through' : 'none' }}>
-            {hasFriend ? `Ton cercle est lancé (${friendCount})` : 'Invite ton cercle (3 proches min.)'}
+            {hasFriend ? t('main.circleLaunched', { n: friendCount }) : t('main.inviteCircle')}
           </Text>
-          <Text style={{ color: '#777', fontSize: 12, marginTop: 1 }}>Reiz ne marche que si tes proches te regardent</Text>
+          <Text style={{ color: '#777', fontSize: 12, marginTop: 1 }}>{t('main.inviteCircleSub')}</Text>
         </View>
         {!hasFriend && <Ionicons name="chevron-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />}
       </TouchableOpacity>
@@ -513,7 +514,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             onPress={() => setShowActivity(true)}
             style={s.headerIconBtn}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel={unreadCount > 0 ? `Activité, ${unreadCount} nouveautés` : 'Activité'}
+            accessibilityLabel={unreadCount > 0 ? t('main.activityUnread', { n: unreadCount }) : t('main.activity')}
           >
             <Ionicons name={unreadCount > 0 ? 'heart' : 'heart-outline'} size={22} color="#fff" />
             {unreadCount > 0 && (
@@ -560,8 +561,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 <FeedSkeleton />
               ) : (
                 <View style={{ paddingTop: 40, alignItems: 'center' }}>
-                  <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>Rien dans les dernières 24 h</Text>
-                  <Text style={{ color: '#777', marginTop: 4, fontSize: 12 }}>Sois le premier de ton cercle à publier aujourd'hui.</Text>
+                  <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>{t('main.feedEmpty')}</Text>
+                  <Text style={{ color: '#777', marginTop: 4, fontSize: 12 }}>{t('main.feedEmptySub')}</Text>
                 </View>
               )
             }
@@ -570,7 +571,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 {loadingMore ? <ActivityIndicator color="#fff" /> : null}
                 {!loadingMore && !hasMore && updates.length > 0 ? (
                   <Text style={{ color: '#666', fontSize: 12, textAlign: 'center', paddingHorizontal: 24 }}>
-                    Tu as tout vu pour aujourd'hui. Les posts plus anciens sont sur les profils.
+                    {t('main.feedEnd')}
                   </Text>
                 ) : null}
               </View>
@@ -606,9 +607,9 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
           </View>
         ) : objectives.length === 0 ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingBottom: bottomPad }}>
-            <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold, marginBottom: 20 }}>Aucun objectif pour l'instant</Text>
+            <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold, marginBottom: 20 }}>{t('main.noObjective')}</Text>
             <TouchableOpacity style={s.emptyStateBtn} onPress={() => setShowCreateModal(true)}>
-              <Text style={s.emptyStateBtnText}>+ Ajouter un objectif</Text>
+              <Text style={s.emptyStateBtnText}>{t('main.addObjective')}</Text>
             </TouchableOpacity>
           </View>
         ) : GLASS_OBJECTIVES ? (
@@ -631,15 +632,15 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1a1a1a" />}
         >
           <View style={s.statsRow}>
-            <View style={s.statPill}><Text style={s.statVal}>{objectives.length}</Text><Text style={s.statLbl}>Actifs</Text></View>
-            <View style={s.statPill}><Text style={s.statVal}>{streak}j</Text><Text style={s.statLbl}>Streak</Text></View>
+            <View style={s.statPill}><Text style={s.statVal}>{objectives.length}</Text><Text style={s.statLbl}>{t('main.statActive')}</Text></View>
+            <View style={s.statPill}><Text style={s.statVal}>{t('days.durationDays', { n: streak })}</Text><Text style={s.statLbl}>{t('main.statStreak')}</Text></View>
             <View style={s.statPill}>
               <Text style={s.statVal}>{Math.round(objectives.reduce((acc, o) => acc + progressPct(o), 0) / objectives.length)}%</Text>
-              <Text style={s.statLbl}>Moy.</Text>
+              <Text style={s.statLbl}>{t('main.statAvg')}</Text>
             </View>
           </View>
           <TouchableOpacity style={s.addObjBtn} onPress={() => setShowCreateModal(true)}>
-            <Text style={s.addObjBtnText}>+ Ajouter un objectif</Text>
+            <Text style={s.addObjBtnText}>{t('main.addObjective')}</Text>
           </TouchableOpacity>
           {objectives.map((o) => {
               const pct = progressPct(o);
@@ -652,10 +653,10 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 >
                   <View style={s.objCardTop}>
                     <Text style={s.objCardName} numberOfLines={1}>{o.emoji} {o.title}</Text>
-                    <TouchableOpacity onPress={() => setEditing(o)} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityLabel={`Modifier ${o.title}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TouchableOpacity onPress={() => setEditing(o)} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityLabel={t('main.editObj', { title: o.title })} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <View style={[s.visBadge, o.visibility === 'public' && s.visBadgePublic]}>
                         <Text style={[s.visText, o.visibility === 'public' && s.visTextPublic]}>
-                          {o.visibility === 'public' ? 'Public' : o.visibility === 'friends' ? 'Cercle' : o.visibility === 'close' ? 'Proche' : 'Privé'}
+                          {o.visibility === 'public' ? t('vis.public') : o.visibility === 'friends' ? t('vis.friends') : o.visibility === 'close' ? t('vis.close') : t('vis.private')}
                         </Text>
                       </View>
                       <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#1e1e1e', alignItems: 'center', justifyContent: 'center' }}>
@@ -663,7 +664,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                       </View>
                     </TouchableOpacity>
                   </View>
-                  <Text style={s.objCardSub}>{o.unit === '%' ? `${pct} %` : `${o.current_value} ${o.unit} sur ${o.target_value} ${o.unit}`}</Text>
+                  <Text style={s.objCardSub}>{o.unit === '%' ? `${pct} %` : t('main.valueOf', { cur: o.current_value, target: o.target_value, unit: unitLabel(o.unit) })}</Text>
                   {hasSchedule(o.training_days) && <Text style={[s.objCardSub, { marginTop: 2 }]}>📅 {daysLabel(o.training_days, true)}</Text>}
                   <View style={s.objProgressRow}>
                     <View style={s.objProgressBg}>
@@ -672,7 +673,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                     <Text style={s.objPct}>{o.unit === '%' ? `${pct}%` : `${o.current_value}/${o.target_value}`}</Text>
                   </View>
                   <TouchableOpacity style={s.updateBtn} onPress={() => onPost()}>
-                    <Text style={s.updateBtnText}>+ Mise à jour</Text>
+                    <Text style={s.updateBtnText}>{t('main.addUpdate')}</Text>
                   </TouchableOpacity>
                 </Pressable>
               );
@@ -680,7 +681,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
           }
           {/* Hint suppression */}
           <Text style={{ color: '#666', fontSize: 11, textAlign: 'center', marginBottom: 8 }}>
-            Touche « … » pour modifier un objectif. Appui long pour le supprimer
+            {t('main.objHint')}
           </Text>
           <View style={{ height: bottomPad }} />
         </ScrollView>

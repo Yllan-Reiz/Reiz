@@ -1,25 +1,56 @@
 import { supabase } from './supabase';
+import { t, formatNumber, type TKey } from '../i18n';
 
-// Traduit les erreurs techniques (Supabase, réseau) en messages français lisibles.
+// Traduit les erreurs techniques (Supabase, réseau) en messages lisibles, dans la langue de l'app.
 export function frError(error: { message?: string } | null | undefined): string {
   const m = error?.message || '';
-  if (/invalid login credentials/i.test(m)) return 'Email ou mot de passe incorrect.';
-  if (/email not confirmed/i.test(m)) return 'Confirme ton email avant de te connecter (vérifie ta boîte mail).';
-  if (/already registered|already been registered/i.test(m)) return 'Un compte existe déjà avec cet email.';
-  if (/password should be at least/i.test(m)) return 'Le mot de passe doit faire au moins 6 caractères.';
-  if (/network request failed|failed to fetch|fetch failed/i.test(m)) return 'Pas de connexion. Vérifie ton réseau et réessaie.';
-  if (/for security purposes/i.test(m)) return 'Trop de tentatives. Attends quelques secondes et réessaie.';
-  if (/row-level security/i.test(m)) return "Action non autorisée.";
-  if (/duplicate key/i.test(m)) return 'Cet élément existe déjà.';
-  return 'Une erreur est survenue. Réessaie.';
+  if (/invalid login credentials/i.test(m)) return t('errors.badLogin');
+  if (/email not confirmed/i.test(m)) return t('errors.emailNotConfirmed');
+  if (/already registered|already been registered/i.test(m)) return t('errors.alreadyRegistered');
+  if (/password should be at least/i.test(m)) return t('errors.passwordTooShort6');
+  if (/network request failed|failed to fetch|fetch failed/i.test(m)) return t('errors.network');
+  if (/for security purposes/i.test(m)) return t('errors.tooManyAttempts');
+  if (/row-level security/i.test(m)) return t('errors.notAllowed');
+  if (/duplicate key/i.test(m)) return t('errors.duplicate');
+  return t('errors.generic');
 }
 
-export function timeAgo(dateStr: string) {
+// lower : « il y a 3 min » au milieu d'une phrase.
+export function timeAgo(dateStr: string, lower = false) {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (diff < 60) return "À l'instant";
-  if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`;
-  return `Il y a ${Math.floor(diff / 86400)}j`;
+  const s = diff < 60 ? t('time.justNow')
+    : diff < 3600 ? t('time.minutesAgo', { n: Math.floor(diff / 60) })
+    : diff < 86400 ? t('time.hoursAgo', { n: Math.floor(diff / 3600) })
+    : t('time.daysAgo', { n: Math.floor(diff / 86400) });
+  return lower ? s.charAt(0).toLowerCase() + s.slice(1) : s;
+}
+
+// Nombre à virgule dans la langue de l'app (251,5 en français, 251.5 en anglais).
+export const num = (n: number) => formatNumber(n, { maximumFractionDigits: 1 });
+
+// Raisons de suggestion écrites en français par le serveur (discover_people) : « Sport : Hyrox »,
+// « Tag : 🥊 Boxe », « Objectif : Courir 10 km ». On les réécrit dans la langue de l'app.
+const SPORT_IDS: Record<string, string> = {
+  Musculation: 'musculation', 'Street Workout': 'street-workout', Hyrox: 'hyrox', Running: 'running',
+  Cyclisme: 'cyclisme', 'Sports de combat': 'combat', Natation: 'natation', Autre: 'autre',
+};
+export function sportName(frName: string): string {
+  const id = SPORT_IDS[frName];
+  return id ? t(`sports.${id}.name` as TKey) : frName;
+}
+export function localizeReason(reason?: string | null): string {
+  if (!reason) return '';
+  const m = reason.match(/^(Sport|Tag|Objectif) : (.*)$/);
+  if (!m) return reason;
+  if (m[1] === 'Sport') return t('friends.reasonSport', { sport: sportName(m[2]) });
+  if (m[1] === 'Tag') return t('friends.reasonTag', { tag: m[2] });
+  return t('friends.reasonObjective', { title: m[2] });
+}
+
+// « Eden », « Eden et Logan », « Eden, Logan et Théo » dans la langue de l'app.
+export function andList(names: string[]): string {
+  if (names.length <= 1) return names[0] || '';
+  return t('common.andJoin', { list: names.slice(0, -1).join(', '), last: names[names.length - 1] });
 }
 
 export async function calculateStreak(userId: string): Promise<number> {

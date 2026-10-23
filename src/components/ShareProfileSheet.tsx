@@ -12,6 +12,7 @@ import { GlassSurface } from './GlassSurface';
 import { QrCode } from './QrCode';
 import { APP_STORE_URL } from '../constants';
 import { F } from '../styles';
+import { t } from '../i18n';
 
 // La carte de partage de ton profil (inspirée de BeReal) : ta photo, ton nom, ton @pseudo et un QR code qui ouvre
 // Reiz sur l'App Store. En dessous, les raccourcis de partage : Instagram, WhatsApp, Messages, copier, et la feuille de partage.
@@ -25,7 +26,7 @@ function clipboard(): any | null {
 }
 
 export const inviteMessage = (username?: string | null) =>
-  `Rejoins-moi sur Reiz, on se motive ensemble 💪${username ? `\nAjoute-moi : @${username}` : ''}\n${APP_STORE_URL}`;
+  `${t('shareSheet.message')}${username ? `\n${t('shareSheet.addMe', { username })}` : ''}\n${APP_STORE_URL}`;
 
 export function ShareProfileSheet({ visible, onClose, name, username, avatar }: {
   visible: boolean;
@@ -48,7 +49,7 @@ export function ShareProfileSheet({ visible, onClose, name, username, avatar }: 
   useEffect(() => { if (!visible) { setCopied(false); toast.setValue(0); } }, [visible, toast]);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
-  const showCopied = (text = 'Copié !') => {
+  const showCopied = (text = t('shareSheet.copied')) => {
     setToastText(text);
     setCopied(true);
     Animated.spring(toast, { toValue: 1, useNativeDriver: true, damping: 16, stiffness: 220 }).start();
@@ -71,10 +72,10 @@ export function ShareProfileSheet({ visible, onClose, name, username, avatar }: 
   const shareInstagram = async () => {
     Haptics.selectionAsync().catch(() => {});
     const c = clipboard();
-    if (c) { await c.setStringAsync(APP_STORE_URL).catch(() => {}); showCopied('Lien copié pour ta story'); }
+    if (c) { await c.setStringAsync(APP_STORE_URL).catch(() => {}); showCopied(t('shareSheet.linkCopied')); }
     try {
       const uri = await captureRef(cardRef, { format: 'png', quality: 1, result: 'tmpfile' });
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: 'Partager sur Instagram' });
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: t('shareSheet.shareInstagram') });
     } catch {
       Share.share({ message }).catch(() => {});
     }
@@ -85,8 +86,8 @@ export function ShareProfileSheet({ visible, onClose, name, username, avatar }: 
     { label: 'Instagram', icon: 'logo-instagram', bg: '#d62976', gradient: ['#feda75', '#d62976', '#4f5bd5'], onPress: shareInstagram },
     { label: 'WhatsApp', icon: 'logo-whatsapp', bg: '#25D366', onPress: () => openApp(`whatsapp://send?text=${encodeURIComponent(message)}`) },
     { label: 'Messages', icon: 'chatbubble', bg: '#34C759', onPress: () => openApp(`sms:${Platform.OS === 'ios' ? '&' : '?'}body=${encodeURIComponent(message)}`) },
-    { label: 'Copier', icon: 'link', bg: 'rgba(255,255,255,0.14)', onPress: () => copy() },
-    { label: 'Plus', icon: 'share-outline', bg: 'rgba(255,255,255,0.14)', onPress: more },
+    { label: t('story.copy'), icon: 'link', bg: 'rgba(255,255,255,0.14)', onPress: () => copy() },
+    { label: t('common.more'), icon: 'share-outline', bg: 'rgba(255,255,255,0.14)', onPress: more },
   ];
 
   return (
@@ -98,7 +99,7 @@ export function ShareProfileSheet({ visible, onClose, name, username, avatar }: 
         <LinearGradient colors={['rgba(10,10,10,0.35)', 'rgba(10,10,10,0.7)']} style={StyleSheet.absoluteFill} />
 
         <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, flexDirection: 'row' }}>
-          <TouchableOpacity onPress={onClose} accessibilityLabel="Fermer" hitSlop={10}>
+          <TouchableOpacity onPress={onClose} accessibilityLabel={t('common.close')} hitSlop={10}>
             <GlassSurface radius={24} variant="clear" style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name="close" size={24} color="#fff" />
             </GlassSurface>
@@ -114,7 +115,7 @@ export function ShareProfileSheet({ visible, onClose, name, username, avatar }: 
                 <QrCode value={APP_STORE_URL} size={qrSize} logo={require('../../assets/ecriture-reiz-blanc.png')} />
               </View>
               <Text style={{ color: '#8a8a8a', fontSize: 12, fontFamily: F.semibold, marginTop: 16, textAlign: 'center', paddingHorizontal: 20 }}>
-                Scanne pour télécharger Reiz, puis ajoute {username ? `@${username}` : 'moi'}
+                {t('shareSheet.scan', { who: username ? `@${username}` : t('shareSheet.me') })}
               </Text>
             </View>
             {/* La photo dépasse du haut de la carte. */}

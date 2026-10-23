@@ -5,6 +5,7 @@ import { frError } from '../lib/helpers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SocialAuthButtons } from '../components/SocialAuthButtons';
 import { s } from '../styles';
+import { t } from '../i18n';
 
 export function Splash({ onNext }: { onNext: () => void }) {
   const [showLogin, setShowLogin] = useState(false);
@@ -14,11 +15,11 @@ export function Splash({ onNext }: { onNext: () => void }) {
   const insets = useSafeAreaInsets();
 
   const handleLogin = async () => {
-    if (!email || !password) { Alert.alert('Erreur', 'Remplis tous les champs !'); return; }
+    if (!email || !password) { Alert.alert(t('common.error'), t('common.fillAll')); return; }
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) Alert.alert('Erreur', frError(error));
+    if (error) Alert.alert(t('common.error'), frError(error));
   };
 
   if (showLogin) {
@@ -39,24 +40,24 @@ export function Splash({ onNext }: { onNext: () => void }) {
             <Text style={s.splashTagline}>RISE TO YOUR GOALS</Text>
           </View>
           <View style={s.inputBlock}>
-            <Text style={s.inputLabel}>EMAIL</Text>
-            <TextInput style={s.inputField} placeholder="ton@email.com" placeholderTextColor="#666" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
+            <Text style={s.inputLabel}>{t('auth.emailLabel')}</Text>
+            <TextInput style={s.inputField} placeholder={t('auth.emailPlaceholder')} placeholderTextColor="#666" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
           </View>
           <View style={s.inputBlock}>
-            <Text style={s.inputLabel}>MOT DE PASSE</Text>
+            <Text style={s.inputLabel}>{t('auth.passwordLabel')}</Text>
             <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#666" value={password} onChangeText={setPassword} secureTextEntry maxLength={72} />
           </View>
           <TouchableOpacity style={[s.btn, { marginTop: 4 }, loading && s.btnDisabled]} onPress={loading ? undefined : handleLogin}>
-            {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Se connecter →</Text>}
+            {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>{t('auth.signInArrow')}</Text>}
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24, marginBottom: 14 }}>
             <View style={{ flex: 1, height: 1, backgroundColor: '#222' }} />
-            <Text style={{ color: '#666', fontSize: 12 }}>ou</Text>
+            <Text style={{ color: '#666', fontSize: 12 }}>{t('common.or')}</Text>
             <View style={{ flex: 1, height: 1, backgroundColor: '#222' }} />
           </View>
           <SocialAuthButtons mode="signin" />
           <TouchableOpacity style={{ marginTop: 16, paddingVertical: 8, alignItems: 'center' }} onPress={() => setShowLogin(false)}>
-            <Text style={s.splashLogin}>← Retour</Text>
+            <Text style={s.splashLogin}>{t('common.backArrow')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -73,11 +74,11 @@ export function Splash({ onNext }: { onNext: () => void }) {
       </View>
       <View style={s.splashBottom}>
         <TouchableOpacity style={s.btn} onPress={onNext}>
-          <Text style={s.btnText}>Commencer →</Text>
+          <Text style={s.btnText}>{t('auth.start')}</Text>
         </TouchableOpacity>
         <SocialAuthButtons />
         <TouchableOpacity style={{ marginTop: 12, paddingVertical: 10, alignItems: 'center' }} onPress={() => setShowLogin(true)}>
-          <Text style={s.splashLogin}>Déjà un compte ? <Text style={s.splashLoginLink}>Se connecter</Text></Text>
+          <Text style={s.splashLogin}>{t('auth.haveAccount')} <Text style={s.splashLoginLink}>{t('auth.signIn')}</Text></Text>
         </TouchableOpacity>
       </View>
     </View>

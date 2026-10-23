@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { View, Image } from 'react-native';
 import qrcode from 'qrcode-generator';
+import { t } from '../i18n';
 
 // QR code dessiné en simples vues (pas de module natif) : des points ronds comme BeReal, les trois repères
 // en carrés arrondis, et le logo Reiz au centre. Correction d'erreur « H » : le logo peut cacher le milieu.
@@ -33,7 +34,7 @@ export function QrCode({ value, size, color = '#000', logo }: { value: string; s
   );
 
   return (
-    <View style={{ width: size, height: size }} accessible accessibilityLabel="QR code de ton profil Reiz">
+    <View style={{ width: size, height: size }} accessible accessibilityLabel={t('shareSheet.qrA11y')}>
       {dots.map(({ r, c }) => (
         <View key={`${r}.${c}`} style={{ position: 'absolute', top: r * cell + (cell - dot) / 2, left: c * cell + (cell - dot) / 2, width: dot, height: dot, borderRadius: dot / 2, backgroundColor: color }} />
       ))}

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { signOne, isVideo } from './storage';
+import { t } from '../i18n';
 
 // Un duo « validé » = deux séances, une de chacun, où chacun identifie l'autre, postées à
 // moins d'1 heure d'écart : le but est de s'entraîner vraiment ensemble. Tout se calcule à partir des posts existants (with_user_ids) :
@@ -64,7 +65,7 @@ export async function loadDuoStats(me: string, friend: string): Promise<DuoStats
 }
 
 /** « 3e duo », « 1er duo » : pour la célébration. */
-export const ordinalDuo = (n: number) => (n === 1 ? '1er duo' : `${n}e duo`);
+export const ordinalDuo = (n: number) => (n === 1 ? t('duo.first') : t('duo.nth', { n }));
 
 /** Paires de posts d'un fil qui forment un duo validé (les deux ids sont renvoyés). */
 export function validatedDuoIds(posts: { id: string; user_id?: string; created_at: string; with_user_ids?: string[] }[]): Set<string> {

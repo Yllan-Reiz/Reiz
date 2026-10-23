@@ -8,6 +8,7 @@ import {
   announcePresence, ANNOUNCE_MESSAGES, AUTO_CONSENT, MAX_PLACES, COOLDOWN_HOURS, AUTO_SUPPORTED,
 } from '../lib/presence';
 import { F } from '../styles';
+import { t } from '../i18n';
 
 // Réglages > « Prévenir mon cercle proche ». Rien ne démarre sans un « Continuer » explicite
 // de l'utilisateur : l'écran d'explication passe AVANT la demande d'autorisation du système.
@@ -39,16 +40,16 @@ export function PresencePanel() {
     Alert.alert(
       ...AUTO_CONSENT,
       [
-        { text: 'Pas maintenant', style: 'cancel' },
+        { text: t('common.notNow'), style: 'cancel' },
         {
-          text: 'Continuer',
+          text: t('common.continue'),
           onPress: async () => {
             const r = await setAutoEnabled(true);
             await reload();
             if (r === 'denied') {
-              Alert.alert('Autorisation refusée', "Pour activer la détection, choisis « Toujours » dans les réglages de localisation de Reiz.", [
-                { text: 'Annuler', style: 'cancel' },
-                { text: 'Ouvrir les réglages', onPress: openSettings },
+              Alert.alert(t('presenceCard.permRefusedTitle'), t('presenceCard.permRefusedText'), [
+                { text: t('common.cancel'), style: 'cancel' },
+                { text: t('common.openSettings'), onPress: openSettings },
               ]);
             }
           },
@@ -67,13 +68,13 @@ export function PresencePanel() {
       if (!auto) toggleAuto(true);
     } catch (e: any) {
       if (e?.message === 'denied') {
-        Alert.alert('Localisation refusée', "Autorise la localisation de Reiz dans les réglages pour enregistrer ce lieu.", [
-          { text: 'Annuler', style: 'cancel' }, { text: 'Ouvrir les réglages', onPress: openSettings },
+        Alert.alert(t('presenceCard.locRefusedTitle'), t('presenceCard.locRefusedText'), [
+          { text: t('common.cancel'), style: 'cancel' }, { text: t('common.openSettings'), onPress: openSettings },
         ]);
       } else if (e?.message === 'max') {
-        Alert.alert('Lieux', `${MAX_PLACES} lieux maximum. Supprime-en un d'abord.`);
+        Alert.alert(t('presenceCard.placesTitle'), t('presencePanel.placesMax', { n: MAX_PLACES }));
       } else {
-        Alert.alert('Erreur', "Impossible de lire ta position. Réessaie dehors ou près d'une fenêtre.");
+        Alert.alert(t('common.error'), t('presenceCard.noPosition'));
       }
     }
     setBusy(false);
@@ -81,13 +82,13 @@ export function PresencePanel() {
   };
 
   const delPlace = (p: Place) =>
-    Alert.alert(`Supprimer « ${p.label} » ?`, 'Reiz ne te détectera plus à cet endroit.', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Supprimer', style: 'destructive', onPress: async () => { await removePlace(p.id); reload(); } },
+    Alert.alert(t('presencePanel.deleteTitle', { label: p.label }), t('presencePanel.deleteText'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => { await removePlace(p.id); reload(); } },
     ]);
 
   const notifyNow = async () => {
-    const r = await announcePresence('la salle', 'manual');
+    const r = await announcePresence(t('presence.defaultPlace'), 'manual');
     Alert.alert(...ANNOUNCE_MESSAGES[r]);
   };
 
@@ -97,22 +98,22 @@ export function PresencePanel() {
     <View style={{ padding: 16, paddingBottom: 40 }}>
       <GlassSurface radius={24}>
         <View style={{ padding: 18 }}>
-          <Text style={{ color: '#fff', fontSize: 19, fontFamily: F.black, letterSpacing: -0.4 }}>Prévenir mon cercle proche</Text>
+          <Text style={{ color: '#fff', fontSize: 19, fontFamily: F.black, letterSpacing: -0.4 }}>{t('presencePanel.title')}</Text>
           <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14, lineHeight: 21, fontFamily: F.regular, marginTop: 8 }}>
-            Quand tu arrives à ta salle ou à ton terrain, ton cercle proche reçoit « tu es à la salle » et peut venir t'y rejoindre.
+            {t('presencePanel.intro')}
           </Text>
           {(AUTO_SUPPORTED ? [
-            'Facultatif : tu choisis les lieux.',
-            'Tes coordonnées restent sur ton téléphone. Elles ne sont jamais envoyées.',
-            `Seul ton cercle proche est prévenu, une fois toutes les ${COOLDOWN_HOURS} heures au maximum.`,
-            'Tu peux tout désactiver à tout moment.',
+            t('presencePanel.optional'),
+            t('presenceCard.promise1'),
+            t('presenceCard.promise2', { n: COOLDOWN_HOURS }),
+            t('presencePanel.canDisable'),
           ] : [
-            'Un simple bouton : aucune localisation n\'est utilisée.',
-            `Seul ton cercle proche est prévenu, une fois toutes les ${COOLDOWN_HOURS} heures au maximum.`,
-          ]).map(t => (
-            <View key={t} style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+            t('presencePanel.simpleButton'),
+            t('presenceCard.promise2', { n: COOLDOWN_HOURS }),
+          ]).map(line => (
+            <View key={line} style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
               <Ionicons name="checkmark-circle" size={18} color="#fff" style={{ marginTop: 1 }} />
-              <Text style={{ flex: 1, color: '#ddd', fontSize: 13, lineHeight: 19, fontFamily: F.regular }}>{t}</Text>
+              <Text style={{ flex: 1, color: '#ddd', fontSize: 13, lineHeight: 19, fontFamily: F.regular }}>{line}</Text>
             </View>
           ))}
         </View>
@@ -123,25 +124,25 @@ export function PresencePanel() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
           <Ionicons name="location-outline" size={20} color="#bbb" />
           <View style={{ flex: 1 }}>
-            <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.semibold }}>Détection automatique</Text>
-            <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular, marginTop: 2 }}>{auto ? 'Activée' : 'Désactivée'}</Text>
+            <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.semibold }}>{t('presencePanel.autoDetection')}</Text>
+            <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular, marginTop: 2 }}>{auto ? t('presencePanel.on') : t('presencePanel.off')}</Text>
           </View>
           <Switch value={auto} onValueChange={toggleAuto} trackColor={{ true: '#fff', false: '#333' }} thumbColor={auto ? '#000' : '#999'} ios_backgroundColor="#333" />
         </View>
         {needsAlways && (
           <TouchableOpacity onPress={openSettings} style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
             <Text style={{ color: '#ff9f43', fontSize: 13, lineHeight: 19, fontFamily: F.semibold }}>
-              L'autorisation « Toujours » est nécessaire pour détecter ton arrivée quand l'appli est fermée. Touche ici pour la régler.
+              {t('presencePanel.needAlways')}
             </Text>
           </TouchableOpacity>
         )}
       </View>
 
-      <Text style={{ fontSize: 11, color: '#777', fontFamily: F.bold, letterSpacing: 1.5, marginTop: 24, marginBottom: 8, marginLeft: 4 }}>MES LIEUX D'ENTRAÎNEMENT</Text>
+      <Text style={{ fontSize: 11, color: '#777', fontFamily: F.bold, letterSpacing: 1.5, marginTop: 24, marginBottom: 8, marginLeft: 4 }}>{t('presencePanel.myPlaces')}</Text>
       <View style={{ backgroundColor: '#111', borderRadius: 18, borderWidth: 1, borderColor: '#1c1c1c', overflow: 'hidden' }}>
         {places.length === 0 && (
           <Text style={{ color: '#777', fontSize: 13, lineHeight: 19, padding: 16, fontFamily: F.regular }}>
-            Aucun lieu pour l'instant. Rends-toi à ta salle, donne-lui un nom puis touche « Ajouter l'endroit où je suis ».
+            {t('presencePanel.noPlaces')}
           </Text>
         )}
         {places.map((p, i) => (
@@ -149,9 +150,9 @@ export function PresencePanel() {
             <Ionicons name="location" size={18} color="#fff" />
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.semibold }}>{p.label}</Text>
-              <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular }}>Détecté dans un rayon de {p.radius} m</Text>
+              <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular }}>{t('presencePanel.radius', { n: p.radius })}</Text>
             </View>
-            <TouchableOpacity onPress={() => delPlace(p)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityLabel={`Supprimer ${p.label}`}>
+            <TouchableOpacity onPress={() => delPlace(p)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityLabel={t('presencePanel.deleteA11y', { label: p.label })}>
               <Ionicons name="trash-outline" size={18} color="#ff453a" />
             </TouchableOpacity>
           </View>
@@ -160,7 +161,7 @@ export function PresencePanel() {
           <TextInput
             value={label}
             onChangeText={setLabel}
-            placeholder="Nom du lieu (ex : Basic-Fit, Stade)"
+            placeholder={t('presencePanel.placeholder')}
             placeholderTextColor="#666"
             maxLength={40}
             returnKeyType="done"
@@ -168,7 +169,7 @@ export function PresencePanel() {
             style={{ backgroundColor: '#1a1a1a', borderWidth: 1.5, borderColor: '#2a2a2a', borderRadius: 14, padding: 13, fontSize: 14, color: '#fff', fontFamily: F.regular }}
           />
           <TouchableOpacity onPress={busy ? undefined : addHere} activeOpacity={0.85} style={{ backgroundColor: '#fff', borderRadius: 16, paddingVertical: 14, alignItems: 'center' }}>
-            {busy ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>Ajouter l'endroit où je suis</Text>}
+            {busy ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>{t('presencePanel.addHere')}</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -179,8 +180,8 @@ export function PresencePanel() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
             <Text style={{ fontSize: 20 }}>💪</Text>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>Je suis à la salle, prévenir maintenant</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular, marginTop: 2 }}>Sans localisation : un simple bouton</Text>
+              <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>{t('presencePanel.notifyNow')}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular, marginTop: 2 }}>{t('presencePanel.notifyNowSub')}</Text>
             </View>
           </View>
         </GlassSurface>

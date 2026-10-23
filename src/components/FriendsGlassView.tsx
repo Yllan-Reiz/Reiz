@@ -5,6 +5,7 @@ import { SectionHeader } from './ProfileSections';
 import { Friend, PendingRequest } from '../lib/types';
 import { GUTTER } from '../constants';
 import { F } from '../styles';
+import { t, tp } from '../i18n';
 
 // L'onglet Amis = découvrir et ajouter des gens (comme sur les réseaux sociaux) : recherche par nom, tag ou sport,
 // invitation, demandes reçues, amis recommandés, nouveaux sur Reiz. Tes amis et ton cercle proche sont sur ton
@@ -57,15 +58,16 @@ function Row({ person, onPress, onLongPress, ring, right }: { person: Person; on
   );
 }
 
-// Les sports de l'accueil, avec les mots qu'on cherche dans les tags et les objectifs publics.
+// Les sports de l'accueil, avec les mots qu'on cherche dans les tags et les objectifs publics (écrits par les
+// gens dans leur langue : on cherche donc aussi en anglais, espagnol et hébreu).
 const SPORT_SEARCH: { id: string; label: string; terms: string[] }[] = [
-  { id: 'musculation', label: 'Musculation', terms: ['musculation', 'muscu', 'salle', 'bench', 'squat', 'soulevé', 'terre', 'développé', 'powerlift', 'bodybuild'] },
-  { id: 'street', label: 'Street Workout', terms: ['street-workout', 'street', 'calisthenics', 'traction', 'dips', 'muscle up', 'planche'] },
-  { id: 'hyrox', label: 'Hyrox', terms: ['hyrox', 'crossfit', 'wod'] },
-  { id: 'running', label: 'Running', terms: ['course', 'courir', 'running', 'run', 'marathon', 'semi', '10 km', 'trail'] },
-  { id: 'cyclisme', label: 'Cyclisme', terms: ['cyclisme', 'vélo', 'velo', 'cyclisme', 'bike', 'gravel'] },
-  { id: 'combat', label: 'Sports de combat', terms: ['combat', 'boxe', 'box', 'mma', 'jjb', 'jiu', 'grappling', 'judo', 'lutte', 'muay', 'kick', 'karaté', 'krav'] },
-  { id: 'natation', label: 'Natation', terms: ['natation', 'nage', 'natation', 'nager', 'piscine', 'swim'] },
+  { id: 'musculation', label: t('sports.musculation.name'), terms: ['musculation', 'muscu', 'salle', 'bench', 'squat', 'soulevé', 'terre', 'développé', 'powerlift', 'bodybuild', 'gym', 'weightlifting', 'gimnasio', 'pesas', 'כושר'] },
+  { id: 'street', label: t('sports.street-workout.name'), terms: ['street-workout', 'street', 'calisthenics', 'traction', 'dips', 'muscle up', 'planche', 'pull up', 'dominadas'] },
+  { id: 'hyrox', label: t('sports.hyrox.name'), terms: ['hyrox', 'crossfit', 'wod'] },
+  { id: 'running', label: t('sports.running.name'), terms: ['course', 'courir', 'running', 'run', 'marathon', 'semi', '10 km', 'trail', 'correr', 'carrera', 'ריצה'] },
+  { id: 'cyclisme', label: t('sports.cyclisme.name'), terms: ['cyclisme', 'vélo', 'velo', 'bike', 'gravel', 'cycling', 'ciclismo', 'bicicleta', 'אופניים'] },
+  { id: 'combat', label: t('sports.combat.name'), terms: ['combat', 'boxe', 'box', 'mma', 'jjb', 'jiu', 'grappling', 'judo', 'lutte', 'muay', 'kick', 'karaté', 'krav', 'boxing', 'boxeo', 'lucha', 'אגרוף'] },
+  { id: 'natation', label: t('sports.natation.name'), terms: ['natation', 'nage', 'nager', 'piscine', 'swim', 'natación', 'nadar', 'piscina', 'שחייה'] },
 ];
 
 export function FriendsGlassView(p: {
@@ -107,7 +109,7 @@ export function FriendsGlassView(p: {
 }) {
   const close = p.friends.filter(f => p.closeIds.has(f.id));
   const others = p.friends.filter(f => !p.closeIds.has(f.id));
-  const star = (f: Friend) => <RoundBtn icon={p.closeIds.has(f.id) ? 'star' : 'star-outline'} filled={p.closeIds.has(f.id)} label={p.closeIds.has(f.id) ? `Retirer ${f.full_name} du cercle proche` : `Ajouter ${f.full_name} au cercle proche`} onPress={() => p.onToggleClose(f.id)} />;
+  const star = (f: Friend) => <RoundBtn icon={p.closeIds.has(f.id) ? 'star' : 'star-outline'} filled={p.closeIds.has(f.id)} label={p.closeIds.has(f.id) ? t('friends.closeRemove', { name: f.full_name }) : t('friends.closeAdd', { name: f.full_name })} onPress={() => p.onToggleClose(f.id)} />;
   const friendRow = (f: Friend) => (
     <Row key={f.friendship_id} person={f} ring={p.closeIds.has(f.id)} onPress={() => p.onViewProfile(f.id)} onLongPress={() => p.onRemove(f.friendship_id, f.full_name)} right={star(f)} />
   );
@@ -127,7 +129,7 @@ export function FriendsGlassView(p: {
             <Ionicons name="search" size={19} color="rgba(255,255,255,0.6)" />
             <TextInput
               style={{ flex: 1, color: '#fff', fontSize: 16, fontFamily: F.regular }}
-              placeholder="Ajouter ou rechercher des amis"
+              placeholder={t('friendsGlass.searchPlaceholder')}
               placeholderTextColor="rgba(255,255,255,0.45)"
               value={p.searchQuery}
               onChangeText={p.onSearch}
@@ -136,7 +138,7 @@ export function FriendsGlassView(p: {
               maxLength={40}
             />
             {p.searchQuery.length > 0 && (
-              <TouchableOpacity onPress={p.onClearSearch} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel="Effacer la recherche">
+              <TouchableOpacity onPress={p.onClearSearch} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel={t('friendsGlass.clearSearch')}>
                 <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
               </TouchableOpacity>
             )}
@@ -145,12 +147,12 @@ export function FriendsGlassView(p: {
       </View>
 
       {/* Invitation : ta photo, ton lien, et la carte de partage (QR code) au toucher. */}
-      <TouchableOpacity onPress={p.onInvite} activeOpacity={0.85} style={{ paddingHorizontal: GUTTER, marginTop: 14 }} accessibilityRole="button" accessibilityLabel="Inviter tes amis sur Reiz">
+      <TouchableOpacity onPress={p.onInvite} activeOpacity={0.85} style={{ paddingHorizontal: GUTTER, marginTop: 14 }} accessibilityRole="button" accessibilityLabel={t('friendsGlass.invite')}>
         <GlassCard radius={26}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, paddingRight: 18 }}>
             <Avatar url={p.myAvatar} name={p.myName || 'R'} size={50} />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: '#fff', fontSize: 16, fontFamily: F.bold }} numberOfLines={1}>Invite tes amis sur Reiz</Text>
+              <Text style={{ color: '#fff', fontSize: 16, fontFamily: F.bold }} numberOfLines={1}>{t('friendsGlass.invite')}</Text>
               <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, fontFamily: F.regular, marginTop: 2 }} numberOfLines={1}>{p.inviteLink}</Text>
             </View>
             <Ionicons name="share-outline" size={24} color="#fff" />
@@ -159,11 +161,11 @@ export function FriendsGlassView(p: {
       </TouchableOpacity>
 
       {p.onOpenContacts && (
-        <TouchableOpacity onPress={p.onOpenContacts} activeOpacity={0.85} style={{ paddingHorizontal: GUTTER, marginTop: 10 }} accessibilityLabel="Retrouver mes contacts sur Reiz">
+        <TouchableOpacity onPress={p.onOpenContacts} activeOpacity={0.85} style={{ paddingHorizontal: GUTTER, marginTop: 10 }} accessibilityLabel={t('friends.findContactsA11y')}>
           <GlassCard radius={22}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, height: 52 }}>
               <Ionicons name="person-circle-outline" size={22} color="#fff" />
-              <Text style={{ flex: 1, color: '#fff', fontSize: 15, fontFamily: F.semibold }}>Retrouver mes contacts</Text>
+              <Text style={{ flex: 1, color: '#fff', fontSize: 15, fontFamily: F.semibold }}>{t('friends.findContacts')}</Text>
               <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
             </View>
           </GlassCard>
@@ -187,8 +189,8 @@ export function FriendsGlassView(p: {
         <View style={{ paddingVertical: 20, alignItems: 'center', gap: 4 }}>
           {p.searching ? <ActivityIndicator color="#fff" /> : (
             <>
-              <Text style={{ color: '#ddd', fontSize: 15, fontFamily: F.bold }}>Personne de nouveau pour l'instant</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textAlign: 'center', paddingHorizontal: 30 }}>Essaie un autre mot, ou invite tes amis avec ton lien</Text>
+              <Text style={{ color: '#ddd', fontSize: 15, fontFamily: F.bold }}>{t('friendsGlass.nobodyNew')}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textAlign: 'center', paddingHorizontal: 30 }}>{t('friendsGlass.nobodyNewSub')}</Text>
             </>
           )}
         </View>
@@ -197,7 +199,7 @@ export function FriendsGlassView(p: {
       {/* Tes amis qui correspondent : un tap ouvre leur profil. */}
       {p.matchingFriends.length > 0 && (
         <View style={{ paddingHorizontal: GUTTER, marginTop: 22 }}>
-          <Text style={label}>TES AMIS</Text>
+          <Text style={label}>{t('friendsGlass.yourFriends')}</Text>
           {p.matchingFriends.map(f => (
             <TouchableOpacity key={f.id} onPress={() => p.onViewProfile(f.id)} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 8 }}>
               <Avatar url={f.avatar_url} name={f.full_name} size={44} />
@@ -213,7 +215,7 @@ export function FriendsGlassView(p: {
 
       {p.searchResults.length > 0 && (
         <View style={{ paddingHorizontal: GUTTER, marginTop: 22 }}>
-          <Text style={label}>{p.activeSport ? 'ILS FONT LE MÊME SPORT' : 'NOUVELLES PERSONNES'}</Text>
+          <Text style={label}>{p.activeSport ? t('friendsGlass.sameSport') : t('friendsGlass.newPeople')}</Text>
           {p.searchResults.map(u => <DiscoverRow key={u.id} u={u} sent={p.sentIds.has(u.id)} onOpen={() => p.onViewProfile(u.id)} onAdd={() => p.onAddSuggested(u.id)} />)}
         </View>
       )}
@@ -221,12 +223,12 @@ export function FriendsGlassView(p: {
       {/* Demandes reçues */}
       {p.pending.length > 0 && (
         <View style={{ paddingHorizontal: GUTTER, marginTop: 26 }}>
-          <SectionHeader title="Demandes reçues" count={p.pending.length} />
+          <SectionHeader title={t('friendsGlass.requests')} count={p.pending.length} />
           {p.pending.map(r => (
             <Row key={r.friendship_id} person={r} ring onPress={() => p.onViewProfile(r.id)} right={
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <RoundBtn icon="checkmark" primary label={`Accepter ${r.full_name}`} onPress={() => p.onAccept(r.friendship_id)} />
-                <RoundBtn icon="close" label={`Refuser ${r.full_name}`} onPress={() => p.onDecline(r.friendship_id)} />
+                <RoundBtn icon="checkmark" primary label={t('friendsGlass.accept', { name: r.full_name })} onPress={() => p.onAccept(r.friendship_id)} />
+                <RoundBtn icon="close" label={t('friendsGlass.decline', { name: r.full_name })} onPress={() => p.onDecline(r.friendship_id)} />
               </View>
             } />
           ))}
@@ -236,7 +238,7 @@ export function FriendsGlassView(p: {
       {/* Amis recommandés : contacts, amis en commun, même objectif. Ajouter, ou ✕ pour ne plus le voir. */}
       {p.suggestions.length > 0 && p.searchQuery.trim().length < 2 && (
         <View style={{ paddingHorizontal: GUTTER, marginTop: 26 }}>
-          <Text style={label}>AMIS RECOMMANDÉS</Text>
+          <Text style={label}>{t('friendsGlass.recommended')}</Text>
           {p.suggestions.map(u => (
             <DiscoverRow key={u.id} u={u} sent={p.sentIds.has(u.id)} onOpen={() => p.onViewProfile(u.id)} onAdd={() => p.onAddSuggested(u.id)} onHide={() => p.onHideSuggestion(u.id)} />
           ))}
@@ -246,7 +248,7 @@ export function FriendsGlassView(p: {
       {/* Nouveaux sur Reiz : inscrits depuis 30 jours, ceux qui ont des amis en commun avec toi d'abord. */}
       {p.newMembers.filter(u => !p.suggestions.some(sg => sg.id === u.id)).length > 0 && p.searchQuery.trim().length < 2 && (
         <View style={{ marginTop: 26 }}>
-          <Text style={[label, { paddingHorizontal: GUTTER }]}>NOUVEAUX SUR REIZ</Text>
+          <Text style={[label, { paddingHorizontal: GUTTER }]}>{t('friendsGlass.newOnReiz')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: GUTTER, paddingTop: 4 }}>
             {p.newMembers.filter(u => !p.suggestions.some(sg => sg.id === u.id)).map(u => {
               const sent = p.sentIds.has(u.id);
@@ -257,11 +259,11 @@ export function FriendsGlassView(p: {
                       <Avatar url={u.avatar_url} name={u.full_name} size={60} />
                       <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold, marginTop: 8 }} numberOfLines={1}>{u.full_name}</Text>
                       <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }} numberOfLines={1}>
-                        {u.mutual > 0 ? `${u.mutual} ami${u.mutual > 1 ? 's' : ''} en commun` : 'Nouveau'}
+                        {u.mutual > 0 ? tp('friends.mutual', u.mutual) : t('friendsGlass.new')}
                       </Text>
                       <TouchableOpacity onPress={() => p.onAddSuggested(u.id)} disabled={sent} activeOpacity={0.85}
                         style={{ height: 34, borderRadius: 17, paddingHorizontal: 18, marginTop: 10, backgroundColor: sent ? 'transparent' : '#fff', borderWidth: sent ? 1 : 0, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ color: sent ? 'rgba(255,255,255,0.6)' : '#000', fontSize: 13, fontFamily: F.extrabold }}>{sent ? 'Envoyé' : 'Ajouter'}</Text>
+                        <Text style={{ color: sent ? 'rgba(255,255,255,0.6)' : '#000', fontSize: 13, fontFamily: F.extrabold }}>{sent ? t('friendsGlass.sent') : t('friends.add')}</Text>
                       </TouchableOpacity>
                     </View>
                   </GlassCard>
@@ -277,8 +279,8 @@ export function FriendsGlassView(p: {
         <View style={{ paddingHorizontal: GUTTER, marginTop: 26 }}>
           <GlassCard radius={28}>
             <View style={{ padding: 22, alignItems: 'center' }}>
-              <Text style={{ color: '#fff', fontSize: 18, fontFamily: F.black }}>Personne à te proposer</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, textAlign: 'center', marginTop: 6 }}>Cherche par sport ou invite tes amis avec ton lien.</Text>
+              <Text style={{ color: '#fff', fontSize: 18, fontFamily: F.black }}>{t('friendsGlass.nobody')}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, textAlign: 'center', marginTop: 6 }}>{t('friendsGlass.nobodySub')}</Text>
             </View>
           </GlassCard>
         </View>
@@ -309,13 +311,13 @@ function DiscoverRow({ u, sent, onOpen, onAdd, onHide }: { u: any; sent: boolean
         onPress={onAdd}
         disabled={sent}
         activeOpacity={0.85}
-        accessibilityLabel={sent ? 'Demande envoyée' : `Ajouter ${u.full_name}`}
+        accessibilityLabel={sent ? t('friendsGlass.requestSent') : t('friendsGlass.addName', { name: u.full_name })}
         style={{ height: 38, borderRadius: 19, paddingHorizontal: 16, backgroundColor: sent ? 'transparent' : 'rgba(255,255,255,0.14)', borderWidth: sent ? 1 : 0, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}
       >
-        <Text style={{ color: sent ? 'rgba(255,255,255,0.6)' : '#fff', fontSize: 14, fontFamily: F.bold }}>{sent ? 'Envoyé' : 'Ajouter'}</Text>
+        <Text style={{ color: sent ? 'rgba(255,255,255,0.6)' : '#fff', fontSize: 14, fontFamily: F.bold }}>{sent ? t('friendsGlass.sent') : t('friends.add')}</Text>
       </TouchableOpacity>
       {!!onHide && !sent && (
-        <TouchableOpacity onPress={onHide} hitSlop={10} accessibilityLabel={`Ne plus proposer ${u.full_name}`} style={{ paddingLeft: 2 }}>
+        <TouchableOpacity onPress={onHide} hitSlop={10} accessibilityLabel={t('friendsGlass.hide', { name: u.full_name })} style={{ paddingLeft: 2 }}>
           <Ionicons name="close" size={22} color="rgba(255,255,255,0.55)" />
         </TouchableOpacity>
       )}

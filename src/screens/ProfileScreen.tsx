@@ -24,6 +24,7 @@ import { CloseCircleBubble } from '../components/CloseCircleBubble';
 import { resetCloseCircle } from '../lib/closeCircle';
 import { forgetLiveActivityToken } from '../lib/liveActivity';
 import { Update, FeedMeta } from '../lib/types';
+import { t, tp, formatDate } from '../i18n';
 
 export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfile }: { onClose: () => void; streak: number; onCreateObjective: () => void; onViewProfile?: (id: string) => void }) {
   const insets = useSafeAreaInsets();
@@ -119,7 +120,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
     const before = profile?.sport ?? null;
     setProfile((p: any) => ({ ...p, sport: id }));
     const { error } = await supabase.from('users').update({ sport: id }).eq('id', userId);
-    if (error) { setProfile((p: any) => ({ ...p, sport: before })); Alert.alert('Erreur', "Impossible d'enregistrer ton sport pour le moment."); }
+    if (error) { setProfile((p: any) => ({ ...p, sport: before })); Alert.alert(t('common.error'), t('profile.sportFailed')); }
   };
 
   const handleSaveBio = async () => {
@@ -129,32 +130,32 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
     const bio = newBio.trim();
     const { error } = await supabase.from('users').update({ bio: bio || null }).eq('id', user.id);
     setSaving(false);
-    if (error) { Alert.alert('Erreur', frError(error)); return; }
+    if (error) { Alert.alert(t('common.error'), frError(error)); return; }
     setEditingBio(false);
     setProfile((p: any) => ({ ...p, bio: bio || null }));
   };
 
   const handlePickAvatar = async () => {
-    Alert.alert('Photo de profil', 'Choisis une option', [
+    Alert.alert(t('welcome.avatarTitle'), t('welcome.chooseOption'), [
       {
-        text: 'Prendre une photo',
+        text: t('common.takePhoto'),
         onPress: async () => {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la caméra dans les réglages.'); return; }
+          if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permCamera')); return; }
           const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
           if (!result.canceled) uploadAvatar(result.assets[0].uri);
         }
       },
       {
-        text: 'Importer depuis la galerie',
+        text: t('common.pickFromLibrary'),
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la galerie dans les réglages.'); return; }
+          if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permLibrary')); return; }
           const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
           if (!result.canceled) uploadAvatar(result.assets[0].uri);
         }
       },
-      { text: 'Annuler', style: 'cancel' }
+      { text: t('common.cancel'), style: 'cancel' }
     ]);
   };
 
@@ -168,7 +169,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
     const { path, error } = await uploadImage(`avatars/${user.id}.jpg`, uri, true);
     if (error || !path) {
       setUploadingAvatar(false);
-      Alert.alert('Erreur', frError(error));
+      Alert.alert(t('common.error'), frError(error));
       return;
     }
     await supabase.from('users').update({ avatar_url: path }).eq('id', user.id);
@@ -183,15 +184,15 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
 
   const handleDeleteObjective = (o: Objective) => {
     Alert.alert(
-      `Supprimer "${o.title}" ?`,
-      'Cet objectif et toutes les publications qui y sont rattachées seront effacés. Cette action est irréversible.',
+      t('profile.deleteObjTitle', { title: o.title }),
+      t('profile.deleteObjText'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer', style: 'destructive',
+          text: t('common.delete'), style: 'destructive',
           onPress: async () => {
             const { error } = await supabase.from('objectives').delete().eq('id', o.id);
-            if (error) { Alert.alert('Erreur', frError(error)); return; }
+            if (error) { Alert.alert(t('common.error'), frError(error)); return; }
             setObjectives(prev => prev.filter(x => x.id !== o.id));
           },
         },
@@ -202,9 +203,9 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   const openSettings = () => setShowSettings(true);
 
   const handleSignOut = async () => {
-    Alert.alert('Déconnexion', 'Tu veux vraiment te déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Se déconnecter', style: 'destructive', onPress: async () => { await forgetLiveActivityToken(); supabase.auth.signOut(); } }
+    Alert.alert(t('profile.signOutTitle'), t('profile.signOutText'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('settings.signOut'), style: 'destructive', onPress: async () => { await forgetLiveActivityToken(); supabase.auth.signOut(); } }
     ]);
   };
 
@@ -212,17 +213,17 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   // La suppression réelle est faite côté serveur (edge function "delete-account").
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Supprimer mon compte',
-      'Toutes tes données (posts, objectifs, amis, photos) seront définitivement effacées. Cette action est irréversible.',
+      t('settings.deleteAccount'),
+      t('profile.deleteAccountText'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer définitivement', style: 'destructive',
+          text: t('profile.deleteForever'), style: 'destructive',
           onPress: async () => {
             setDeleting(true);
             const { error } = await supabase.functions.invoke('delete-account');
             setDeleting(false);
-            if (error) { Alert.alert('Erreur', 'La suppression a échoué. Réessaie ou contacte-nous.'); return; }
+            if (error) { Alert.alert(t('common.error'), t('profile.deleteFailed')); return; }
             supabase.auth.signOut().catch(() => {});
           },
         },
@@ -235,7 +236,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   const ongoing = objectives.filter(o => !isCompleted(o));
   const achieved = objectives.filter(isCompleted);
   const badges = computeBadges(posts, objectives);
-  const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '';
+  const memberSince = profile?.created_at ? formatDate(profile.created_at, { month: 'long', year: 'numeric' }) : '';
   const topBtn = insets.top + 58;
   // Position de défilement : pilote le fondu photo nette -> photo floutée derrière la page.
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -261,8 +262,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
         >
           {/* === Photo de profil en plein écran, nom au-dessus, bulle de verre à 3 zones === */}
           <ProfileHero height={heroH}>
-            <GlassIconButton icon="camera-outline" label="Changer la photo de profil" onPress={handlePickAvatar} style={{ position: 'absolute', top: topBtn, left: GUTTER }} />
-            <GlassIconButton icon="settings-outline" label="Réglages" onPress={openSettings} style={{ position: 'absolute', top: topBtn, right: GUTTER }} />
+            <GlassIconButton icon="camera-outline" label={t('profile.changePhoto')} onPress={handlePickAvatar} style={{ position: 'absolute', top: topBtn, left: GUTTER }} />
+            <GlassIconButton icon="settings-outline" label={t('settings.title')} onPress={openSettings} style={{ position: 'absolute', top: topBtn, right: GUTTER }} />
             {uploadingAvatar && <ActivityIndicator color="#fff" style={{ position: 'absolute', top: heroH / 2 }} />}
 
             {editingName ? (
@@ -270,26 +271,26 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
                 <TextInput style={s.profileNameInput} value={newName} onChangeText={setNewName} autoFocus autoCapitalize="words" placeholderTextColor="#666" maxLength={40} />
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <TouchableOpacity style={s.profileSaveBtn} onPress={saving ? undefined : handleSaveName}>
-                    {saving ? <ActivityIndicator color="#000" size="small" /> : <Text style={s.profileSaveBtnText}>Sauvegarder</Text>}
+                    {saving ? <ActivityIndicator color="#000" size="small" /> : <Text style={s.profileSaveBtnText}>{t('profile.save')}</Text>}
                   </TouchableOpacity>
                   <TouchableOpacity style={s.profileCancelBtn} onPress={() => { setEditingName(false); setNewName(profile?.full_name || ''); }}>
-                    <Text style={s.profileCancelBtnText}>Annuler</Text>
+                    <Text style={s.profileCancelBtnText}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             ) : (
               <TouchableOpacity onPress={() => setEditingName(true)} activeOpacity={0.8}>
-                <Text style={{ fontSize: 40, fontFamily: F.black, color: '#fff', textAlign: 'center', letterSpacing: -1.5, paddingHorizontal: GUTTER }} numberOfLines={2}>{profile?.full_name || 'Utilisateur'}</Text>
+                <Text style={{ fontSize: 40, fontFamily: F.black, color: '#fff', textAlign: 'center', letterSpacing: -1.5, paddingHorizontal: GUTTER }} numberOfLines={2}>{profile?.full_name || t('common.user')}</Text>
               </TouchableOpacity>
             )}
             <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.78)', fontFamily: F.semibold, marginTop: 4 }}>@{profile?.username}</Text>
-            <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontFamily: F.regular, marginTop: 2 }}>Membre depuis {memberSince}</Text>
+            <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontFamily: F.regular, marginTop: 2 }}>{t('profile.memberSince', { date: memberSince })}</Text>
             <SportBadge sport={profile?.sport} editable onChange={changeSport} />
 
             <StatBubble items={[
-              { value: `${streak}j`, label: 'Streak' },
-              { value: String(posts.length), label: 'Posts' },
-              { value: String(friendCount), label: friendCount > 1 ? 'Amis' : 'Ami', onPress: () => setPeopleMode('friends') },
+              { value: t('days.durationDays', { n: streak }), label: t('main.statStreak') },
+              { value: String(posts.length), label: t('profile.posts') },
+              { value: String(friendCount), label: tp('profile.friends', friendCount), onPress: () => setPeopleMode('friends') },
             ]} />
           </ProfileHero>
 
@@ -304,25 +305,25 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
                   autoFocus
                   multiline
                   maxLength={150}
-                  placeholder="Ce que tu vises, ce qui te motive..."
+                  placeholder={t('profile.bioPlaceholder')}
                   placeholderTextColor="#666"
                 />
                 <Text style={{ color: '#666', fontSize: 11, alignSelf: 'flex-end' }}>{newBio.length}/150</Text>
                 <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
                   <TouchableOpacity style={s.profileSaveBtn} onPress={saving ? undefined : handleSaveBio}>
-                    {saving ? <ActivityIndicator color="#000" size="small" /> : <Text style={s.profileSaveBtnText}>Sauvegarder</Text>}
+                    {saving ? <ActivityIndicator color="#000" size="small" /> : <Text style={s.profileSaveBtnText}>{t('profile.save')}</Text>}
                   </TouchableOpacity>
                   <TouchableOpacity style={s.profileCancelBtn} onPress={() => { setEditingBio(false); setNewBio(profile?.bio || ''); }}>
-                    <Text style={s.profileCancelBtnText}>Annuler</Text>
+                    <Text style={s.profileCancelBtnText}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             ) : (
               <TouchableOpacity onPress={() => setEditingBio(true)} activeOpacity={0.8}>
-                <Text style={[s.sectionTitle, { marginTop: 0 }]}>À propos</Text>
+                <Text style={[s.sectionTitle, { marginTop: 0 }]}>{t('profile.about')}</Text>
                 {profile?.bio
                   ? <Text style={{ fontSize: 15, color: '#fff', lineHeight: 22, fontFamily: F.regular }}>{profile.bio}</Text>
-                  : <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', fontFamily: F.regular }}>+ Ajoute une bio</Text>}
+                  : <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', fontFamily: F.regular }}>{t('profile.addBio')}</Text>}
               </TouchableOpacity>
             )}
             {userId && <View style={{ alignSelf: 'stretch' }}><ProfileTags userId={userId} currentUserId={userId} own /></View>}
@@ -339,23 +340,23 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
           <View style={{ marginTop: 26 }}>
             {objectives.length === 0 ? (
               <View style={s.emptyState}>
-                <Text style={s.emptyStateTitle}>Pose ton premier objectif</Text>
-                <Text style={s.emptyStateText}>Choisis ce que tu veux dépasser. Ton cercle te suivra chaque jour.</Text>
+                <Text style={s.emptyStateTitle}>{t('profile.firstObjTitle')}</Text>
+                <Text style={s.emptyStateText}>{t('profile.firstObjText')}</Text>
                 <TouchableOpacity style={s.emptyStateBtn} onPress={onCreateObjective}>
-                  <Text style={s.emptyStateBtnText}>Aller à mes objectifs →</Text>
+                  <Text style={s.emptyStateBtnText}>{t('profile.goToObjectives')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <>
-                {ongoing.length > 0 && <SectionHeader title="En cours" count={ongoing.length} style={{ paddingHorizontal: GUTTER }} />}
+                {ongoing.length > 0 && <SectionHeader title={t('profile.ongoing')} count={ongoing.length} style={{ paddingHorizontal: GUTTER }} />}
                 <GoalCards items={ongoing} activity={activityByObj} onPress={openObjectiveMenu} />
                 <AchievedList items={achieved} />
               </>
             )}
           </View>
 
-          <SectionHeader title="Historique" count={posts.length} style={{ paddingHorizontal: GUTTER, marginTop: 26 }} />
-          <HistoryCarousel posts={posts} onOpen={openPost} emptyText="Tes publications apparaîtront ici." />
+          <SectionHeader title={t('profile.history')} count={posts.length} style={{ paddingHorizontal: GUTTER, marginTop: 26 }} />
+          <HistoryCarousel posts={posts} onOpen={openPost} emptyText={t('profile.historyEmpty')} />
 
           {deleting && <ActivityIndicator color="#ff3b30" size="small" style={{ marginTop: 16 }} />}
           {/* Sans cette réserve, le bas de la page finit sous la barre de nav. */}

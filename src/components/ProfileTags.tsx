@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
 import { s, F } from '../styles';
+import { t } from '../i18n';
 
 // Tags du profil : de courtes étiquettes (« 💪 Push day », « 🎯 100 kg au bench »)
 // visibles par le cercle. Les amis les valident d'un tap, comme un « moi aussi »
@@ -39,37 +40,37 @@ export function ProfileTags({ userId, currentUserId, own }: { userId: string; cu
     setSaving(true);
     const { error } = await supabase.from('profile_tags').insert({ user_id: userId, emoji, label: text });
     setSaving(false);
-    if (error) { Alert.alert('Tags', /6 tags/.test(error.message || '') ? `${MAX_TAGS} tags maximum.` : frError(error)); return; }
+    if (error) { Alert.alert(t('profileTags.tags'), /6 tags/.test(error.message || '') ? t('profileTags.max', { n: MAX_TAGS }) : frError(error)); return; }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setLabel(''); setAdding(false);
     load();
   };
 
-  const removeTag = (t: Tag) => {
-    Alert.alert(`Retirer « ${t.label} » ?`, undefined, [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Retirer', style: 'destructive', onPress: async () => {
-        await supabase.from('profile_tags').delete().eq('id', t.id);
+  const removeTag = (tag: Tag) => {
+    Alert.alert(t('profileTags.removeConfirm', { label: tag.label }), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.remove'), style: 'destructive', onPress: async () => {
+        await supabase.from('profile_tags').delete().eq('id', tag.id);
         load();
       } },
     ]);
   };
 
   // Chez un ami : un tap valide le tag (ou retire sa validation).
-  const toggleEndorse = async (t: Tag) => {
+  const toggleEndorse = async (tag: Tag) => {
     if (!currentUserId) return;
-    const mine = t.tag_endorsements.some(e => e.user_id === currentUserId);
+    const mine = tag.tag_endorsements.some(e => e.user_id === currentUserId);
     Haptics.impactAsync(mine ? Haptics.ImpactFeedbackStyle.Soft : Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     // Mise à jour optimiste, puis resynchronisation.
-    setTags(prev => prev.map(x => x.id !== t.id ? x : {
+    setTags(prev => prev.map(x => x.id !== tag.id ? x : {
       ...x,
       tag_endorsements: mine
         ? x.tag_endorsements.filter(e => e.user_id !== currentUserId)
         : [...x.tag_endorsements, { user_id: currentUserId }],
     }));
     const { error } = mine
-      ? await supabase.from('tag_endorsements').delete().eq('tag_id', t.id).eq('user_id', currentUserId)
-      : await supabase.from('tag_endorsements').insert({ tag_id: t.id, user_id: currentUserId });
+      ? await supabase.from('tag_endorsements').delete().eq('tag_id', tag.id).eq('user_id', currentUserId)
+      : await supabase.from('tag_endorsements').insert({ tag_id: tag.id, user_id: currentUserId });
     if (error && !/duplicate key/i.test(error.message || '')) load();
   };
 
@@ -78,26 +79,26 @@ export function ProfileTags({ userId, currentUserId, own }: { userId: string; cu
 
   return (
     <View>
-      <Text style={s.sectionTitle}>TAGS</Text>
+      <Text style={s.sectionTitle}>{t('profileTags.title')}</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {tags.map(t => {
-          const count = t.tag_endorsements.length;
-          const mine = !!currentUserId && t.tag_endorsements.some(e => e.user_id === currentUserId);
+        {tags.map(tag => {
+          const count = tag.tag_endorsements.length;
+          const mine = !!currentUserId && tag.tag_endorsements.some(e => e.user_id === currentUserId);
           return (
             <TouchableOpacity
-              key={t.id}
+              key={tag.id}
               activeOpacity={0.75}
-              onPress={own ? undefined : () => toggleEndorse(t)}
-              onLongPress={own ? () => removeTag(t) : undefined}
+              onPress={own ? undefined : () => toggleEndorse(tag)}
+              onLongPress={own ? () => removeTag(tag) : undefined}
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 6,
                 paddingHorizontal: 12, paddingVertical: 8, borderRadius: 18,
                 backgroundColor: mine ? '#fff' : '#161616', borderWidth: 1, borderColor: mine ? '#fff' : '#262626',
               }}
-              accessibilityLabel={own ? `${t.label}, appui long pour retirer` : `${mine ? 'Retirer ma validation de' : 'Valider'} ${t.label}`}
+              accessibilityLabel={own ? t('profileTags.ownA11y', { label: tag.label }) : t(mine ? 'profileTags.unendorse' : 'profileTags.endorse', { label: tag.label })}
             >
-              {t.emoji ? <Text style={{ fontSize: 14 }}>{t.emoji}</Text> : null}
-              <Text style={{ color: mine ? '#000' : '#eee', fontSize: 13, fontFamily: F.semibold }}>{t.label}</Text>
+              {tag.emoji ? <Text style={{ fontSize: 14 }}>{tag.emoji}</Text> : null}
+              <Text style={{ color: mine ? '#000' : '#eee', fontSize: 13, fontFamily: F.semibold }}>{tag.label}</Text>
               {count > 0 && (
                 <Text style={{ color: mine ? '#555' : '#888', fontSize: 12, fontFamily: F.bold }}>+{count}</Text>
               )}
@@ -109,18 +110,18 @@ export function ProfileTags({ userId, currentUserId, own }: { userId: string; cu
             onPress={() => setAdding(true)}
             style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 18, borderWidth: 1, borderColor: '#333', borderStyle: 'dashed' }}
           >
-            <Text style={{ color: '#aaa', fontSize: 13, fontFamily: F.semibold }}>+ Ajouter un tag</Text>
+            <Text style={{ color: '#aaa', fontSize: 13, fontFamily: F.semibold }}>{t('profileTags.add')}</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {own && tags.length === 0 && !adding && (
         <Text style={{ color: '#666', fontSize: 12, marginTop: 8 }}>
-          Ton style, ton défi du moment. Ton cercle pourra les valider d'un tap.
+          {t('profileTags.hint')}
         </Text>
       )}
       {own && tags.length > 0 && (
-        <Text style={{ color: '#555', fontSize: 11, marginTop: 8 }}>Appui long sur un tag pour le retirer.</Text>
+        <Text style={{ color: '#555', fontSize: 11, marginTop: 8 }}>{t('profileTags.longPressHint')}</Text>
       )}
 
       {adding && (
@@ -137,7 +138,7 @@ export function ProfileTags({ userId, currentUserId, own }: { userId: string; cu
             onChangeText={setLabel}
             maxLength={24}
             autoFocus
-            placeholder="Push day, 100 kg au bench, 6 h du mat..."
+            placeholder={t('profileTags.placeholder')}
             placeholderTextColor="#666"
             style={{ backgroundColor: '#1a1a1a', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, color: '#fff', fontSize: 14, fontFamily: F.regular }}
             returnKeyType="done"
@@ -145,10 +146,10 @@ export function ProfileTags({ userId, currentUserId, own }: { userId: string; cu
           />
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TouchableOpacity style={s.profileSaveBtn} onPress={saving ? undefined : addTag}>
-              {saving ? <ActivityIndicator color="#000" size="small" /> : <Text style={s.profileSaveBtnText}>Ajouter</Text>}
+              {saving ? <ActivityIndicator color="#000" size="small" /> : <Text style={s.profileSaveBtnText}>{t('friends.add')}</Text>}
             </TouchableOpacity>
             <TouchableOpacity style={s.profileCancelBtn} onPress={() => { setAdding(false); setLabel(''); }}>
-              <Text style={s.profileCancelBtnText}>Annuler</Text>
+              <Text style={s.profileCancelBtnText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>

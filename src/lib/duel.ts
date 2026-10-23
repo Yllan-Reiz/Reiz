@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { signAvatars } from './storage';
 import { frError } from './helpers';
+import { t, type TKey } from '../i18n';
 
 // Défi duo : un duel d'une semaine entre deux amis. Celui qui a posté sur le plus de jours
 // différents gagne. Tout est calculé côté serveur (supabase/phase12-defi-encouragements.sql),
@@ -48,7 +49,7 @@ export async function loadDuels(): Promise<Duel[] | null> {
       status: r.status,
       sentByMe,
       otherId: r.other_id,
-      otherName: r.other_name || 'Ton ami',
+      otherName: r.other_name || t('common.yourFriend'),
       otherAvatar: r.other_avatar ? avatars[r.other_avatar] ?? null : null,
       myScore: my,
       theirScore: their,
@@ -58,9 +59,18 @@ export async function loadDuels(): Promise<Duel[] | null> {
   });
 }
 
-// Messages d'erreur écrits par le serveur, déjà en français : on les montre tels quels.
-const OWN_ERRORS = ['Vous devez être amis pour vous défier', 'Défi impossible', 'Un défi est déjà en cours avec cet ami', 'Défi introuvable', 'Adversaire invalide'];
-const message = (error: { message?: string }) => OWN_ERRORS.find(m => error.message?.includes(m)) ?? frError(error);
+// Messages d'erreur écrits en français par le serveur : on montre leur traduction.
+const OWN_ERRORS: [string, TKey][] = [
+  ['Vous devez être amis pour vous défier', 'duel.mustBeFriends'],
+  ['Défi impossible', 'duel.impossible'],
+  ['Un défi est déjà en cours avec cet ami', 'duel.alreadyRunning'],
+  ['Défi introuvable', 'duel.notFound'],
+  ['Adversaire invalide', 'duel.badOpponent'],
+];
+const message = (error: { message?: string }) => {
+  const hit = OWN_ERRORS.find(([m]) => error.message?.includes(m));
+  return hit ? t(hit[1]) : frError(error);
+};
 
 /** Chaque action renvoie null si tout s'est bien passé, sinon le message à afficher. */
 async function call(fn: string, args: Record<string, unknown>): Promise<string | null> {
@@ -75,7 +85,7 @@ export const withdrawDuel = (id: string) => call('duel_cancel', { p_id: id });
 /** Phrase d'état d'un défi en cours : « Tu mènes », « Eden mène », « Égalité ». */
 export function leaderLabel(d: Duel): string {
   const first = d.otherName.split(' ')[0];
-  if (d.myScore > d.theirScore) return 'Tu mènes';
-  if (d.myScore < d.theirScore) return `${first} mène`;
-  return 'Égalité';
+  if (d.myScore > d.theirScore) return t('duel.youLead');
+  if (d.myScore < d.theirScore) return t('duel.theyLead', { name: first });
+  return t('duel.tie');
 }

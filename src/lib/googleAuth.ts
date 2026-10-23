@@ -1,5 +1,6 @@
 import { Linking } from 'react-native';
 import { supabase } from './supabase';
+import { t } from '../i18n';
 
 // Connexion avec Google via Supabase (OAuth + PKCE), sans module natif :
 // on ouvre l'URL Google dans Safari, Google renvoie vers reiz://auth-callback?code=...
@@ -12,8 +13,8 @@ export async function signInWithGoogle(): Promise<string | null> {
     provider: 'google',
     options: { redirectTo: AUTH_REDIRECT, skipBrowserRedirect: true },
   });
-  if (error || !data?.url) return error?.message || 'Connexion Google impossible.';
-  try { await Linking.openURL(data.url); } catch { return "Impossible d'ouvrir Google."; }
+  if (error || !data?.url) return error?.message || t('auth.googleFailed');
+  try { await Linking.openURL(data.url); } catch { return t('auth.googleOpenFailed'); }
   return null;
 }
 
@@ -30,7 +31,7 @@ export async function ensureProfile(user: { id: string; user_metadata?: any; ema
   const meta = user.user_metadata || {};
   // L'email relais d'Apple (xxxx@privaterelay.appleid.com) est aléatoire : inutilisable comme prénom.
   const emailName = user.email && !/privaterelay\.appleid\.com$/i.test(user.email) ? user.email.split('@')[0] : null;
-  const fullName: string = (meta.full_name || meta.name || pendingName || emailName || 'Athlète').toString().trim().slice(0, 40);
+  const fullName: string = (meta.full_name || meta.name || pendingName || emailName || t('common.athlete')).toString().trim().slice(0, 40);
   const first = fullName.split(' ')[0] || fullName;
   const base = first.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '') || 'user';
   let username = base;

@@ -1,3 +1,4 @@
+import { t, tp } from '../i18n';
 // Niveaux des badges : 6 par badge, comme sur la planche « Collection des badges ».
 //
 // Les paliers (`steps`) sont une PROPOSITION. Le niveau 1 reprend la règle d'origine de chaque
@@ -20,21 +21,19 @@ export type BadgeRule = {
   say: (n: number) => string;
 };
 
-const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
-
 export const BADGE_RULES: Record<string, BadgeRule> = {
-  first: { steps: [1, 3, 5, 8, 12, 20], color: '#a9c7ff', say: n => (n === 1 ? 'Publier ta première progression.' : `Publier ${n} progressions.`) },
-  s3: { steps: [3, 4, 5, 6, 8, 10], unit: ' j', color: '#ff8a3d', say: n => `Poster ${n} jours d'affilée.` },
-  s7: { steps: [7, 10, 14, 18, 21, 24], unit: ' j', color: '#47e0b0', say: n => `Poster ${n} jours d'affilée.` },
-  goal: { steps: [1, 2, 3, 5, 8, 12], color: '#3fa2ff', say: n => (n === 1 ? "Atteindre la cible d'un objectif." : `Atteindre la cible de ${n} objectifs.`) },
-  p10: { steps: [10, 20, 35, 60, 100, 150], color: '#7fb4ff', say: n => `${n} publications.` },
-  video: { steps: [1, 3, 6, 12, 25, 50], color: '#4c8dff', say: n => (n === 1 ? 'Publier une vidéo de ta séance.' : `Publier ${n} vidéos de tes séances.`) },
-  duo: { steps: [1, 2, 3, 4, 6, 8], color: '#b27bff', say: n => (n === 1 ? 'Publier une séance avec un ami identifié.' : `${n} séances avec un ami identifié.`) },
-  duo5: { steps: [5, 8, 12, 20, 35, 50], color: '#6b6bff', say: n => `${n} séances en duo.` },
-  early: { steps: [5, 10, 20, 35, 60, 100], color: '#ffb340', say: n => `${n} ${plural(n, 'post', 'posts')} avant 8 h du matin.` },
-  night: { steps: [5, 10, 20, 35, 60, 100], color: '#8a6bff', say: n => `${n} ${plural(n, 'post', 'posts')} après 22 h.` },
-  s30: { steps: [30, 40, 50, 75, 100, 150], unit: ' j', color: '#3d8bff', say: n => `Poster ${n} jours d'affilée.` },
-  p50: { steps: [50, 80, 120, 180, 260, 365], color: '#ff6a4a', say: n => `${n} publications.` },
+  first: { steps: [1, 3, 5, 8, 12, 20], color: '#a9c7ff', say: n => tp('badges.first', n) },
+  s3: { steps: [3, 4, 5, 6, 8, 10], unit: t('badges.dayUnit'), color: '#ff8a3d', say: n => tp('badges.streak', n) },
+  s7: { steps: [7, 10, 14, 18, 21, 24], unit: t('badges.dayUnit'), color: '#47e0b0', say: n => tp('badges.streak', n) },
+  goal: { steps: [1, 2, 3, 5, 8, 12], color: '#3fa2ff', say: n => tp('badges.goal', n) },
+  p10: { steps: [10, 20, 35, 60, 100, 150], color: '#7fb4ff', say: n => tp('badges.posts', n) },
+  video: { steps: [1, 3, 6, 12, 25, 50], color: '#4c8dff', say: n => tp('badges.video', n) },
+  duo: { steps: [1, 2, 3, 4, 6, 8], color: '#b27bff', say: n => tp('badges.duo', n) },
+  duo5: { steps: [5, 8, 12, 20, 35, 50], color: '#6b6bff', say: n => tp('badges.duo5', n) },
+  early: { steps: [5, 10, 20, 35, 60, 100], color: '#ffb340', say: n => tp('badges.early', n) },
+  night: { steps: [5, 10, 20, 35, 60, 100], color: '#8a6bff', say: n => tp('badges.night', n) },
+  s30: { steps: [30, 40, 50, 75, 100, 150], unit: t('badges.dayUnit'), color: '#3d8bff', say: n => tp('badges.streak', n) },
+  p50: { steps: [50, 80, 120, 180, 260, 365], color: '#ff6a4a', say: n => tp('badges.posts', n) },
 };
 
 /** Niveau (0 à 6) pour une valeur donnée. */

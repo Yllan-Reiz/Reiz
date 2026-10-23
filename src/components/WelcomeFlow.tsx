@@ -21,6 +21,7 @@ import { LocationScene } from './LocationScene';
 import { TrainingDaysPicker } from './TrainingDays';
 import { GlassCard, GlassSurface } from './GlassSurface';
 import { F } from '../styles';
+import { t, unitLabel } from '../i18n';
 
 // L'accueil d'un compte tout neuf : quelques écrans plein cadre, un seul geste par écran, comme les
 // applis sociales qu'on garde. Le but est d'arriver dans le fil avec un profil, un objectif et au moins
@@ -252,26 +253,26 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
   // ---- Profil ----
   const pickAvatar = () => {
     const done = (uri: string) => { setAvatar(uri); if (!preview) uploadAvatar(uri); };
-    Alert.alert('Photo de profil', 'Choisis une option', [
+    Alert.alert(t('welcome.avatarTitle'), t('welcome.chooseOption'), [
       {
-        text: 'Prendre une photo',
+        text: t('common.takePhoto'),
         onPress: async () => {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la caméra dans les réglages.'); return; }
+          if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permCamera')); return; }
           const r = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
           if (!r.canceled) done(r.assets[0].uri);
         },
       },
       {
-        text: 'Importer depuis la galerie',
+        text: t('common.pickFromLibrary'),
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission refusée', 'Active la galerie dans les réglages.'); return; }
+          if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permLibrary')); return; }
           const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
           if (!r.canceled) done(r.assets[0].uri);
         },
       },
-      { text: 'Annuler', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
@@ -280,7 +281,7 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
     setUploading(true);
     // Comme dans le profil : on enregistre le chemin (le bucket est privé), pas une URL.
     const { path, error } = await uploadImage(`avatars/${userId}.jpg`, uri, true);
-    if (error || !path) { setUploading(false); Alert.alert('Erreur', 'La photo n\'a pas pu être envoyée. Réessaie.'); return; }
+    if (error || !path) { setUploading(false); Alert.alert(t('common.error'), t('welcome.photoFailed')); return; }
     await supabase.from('users').update({ avatar_url: path }).eq('id', userId);
     resetSignedCache();
     wrote.current = true;
@@ -295,7 +296,7 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
     const b = bio.trim(); if (b && b !== initial.current.bio) patch.bio = b;
     if (!Object.keys(patch).length || !userId) return true;
     const { error } = await supabase.from('users').update(patch).eq('id', userId);
-    if (error) { Alert.alert('Erreur', frError(error)); return false; }
+    if (error) { Alert.alert(t('common.error'), frError(error)); return false; }
     wrote.current = true;
     // Pseudo de secours (« athlete », « user1234 »...) : on le refait d'après le prénom, il sert au lien d'invitation.
     if (patch.full_name && username && /^(athlete|user)\d*$/.test(username)) {
@@ -330,8 +331,8 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
   const createObjective = async (): Promise<boolean> => {
     if (sportIdx == null) return true;
     const title = objTitle.trim();
-    if (!title) { Alert.alert('Nom de l\'objectif', 'Donne un nom à ton objectif.'); return false; }
-    if (days.length === 0) { Alert.alert('Jours d\'entraînement', 'Choisis au moins un jour où tu t\'entraînes.'); return false; }
+    if (!title) { Alert.alert(t('welcome.objNameTitle'), t('welcome.objNameText')); return false; }
+    if (days.length === 0) { Alert.alert(t('welcome.daysTitle'), t('welcome.daysText')); return false; }
     if (preview) return true;
     if (!userId) return false;
     const sp = SPORTS[sportIdx];
@@ -340,7 +341,7 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
     let { error } = await supabase.from('objectives').insert(trainingDays ? { ...row, training_days: trainingDays } : row);
     // Avant la phase 12, la colonne des jours n'existe pas : on crée l'objectif sans.
     if (error && trainingDays && /training_days/i.test(error.message || '')) ({ error } = await supabase.from('objectives').insert(row));
-    if (error) { Alert.alert('Erreur', frError(error)); return false; }
+    if (error) { Alert.alert(t('common.error'), frError(error)); return false; }
     wrote.current = true;
     return true;
   };
@@ -348,7 +349,7 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
   const onContinue = async () => {
     if (busy || !step) return;
     if (step === 'profile') {
-      if (!name.trim()) { Alert.alert('Ton nom', 'Dis à ton cercle comment t\'appeler.'); return; }
+      if (!name.trim()) { Alert.alert(t('welcome.nameTitle'), t('welcome.nameText')); return; }
       setBusy(true); const ok = await saveProfile(); setBusy(false); if (!ok) return;
     } else if (step === 'objective') {
       setBusy(true); const ok = await createObjective(); setBusy(false); if (!ok) return;
@@ -368,26 +369,24 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
         const r = await setAutoEnabled(true);
         setBusy(false);
         if (r !== 'ok') {
-          Alert.alert('Localisation non autorisée', "Pas de souci : tu pourras l'activer plus tard depuis la carte « À la salle » du fil.");
+          Alert.alert(t('welcome.locDeniedTitle'), t('welcome.locDeniedText'));
         } else {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
         }
       } catch (e: any) {
         setBusy(false);
         Alert.alert(
-          e?.message === 'denied' ? 'Localisation non autorisée' : 'Position introuvable',
-          e?.message === 'denied'
-            ? "Pas de souci : tu pourras l'activer plus tard depuis la carte « À la salle » du fil."
-            : "Impossible de lire ta position. Tu pourras ajouter ta salle depuis le fil, une fois sur place.",
+          e?.message === 'denied' ? t('welcome.locDeniedTitle') : t('welcome.noPositionTitle'),
+          e?.message === 'denied' ? t('welcome.locDeniedText') : t('welcome.noPositionText'),
         );
       }
       go(idx + 1);
     };
     if (!here) { finishPlace(); return; }
-    Alert.prompt('Nom de ta salle', 'Ton cercle proche verra « Je suis à … ».', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Enregistrer', onPress: (v?: string) => finishPlace((v || '').trim() || 'Ma salle') },
-    ], 'plain-text', 'Ma salle');
+    Alert.prompt(t('welcome.gymNameTitle'), t('welcome.gymNameText'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.save'), onPress: (v?: string) => finishPlace((v || '').trim() || t('welcome.myGym')) },
+    ], 'plain-text', t('welcome.myGym'));
   };
 
   const enablePush = async () => {
@@ -413,36 +412,36 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
   let below: ReactNode = null;
   let foot = '';
   if (step === 'profile') {
-    primary = <Primary label="Continuer" icon="arrow-forward" iconRight onPress={onContinue} busy={busy} disabled={uploading || !name.trim()} />;
-    foot = 'Tu pourras tout modifier depuis ton profil.';
+    primary = <Primary label={t('common.continue')} icon="arrow-forward" iconRight onPress={onContinue} busy={busy} disabled={uploading || !name.trim()} />;
+    foot = t('welcome.footProfile');
   } else if (step === 'objective') {
-    primary = <Primary label="Créer mon objectif" icon="flag" onPress={onContinue} busy={busy} disabled={!sp || !objTitle.trim()} />;
-    below = <Secondary quiet label="Je choisirai plus tard" onPress={() => go(idx + 1)} />;
-    foot = 'Tu choisis qui voit chaque objectif.';
+    primary = <Primary label={t('welcome.createObjective')} icon="flag" onPress={onContinue} busy={busy} disabled={!sp || !objTitle.trim()} />;
+    below = <Secondary quiet label={t('welcome.chooseLater')} onPress={() => go(idx + 1)} />;
+    foot = t('welcome.footObjective');
   } else if (step === 'place') {
-    primary = <Primary label="Activer la détection" icon="location" onPress={() => enablePlace(false)} busy={busy} />;
+    primary = <Primary label={t('welcome.enableDetection')} icon="location" onPress={() => enablePlace(false)} busy={busy} />;
     below = (
       <>
-        <Secondary label="Je suis à ma salle, l'enregistrer" icon="locate-outline" onPress={() => enablePlace(true)} />
-        <Secondary quiet label="Plus tard" onPress={() => go(idx + 1)} />
+        <Secondary label={t('welcome.atMyGym')} icon="locate-outline" onPress={() => enablePlace(true)} />
+        <Secondary quiet label={t('common.later')} onPress={() => go(idx + 1)} />
       </>
     );
-    foot = 'Ta position reste sur ton téléphone. Seul « je suis arrivé » est envoyé.';
+    foot = t('welcome.footPlace');
   } else if (step === 'notifs') {
-    primary = <Primary label="Activer les notifications" icon="notifications" onPress={enablePush} busy={busy} />;
-    below = <Secondary quiet label="Plus tard" onPress={() => go(idx + 1)} />;
-    foot = 'Tu peux les couper à tout moment dans les réglages.';
+    primary = <Primary label={t('welcome.enableNotifs')} icon="notifications" onPress={enablePush} busy={busy} />;
+    below = <Secondary quiet label={t('common.later')} onPress={() => go(idx + 1)} />;
+    foot = t('welcome.footNotifs');
   } else if (step === 'friends') {
     primary = showContacts
-      ? <Primary label="Trouver mes amis" icon="people" onPress={() => setContacts(true)} />
-      : <Primary label="Inviter mes amis" icon="share-outline" onPress={share} />;
+      ? <Primary label={t('welcome.findFriends')} icon="people" onPress={() => setContacts(true)} />
+      : <Primary label={t('welcome.inviteFriends')} icon="share-outline" onPress={share} />;
     below = (
       <>
-        {showContacts && <Secondary label="Partager mon lien" icon="share-outline" onPress={share} />}
-        <Secondary quiet label="Entrer dans Reiz" onPress={() => go(idx + 1)} />
+        {showContacts && <Secondary label={t('welcome.shareLink')} icon="share-outline" onPress={share} />}
+        <Secondary quiet label={t('welcome.enterReiz')} onPress={() => go(idx + 1)} />
       </>
     );
-    foot = showContacts ? 'Tes contacts restent sur ton téléphone : Reiz ne les enregistre jamais.' : 'Rien n\'est envoyé sans ton tap sur « Envoyer ».';
+    foot = showContacts ? t('welcome.footContacts') : t('welcome.footShare');
   }
 
   return (
@@ -453,7 +452,7 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
         <View style={{ flex: 1, paddingTop: bleed ? 0 : insets.top + 8 }}>
           {/* Barre du haut : retour, progression, passer. Sur l'écran profil, elle flotte par-dessus la photo. */}
           <View style={[{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 12, height: 40 }, bleed && { position: 'absolute', top: insets.top + 8, left: 0, right: 0, zIndex: 5 }]}>
-            <TouchableOpacity onPress={back} disabled={idx === 0 && phase !== 'details'} hitSlop={10} accessibilityLabel="Retour" style={{ width: 28, opacity: idx === 0 && phase !== 'details' ? 0 : 1 }}>
+            <TouchableOpacity onPress={back} disabled={idx === 0 && phase !== 'details'} hitSlop={10} accessibilityLabel={t('common.back')} style={{ width: 28, opacity: idx === 0 && phase !== 'details' ? 0 : 1 }}>
               <Ionicons name="chevron-back" size={24} color="#fff" />
             </TouchableOpacity>
             <View style={{ flex: 1, flexDirection: 'row', gap: 6 }}>
@@ -461,8 +460,8 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
                 <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= idx ? '#fff' : 'rgba(255,255,255,0.18)' }} />
               ))}
             </View>
-            <TouchableOpacity onPress={finish} hitSlop={10} accessibilityLabel="Passer l'accueil" style={{ minWidth: 28, alignItems: 'flex-end' }}>
-              <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, fontFamily: F.semibold }}>Passer</Text>
+            <TouchableOpacity onPress={finish} hitSlop={10} accessibilityLabel={t('welcome.skipAll')} style={{ minWidth: 28, alignItems: 'flex-end' }}>
+              <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, fontFamily: F.semibold }}>{t('welcome.skip')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -477,7 +476,7 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
                 {step === 'profile' && (
                   <>
                     {/* La photo prend tout le haut de l'écran, comme l'onglet Profil. Toucher la photo la change. */}
-                    <TouchableOpacity onPress={pickAvatar} activeOpacity={0.9} style={{ height: heroH }} accessibilityRole="button" accessibilityLabel="Choisir une photo de profil">
+                    <TouchableOpacity onPress={pickAvatar} activeOpacity={0.9} style={{ height: heroH }} accessibilityRole="button" accessibilityLabel={t('welcome.pickAvatar')}>
                       {avatar
                         ? <Image source={{ uri: avatar }} style={StyleSheet.absoluteFill} resizeMode="cover" />
                         : <LinearGradient colors={['#3a3a3a', '#141414']} style={StyleSheet.absoluteFill} />}
@@ -486,7 +485,7 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
                       {!avatar && (
                         <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: heroH * 0.26, alignItems: 'center' }}>
                           <Ionicons name="person" size={76} color="rgba(255,255,255,0.28)" />
-                          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontFamily: F.semibold, marginTop: 10 }}>Touche pour ajouter ta photo</Text>
+                          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontFamily: F.semibold, marginTop: 10 }}>{t('welcome.tapToAddPhoto')}</Text>
                         </View>
                       )}
                       {uploading && <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}><ActivityIndicator color="#fff" /></View>}
@@ -496,16 +495,16 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
                         </GlassSurface>
                       </View>
                       <Rise style={{ position: 'absolute', left: 24, right: 24, bottom: 0 }}>
-                        <Title>Crée ton profil</Title>
-                        <Sub>Ton cercle te reconnaît à ta photo et à ton nom. Ça prend dix secondes.</Sub>
+                        <Title>{t('welcome.profileTitle')}</Title>
+                        <Sub>{t('welcome.profileSub')}</Sub>
                       </Rise>
                     </TouchableOpacity>
                     <Rise delay={120} style={{ marginTop: 24, paddingHorizontal: 24 }}>
-                      <Label>TON NOM</Label>
-                      <TextInput style={inputStyle} value={name} onChangeText={setName} placeholder="Prénom Nom" placeholderTextColor="rgba(255,255,255,0.3)" autoCapitalize="words" maxLength={40} returnKeyType="next" />
+                      <Label>{t('welcome.nameLabel')}</Label>
+                      <TextInput style={inputStyle} value={name} onChangeText={setName} placeholder={t('welcome.namePlaceholder')} placeholderTextColor="rgba(255,255,255,0.3)" autoCapitalize="words" maxLength={40} returnKeyType="next" />
                       <View style={{ height: 16 }} />
-                      <Label>UNE PHRASE SUR TOI (FACULTATIF)</Label>
-                      <TextInput style={inputStyle} value={bio} onChangeText={setBio} placeholder="Ex : je prépare mon premier semi" placeholderTextColor="rgba(255,255,255,0.3)" maxLength={150} returnKeyType="done" />
+                      <Label>{t('welcome.bioLabel')}</Label>
+                      <TextInput style={inputStyle} value={bio} onChangeText={setBio} placeholder={t('welcome.bioPlaceholder')} placeholderTextColor="rgba(255,255,255,0.3)" maxLength={150} returnKeyType="done" />
                     </Rise>
                   </>
                 )}
@@ -514,43 +513,43 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
                   <>
                     <Rise style={{ alignItems: 'center' }}>
                       {/* La discipline choisie, en pastille de verre : la toucher ramène au carrousel. */}
-                      <TouchableOpacity onPress={() => { Haptics.selectionAsync().catch(() => {}); setPhase('pick'); }} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={`Discipline : ${sp.name}. Changer`}>
+                      <TouchableOpacity onPress={() => { Haptics.selectionAsync().catch(() => {}); setPhase('pick'); }} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('welcome.disciplineA11y', { name: sp.name })}>
                         <GlassSurface radius={22} variant="clear" tintColor="rgba(255,255,255,0.08)" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 6, paddingRight: 14, height: 44, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
                           <Image source={sp.photo} style={{ width: 32, height: 32, borderRadius: 16 }} />
                           <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>{sp.name}</Text>
-                          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontFamily: F.semibold }}>Changer</Text>
+                          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontFamily: F.semibold }}>{t('post.change')}</Text>
                         </GlassSurface>
                       </TouchableOpacity>
                     </Rise>
                     <Rise delay={60} style={{ marginTop: 20 }}>
-                      <Title>Ton premier objectif</Title>
-                      <Sub>Fixe ton but. Ton cercle suivra ta progression, séance après séance.</Sub>
+                      <Title>{t('welcome.objTitle')}</Title>
+                      <Sub>{t('welcome.objSub')}</Sub>
                     </Rise>
                     <Rise delay={120} style={{ marginTop: 24 }}>
-                      <Label>NOM DE L'OBJECTIF</Label>
-                      <TextInput style={inputStyle} value={objTitle} onChangeText={setObjTitle} placeholder={sp.id === 'autre' ? 'Ex : escalade, padel, yoga' : sp.title} placeholderTextColor="rgba(255,255,255,0.3)" autoCapitalize="sentences" maxLength={80} returnKeyType="done" />
+                      <Label>{t('welcome.objNameLabel')}</Label>
+                      <TextInput style={inputStyle} value={objTitle} onChangeText={setObjTitle} placeholder={sp.id === 'autre' ? t('welcome.objOtherPlaceholder') : sp.title} placeholderTextColor="rgba(255,255,255,0.3)" autoCapitalize="sentences" maxLength={80} returnKeyType="done" />
                       <View style={{ height: 16 }} />
-                      <Label>TON BUT</Label>
+                      <Label>{t('welcome.goalLabel')}</Label>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', ...inputStyle, paddingVertical: 8 }}>
-                        <Stepper icon="remove" label="Moins" disabled={target <= sp.step} onPress={() => { Haptics.selectionAsync().catch(() => {}); setTarget(t => Math.max(sp.step, t - sp.step)); }} />
-                        <Text style={{ color: '#fff', fontSize: 20, fontFamily: F.extrabold }}>{target} {sp.unit}</Text>
-                        <Stepper icon="add" label="Plus" onPress={() => { Haptics.selectionAsync().catch(() => {}); setTarget(t => t + sp.step); }} />
+                        <Stepper icon="remove" label={t('common.less')} disabled={target <= sp.step} onPress={() => { Haptics.selectionAsync().catch(() => {}); setTarget(t => Math.max(sp.step, t - sp.step)); }} />
+                        <Text style={{ color: '#fff', fontSize: 20, fontFamily: F.extrabold }}>{target} {unitLabel(sp.unit)}</Text>
+                        <Stepper icon="add" label={t('common.more')} onPress={() => { Haptics.selectionAsync().catch(() => {}); setTarget(t => t + sp.step); }} />
                       </View>
                       {/* Ce nombre est le BUT de l'objectif : la barre de progression va de 0 à ce nombre. */}
                       <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, lineHeight: 19, fontFamily: F.regular, textAlign: 'center', marginTop: 8, paddingHorizontal: 8 }}>
                         {sp.unit === 'séances'
-                          ? `${target} séances au total. Chaque séance que tu postes fait avancer ta barre, et ton cercle la voit.`
-                          : `${target} ${sp.unit} au total. Tu ajoutes tes ${sp.unit} à chaque post, ta barre avance et ton cercle la voit.`}
+                          ? t('welcome.goalSessions', { n: target })
+                          : t('welcome.goalUnit', { n: target, unit: unitLabel(sp.unit) })}
                       </Text>
                       <View style={{ height: 16 }} />
-                      <Label>TES JOURS D'ENTRAÎNEMENT</Label>
-                      <TouchableOpacity onPress={() => { Haptics.selectionAsync().catch(() => {}); setEditDays(v => !v); }} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Choisir les jours d'entraînement"
+                      <Label>{t('welcome.daysLabel')}</Label>
+                      <TouchableOpacity onPress={() => { Haptics.selectionAsync().catch(() => {}); setEditDays(v => !v); }} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={t('welcome.pickDays')}
                         style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', ...inputStyle, paddingVertical: 15 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 }}>
                           <Ionicons name="calendar-outline" size={20} color="rgba(255,255,255,0.7)" />
-                          <Text numberOfLines={1} style={{ color: '#fff', fontSize: 16, fontFamily: F.semibold, flexShrink: 1 }}>{days.length === 0 ? 'Choisis des jours' : daysLabel(days).replace(/^./, c => c.toUpperCase())}</Text>
+                          <Text numberOfLines={1} style={{ color: '#fff', fontSize: 16, fontFamily: F.semibold, flexShrink: 1 }}>{days.length === 0 ? t('welcome.pickDaysEmpty') : daysLabel(days).replace(/^./, c => c.toUpperCase())}</Text>
                         </View>
-                        <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, fontFamily: F.semibold }}>{editDays ? 'OK' : 'Modifier'}</Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, fontFamily: F.semibold }}>{editDays ? t('common.ok') : t('common.edit')}</Text>
                       </TouchableOpacity>
                       {editDays && <View style={{ marginTop: 14 }}><TrainingDaysPicker value={days} onChange={setDays} /></View>}
                     </Rise>
@@ -565,11 +564,11 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
                       <LinearGradient pointerEvents="none" colors={['rgba(10,10,10,0.75)', 'rgba(10,10,10,0)']} locations={[0, 0.3]} style={StyleSheet.absoluteFill} />
                       <LinearGradient pointerEvents="none" colors={['rgba(10,10,10,0)', 'rgba(10,10,10,0.6)', '#0a0a0a']} locations={[0.62, 0.82, 1]} style={StyleSheet.absoluteFill} />
                       <Rise delay={200} style={{ position: 'absolute', left: 24, right: 24, bottom: 0 }}>
-                        <Title>Ton lieu d'entraînement</Title>
+                        <Title>{t('welcome.placeTitle')}</Title>
                       </Rise>
                     </View>
                     <Rise delay={260} style={{ paddingHorizontal: 24 }}>
-                      <Sub>Enregistre ta salle une fois. Quand tu y arrives, ton cercle proche est prévenu tout seul, même appli fermée.</Sub>
+                      <Sub>{t('welcome.placeSub')}</Sub>
                     </Rise>
                   </>
                 )}
@@ -577,13 +576,13 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
                 {step === 'notifs' && (
                   <>
                     <View style={{ gap: 10, marginBottom: 30 }}>
-                      <Rise delay={0}><MockNotif photo={PHOTOS.lea} title="Léa a posté : Salle" body="3 / 12 séances. Viens voir sa progression." when="maintenant" /></Rise>
-                      <Rise delay={140} style={{ marginHorizontal: 10 }}><MockNotif photo={PHOTOS.tom} title="Tom a réagi à ton post" body="Sur ton post Courir" when="2 min" /></Rise>
-                      <Rise delay={280} style={{ marginHorizontal: 20 }}><MockNotif photo={PHOTOS.sam} title="Sam te défie" body="Un duel d'une semaine. Tu relèves ?" when="1 h" /></Rise>
+                      <Rise delay={0}><MockNotif photo={PHOTOS.lea} title={t('welcome.mock1Title')} body={t('welcome.mock1Body')} when={t('welcome.mockNow')} /></Rise>
+                      <Rise delay={140} style={{ marginHorizontal: 10 }}><MockNotif photo={PHOTOS.tom} title={t('welcome.mock2Title')} body={t('welcome.mock2Body')} when={t('welcome.mock2When')} /></Rise>
+                      <Rise delay={280} style={{ marginHorizontal: 20 }}><MockNotif photo={PHOTOS.sam} title={t('welcome.mock3Title')} body={t('welcome.mock3Body')} when={t('welcome.mock3When')} /></Rise>
                     </View>
                     <Rise delay={360}>
-                      <Title>Ton cercle t'attend</Title>
-                      <Sub>Sois prévenu quand un ami poste, réagit ou te lance un défi. Juste ce qui compte, rien de plus.</Sub>
+                      <Title>{t('welcome.notifsTitle')}</Title>
+                      <Sub>{t('welcome.notifsSub')}</Sub>
                     </Rise>
                   </>
                 )}
@@ -601,8 +600,8 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
                       </View>
                     </Rise>
                     <Rise delay={80} style={{ marginTop: 28 }}>
-                      <Title>Mieux à plusieurs</Title>
-                      <Sub>Reiz, c'est ton cercle qui te motive. Invite un ami pour que ça démarre dès aujourd'hui.</Sub>
+                      <Title>{t('welcome.friendsTitle')}</Title>
+                      <Sub>{t('welcome.friendsSub')}</Sub>
                     </Rise>
                     <Rise delay={160} style={{ marginTop: 24 }}>
                       <GlassCard radius={16}>

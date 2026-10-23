@@ -9,20 +9,21 @@ import { Objective } from '../lib/types';
 import { ALL_DAYS, hasSchedule, GUTTER } from '../constants';
 import { TrainingDaysPicker } from './TrainingDays';
 import { F } from '../styles';
+import { t } from '../i18n';
 
 // Modifier un objectif déjà créé : qui le voit, les jours où tu t'entraînes, ou le supprimer.
 // Même feuille depuis l'onglet des objectifs et depuis le profil.
 const VISIBILITY = [
-  { key: 'friends', label: 'Mon cercle' },
-  { key: 'close', label: '★ Proches' },
-  { key: 'private', label: 'Privé' },
-  { key: 'public', label: 'Public' },
+  { key: 'friends', label: t('objective.visFriends') },
+  { key: 'close', label: t('objective.visClose') },
+  { key: 'private', label: t('vis.private') },
+  { key: 'public', label: t('vis.public') },
 ];
 const VIS_HINT: Record<string, string> = {
-  friends: 'Tous tes amis le voient.',
-  close: "Seuls les amis de ton cercle proche (marqués d'une étoile) le voient.",
-  private: 'Toi seul le vois.',
-  public: 'Tout le monde peut le voir.',
+  friends: t('objective.hintFriends'),
+  close: t('objective.hintClose'),
+  private: t('objective.hintPrivate'),
+  public: t('objective.hintPublic'),
 };
 
 const sortedOrNull = (d?: number[] | null) => (hasSchedule(d) ? [...d!].sort((a, b) => a - b) : null);
@@ -47,7 +48,7 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
 
   const save = async () => {
     if (!objective || saving) return;
-    if (days.length === 0) { Alert.alert("Jours d'entraînement", "Choisis au moins un jour où tu t'entraînes."); return; }
+    if (days.length === 0) { Alert.alert(t('welcome.daysTitle'), t('welcome.daysText')); return; }
     // On n'envoie que ce qui change : modifier la visibilité ne dépend pas de la colonne des jours.
     const newDays = days.length === 7 ? null : [...days].sort((a, b) => a - b);
     const patch: Partial<Objective> = {};
@@ -58,7 +59,7 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
     const { error } = await supabase.from('objectives').update(patch).eq('id', objective.id);
     setSaving(false);
     if (error) {
-      Alert.alert('Erreur', /training_days/i.test(error.message || '') ? "Les jours d'entraînement ne sont pas encore disponibles. Réessaie un peu plus tard." : frError(error));
+      Alert.alert(t('common.error'), /training_days/i.test(error.message || '') ? t('objective.daysUnavailable') : frError(error));
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -79,24 +80,24 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
     <Modal visible={!!objective} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: '#0a0a0a' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: GUTTER, paddingTop: 16, paddingBottom: 8 }}>
-          <TouchableOpacity onPress={onClose} accessibilityLabel="Annuler" hitSlop={8}>
+          <TouchableOpacity onPress={onClose} accessibilityLabel={t('common.cancel')} hitSlop={8}>
             <GlassSurface radius={20} variant="clear" style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name="close" size={20} color="#fff" />
             </GlassSurface>
           </TouchableOpacity>
           <TouchableOpacity onPress={saving ? undefined : save} activeOpacity={0.85} style={{ height: 40, borderRadius: 20, paddingHorizontal: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', minWidth: 110 }}>
-            {saving ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>Enregistrer</Text>}
+            {saving ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>{t('common.save')}</Text>}
           </TouchableOpacity>
         </View>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: 60 }}>
-          <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5 }}>MODIFIER L'OBJECTIF</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5 }}>{t('objective.editLabel')}</Text>
           {!!objective && (
             <Text style={{ color: '#fff', fontSize: 30, lineHeight: 34, fontFamily: F.black, letterSpacing: -0.9, marginTop: 6 }} numberOfLines={2}>{objective.title}</Text>
           )}
 
           <GlassCard radius={28} style={{ marginTop: 22 }}>
             <View style={{ padding: 18 }}>
-              <Text style={label}>QUI VOIT ?</Text>
+              <Text style={label}>{t('objective.whoSees')}</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
                 {VISIBILITY.map(v => {
                   const on = visibility === v.key;
@@ -114,7 +115,7 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
 
           <GlassCard radius={28} style={{ marginTop: 14 }}>
             <View style={{ padding: 18 }}>
-              <Text style={[label, { marginBottom: 12 }]}>JOURS D'ENTRAÎNEMENT</Text>
+              <Text style={[label, { marginBottom: 12 }]}>{t('welcome.daysLabel')}</Text>
               <TrainingDaysPicker value={days} onChange={setDays} />
             </View>
           </GlassCard>
@@ -122,7 +123,7 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
           <TouchableOpacity onPress={remove} activeOpacity={0.85} style={{ marginTop: 26 }} accessibilityRole="button">
             <GlassSurface radius={20} tintColor="rgba(255,69,58,0.12)" style={{ height: 52, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, borderWidth: 1, borderColor: 'rgba(255,69,58,0.35)' }}>
               <Ionicons name="trash-outline" size={18} color="#ff453a" />
-              <Text style={{ color: '#ff453a', fontSize: 15, fontFamily: F.bold }}>Supprimer l'objectif</Text>
+              <Text style={{ color: '#ff453a', fontSize: 15, fontFamily: F.bold }}>{t('main.deleteObjTitle')}</Text>
             </GlassSurface>
           </TouchableOpacity>
         </ScrollView>

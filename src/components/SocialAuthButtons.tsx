@@ -3,6 +3,7 @@ import { View, Alert, Platform, ActivityIndicator } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { signInWithApple, isAppleAvailable } from '../lib/appleAuth';
 import { GoogleButton, AuthMode } from './GoogleButton';
+import { t } from '../i18n';
 
 const APPLE_TYPE = {
   signin: AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN,
@@ -22,7 +23,7 @@ export function SocialAuthButtons({ mode = 'continue' }: { mode?: AuthMode }) {
     setBusy(true);
     const err = await signInWithApple();
     setBusy(false);
-    if (err) Alert.alert('Erreur', err);
+    if (err) Alert.alert(t('common.error'), err);
   };
 
   return (

@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { signMany, signAvatars } from './storage';
 import { Update, FeedMeta, Reactor } from './types';
+import { t } from '../i18n';
 
 // Même sélection que le fil, pour réafficher un post à l'identique partout
 // (fil d'activité, grille du profil, posts épinglés).
@@ -112,14 +113,14 @@ export const MAX_PINNED = 3;
 export async function togglePin(u: Update, userId: string): Promise<string | null> {
   if (u.pinned_at) {
     const { error } = await supabase.from('updates').update({ pinned_at: null }).eq('id', u.id);
-    return error ? 'Impossible de désépingler ce post.' : null;
+    return error ? t('posts.unpinFailed') : null;
   }
   const { count } = await supabase
     .from('updates')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
     .not('pinned_at', 'is', null);
-  if ((count || 0) >= MAX_PINNED) return `${MAX_PINNED} posts épinglés maximum. Désépingle-en un d'abord.`;
+  if ((count || 0) >= MAX_PINNED) return t('posts.pinMax', { n: MAX_PINNED });
   const { error } = await supabase.from('updates').update({ pinned_at: new Date().toISOString() }).eq('id', u.id);
-  return error ? "Impossible d'épingler ce post." : null;
+  return error ? t('posts.pinFailed') : null;
 }

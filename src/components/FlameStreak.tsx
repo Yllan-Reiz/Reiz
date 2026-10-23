@@ -3,6 +3,7 @@ import { Text, Animated, Easing, TouchableOpacity, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { s } from '../styles';
+import { t, tp } from '../i18n';
 
 const AnimatedIcon = Animated.createAnimatedComponent(Ionicons);
 
@@ -39,15 +40,15 @@ export function FlameStreak({ streak }: { streak: number }) {
   const explain = () => {
     Haptics.selectionAsync().catch(() => {});
     Alert.alert(
-      streak > 0 ? `🔥 ${streak} jour${streak > 1 ? 's' : ''} d'affilée` : 'Ta série',
+      streak > 0 ? tp('story.streak', streak) : t('streak.title'),
       streak > 0
-        ? `Tu as posté une séance ${streak} jour${streak > 1 ? 's' : ''} de suite. Poste aujourd'hui pour la garder : un jour sans post et elle repart à zéro.`
-        : "Poste une séance aujourd'hui pour lancer ta série. Chaque jour où tu postes la fait monter, ton cercle la voit sur ton profil.",
+        ? tp('streak.running', streak)
+        : t('streak.none'),
     );
   };
 
   return (
-    <TouchableOpacity style={s.streakBadge} onPress={explain} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={`Série de ${streak} jours, en savoir plus`} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+    <TouchableOpacity style={s.streakBadge} onPress={explain} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={tp('streak.a11y', streak)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
       <AnimatedIcon
         name="flame"
         size={iconSize}

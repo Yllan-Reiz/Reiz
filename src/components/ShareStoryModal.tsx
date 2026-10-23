@@ -12,6 +12,7 @@ import { APP_STORE_URL } from '../constants';
 import { isVideo } from '../lib/storage';
 import { videoStill } from '../lib/videoTools';
 import { F } from '../styles';
+import { t, tp } from '../i18n';
 
 export type StoryData = {
   photoUri?: string | null;   // image ou vidéo (vidéo : story vidéo avec le build 13, sinon son image ; sans rien : fond sombre)
@@ -70,17 +71,17 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
         // L'habillage seul, en PNG transparent. Le module télécharge lui-même une vidéo du fil.
         const overlay = await captureRef(ref, { format: 'png', quality: 1, width: 1080, height: 1920, result: 'tmpfile' });
         const mp4 = await composeVideoStory(videoSrc, overlay);
-        if (!(await Sharing.isAvailableAsync())) { Alert.alert('Partage indisponible', "Ton téléphone ne permet pas de partager cette vidéo."); return; }
+        if (!(await Sharing.isAvailableAsync())) { Alert.alert(t('story.unavailableTitle'), t('story.unavailableVideo')); return; }
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        await Sharing.shareAsync(mp4, { mimeType: 'video/mp4', UTI: 'public.mpeg-4', dialogTitle: 'Partager en story' });
+        await Sharing.shareAsync(mp4, { mimeType: 'video/mp4', UTI: 'public.mpeg-4', dialogTitle: t('post.shareStory') });
         return;
       }
       const uri = await captureRef(ref, { format: 'png', quality: 1, width: 1080, height: 1920, result: 'tmpfile' });
-      if (!(await Sharing.isAvailableAsync())) { Alert.alert('Partage indisponible', "Ton téléphone ne permet pas de partager ce visuel."); return; }
+      if (!(await Sharing.isAvailableAsync())) { Alert.alert(t('story.unavailableTitle'), t('story.unavailableImage')); return; }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: 'Partager en story' });
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: t('post.shareStory') });
     } catch (e) {
-      Alert.alert('Erreur', __DEV__ ? String((e as any)?.message || e) : "Impossible de créer le visuel. Réessaie.");
+      Alert.alert(t('common.error'), __DEV__ ? String((e as any)?.message || e) : t('story.failed'));
     } finally {
       setBusy(false);
     }
@@ -97,10 +98,10 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: '#050505', paddingTop: insets.top, paddingBottom: insets.bottom + 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 48 }}>
-          <TouchableOpacity onPress={onClose} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }} accessibilityLabel="Fermer" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity onPress={onClose} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }} accessibilityLabel={t('common.close')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="close" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={{ flex: 1, textAlign: 'center', color: '#fff', fontSize: 16, fontFamily: F.bold }}>Partager en story</Text>
+          <Text style={{ flex: 1, textAlign: 'center', color: '#fff', fontSize: 16, fontFamily: F.bold }}>{t('post.shareStory')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -126,7 +127,7 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
               <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9 * k, letterSpacing: 3 * k, fontFamily: F.semibold, marginTop: -2 * k }}>RISE TO YOUR GOALS</Text>
               {!!data.duoNames && (
                 <View style={{ marginTop: 14 * k, backgroundColor: 'rgba(15,15,15,0.72)', borderRadius: 16 * k, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 14 * k, paddingVertical: 7 * k }}>
-                  <Text style={{ color: '#fff', fontSize: 13 * k, fontFamily: F.extrabold }}>🤝 Duo avec {data.duoNames}</Text>
+                  <Text style={{ color: '#fff', fontSize: 13 * k, fontFamily: F.extrabold }}>{t('story.duoWith', { names: data.duoNames })}</Text>
                 </View>
               )}
             </View>
@@ -142,13 +143,13 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
                   <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 * k, fontFamily: F.regular, lineHeight: 19 * k, marginTop: 12 * k }} numberOfLines={3}>{data.caption}</Text>
                 )}
                 {!!data.streak && data.streak > 1 && (
-                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 * k, fontFamily: F.semibold, marginTop: 10 * k }}>🔥 {data.streak} jours d'affilée</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 * k, fontFamily: F.semibold, marginTop: 10 * k }}>{tp('story.streak', data.streak || 0)}</Text>
                 )}
               </View>
 
               {/* Pas de faux bouton : un texte, et la place du sticker « Lien » que la personne ajoute dans Instagram. */}
-              <Text style={{ color: '#fff', fontSize: 16 * k, fontFamily: F.extrabold, textAlign: 'center', marginTop: 16 * k }}>{data.duoNames ? 'Rejoins-nous sur Reiz' : data.username ? `Rejoins @${data.username} sur Reiz` : 'Rejoins mon cercle sur Reiz'}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11 * k, fontFamily: F.regular, textAlign: 'center', marginTop: 4 * k }}>Ton cercle te regarde. Disponible sur iPhone.</Text>
+              <Text style={{ color: '#fff', fontSize: 16 * k, fontFamily: F.extrabold, textAlign: 'center', marginTop: 16 * k }}>{data.duoNames ? t('story.joinUs') : data.username ? t('story.joinUser', { username: data.username }) : t('friends.shareTitle')}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11 * k, fontFamily: F.regular, textAlign: 'center', marginTop: 4 * k }}>{t('story.tagline')}</Text>
               <View style={{ height: 66 * k }} />
             </View>
           </ViewShot>
@@ -159,22 +160,22 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
           <TouchableOpacity onPress={share} activeOpacity={0.85} disabled={!ready || busy}
             style={{ backgroundColor: ready ? '#fff' : '#1e1e1e', borderRadius: 16, padding: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
             {busy && videoSrc
-              ? <><ActivityIndicator color="#000" /><Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }}>Création de la vidéo…</Text></>
+              ? <><ActivityIndicator color="#000" /><Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }}>{t('story.creatingVideo')}</Text></>
               : busy || !ready
                 ? <ActivityIndicator color={ready ? '#000' : '#888'} />
-                : <><Ionicons name="logo-instagram" size={18} color="#000" /><Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }}>{videoSrc ? 'Partager la vidéo' : 'Partager'}</Text></>}
+                : <><Ionicons name="logo-instagram" size={18} color="#000" /><Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }}>{videoSrc ? t('story.shareVideo') : t('common.share')}</Text></>}
           </TouchableOpacity>
 
           {/* Le lien à coller dans le sticker « Lien » d'Instagram : c'est lui qui rend la story cliquable. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, backgroundColor: '#141414', borderRadius: 14, borderWidth: 1, borderColor: '#262626', paddingLeft: 14, paddingRight: 6, paddingVertical: 6 }}>
             <Ionicons name="link" size={16} color="#888" />
             <Text style={{ flex: 1, color: '#bbb', fontSize: 12, fontFamily: F.semibold }} numberOfLines={1}>{shortLink}</Text>
-            <TouchableOpacity onPress={copyLink} activeOpacity={0.8} style={{ backgroundColor: '#262626', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }} accessibilityLabel="Copier mon lien d'invitation">
-              <Text style={{ color: '#fff', fontSize: 13, fontFamily: F.bold }}>Copier</Text>
+            <TouchableOpacity onPress={copyLink} activeOpacity={0.8} style={{ backgroundColor: '#262626', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }} accessibilityLabel={t('story.copyLinkA11y')}>
+              <Text style={{ color: '#fff', fontSize: 13, fontFamily: F.bold }}>{t('story.copy')}</Text>
             </TouchableOpacity>
           </View>
           <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 17, marginTop: 10 }}>
-            Pour que ta story soit cliquable : copie ton lien, partage en story, puis ajoute le sticker « Lien » d'Instagram, colle-le et pose-le en bas.
+            {t('story.linkHint')}
           </Text>
         </View>
       </View>

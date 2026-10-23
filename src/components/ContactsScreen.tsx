@@ -7,6 +7,7 @@ import { frError } from '../lib/helpers';
 import { sha256Hex } from '../lib/sha256';
 import { DeviceContact, Matched, loadDeviceContacts, matchContacts, inviteBySms, inviteByEmail, inviteText } from '../lib/contacts';
 import { s, F } from '../styles';
+import { t } from '../i18n';
 
 // « Mes contacts » : ceux qui sont déjà sur Reiz (à ajouter en un tap) et les autres (à inviter par message).
 // Rien n'est envoyé sans ton tap : « Inviter » ouvre Messages avec le texte prêt, tu appuies toi-même sur Envoyer.
@@ -62,7 +63,7 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
     const { error } = await supabase.from('friendships').insert({ requester_id: meId, receiver_id: u.id, status: 'pending' });
     if (error && !/duplicate key/i.test(error.message || '')) {
       setRels(prev => { const n = { ...prev }; delete n[u.id]; return n; });
-      Alert.alert('Erreur', frError(error));
+      Alert.alert(t('common.error'), frError(error));
     }
   };
 
@@ -74,13 +75,13 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
   const rows: Row[] = [];
   const onReiz = (matched || []).filter(u => rels[u.id] !== 'friend');
   if (onReiz.length > 0) {
-    rows.push({ kind: 'head', key: 'h-reiz', title: `DÉJÀ SUR REIZ (${onReiz.length})` });
+    rows.push({ kind: 'head', key: 'h-reiz', title: t('contacts.onReiz', { n: onReiz.length }) });
     onReiz.forEach(u => rows.push({ kind: 'user', key: `u-${u.id}`, user: u, contactName: u.full_name }));
   }
   const toInvite = contacts.filter(c => !q || c.name.toLowerCase().includes(q));
   const invitable = toInvite.filter(c => !c.emails.some(e => matchedHashes.has(sha256Hex(e))));
   if (invitable.length > 0) {
-    rows.push({ kind: 'head', key: 'h-inv', title: `INVITER (${invitable.length})` });
+    rows.push({ kind: 'head', key: 'h-inv', title: t('contacts.invite', { n: invitable.length }) });
     invitable.forEach(c => rows.push({ kind: 'contact', key: `c-${c.id}`, contact: c }));
   }
 
@@ -88,8 +89,8 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={s.modalContainer}>
         <View style={s.modalHeader}>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Text style={s.modalCancel}>Fermer</Text></TouchableOpacity>
-          <Text style={s.modalTitle}>Mes contacts</Text>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Text style={s.modalCancel}>{t('common.close')}</Text></TouchableOpacity>
+          <Text style={s.modalTitle}>{t('contacts.title')}</Text>
           <View style={{ width: 46 }} />
         </View>
 
@@ -99,16 +100,16 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
             <Ionicons name="people-outline" size={44} color="#888" />
             <Text style={{ color: '#fff', fontSize: 20, fontFamily: F.black, marginTop: 14, textAlign: 'center' }}>
-              {phase === 'denied' ? "Reiz n'a pas accès à tes contacts" : 'Pas disponible sur cette version'}
+              {phase === 'denied' ? t('contacts.deniedTitle') : t('contacts.unavailableTitle')}
             </Text>
             <Text style={{ color: '#888', fontSize: 14, lineHeight: 21, marginTop: 8, textAlign: 'center' }}>
               {phase === 'denied'
-                ? "Autorise l'accès dans les réglages de ton iPhone pour retrouver tes amis déjà sur Reiz et inviter les autres. Tes contacts restent sur ton téléphone."
-                : 'Mets Reiz à jour pour retrouver tes contacts.'}
+                ? t('contacts.deniedText')
+                : t('contacts.unavailableText')}
             </Text>
             {phase === 'denied' && (
               <TouchableOpacity onPress={() => Linking.openSettings().catch(() => {})} style={{ backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 24, paddingVertical: 14, marginTop: 22 }}>
-                <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>Ouvrir les réglages</Text>
+                <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>{t('common.openSettings')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -123,26 +124,26 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
             ListHeaderComponent={
               <View style={{ marginBottom: 10 }}>
                 <Text style={{ color: '#777', fontSize: 12, lineHeight: 17, marginBottom: 12 }}>
-                  Tes contacts restent sur ton téléphone : Reiz compare seulement des empreintes de leurs e-mails, sans rien enregistrer.
+                  {t('contacts.privacy')}
                 </Text>
                 <TextInput
                   value={query}
                   onChangeText={setQuery}
-                  placeholder="Chercher dans mes contacts"
+                  placeholder={t('contacts.search')}
                   placeholderTextColor="#666"
                   autoCorrect={false}
                   style={{ backgroundColor: '#141414', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, color: '#fff', fontSize: 15, fontFamily: F.regular, borderWidth: 1, borderColor: '#222' }}
                 />
                 <TouchableOpacity onPress={shareLink} activeOpacity={0.85} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 16, paddingVertical: 14, justifyContent: 'center', marginTop: 12 }}>
                   <Ionicons name="share-outline" size={18} color="#000" />
-                  <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>Inviter avec mon lien</Text>
+                  <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>{t('contacts.inviteLink')}</Text>
                 </TouchableOpacity>
                 {matched === null && (
-                  <Text style={{ color: '#ff9f43', fontSize: 12, marginTop: 10 }}>La recherche d'amis déjà sur Reiz n'est pas encore disponible. Tu peux déjà inviter tes contacts.</Text>
+                  <Text style={{ color: '#ff9f43', fontSize: 12, marginTop: 10 }}>{t('contacts.matchUnavailable')}</Text>
                 )}
               </View>
             }
-            ListEmptyComponent={<Text style={{ color: '#777', textAlign: 'center', marginTop: 40 }}>{q ? 'Aucun contact trouvé.' : 'Aucun contact avec un numéro ou un e-mail.'}</Text>}
+            ListEmptyComponent={<Text style={{ color: '#777', textAlign: 'center', marginTop: 40 }}>{q ? t('contacts.noneFound') : t('contacts.none')}</Text>}
             renderItem={({ item }) => {
               if (item.kind === 'head') return <Text style={[s.sectionTitle, { marginTop: 16, marginBottom: 8 }]}>{item.title}</Text>;
               if (item.kind === 'user') {
@@ -158,10 +159,10 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
                       <Text style={s.friendRowSub}>@{u.username}</Text>
                     </View>
                     {rel === 'sent' ? (
-                      <Text style={{ color: '#888', fontSize: 13, fontFamily: F.semibold }}>Demande envoyée</Text>
+                      <Text style={{ color: '#888', fontSize: 13, fontFamily: F.semibold }}>{t('friendsGlass.requestSent')}</Text>
                     ) : (
                       <TouchableOpacity style={s.addFriendBtn} onPress={() => add(u)}>
-                        <Text style={s.addFriendBtnText}>{rel === 'received' ? 'Accepter' : 'Ajouter'}</Text>
+                        <Text style={s.addFriendBtnText}>{rel === 'received' ? t('duelCard.accept') : t('friends.add')}</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -177,9 +178,9 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
                   </View>
                   <TouchableOpacity
                     style={s.addFriendBtn}
-                    onPress={() => { Haptics.selectionAsync().catch(() => {}); (c.phones[0] ? inviteBySms(c.phones[0], myUsername) : inviteByEmail(c.emails[0], myUsername)).catch(() => Alert.alert('Erreur', "Impossible d'ouvrir l'invitation.")); }}
+                    onPress={() => { Haptics.selectionAsync().catch(() => {}); (c.phones[0] ? inviteBySms(c.phones[0], myUsername) : inviteByEmail(c.emails[0], myUsername)).catch(() => Alert.alert(t('common.error'), t('contacts.inviteFailed'))); }}
                   >
-                    <Text style={s.addFriendBtnText}>Inviter</Text>
+                    <Text style={s.addFriendBtnText}>{t('contacts.inviteBtn')}</Text>
                   </TouchableOpacity>
                 </View>
               );
