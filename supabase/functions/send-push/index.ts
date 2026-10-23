@@ -48,8 +48,10 @@ async function apnsToken(): Promise<string | null> {
   return apnsJwt.token;
 }
 
+type DuoExtras = { updateId: string; countLabel?: string; initials: string[]; moreCount: number };
+
 /** Lance la carte du duo sur l'iPhone de l'ami identifié. true = Apple l'a acceptée (pas besoin de la notification classique). */
-async function startDuoActivity(recipientId: string, actorId: string, name: string, objLabel: string, postedAt: string): Promise<boolean> {
+async function startDuoActivity(recipientId: string, actorId: string, name: string, objLabel: string, postedAt: string, extras: DuoExtras): Promise<boolean> {
   try {
     const { data } = await supabase.from('live_activity_tokens').select('token').eq('user_id', recipientId).maybeSingle();
     if (!data?.token) return false;
@@ -58,19 +60,21 @@ async function startDuoActivity(recipientId: string, actorId: string, name: stri
     const jwt = await apnsToken();
     if (!jwt) return false;
     const first = name.split(' ')[0];
+    const contentState = {
+      title: `${first} t'attend 🤝`,
+      subtitle: objLabel || 'Poste ta séance pour valider le duo',
+      timerEndDateInMilliseconds: deadline,
+      imageName: 'reiz_logo',
+      dynamicIslandImageName: 'reiz_logo',
+    };
+    // L'heure du post, en heure de Paris (« 18:42 »), en haut à droite de la carte.
+    const timeLabel = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }).format(new Date(postedAt));
     const payload = {
       aps: {
         timestamp: Math.floor(Date.now() / 1000),
         event: 'start',
         'stale-date': Math.floor(deadline / 1000),
-        'content-state': {
-          title: `${first} t'attend 🤝`,
-          // Court : la carte n'affiche qu'une ligne de sous-titre.
-          subtitle: 'Poste ta séance pour valider le duo',
-          timerEndDateInMilliseconds: deadline,
-          imageName: 'reiz_logo',
-          dynamicIslandImageName: 'reiz_logo',
-        },
+        'content-state': contentState,
         'attributes-type': 'LiveActivityAttributes',
         attributes: {
           name: 'duo',
@@ -82,6 +86,12 @@ async function startDuoActivity(recipientId: string, actorId: string, name: stri
           deepLinkUrl: `duo/${actorId}`,
           timerType: 'digital',
           imagePosition: 'right',
+          // Ajouts Reiz, lus par la carte (plugins/live-activity/LiveActivityWidget.swift).
+          startDateInMilliseconds: new Date(postedAt).getTime(),
+          countLabel: extras.countLabel,
+          initials: extras.initials,
+          moreCount: extras.moreCount,
+          timeLabel,
         },
         alert: {
           title: `${first} t'a identifié dans sa séance 🤝`,
@@ -101,7 +111,14 @@ async function startDuoActivity(recipientId: string, actorId: string, name: stri
       },
       body: JSON.stringify(payload),
     });
-    if (res.ok) return true;
+    if (res.ok) {
+      // Suivi de la carte : live-activity-tick la fera passer à l'orange puis au rouge, et la fermera.
+      await supabase.from('live_activity_runs').upsert({
+        update_id: extras.updateId, user_id: recipientId, deadline: new Date(deadline).toISOString(),
+        content: contentState, author_name: name, phase: 'vert', update_token: null,
+      }, { onConflict: 'update_id,user_id' });
+      return true;
+    }
     const reason = (await res.json().catch(() => ({})))?.reason || res.status;
     console.error('live activity refusée', reason);
     // Jeton périmé (app supprimée, autre iPhone) : on l'oublie.
@@ -153,7 +170,7 @@ Deno.serve(async (req) => {
       ? supabase.from('users').select('full_name').eq('id', n.actor_id).single()
       : Promise.resolve({ data: null }),
     n.update_id
-      ? supabase.from('updates').select('caption, progress_value, created_at, objectives(emoji, title, unit, target_value)').eq('id', n.update_id).single()
+      ? supabase.from('updates').select('caption, progress_value, created_at, with_user_ids, objectives(emoji, title, unit, target_value)').eq('id', n.update_id).single()
       : Promise.resolve({ data: null }),
   ]);
 
@@ -255,9 +272,27 @@ Deno.serve(async (req) => {
   }
 
   // Duo : la carte avec compte à rebours remplace la notification classique (elle a sa propre alerte).
-  if (n.type === 'duo_tag' && n.actor_id && upd?.created_at
-      && await startDuoActivity(n.recipient_id, n.actor_id, name, objLabel, upd.created_at)) {
-    return new Response('live activity');
+  if (n.type === 'duo_tag' && n.actor_id && upd?.created_at) {
+    // Les visages de la séance : l'auteur, puis les autres amis identifiés (sans toi). Initiales, pas de photos :
+    // une carte d'Activité en direct ne peut pas télécharger d'image.
+    const others = ((upd.with_user_ids || []) as string[]).filter(id => id !== n.recipient_id);
+    const { data: people } = others.length
+      ? await supabase.from('users').select('id, full_name').in('id', others)
+      : { data: [] as { id: string; full_name: string }[] };
+    const names = [name, ...others.map(id => (people || []).find(p => p.id === id)?.full_name).filter(Boolean) as string[]];
+    const initials = names.slice(0, 3).map(x => (x.trim()[0] || '?').toUpperCase());
+    // « 3/4 » : la progression de l'auteur sur cet objectif.
+    let countLabel: string | undefined;
+    if (obj) {
+      const pct = Math.min(Number(upd.progress_value) || 0, 100);
+      countLabel = obj.unit && obj.unit !== '%' && obj.target_value
+        ? `${Math.round((pct / 100) * obj.target_value * 10) / 10}/${obj.target_value}`.replace('.', ',')
+        : `${pct}%`;
+    }
+    if (await startDuoActivity(n.recipient_id, n.actor_id, name, objLabel, upd.created_at,
+        { updateId: n.update_id, countLabel, initials, moreCount: Math.max(0, names.length - 3) })) {
+      return new Response('live activity');
+    }
   }
   if (!token) return new Response('no token');
 

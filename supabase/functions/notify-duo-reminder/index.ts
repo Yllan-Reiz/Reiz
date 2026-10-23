@@ -42,6 +42,9 @@ Deno.serve(async (req) => {
 
   const { data: logs } = await supabase.from('duo_reminders').select('update_id, user_id, stage').in('update_id', ids);
   const done = new Set((logs || []).map(l => `${l.update_id}:${l.user_id}:${l.stage}`));
+  // Carte du duo en cours sur son iPhone (Activité en direct avec jeton) : c'est elle qui rappelle, en changeant de couleur.
+  const { data: cards } = await supabase.from('live_activity_runs').select('update_id, user_id').in('update_id', ids).not('update_token', 'is', null);
+  const withCard = new Set((cards || []).map(c => `${c.update_id}:${c.user_id}`));
 
   type Todo = { postId: string; authorId: string; userId: string; stage: number; left: string };
   const todo: Todo[] = [];
@@ -50,7 +53,7 @@ Deno.serve(async (req) => {
     const st = STAGES.find(s => elapsed >= s.from && elapsed < s.to);
     if (!st) continue;
     for (const uid of (p.with_user_ids || []) as string[]) {
-      if (!tagged.has(`${p.id}:${uid}`) || done.has(`${p.id}:${uid}:${st.stage}`)) continue;
+      if (!tagged.has(`${p.id}:${uid}`) || done.has(`${p.id}:${uid}:${st.stage}`) || withCard.has(`${p.id}:${uid}`)) continue;
       // Déjà validé ? Il a posté, en identifiant l'auteur, à moins d'une heure de ce post.
       const lo = new Date(new Date(p.created_at).getTime() - WINDOW_MIN * MIN).toISOString();
       const hi = new Date(new Date(p.created_at).getTime() + WINDOW_MIN * MIN).toISOString();

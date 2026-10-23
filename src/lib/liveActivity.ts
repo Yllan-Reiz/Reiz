@@ -16,6 +16,7 @@ function liveActivity(): any | null {
 }
 
 let subscription: { remove: () => void } | null = null;
+let updateSubscription: { remove: () => void } | null = null;
 
 /** Écoute le jeton « push-to-start » de cet iPhone et le range pour le compte connecté. */
 export function registerLiveActivityToken() {
@@ -26,12 +27,21 @@ export function registerLiveActivityToken() {
     if (!activityPushToStartToken) return;
     await supabase.rpc('save_live_activity_token', { p_token: activityPushToStartToken }).then(() => {}, () => {});
   }) ?? null;
+  // Une fois la carte du duo affichée, l'iPhone donne son jeton de mise à jour : le serveur s'en sert pour la faire
+  // passer à l'orange puis au rouge, et la fermer (fonction live-activity-tick).
+  updateSubscription?.remove();
+  updateSubscription = LA.addActivityTokenListener?.(async ({ activityPushToken }: { activityPushToken: string }) => {
+    if (!activityPushToken) return;
+    await supabase.rpc('save_live_activity_update_token', { p_token: activityPushToken }).then(() => {}, () => {});
+  }) ?? null;
 }
 
 /** Déconnexion (à appeler AVANT signOut) : le jeton n'appartient plus à ce compte. */
 export async function forgetLiveActivityToken() {
   subscription?.remove();
   subscription = null;
+  updateSubscription?.remove();
+  updateSubscription = null;
   await endAllLiveActivities();
   await supabase.rpc('forget_live_activity_token').then(() => {}, () => {});
 }
