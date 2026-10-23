@@ -61,7 +61,7 @@ function Row({ person, onPress, onLongPress, ring, right }: { person: Person; on
 const SPORT_SEARCH: { id: string; label: string; terms: string[] }[] = [
   { id: 'musculation', label: 'Musculation', terms: ['musculation', 'muscu', 'salle', 'bench', 'squat', 'soulevé', 'terre', 'développé', 'powerlift', 'bodybuild'] },
   { id: 'street', label: 'Street Workout', terms: ['street-workout', 'street', 'calisthenics', 'traction', 'dips', 'muscle up', 'planche'] },
-  { id: 'hyrox', label: 'HYROX', terms: ['hyrox', 'crossfit', 'wod'] },
+  { id: 'hyrox', label: 'Hyrox', terms: ['hyrox', 'crossfit', 'wod'] },
   { id: 'running', label: 'Running', terms: ['course', 'courir', 'running', 'run', 'marathon', 'semi', '10 km', 'trail'] },
   { id: 'cyclisme', label: 'Cyclisme', terms: ['cyclisme', 'vélo', 'velo', 'cyclisme', 'bike', 'gravel'] },
   { id: 'combat', label: 'Sports de combat', terms: ['combat', 'boxe', 'box', 'mma', 'jjb', 'jiu', 'grappling', 'judo', 'lutte', 'muay', 'kick', 'karaté', 'krav'] },
