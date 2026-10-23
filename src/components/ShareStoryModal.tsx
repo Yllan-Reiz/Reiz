@@ -6,13 +6,15 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
 import ViewShot, { captureRef } from 'react-native-view-shot';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { videoStoryAvailable, composeVideoStory } from '../../modules/reiz-video-story';
 import { APP_STORE_URL } from '../constants';
 import { isVideo } from '../lib/storage';
 import { videoStill } from '../lib/videoTools';
 import { F } from '../styles';
 
 export type StoryData = {
-  photoUri?: string | null;   // image ou vidéo (on en tire une image ; sans le module : fond sombre)
+  photoUri?: string | null;   // image ou vidéo (vidéo : story vidéo avec le build 13, sinon son image ; sans rien : fond sombre)
   emoji?: string;
   title: string;
   progressLabel: string;      // « 150 / 170 kg »
@@ -27,6 +29,8 @@ export type StoryData = {
 // Visuel 9:16 aux couleurs de Reiz, prêt à poster en story Instagram. Le but : que ceux qui
 // voient la story découvrent l'appli. On capture la carte en PNG puis on ouvre la feuille de
 // partage iOS (Instagram, puis « Story »). Reiz ne publie jamais rien à la place de l'utilisateur.
+// Séance en vidéo (build 13 et plus) : on capture seulement l'habillage, transparent, et le module
+// natif reiz-video-story le pose sur la vidéo. La story part en MP4, la vidéo bouge, le son est gardé.
 //
 // Une image n'est jamais cliquable, et Instagram ne laisse pas une app ajouter un lien toute seule
 // (l'API de partage en story n'accepte que des images et des couleurs). Le seul élément cliquable
@@ -39,8 +43,10 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
   const [loaded, setLoaded] = useState(0);
   const [busy, setBusy] = useState(false);
 
-  // Une vidéo devient son image du début (build 1.0.1 et plus) : la story ne part plus sur un fond gris.
-  const main = useStill(visible ? data?.photoUri : null);
+  // Vidéo seule (pas de duo côte à côte) et module présent : vraie story vidéo.
+  const videoSrc = visible && !!data?.photoUri && isVideo(data.photoUri) && !data.partnerPhotoUri && videoStoryAvailable() ? data.photoUri : null;
+  // Sinon, une vidéo devient son image du début (build 1.0.1 et plus) : la story ne part plus sur un fond gris.
+  const main = useStill(visible && !videoSrc ? data?.photoUri : null);
   const partner = useStill(visible ? data?.partnerPhotoUri : null);
 
   // On ne capture qu'une fois toutes les photos affichées (une ou deux en duo) :
@@ -60,12 +66,21 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
     if (busy) return;
     setBusy(true);
     try {
+      if (videoSrc) {
+        // L'habillage seul, en PNG transparent. Le module télécharge lui-même une vidéo du fil.
+        const overlay = await captureRef(ref, { format: 'png', quality: 1, width: 1080, height: 1920, result: 'tmpfile' });
+        const mp4 = await composeVideoStory(videoSrc, overlay);
+        if (!(await Sharing.isAvailableAsync())) { Alert.alert('Partage indisponible', "Ton téléphone ne permet pas de partager cette vidéo."); return; }
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        await Sharing.shareAsync(mp4, { mimeType: 'video/mp4', UTI: 'public.mpeg-4', dialogTitle: 'Partager en story' });
+        return;
+      }
       const uri = await captureRef(ref, { format: 'png', quality: 1, width: 1080, height: 1920, result: 'tmpfile' });
       if (!(await Sharing.isAvailableAsync())) { Alert.alert('Partage indisponible', "Ton téléphone ne permet pas de partager ce visuel."); return; }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: 'Partager en story' });
-    } catch {
-      Alert.alert('Erreur', "Impossible de créer le visuel. Réessaie.");
+    } catch (e) {
+      Alert.alert('Erreur', __DEV__ ? String((e as any)?.message || e) : "Impossible de créer le visuel. Réessaie.");
     } finally {
       setBusy(false);
     }
@@ -90,8 +105,11 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
         </View>
 
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ViewShot ref={ref} style={{ width: cardW, height: cardH, borderRadius: 22 * k, overflow: 'hidden', backgroundColor: '#0a0a0a' }}>
-            {main && partner ? (
+          <View style={{ width: cardW, height: cardH, borderRadius: 22 * k, overflow: 'hidden', backgroundColor: '#0a0a0a' }}>
+          {/* Vidéo : elle tourne derrière l'habillage, qui seul est capturé (fond transparent). */}
+          {!!videoSrc && <StoryVideo uri={videoSrc} style={{ position: 'absolute', width: cardW, height: cardH }} />}
+          <ViewShot ref={ref} style={{ position: 'absolute', width: cardW, height: cardH, backgroundColor: videoSrc ? 'transparent' : '#0a0a0a' }}>
+            {videoSrc ? null : main && partner ? (
               // Duo validé : les deux séances côte à côte, séparées par un filet blanc.
               <View style={{ position: 'absolute', width: cardW, height: cardH, flexDirection: 'row' }}>
                 <Image source={{ uri: main }} style={{ width: cardW / 2, height: cardH }} resizeMode="cover" onLoadEnd={() => setLoaded(n => n + 1)} />
@@ -134,14 +152,17 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
               <View style={{ height: 66 * k }} />
             </View>
           </ViewShot>
+          </View>
         </View>
 
         <View style={{ paddingHorizontal: 24 }}>
           <TouchableOpacity onPress={share} activeOpacity={0.85} disabled={!ready || busy}
             style={{ backgroundColor: ready ? '#fff' : '#1e1e1e', borderRadius: 16, padding: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
-            {busy || !ready
-              ? <ActivityIndicator color={ready ? '#000' : '#888'} />
-              : <><Ionicons name="logo-instagram" size={18} color="#000" /><Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }}>Partager</Text></>}
+            {busy && videoSrc
+              ? <><ActivityIndicator color="#000" /><Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }}>Création de la vidéo…</Text></>
+              : busy || !ready
+                ? <ActivityIndicator color={ready ? '#000' : '#888'} />
+                : <><Ionicons name="logo-instagram" size={18} color="#000" /><Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }}>{videoSrc ? 'Partager la vidéo' : 'Partager'}</Text></>}
           </TouchableOpacity>
 
           {/* Le lien à coller dans le sticker « Lien » d'Instagram : c'est lui qui rend la story cliquable. */}
@@ -159,6 +180,12 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
       </View>
     </Modal>
   );
+}
+
+// L'aperçu de la story vidéo : en boucle et sans le son (le son est gardé dans la story).
+function StoryVideo({ uri, style }: { uri: string; style: any }) {
+  const player = useVideoPlayer(uri, p => { p.loop = true; p.muted = true; p.play(); });
+  return <VideoView player={player} style={style} contentFit="cover" nativeControls={false} />;
 }
 
 // Image à afficher pour un média : la photo telle quelle, ou l'image tirée d'une vidéo.
