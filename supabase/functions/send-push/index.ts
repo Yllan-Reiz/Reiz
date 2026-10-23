@@ -22,6 +22,99 @@ const clip = (t: string | null | undefined, n = 60) => {
   return one.length > n ? one.substring(0, n - 1) + '…' : one;
 };
 
+// ---------- Activité en direct du duo (iOS 17.2 et plus) ----------
+// Quand un ami t'identifie dans sa séance, Apple affiche sur ton écran verrouillé et dans la Dynamic Island une carte
+// « Hugo t'attend 🤝 » avec le compte à rebours de l'heure du duo. Le serveur l'envoie directement à Apple (APNs),
+// avec le jeton « push-to-start » de l'iPhone (table live_activity_tokens) et la clé APNs du compte développeur
+// (secrets APNS_KEY, APNS_KEY_ID, APNS_TEAM_ID). Sans clé ou sans jeton : la notification classique, comme avant.
+const BUNDLE_ID = 'com.yllan.reiz';
+const DUO_WINDOW_MS = 60 * 60 * 1000;
+let apnsJwt: { token: string; at: number } | null = null;
+
+const b64url = (bytes: Uint8Array | string) =>
+  btoa(typeof bytes === 'string' ? bytes : String.fromCharCode(...bytes)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+
+async function apnsToken(): Promise<string | null> {
+  const pem = Deno.env.get('APNS_KEY'), kid = Deno.env.get('APNS_KEY_ID'), iss = Deno.env.get('APNS_TEAM_ID');
+  if (!pem || !kid || !iss) return null;
+  // Apple accepte un même jeton pendant une heure : on le refait toutes les 50 minutes.
+  if (apnsJwt && Date.now() - apnsJwt.at < 50 * 60 * 1000) return apnsJwt.token;
+  const der = Uint8Array.from(atob(pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '')), c => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey('pkcs8', der, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  const head = b64url(JSON.stringify({ alg: 'ES256', kid }));
+  const claims = b64url(JSON.stringify({ iss, iat: Math.floor(Date.now() / 1000) }));
+  const sig = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, new TextEncoder().encode(`${head}.${claims}`)));
+  apnsJwt = { token: `${head}.${claims}.${b64url(sig)}`, at: Date.now() };
+  return apnsJwt.token;
+}
+
+/** Lance la carte du duo sur l'iPhone de l'ami identifié. true = Apple l'a acceptée (pas besoin de la notification classique). */
+async function startDuoActivity(recipientId: string, actorId: string, name: string, objLabel: string, postedAt: string): Promise<boolean> {
+  try {
+    const { data } = await supabase.from('live_activity_tokens').select('token').eq('user_id', recipientId).maybeSingle();
+    if (!data?.token) return false;
+    const deadline = new Date(postedAt).getTime() + DUO_WINDOW_MS;
+    if (!Number.isFinite(deadline) || deadline - Date.now() < 2 * 60 * 1000) return false; // moins de 2 min : pas de carte
+    const jwt = await apnsToken();
+    if (!jwt) return false;
+    const first = name.split(' ')[0];
+    const payload = {
+      aps: {
+        timestamp: Math.floor(Date.now() / 1000),
+        event: 'start',
+        'stale-date': Math.floor(deadline / 1000),
+        'content-state': {
+          title: `${first} t'attend 🤝`,
+          // Court : la carte n'affiche qu'une ligne de sous-titre.
+          subtitle: 'Poste ta séance pour valider le duo',
+          timerEndDateInMilliseconds: deadline,
+          imageName: 'reiz_logo',
+          dynamicIslandImageName: 'reiz_logo',
+        },
+        'attributes-type': 'LiveActivityAttributes',
+        attributes: {
+          name: 'duo',
+          backgroundColor: '0A0A0A',
+          titleColor: 'FFFFFF',
+          subtitleColor: 'FFFFFFB3',
+          progressViewTint: 'FFFFFF',
+          progressViewLabelColor: 'FFFFFF',
+          deepLinkUrl: `duo/${actorId}`,
+          timerType: 'digital',
+          imagePosition: 'right',
+        },
+        alert: {
+          title: `${first} t'a identifié dans sa séance 🤝`,
+          body: objLabel ? `${objLabel}. Tu as une heure pour poster la tienne et valider le duo.` : "Tu as une heure pour poster la tienne et valider le duo.",
+          sound: 'default',
+        },
+      },
+    };
+    const res = await fetch(`https://api.push.apple.com/3/device/${data.token}`, {
+      method: 'POST',
+      headers: {
+        authorization: `bearer ${jwt}`,
+        'apns-topic': `${BUNDLE_ID}.push-type.liveactivity`,
+        'apns-push-type': 'liveactivity',
+        'apns-priority': '10',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) return true;
+    const reason = (await res.json().catch(() => ({})))?.reason || res.status;
+    console.error('live activity refusée', reason);
+    // Jeton périmé (app supprimée, autre iPhone) : on l'oublie.
+    if (res.status === 410 || reason === 'BadDeviceToken' || reason === 'Unregistered') {
+      await supabase.from('live_activity_tokens').delete().eq('user_id', recipientId);
+    }
+    return false;
+  } catch (e) {
+    console.error('live activity', e);
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   const expected = Deno.env.get('WEBHOOK_SECRET');
   if (expected && req.headers.get('x-webhook-secret') !== expected) {
@@ -60,12 +153,13 @@ Deno.serve(async (req) => {
       ? supabase.from('users').select('full_name').eq('id', n.actor_id).single()
       : Promise.resolve({ data: null }),
     n.update_id
-      ? supabase.from('updates').select('caption, progress_value, objectives(emoji, title, unit, target_value)').eq('id', n.update_id).single()
+      ? supabase.from('updates').select('caption, progress_value, created_at, objectives(emoji, title, unit, target_value)').eq('id', n.update_id).single()
       : Promise.resolve({ data: null }),
   ]);
 
   const token = recipientRes.data?.push_token;
-  if (!token) return new Response('no token');
+  // Le duo peut passer par l'Activité en direct même sans jeton de notification classique.
+  if (!token && n.type !== 'duo_tag') return new Response('no token');
 
   // Pastille rouge de l'icône : le nombre de notifications non lues, celle-ci comprise (elle est déjà écrite en base).
   const { count: unread } = await supabase
@@ -159,6 +253,13 @@ Deno.serve(async (req) => {
     default:
       return new Response('unknown type');
   }
+
+  // Duo : la carte avec compte à rebours remplace la notification classique (elle a sa propre alerte).
+  if (n.type === 'duo_tag' && n.actor_id && upd?.created_at
+      && await startDuoActivity(n.recipient_id, n.actor_id, name, objLabel, upd.created_at)) {
+    return new Response('live activity');
+  }
+  if (!token) return new Response('no token');
 
   await fetch('https://exp.host/--/api/v2/push/send', {
     method: 'POST',

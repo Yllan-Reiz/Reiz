@@ -22,6 +22,7 @@ import { selectObjectives } from '../lib/objectives';
 import { ObjectiveEditSheet } from '../components/ObjectiveEditSheet';
 import { CloseCircleBubble } from '../components/CloseCircleBubble';
 import { resetCloseCircle } from '../lib/closeCircle';
+import { forgetLiveActivityToken } from '../lib/liveActivity';
 import { Update, FeedMeta } from '../lib/types';
 
 export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfile }: { onClose: () => void; streak: number; onCreateObjective: () => void; onViewProfile?: (id: string) => void }) {
@@ -203,7 +204,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   const handleSignOut = async () => {
     Alert.alert('Déconnexion', 'Tu veux vraiment te déconnecter ?', [
       { text: 'Annuler', style: 'cancel' },
-      { text: 'Se déconnecter', style: 'destructive', onPress: () => supabase.auth.signOut() }
+      { text: 'Se déconnecter', style: 'destructive', onPress: async () => { await forgetLiveActivityToken(); supabase.auth.signOut(); } }
     ]);
   };
 

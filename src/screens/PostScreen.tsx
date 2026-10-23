@@ -16,6 +16,7 @@ import { ShareStoryModal, StoryData } from '../components/ShareStoryModal';
 import { loadDuoStats, ordinalDuo, DUO_WINDOW_MS } from '../lib/duo';
 import { trimAvailable, trimVideo, cleanTrimmed } from '../lib/videoTools';
 import { galleryAvailable, saveToGallery } from '../lib/saveToGallery';
+import { endAllLiveActivities } from '../lib/liveActivity';
 import { s, F } from '../styles';
 
 // Vidéo de progression : 15 s max, comme une story. Au-delà, le fichier pèse
@@ -396,6 +397,8 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
       Alert.alert('Erreur', frError(error));
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      // Séance postée : la carte du duo (Activité en direct) n'a plus lieu d'être.
+      endAllLiveActivities();
       const fmtN = (n: number) => String(n).replace('.', ',');
       const storyData: StoryData = {
         // Vidéo : la story en tire une image (voir ShareStoryModal).

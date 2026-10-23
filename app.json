@@ -16,7 +16,9 @@
         "NSMicrophoneUsageDescription": "Reiz utilise le micro pour enregistrer le son de tes vidéos de progression.",
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDevelopmentRegion": "fr",
-        "CFBundleLocalizations": ["fr"],
+        "CFBundleLocalizations": [
+          "fr"
+        ],
         "NSLocationAlwaysUsageDescription": "Reiz utilise ta position uniquement pour détecter ton arrivée à un lieu d'entraînement que tu as choisi (ta salle, ton stade) et prévenir ton cercle proche. Tes coordonnées restent sur ton téléphone et ne sont jamais envoyées."
       },
       "usesAppleSignIn": true
@@ -76,6 +78,13 @@
           "isIosBackgroundLocationEnabled": false,
           "isAndroidBackgroundLocationEnabled": false,
           "isAndroidForegroundServiceEnabled": false
+        }
+      ],
+      "./plugins/withLiveActivityScheme",
+      [
+        "expo-live-activity",
+        {
+          "enablePushNotifications": true
         }
       ]
     ],

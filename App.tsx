@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Linking } from 'react-native';
+import { Linking, AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import { useFonts, Inter_300Light, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, Inter_900Black } from '@expo-google-fonts/inter';
@@ -21,6 +21,7 @@ import { FindFriendsPrompt } from './src/components/FindFriendsPrompt';
 import { WelcomeFlow, welcomePending } from './src/components/WelcomeFlow';
 import { WELCOME_FLOW } from './src/constants';
 import { PostScreen } from './src/screens/PostScreen';
+import { registerLiveActivityToken, endExpiredLiveActivities } from './src/lib/liveActivity';
 
 export default function App() {
   return (
@@ -46,11 +47,15 @@ function AppInner() {
   const notifListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
   const registeredUserId = useRef<string | null>(null);
+  // Carte du duo touchée alors que l'app démarrait : on ouvre la publication une fois connecté.
+  const pendingDuo = useRef<string | null>(null);
 
   // Compte tout neuf : la demande d'autorisation du système attend l'écran d'accueil qui explique pourquoi (sinon elle tombe sans contexte).
   const maybeRegisterPush = async (user: { id: string; created_at?: string }) => {
     if (registeredUserId.current === user.id) return;
     registeredUserId.current = user.id;
+    // Jeton de l'Activité en direct du duo : il ne demande aucune autorisation, on le range tout de suite.
+    registerLiveActivityToken();
     if (await welcomePending(user)) return;
     registerForPushNotifications(user.id);
   };
@@ -58,18 +63,35 @@ function AppInner() {
   useEffect(() => {
     // Deep link d'invitation : capture le lien d'ouverture (app fermée) puis ceux reçus
     // app ouverte. Le ref est consommé après connexion (cf. onAuthStateChange ci-dessous).
-    Linking.getInitialURL().then((url) => { handleAuthUrl(url); captureInviteFromUrl(url, registeredUserId.current); });
+    // Carte du duo (Activité en direct) touchée : reiz://duo/<id de l'ami> ouvre la publication avec lui identifié.
+    const openDuo = (url: string | null) => {
+      const id = url?.match(/^reiz:\/\/duo\/([0-9a-f-]{36})/i)?.[1];
+      if (!id) return;
+      setPostDuoWith(id);
+      pendingDuo.current = id;
+      setScreen(s => {
+        if (s !== 'main' && s !== 'post') return s; // pas encore connecté : enter() s'en chargera
+        pendingDuo.current = null;
+        return 'post';
+      });
+    };
+    Linking.getInitialURL().then((url) => { handleAuthUrl(url); captureInviteFromUrl(url, registeredUserId.current); openDuo(url); });
     const linkSub = Linking.addEventListener('url', ({ url }) => {
       handleAuthUrl(url);
       captureInviteFromUrl(url, registeredUserId.current);
+      openDuo(url);
     });
+    // Une carte du duo dont l'heure est passée ne reste pas affichée.
+    endExpiredLiveActivities();
+    const appStateSub = AppState.addEventListener('change', st => { if (st === 'active') endExpiredLiveActivities(); });
 
     // Apple / Google : la ligne `users` n'existe pas encore à la première connexion.
     // On la crée AVANT d'entrer dans l'app, sinon le fil se charge sans profil.
     const enter = async (user: any) => {
       const viaEmail = (user?.app_metadata?.providers || [user?.app_metadata?.provider]).includes('email');
       if (!viaEmail) { await ensureProfile(user).catch(() => {}); consumePendingInvite(user.id); }
-      setScreen('main');
+      setScreen(pendingDuo.current ? 'post' : 'main');
+      pendingDuo.current = null;
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -108,6 +130,7 @@ function AppInner() {
       notifListener.current?.remove();
       responseListener.current?.remove();
       linkSub.remove();
+      appStateSub.remove();
     };
   }, []);
 
