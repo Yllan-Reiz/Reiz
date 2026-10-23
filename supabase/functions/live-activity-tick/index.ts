@@ -41,8 +41,24 @@ const phaseAt = (deadline: number, now: number): Phase => {
 Deno.serve(async (req) => {
   const expected = Deno.env.get('CRON_SECRET');
   if (expected && req.headers.get('x-cron-secret') !== expected) return new Response('Unauthorized', { status: 401 });
-  const dry = new URL(req.url).searchParams.get('dry') === '1';
+  const params = new URL(req.url).searchParams;
+  const dry = params.get('dry') === '1';
   const now = Date.now();
+
+  // Vérification de la clé APNs (?check=1) : on présente la clé à Apple avec un faux iPhone. « BadDeviceToken » veut
+  // dire qu'Apple a ACCEPTÉ la clé (seul le téléphone est faux) ; « InvalidProviderToken » ou 403 : clé refusée.
+  if (params.get('check') === '1') {
+    const jwt = await apnsToken().catch(e => { console.error('clé APNs illisible', e); return null; });
+    if (!jwt) return new Response(JSON.stringify({ cle: 'absente ou illisible' }), { headers: { 'Content-Type': 'application/json' } });
+    const res = await fetch(`https://api.push.apple.com/3/device/${'0'.repeat(64)}`, {
+      method: 'POST',
+      headers: { authorization: `bearer ${jwt}`, 'apns-topic': `${BUNDLE_ID}.push-type.liveactivity`, 'apns-push-type': 'liveactivity', 'apns-priority': '10', 'content-type': 'application/json' },
+      body: JSON.stringify({ aps: { timestamp: Math.floor(now / 1000), event: 'update', 'content-state': {} } }),
+    });
+    const reason = (await res.json().catch(() => ({})))?.reason || null;
+    const ok = reason === 'BadDeviceToken' || reason === 'DeviceTokenNotForTopic';
+    return new Response(JSON.stringify({ cle: ok ? 'acceptée par Apple' : 'refusée', statut: res.status, raison: reason }), { headers: { 'Content-Type': 'application/json' } });
+  }
 
   // Les cartes sans jeton dont l'heure est passée depuis 10 minutes : plus rien à en faire.
   if (!dry) await supabase.from('live_activity_runs').delete().is('update_token', null).lt('deadline', new Date(now - 10 * MIN).toISOString());
