@@ -15,6 +15,8 @@
         "NSPhotoLibraryUsageDescription": "Reiz accède à ta galerie pour publier ta progression (photo ou vidéo) et ta photo de profil.",
         "NSMicrophoneUsageDescription": "Reiz utilise le micro pour enregistrer le son de tes vidéos de progression.",
         "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "fr",
+        "CFBundleLocalizations": ["fr"],
         "NSLocationAlwaysUsageDescription": "Reiz utilise ta position uniquement pour détecter ton arrivée à un lieu d'entraînement que tu as choisi (ta salle, ton stade) et prévenir ton cercle proche. Tes coordonnées restent sur ton téléphone et ne sont jamais envoyées."
       },
       "usesAppleSignIn": true
