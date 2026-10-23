@@ -63,8 +63,8 @@ dans une version qui a Contacts). `match_contacts` ne renvoie plus les comptes q
 
 ## Liste du jour J
 
-- [ ] `a-publier-avec-contacts/confidentialite.html` copié sur `site/confidentialite.html`, date corrigée, site publié
-- [ ] App Privacy : ligne « Contacts » ajoutée dans App Store Connect
+- [x] `a-publier-avec-contacts/confidentialite.html` copié sur `site/confidentialite.html`, date corrigée (23/10/2026, avec GIPHY), site publié
+- [x] App Privacy : ligne « Contacts » ajoutée dans App Store Connect (23/10/2026, non liée, pas de suivi)
 - [ ] Google Play : sécurité des données mise à jour, WRITE_CONTACTS bloquée
-- [ ] Notes pour l'examinateur : dire que « Retrouver mes contacts » est facultatif et que rien n'est enregistré
-- [ ] Version passée à 1.0.1 ou 1.1.0 dans `app.json`, APRÈS l'envoi éventuel de la mise à jour à distance
+- [x] Notes pour l'examinateur : dire que « Retrouver mes contacts » est facultatif et que rien n'est enregistré
+- [x] Version passée à 1.0.1 ou 1.1.0 dans `app.json`, APRÈS l'envoi éventuel de la mise à jour à distance
