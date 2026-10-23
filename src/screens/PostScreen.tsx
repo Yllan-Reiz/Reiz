@@ -15,6 +15,7 @@ import { QUICK_UNITS, GUTTER } from '../constants';
 import { ShareStoryModal, StoryData } from '../components/ShareStoryModal';
 import { loadDuoStats, ordinalDuo, DUO_WINDOW_MS } from '../lib/duo';
 import { trimAvailable, trimVideo, cleanTrimmed } from '../lib/videoTools';
+import { galleryAvailable, saveToGallery } from '../lib/saveToGallery';
 import { s, F } from '../styles';
 
 // Vidéo de progression : 15 s max, comme une story. Au-delà, le fichier pèse
@@ -89,6 +90,9 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
   const [publishing, setPublishing] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
+  // Photo ou vidéo prise dans Reiz (pas importée) : on propose de l'enregistrer dans la galerie.
+  const [fromCamera, setFromCamera] = useState(false);
+  const [savedToGallery, setSavedToGallery] = useState(false);
   // Amis du cercle, pour « Avec qui ? ». Réponse à un duo : l'auteur est déjà coché.
   const [friends, setFriends] = useState<{ id: string; full_name: string; avatar_url?: string | null }[]>([]);
   const [withIds, setWithIds] = useState<string[]>(duoWith ? [duoWith] : []);
@@ -212,7 +216,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
   // Garde un média choisi (photo ou vidéo) après vérification de la durée et du poids.
   // Vidéo de la galerie : l'éditeur s'ouvre toujours (couper, recadrer, couper le son...), builds 1.0.1 et plus.
   // Trop longue, il faut couper pour continuer ; assez courte, « Annuler » garde la vidéo telle quelle.
-  const acceptAsset = async (asset: ImagePicker.ImagePickerAsset, openEditor = false) => {
+  const acceptAsset = async (asset: ImagePicker.ImagePickerAsset, openEditor = false, camera = false) => {
     let uri = asset.uri;
     if (asset.type === 'video') {
       const tooLong = !!asset.duration && asset.duration > (VIDEO_MAX_SEC + 0.5) * 1000;
@@ -233,6 +237,16 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
       setMediaType('image');
     }
     setPhotoUri(uri);
+    setFromCamera(camera);
+    setSavedToGallery(false);
+  };
+
+  const keepInGallery = async () => {
+    if (!photoUri || savedToGallery) return;
+    const r = await saveToGallery(photoUri);
+    if (r === 'saved') { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); setSavedToGallery(true); }
+    else if (r === 'denied') Alert.alert('Galerie', "Autorise Reiz à ajouter des photos dans Réglages, Reiz, Photos.");
+    else Alert.alert('Galerie', "L'enregistrement n'a pas marché. Réessaie.");
   };
 
   // Recouper la vidéo déjà choisie (garder un autre passage, la raccourcir encore).
@@ -254,7 +268,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
         onPress: async () => {
           if (!(await needCamera())) return;
           const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [4, 3] });
-          if (!result.canceled) acceptAsset(result.assets[0]);
+          if (!result.canceled) acceptAsset(result.assets[0], false, true);
         }
       },
       {
@@ -268,7 +282,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
             videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
             videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium,
           });
-          if (!result.canceled) acceptAsset(result.assets[0]);
+          if (!result.canceled) acceptAsset(result.assets[0], false, true);
         }
       },
       {
@@ -304,7 +318,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
         }
       }] : []),
       ...(photoUri && mediaType === 'video' && trimAvailable() ? [{ text: 'Modifier la vidéo', onPress: recutVideo }] : []),
-      ...(photoUri ? [{ text: 'Retirer', style: 'destructive' as const, onPress: () => { setPhotoUri(null); setMediaType('image'); } }] : []),
+      ...(photoUri ? [{ text: 'Retirer', style: 'destructive' as const, onPress: () => { setPhotoUri(null); setMediaType('image'); setFromCamera(false); } }] : []),
       { text: 'Annuler', style: 'cancel' }
     ]);
   };
@@ -333,8 +347,23 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
     return path;
   };
 
-  const handlePublish = async () => {
+  // Sans photo ni vidéo, la séance perd tout son intérêt pour ton cercle : on te le dit (gentiment) avant de publier.
+  const handlePublish = () => {
     if (!obj) { Alert.alert('Erreur', 'Sélectionne un objectif.'); return; }
+    if (photoUri) { publish(); return; }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+    Alert.alert(
+      'Pas de photo, pas de preuve 👀',
+      "Ton cercle va croire que tu étais sur le canapé. Une photo ou quelques secondes de vidéo, et personne ne pourra douter.",
+      [
+        { text: 'Ajouter une photo', onPress: handlePickPhoto },
+        { text: 'Publier sans', style: 'destructive', onPress: publish },
+      ],
+    );
+  };
+
+  const publish = async () => {
+    if (!obj) return;
     setPublishing(true);
     const user = await currentUser();
     if (!user) { setPublishing(false); Alert.alert('Erreur', 'Tu dois être connecté.'); return; }
@@ -437,6 +466,14 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
                 <View style={s.postPhotoChangeBadge}>
                   <Text style={s.postPhotoChangeText}>Changer</Text>
                 </View>
+                {/* Prise dans Reiz : la garder aussi dans la galerie de l'iPhone. */}
+                {fromCamera && galleryAvailable() && (
+                  <TouchableOpacity onPress={keepInGallery} disabled={savedToGallery} activeOpacity={0.85} accessibilityLabel={savedToGallery ? 'Enregistrée dans la galerie' : 'Enregistrer dans la galerie'}
+                    style={[s.postPhotoChangeBadge, { bottom: undefined, top: 14, flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                    <Ionicons name={savedToGallery ? 'checkmark' : 'download-outline'} size={15} color="#fff" />
+                    <Text style={s.postPhotoChangeText}>{savedToGallery ? 'Enregistrée' : 'Enregistrer'}</Text>
+                  </TouchableOpacity>
+                )}
                 {/* Vidéo : bouton « Modifier » bien visible, qui rouvre l'éditeur (couper, recadrer, son, vitesse). */}
                 {mediaType === 'video' && trimAvailable() && (
                   <TouchableOpacity onPress={recutVideo} activeOpacity={0.85} accessibilityLabel="Modifier la vidéo"

@@ -57,6 +57,14 @@
           "contactsPermission": "Reiz regarde tes contacts pour te dire lesquels sont déjà sur l'app et te laisser inviter les autres. Tes contacts ne sont jamais enregistrés par Reiz."
         }
       ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Reiz accède à ta galerie pour publier ta progression (photo ou vidéo) et ta photo de profil.",
+          "savePhotosPermission": "Reiz enregistre dans ta galerie la photo ou la vidéo que tu viens de prendre, seulement quand tu touches « Enregistrer ».",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
       "expo-font",
       "expo-video",
       "expo-apple-authentication",
