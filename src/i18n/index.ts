@@ -1,4 +1,4 @@
-import { I18nManager, NativeModules, Platform, Settings, DevSettings } from 'react-native';
+import { I18nManager, NativeModules, Platform, Settings, DevSettings, TurboModuleRegistry } from 'react-native';
 import { fr, type Dict } from './fr';
 import { en } from './en';
 import { es } from './es';
@@ -21,6 +21,8 @@ export const LANGS: { code: Lang; name: string }[] = [
 const DICTS: Record<Lang, Dict> = { fr, en, es, he };
 const LOCALES: Record<Lang, string> = { fr: 'fr-FR', en: 'en-US', es: 'es-ES', he: 'he-IL' };
 const PICKED_KEY = 'reiz.lang';
+// Langues de l'iPhone mémorisées au moment d'un choix manuel : AppleLanguages est alors remplacé par la langue choisie.
+const DEVICE_KEY = 'reiz.deviceLangs';
 
 function asLang(code?: string | null): Lang | null {
   const c = (code || '').slice(0, 2).toLowerCase();
@@ -35,7 +37,8 @@ function deviceLangs(): string[] {
     // nouvelle architecture de React Native. Intl donne la langue de la région en dernier recours.
     const list: string[] = [];
     if (Platform.OS === 'ios') {
-      const langs = Settings.get('AppleLanguages');
+      const saved = pickedLang() ? Settings.get(DEVICE_KEY) : null;
+      const langs = Array.isArray(saved) ? saved : Settings.get('AppleLanguages');
       if (Array.isArray(langs)) list.push(...langs);
       const loc = Settings.get('AppleLocale');
       if (typeof loc === 'string') list.push(loc);
@@ -150,6 +153,13 @@ export function syncDirection(): boolean {
   return true;
 }
 
+function deleteSettings(keys: string[]) {
+  try {
+    const native: any = TurboModuleRegistry.get('SettingsManager');
+    native?.deleteValues?.(keys);
+  } catch {}
+}
+
 export async function reloadApp() {
   try {
     const Updates = require('expo-updates');
@@ -162,8 +172,15 @@ export async function reloadApp() {
 // Choix fait dans Réglages > Langue (null : suivre le téléphone). Relance l'app.
 export async function setLanguage(next: Lang | null) {
   if (Platform.OS === 'ios') {
-    // AppleLanguages fait aussi parler iOS dans la langue choisie (demandes d'autorisation) au prochain lancement.
-    Settings.set({ [PICKED_KEY]: next, AppleLanguages: next ? [next] : null });
+    // AppleLanguages fait aussi parler iOS dans la langue choisie (demandes d'autorisation, alignement du texte)
+    // au prochain lancement. On garde d'abord les langues de l'iPhone pour la ligne « Langue du téléphone ».
+    if (next) {
+      if (!pickedLang()) Settings.set({ [DEVICE_KEY]: deviceLangs() });
+      Settings.set({ [PICKED_KEY]: next, AppleLanguages: [next] });
+    } else {
+      // Settings.set ignore les valeurs nulles avec la nouvelle architecture : il faut les effacer explicitement.
+      deleteSettings([PICKED_KEY, DEVICE_KEY, 'AppleLanguages']);
+    }
   }
   current = next || deviceLang();
   dict = DICTS[current];
