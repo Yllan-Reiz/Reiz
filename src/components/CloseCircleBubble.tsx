@@ -6,7 +6,7 @@ import { Faces } from './CloseCircleCard';
 import { useCloseCircle } from '../lib/closeCircle';
 import { GUTTER } from '../constants';
 import { F } from '../styles';
-import { t } from '../i18n';
+import { t, tp } from '../i18n';
 
 // Sur TON profil : qui est dans ton cercle proche, et le bouton pour le gérer. Même DA que les autres
 // bulles de verre du profil. Quand le cercle est vide, elle explique à quoi il sert.
@@ -30,7 +30,7 @@ export function CloseCircleBubble({ onManage, reloadKey }: { onManage: () => voi
         ) : (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
             <Faces people={list} size={40} />
-            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: F.semibold }}>{list.length} {list.length > 1 ? 'proches' : 'proche'}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: F.semibold }}>{tp('closeCard.count', list.length)}</Text>
           </View>
         )}
         <TouchableOpacity onPress={onManage} activeOpacity={0.85} style={{ backgroundColor: empty ? '#fff' : 'rgba(255,255,255,0.14)', borderRadius: 16, paddingVertical: 13, alignItems: 'center', marginTop: 14 }}>

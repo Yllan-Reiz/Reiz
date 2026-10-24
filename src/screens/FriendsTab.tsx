@@ -94,9 +94,10 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     const init = async () => {
       // Amis déjà vus : affichés tout de suite depuis la mémoire du téléphone, puis mis à jour en silence.
       const uid = await storedUserId();
-      const snap = uid ? await cacheGet<{ friends: Friend[]; pending: PendingRequest[] }>(`friends.${uid}`, 5 * 24 * 3600 * 1000) : null;
+      const snap = uid ? await cacheGet<{ friends: Friend[]; pending: PendingRequest[]; sent?: string[] }>(`friends.${uid}`, 5 * 24 * 3600 * 1000) : null;
       if (snap) {
         setFriends(snap.friends); setPending(snap.pending);
+        if (snap.sent) setSentIds(new Set(snap.sent));
         onPendingCount?.(snap.pending.length);
         setLoading(false);
       }
@@ -137,11 +138,15 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     if (!error && data) {
       const accepted: Friend[] = [];
       const pendingReqs: PendingRequest[] = [];
+      // Demandes que J'AI envoyées, toujours en attente : le bouton reste sur « Envoyé » d'une visite à l'autre
+      // (avant le 25/10/2026, seule la mémoire de l'écran le savait, et « Ajouter » revenait au retour sur l'onglet).
+      const sent: string[] = [];
       data.forEach((f: any) => {
         const isRequester = f.requester_id === uid;
         const other = isRequester ? f.receiver : f.requester;
         if (!other) return;
         if (f.status === 'accepted') accepted.push({ id: other.id, full_name: other.full_name, username: other.username, friendship_id: f.id, status: f.status, is_requester: isRequester, avatar_url: other.avatar_url });
+        else if (f.status === 'pending' && isRequester) sent.push(other.id);
         else if (f.status === 'pending' && !isRequester) pendingReqs.push({ id: other.id, full_name: other.full_name, username: other.username, friendship_id: f.id, avatar_url: other.avatar_url });
       });
       // Bucket privé : les avatars des deux listes sont signés en une requête.
@@ -153,9 +158,11 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       pendingReqs.forEach(p => { if (p.avatar_url) p.avatar_url = signed[p.avatar_url] ?? null; });
 
       setFriends(accepted); setPending(pendingReqs);
+      setSentIds(prev => new Set([...prev, ...sent]));
       onPendingCount?.(pendingReqs.length);
-      cacheSet(`friends.${uid}`, { friends: accepted, pending: pendingReqs });
-      loadSuggestions(uid, accepted.map(f => f.id));
+      cacheSet(`friends.${uid}`, { friends: accepted, pending: pendingReqs, sent });
+      // Ceux qui m'ont envoyé une demande sont déjà en haut (« Demandes reçues ») : pas aussi en suggestion.
+      loadSuggestions(uid, [...accepted.map(f => f.id), ...pendingReqs.map(p => p.id)]);
       loadNewMembers();
     }
     setLoading(false);
@@ -224,12 +231,25 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     } catch {}
   };
 
+  // Demande partie : « Envoyé » à l'écran, et dans la mémoire du téléphone pour la prochaine ouverture de l'onglet.
+  const markSent = (id: string) => {
+    setSentIds(prev => {
+      const next = new Set(prev).add(id);
+      if (currentUserId) {
+        cacheGet<{ friends: Friend[]; pending: PendingRequest[] }>(`friends.${currentUserId}`, 5 * 24 * 3600 * 1000).then(snap => {
+          if (snap) cacheSet(`friends.${currentUserId}`, { ...snap, sent: [...next] });
+        });
+      }
+      return next;
+    });
+  };
+
   const addSuggested = async (id: string) => {
     if (!currentUserId || sentIds.has(id)) return;
     const { error } = await supabase.from('friendships').insert({ requester_id: currentUserId, receiver_id: id, status: 'pending' });
     if (error && error.code !== '23505') { Alert.alert(t('common.error'), frError(error)); return; }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    setSentIds(prev => new Set(prev).add(id));
+    markSent(id);
   };
 
   // Recherche de nouvelles personnes : nom, @pseudo, tag de profil ou objectif public (fonction discover_people,
@@ -276,9 +296,9 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   const sendFriendRequest = async (receiverId: string) => {
     if (!currentUserId) return;
     const { error } = await supabase.from('friendships').insert({ requester_id: currentUserId, receiver_id: receiverId, status: 'pending' });
-    if (error) { if (error.code === '23505') Alert.alert(t('friends.alreadySent'), t('friends.alreadySentText')); else Alert.alert(t('common.error'), frError(error)); return; }
+    if (error) { if (error.code === '23505') { markSent(receiverId); Alert.alert(t('friends.alreadySent'), t('friends.alreadySentText')); } else Alert.alert(t('common.error'), frError(error)); return; }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    setSentIds(prev => new Set(prev).add(receiverId));
+    markSent(receiverId);
   };
 
   const acceptRequest = async (friendshipId: string) => {
@@ -440,8 +460,8 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
               {getFriendshipStatus(u.id) === 'ami' ? (
                 <View style={s.friendBadge}><Ionicons name="checkmark" size={14} color="#888" /></View>
               ) : (
-                <TouchableOpacity style={s.addFriendBtn} onPress={() => sendFriendRequest(u.id)}>
-                  <Text style={s.addFriendBtnText}>{t('friends.add')}</Text>
+                <TouchableOpacity style={[s.addFriendBtn, sentIds.has(u.id) && { opacity: 0.5 }]} disabled={sentIds.has(u.id)} onPress={() => sendFriendRequest(u.id)}>
+                  <Text style={s.addFriendBtnText}>{sentIds.has(u.id) ? t('friendsGlass.sent') : t('friends.add')}</Text>
                 </TouchableOpacity>
               )}
             </TouchableOpacity>
@@ -486,8 +506,8 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
                 <SuggestAvatar url={u.avatar_url} name={u.full_name} />
                 <Text style={s.suggestName} numberOfLines={1}>{u.full_name}</Text>
                 <Text style={s.suggestObj} numberOfLines={2}>{u.objectiveTitle}</Text>
-                <TouchableOpacity style={s.suggestAddBtn} onPress={() => sendFriendRequest(u.id)}>
-                  <Text style={s.suggestAddText}>{t('friends.add')}</Text>
+                <TouchableOpacity style={[s.suggestAddBtn, sentIds.has(u.id) && { opacity: 0.5 }]} disabled={sentIds.has(u.id)} onPress={() => sendFriendRequest(u.id)}>
+                  <Text style={s.suggestAddText}>{sentIds.has(u.id) ? t('friendsGlass.sent') : t('friends.add')}</Text>
                 </TouchableOpacity>
               </TouchableOpacity>
             ))}

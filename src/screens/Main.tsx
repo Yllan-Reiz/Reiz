@@ -20,6 +20,7 @@ import { FeedCard } from '../components/FeedCard';
 import { NavTab } from '../components/NavTab';
 import { GlassSurface, LIQUID_GLASS } from '../components/GlassSurface';
 import { CreateObjectiveModal } from '../components/CreateObjectiveModal';
+import { SetupCard } from '../components/SetupCard';
 import { FeedSkeleton } from '../components/Skeleton';
 import { FriendsTab } from './FriendsTab';
 import { ProfileScreen } from './ProfileScreen';
@@ -34,22 +35,6 @@ import { t, unitLabel, dirIcon, isRTL } from '../i18n';
 
 const PAGE_SIZE = 20;
 const FEED_WINDOW_HOURS = 24;
-
-// Puce d'étape de la carte d'activation : coché une fois l'étape faite, numérotée sinon.
-function StepMarker({ done, step }: { done: boolean; step: number }) {
-  if (done) {
-    return (
-      <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-        <Ionicons name="checkmark" size={15} color="#000" />
-      </View>
-    );
-  }
-  return (
-    <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: '#444', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-      <Text style={{ color: '#888', fontSize: 12, fontFamily: F.bold }}>{step}</Text>
-    </View>
-  );
-}
 
 // Pastille de verre de l'onglet actif. Elle glisse d'un onglet à l'autre en
 // s'étirant puis en reprenant sa forme : c'est ce qui donne l'impression de liquide.
@@ -470,48 +455,6 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
 
   const progressPct = (obj: Objective) => obj.target_value > 0 ? Math.min(Math.round((obj.current_value / obj.target_value) * 100), 100) : 0;
 
-  const hasObjective = objectives.length > 0;
-  const hasFriend = (friendCount ?? 0) > 0;
-  // !loadingObj évite que la carte clignote pendant le chargement chez un user existant.
-  const needsActivation = !loadingObj && (!hasObjective || !hasFriend);
-
-  const activationHeader = (
-    <View style={{ backgroundColor: '#111', borderRadius: 20, padding: 18, marginBottom: 14 }}>
-      <Text style={{ color: '#fff', fontSize: 17, fontFamily: F.bold, marginBottom: 2 }}>{t('main.welcomeTitle')}</Text>
-      <Text style={{ color: '#888', fontSize: 13, marginBottom: 8 }}>{t('main.welcomeSub')}</Text>
-
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => setShowCreateModal(true)}
-        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#222' }}
-      >
-        <StepMarker done={hasObjective} step={1} />
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: hasObjective ? '#666' : '#fff', fontSize: 15, fontFamily: F.bold, textDecorationLine: hasObjective ? 'line-through' : 'none' }}>
-            {t('main.stepObjective')}
-          </Text>
-          <Text style={{ color: '#777', fontSize: 12, marginTop: 1 }}>{t('main.stepObjectiveSub')}</Text>
-        </View>
-        {!hasObjective && <Ionicons name={dirIcon('chevron-forward')} size={18} color="#fff" style={{ marginLeft: 8 }} />}
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => setTab('friends')}
-        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#222' }}
-      >
-        <StepMarker done={hasFriend} step={2} />
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: hasFriend ? '#666' : '#fff', fontSize: 15, fontFamily: F.bold, textDecorationLine: hasFriend ? 'line-through' : 'none' }}>
-            {hasFriend ? t('main.circleLaunched', { n: friendCount }) : t('main.inviteCircle')}
-          </Text>
-          <Text style={{ color: '#777', fontSize: 12, marginTop: 1 }}>{t('main.inviteCircleSub')}</Text>
-        </View>
-        {!hasFriend && <Ionicons name={dirIcon('chevron-forward')} size={18} color="#fff" style={{ marginLeft: 8 }} />}
-      </TouchableOpacity>
-    </View>
-  );
-
   if (viewingFriendId) return <FriendProfileScreen key={viewingFriendId} userId={viewingFriendId} onClose={() => setProfileStack(st => st.slice(0, -1))} onOpenProfile={openProfile} onDuo={(id) => onPost({ duoWith: id })} />;
   // L'activité s'ouvre PAR-DESSUS la page où tu es (le fil, les objectifs, les amis...) : le verre floute cette
   // page au lieu de la remplacer par un fond à part. Elle reste montée dessous, tu la retrouves intacte en fermant.
@@ -591,8 +534,18 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             // Android seulement : sur iOS, le détachement des vues hors écran fait
             // parfois apparaître des cartes vides quand elles ont des calques absolus.
             removeClippedSubviews={Platform.OS === 'android'}
-            // Le fil commence directement par les posts : la salle, les duels et le cercle proche sont dans l'Activité (le cœur).
-            ListHeaderComponent={needsActivation ? activationHeader : null}
+            // Le fil commence par les posts, avec au-dessus ce qui manque à ton profil (SetupCard, pour toi seul).
+            // La salle, les duels et le cercle proche sont dans l'Activité (le cœur).
+            ListHeaderComponent={
+              <SetupCard
+                userId={userId}
+                hasObjective={loadingObj ? null : objectives.length > 0}
+                friendCount={friendCount}
+                onAddPhoto={() => setTab('profile')}
+                onAddObjective={() => setShowCreateModal(true)}
+                onFindFriends={() => setTab('friends')}
+              />
+            }
             ListEmptyComponent={
               loadingFeed ? (
                 <FeedSkeleton />

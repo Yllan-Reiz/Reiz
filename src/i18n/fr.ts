@@ -824,6 +824,9 @@ export const fr = {
     closeHint: "Les objectifs réglés sur « Cercle proche » ne sont visibles que par les amis marqués d'une étoile. Ils ne savent pas qui d'autre est dans la liste.",
     none: "Aucun ami pour l'instant.",
     me: ' (toi)',
+    otherFriends: 'TES AUTRES AMIS',
+    chooseClose: 'CHOISIS TES PROCHES',
+    closeTitle: 'Cercle proche, {n}',
   },
   story: {
     unavailableTitle: 'Partage indisponible',
@@ -875,6 +878,7 @@ export const fr = {
     myCircle: 'MON CERCLE PROCHE',
     bubbleEmpty: "Personne pour l'instant. Choisis tes vrais partenaires d'entraînement : ils sont prévenus quand tu arrives à la salle et voient les objectifs que tu leur réserves.",
     manage: 'Gérer mon cercle proche',
+    count: { one: '{count} proche', other: '{count} proches' },
   },
   gif: {
     search: 'Chercher un GIF',
@@ -1020,6 +1024,22 @@ export const fr = {
     early: { one: '{count} post avant 8 h du matin.', other: '{count} posts avant 8 h du matin.' },
     night: { one: '{count} post après 22 h.', other: '{count} posts après 22 h.' },
     dayUnit: ' j',
+  },
+  setup: {
+    label: 'TON PROFIL, {done} SUR {total}',
+    hide: 'Masquer pendant 3 jours',
+    title: { one: "Plus qu'une étape", other: 'Il te manque {count} étapes' },
+    sub: "Un profil complet, c'est un cercle qui te reconnaît et te suit vraiment.",
+    photo: 'Ajoute ta photo de profil',
+    photoSub: 'Ton cercle te reconnaît dans le fil',
+    objective: 'Crée ton premier objectif',
+    objectiveSub: 'Ce que ton cercle va suivre chaque jour',
+    friends: 'Ajoute tes premiers amis',
+    friendsSub: 'Reiz ne marche que si tes proches te regardent',
+    place: 'Enregistre ta salle',
+    placeSub: 'Ton cercle proche est prévenu quand tu y arrives',
+    notifs: 'Active les notifications',
+    notifsSub: "Pour savoir quand ton cercle poste ou t'encourage",
   },
 };
 

@@ -87,6 +87,7 @@ export function CloseCircleCard({ onOpenProfile }: { onOpenProfile?: (id: string
       <PeopleListModal
         visible={open}
         mode="close"
+        startAdding
         userId={uid}
         currentUserId={uid}
         onClose={() => { setOpen(false); resetCloseCircle(); reload(true); }}
