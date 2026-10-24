@@ -1,5 +1,5 @@
 -- ============================================================
--- REIZ : jetons de notification illisibles depuis l'app (préparé le 24/10/2026, à appliquer)
+-- REIZ : jetons de notification illisibles depuis l'app (appliqué le 24/10/2026)
 -- ============================================================
 -- Le revoke par colonne de security-hardening.sql n'avait aucun effet : le droit SELECT
 -- sur toute la table l'emporte sur un revoke de colonne. N'importe quel compte connecté
