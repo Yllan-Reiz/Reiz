@@ -157,7 +157,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       setMyReactions(prev => [...prev, emoji]);
       setReactions(prev => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
-      setReactors(prev => [{ user_id: currentUserId, emoji, name: 'Toi', avatar_url: prev.find(r => r.user_id === currentUserId)?.avatar_url ?? null }, ...prev]);
+      setReactors(prev => [{ user_id: currentUserId, emoji, name: t('common.you'), avatar_url: prev.find(r => r.user_id === currentUserId)?.avatar_url ?? null }, ...prev]);
       const id = nextFloatId();
       setFloatingEmojis(prev => [...prev, { id, emoji }]);
       const { error } = await supabase.from('reactions').insert({ update_id: u.id, user_id: currentUserId, type: emoji });

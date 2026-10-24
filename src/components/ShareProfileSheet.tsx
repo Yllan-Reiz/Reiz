@@ -41,7 +41,7 @@ export function ShareProfileSheet({ visible, onClose, name, username, avatar }: 
   const toast = useRef(new Animated.Value(0)).current;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardRef = useRef<View>(null);
-  const [toastText, setToastText] = useState('Copié !');
+  const [toastText, setToastText] = useState('');
   const message = inviteMessage(username);
   const cardW = Math.min(width - 72, 340);
   const qrSize = cardW - 96;
