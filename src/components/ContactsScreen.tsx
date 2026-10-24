@@ -28,6 +28,8 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
   const [contacts, setContacts] = useState<DeviceContact[]>([]);
   const [matched, setMatched] = useState<Matched[] | null>([]);
   const [rels, setRels] = useState<Record<string, Rel>>({});
+  // Demandes reçues de ces contacts : « Accepter » valide la demande existante (id de l'amitié).
+  const [received, setReceived] = useState<Record<string, string>>({});
   const [query, setQuery] = useState('');
   const [myUsername, setMyUsername] = useState<string | null>(null);
   const [meId, setMeId] = useState<string | null>(null);
@@ -41,17 +43,20 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
     setContacts(res.contacts);
     const [found, rel, profile] = await Promise.all([
       matchContacts(res.contacts),
-      me ? supabase.from('friendships').select('requester_id, receiver_id, status').or(`requester_id.eq.${me.id},receiver_id.eq.${me.id}`) : Promise.resolve({ data: [] as any[] }),
+      me ? supabase.from('friendships').select('id, requester_id, receiver_id, status').or(`requester_id.eq.${me.id},receiver_id.eq.${me.id}`) : Promise.resolve({ data: [] as any[] }),
       me ? supabase.from('users').select('username').eq('id', me.id).single() : Promise.resolve({ data: null as any }),
     ]);
     setMatched(found);
     setMyUsername(profile.data?.username ?? null);
     const map: Record<string, Rel> = {};
+    const rec: Record<string, string> = {};
     ((rel.data || []) as any[]).forEach(f => {
       const other = f.requester_id === me?.id ? f.receiver_id : f.requester_id;
       map[other] = f.status === 'accepted' ? 'friend' : f.requester_id === me?.id ? 'sent' : 'received';
+      if (map[other] === 'received') rec[other] = f.id;
     });
     setRels(map);
+    setReceived(rec);
     setPhase('ready');
   }, []);
 
@@ -60,6 +65,18 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
   const add = async (u: Matched) => {
     if (!meId) return;
     Haptics.selectionAsync().catch(() => {});
+    // Il m'a déjà envoyé une demande : on l'accepte (avant le 25/10/2026, le bouton « Accepter » tentait d'en
+    // créer une deuxième, refusée en silence par la base, et l'amitié n'était jamais validée).
+    const pendingId = rels[u.id] === 'received' ? received[u.id] : undefined;
+    if (pendingId) {
+      setRels(prev => ({ ...prev, [u.id]: 'friend' }));
+      const { error } = await supabase.from('friendships').update({ status: 'accepted' }).eq('id', pendingId);
+      if (error) {
+        setRels(prev => ({ ...prev, [u.id]: 'received' }));
+        Alert.alert(t('common.error'), frError(error));
+      }
+      return;
+    }
     setRels(prev => ({ ...prev, [u.id]: 'sent' }));
     const { error } = await supabase.from('friendships').insert({ requester_id: meId, receiver_id: u.id, status: 'pending' });
     if (error && !/duplicate key/i.test(error.message || '')) {

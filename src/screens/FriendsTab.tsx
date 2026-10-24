@@ -244,6 +244,13 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     });
   };
 
+  // Des demandes ont pu partir (ou être acceptées) depuis « Retrouver mes contacts » : on relit pour que les
+  // boutons des suggestions et la liste d'amis soient à jour au retour.
+  const closeContacts = () => {
+    setShowContacts(false);
+    if (currentUserId) fetchFriends(currentUserId, true);
+  };
+
   const addSuggested = async (id: string) => {
     if (!currentUserId || sentIds.has(id)) return;
     const { error } = await supabase.from('friendships').insert({ requester_id: currentUserId, receiver_id: id, status: 'pending' });
@@ -366,7 +373,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
           isFriend={id => getFriendshipStatus(id) === 'ami'}
           bottomPad={navClearance(insets.bottom)}
         />
-        <ContactsScreen visible={showContacts} onClose={() => setShowContacts(false)} />
+        <ContactsScreen visible={showContacts} onClose={closeContacts} />
         <ShareProfileSheet visible={shareOpen} onClose={() => setShareOpen(false)} name={myName} username={myUsername} avatar={myAvatar} />
       </>
     );
@@ -415,7 +422,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
           </GlassSurface>
         </TouchableOpacity>
       )}
-      <ContactsScreen visible={showContacts} onClose={() => setShowContacts(false)} />
+      <ContactsScreen visible={showContacts} onClose={closeContacts} />
 
       {/* Barre de recherche */}
       <View style={s.searchBarActive}>
