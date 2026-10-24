@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, ScrollView, Animated, TextInput, Alert, A
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { supabase, currentUser } from '../lib/supabase';
+import { supabase, currentUser, storedUserId } from '../lib/supabase';
+import { cacheGet, cacheSet } from '../lib/cache';
 import { frError, inUnit } from '../lib/helpers';
 import { uploadImage, signOne } from '../lib/storage';
 import { Objective } from '../lib/types';
@@ -25,6 +26,16 @@ import { resetCloseCircle } from '../lib/closeCircle';
 import { forgetLiveActivityToken } from '../lib/liveActivity';
 import { Update, FeedMeta } from '../lib/types';
 import { t, tp, formatDate } from '../i18n';
+import { mark } from '../lib/perf';
+
+type ProfileSnapshot = {
+  profile: any;
+  avatarUrl: string | null;
+  objectives: Objective[];
+  activity: Record<string, string[]>;
+  friendCount: number;
+  posts: Update[];
+};
 
 export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfile }: { onClose: () => void; streak: number; onCreateObjective: () => void; onViewProfile?: (id: string) => void }) {
   const insets = useSafeAreaInsets();
@@ -52,37 +63,58 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   // Objectif en cours de modification (feuille).
   const [daysFor, setDaysFor] = useState<Objective | null>(null);
 
-  useEffect(() => { loadProfile(); }, []);
+  // Profil déjà vu : affiché tout de suite depuis la mémoire du téléphone, puis mis à jour sans écran de chargement.
+  // Avant le 25/10/2026, chaque ouverture de l'onglet repartait de zéro (0,6 s de roue mesurées dans le simulateur).
+  useEffect(() => {
+    (async () => {
+      const uid = await storedUserId();
+      const snap = uid ? await cacheGet<ProfileSnapshot>(`profile.${uid}`, 5 * 24 * 3600 * 1000) : null;
+      if (snap) {
+        setUserId(uid);
+        setProfile(snap.profile);
+        setNewName(snap.profile?.full_name || '');
+        setNewBio(snap.profile?.bio || '');
+        setAvatarUrl(snap.avatarUrl);
+        setObjectives(snap.objectives.map(inUnit));
+        setActivityByObj(Object.fromEntries(Object.entries(snap.activity || {}).map(([k, v]) => [k, new Set(v)])));
+        setFriendCount(snap.friendCount);
+        setPosts(snap.posts);
+        setLoading(false);
+        mark('profil:memoire', false);
+      }
+      loadProfile(!!snap);
+    })();
+  }, []);
 
   const loadProfile = async (silent = false) => {
+    mark('profil:debut', false);
     if (!silent) setLoading(true);
     const user = await currentUser();
     if (!user) { setLoading(false); return; }
     const sinceISO = new Date(Date.now() - HEATMAP_MAX_DAYS * 24 * 60 * 60 * 1000).toISOString();
     setUserId(user.id);
-    const [profileRes, objRes, updatesRes, friendsRes, allPosts] = await Promise.all([
+    // Tes posts (badges, épinglés, historique) arrivent à part : le haut du profil ne les attend pas.
+    const postsP = loadProfilePosts(user.id).catch(() => null);
+    postsP.then(p => { if (p) setPosts(p); });
+    const [profileRes, objRes, updatesRes, friendsRes] = await Promise.all([
       supabase.from('users').select('full_name, username, created_at, avatar_url, bio, sport').eq('id', user.id).single(),
       selectObjectives('id, emoji, title, current_value, target_value, unit, visibility, duration_days, is_completed', cols => supabase.from('objectives').select(cols).eq('user_id', user.id).order('created_at', { ascending: false })),
       supabase.from('updates').select('objective_id, created_at').eq('user_id', user.id).gte('created_at', sinceISO),
       supabase.from('friendships').select('requester_id, receiver_id').or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`).eq('status', 'accepted'),
-      loadProfilePosts(user.id),
     ]);
-    setPosts(allPosts);
+    let avatarP: Promise<string | null> = Promise.resolve(null);
     if (profileRes.data) {
       setProfile(profileRes.data);
       setNewName(profileRes.data.full_name);
       setNewBio(profileRes.data.bio || '');
       // La grande version (1200) met parfois 20 s à être préparée par le serveur : on montre tout de suite une
       // petite version (souvent déjà en mémoire), puis on la remplace par la nette dès qu'elle est téléchargée.
+      // Ta photo d'origine (720 px depuis la 1.0.1), signée en une requête : les versions réduites 300 et 1200 px
+      // demandées avant au serveur pouvaient mettre plusieurs secondes à être préparées.
+      // Elle arrive à part : le reste du profil s'affiche sans l'attendre.
       const path = profileRes.data.avatar_url;
-      if (path) {
-        signOne(path, { width: 300 }).then(small => { if (small) setAvatarUrl(prev => prev ?? small); }).catch(() => {});
-        signOne(path, { width: 1200 }).then(async big => {
-          if (!big) return;
-          await Image.prefetch(big).catch(() => {});
-          setAvatarUrl(big);
-        }).catch(() => {});
-      } else setAvatarUrl(null);
+      avatarP = path ? signOne(path).catch(() => null) : Promise.resolve(null);
+      avatarP.then(u => setAvatarUrl(u));
     }
     if (objRes.data) setObjectives((objRes.data as Objective[]).map(inUnit));
     if (updatesRes.data) {
@@ -96,8 +128,22 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
       setActivityByObj(map);
     }
     // Personnes distinctes, pas lignes : une amitié en double ne compte qu'une fois.
-    if (friendsRes.data) setFriendCount(new Set(friendsRes.data.map(f => (f.requester_id === user.id ? f.receiver_id : f.requester_id))).size);
+    const friends = friendsRes.data ? new Set(friendsRes.data.map(f => (f.requester_id === user.id ? f.receiver_id : f.requester_id))).size : null;
+    if (friends != null) setFriendCount(friends);
     setLoading(false);
+    // Mémoire pour la prochaine ouverture de l'onglet (liens de photos valables 7 jours).
+    if (profileRes.data && objRes.data && updatesRes.data && friends != null) {
+      const activity: Record<string, string[]> = {};
+      (updatesRes.data as { objective_id: string; created_at: string }[]).forEach(u => {
+        if (!u.objective_id) return;
+        const key = new Date(u.created_at).toDateString();
+        (activity[u.objective_id] ||= []).includes(key) || activity[u.objective_id].push(key);
+      });
+      Promise.all([avatarP, postsP]).then(([avatar, allPosts]) => {
+        if (allPosts) cacheSet(`profile.${user.id}`, { profile: profileRes.data, avatarUrl: avatar, objectives: objRes.data, activity, friendCount: friends, posts: allPosts } as ProfileSnapshot);
+      });
+    }
+    mark('profil:affiche', false);
   };
 
   const handleSaveName = async () => {

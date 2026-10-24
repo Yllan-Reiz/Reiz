@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, RefreshControl, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase, currentUser } from '../lib/supabase';
+import { supabase, currentUser, storedUserId } from '../lib/supabase';
+import { cacheGet, cacheSet } from '../lib/cache';
 import { frError, sportName, localizeReason } from '../lib/helpers';
 import { signAvatars, signOne } from '../lib/storage';
 import { useCloseCircle, setClose } from '../lib/closeCircle';
@@ -31,6 +32,9 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [refreshingFriends, setRefreshingFriends] = useState(false);
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
+  // Les suggestions attendent la liste des bloqués : jamais de personne bloquée proposée, même au premier
+  // chargement (avant le 25/10/2026, elles lisaient une liste encore vide).
+  const blockedReady = useRef<Promise<Set<string>>>(Promise.resolve(new Set()));
   const [myUsername, setMyUsername] = useState<string | null>(null);
   const [myName, setMyName] = useState('');
   const [myAvatar, setMyAvatar] = useState<string | null>(null);
@@ -88,6 +92,14 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
 
   useEffect(() => {
     const init = async () => {
+      // Amis déjà vus : affichés tout de suite depuis la mémoire du téléphone, puis mis à jour en silence.
+      const uid = await storedUserId();
+      const snap = uid ? await cacheGet<{ friends: Friend[]; pending: PendingRequest[] }>(`friends.${uid}`, 5 * 24 * 3600 * 1000) : null;
+      if (snap) {
+        setFriends(snap.friends); setPending(snap.pending);
+        onPendingCount?.(snap.pending.length);
+        setLoading(false);
+      }
       const user = await currentUser();
       if (user) {
         setCurrentUserId(user.id);
@@ -95,7 +107,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
           .then(async ({ data }) => {
             if (!data) return;
             setMyUsername(data.username); setMyName(data.full_name || '');
-            if (data.avatar_url) setMyAvatar(await signOne(data.avatar_url, { width: 600 }).catch(() => null));
+            if (data.avatar_url) setMyAvatar(await signOne(data.avatar_url).catch(() => null));
           });
         // Objectif le plus récent non privé → personnalise le message d'invitation.
         supabase.from('objectives').select('emoji, title, visibility').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5)
@@ -103,11 +115,14 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
             const shareable = (data || []).find((o: any) => o.visibility !== 'private');
             if (shareable) setMyTopObjective({ emoji: shareable.emoji, title: shareable.title });
           });
-        // Utilisateurs que j'ai bloqués : exclus de la recherche et des suggestions
-        const { data: blocks } = await supabase.from('blocks').select('blocked_id').eq('blocker_id', user.id);
-        const blocked = new Set<string>((blocks || []).map((b: any) => b.blocked_id));
-        setBlockedIds(blocked);
-        fetchFriends(user.id);
+        // Utilisateurs que j'ai bloqués : exclus de la recherche et des suggestions. Chargés en même temps que les
+        // amis (avant, la liste d'amis attendait cette requête).
+        blockedReady.current = Promise.resolve(supabase.from('blocks').select('blocked_id').eq('blocker_id', user.id)).then(({ data: blocks }) => {
+          const set = new Set<string>((blocks || []).map((b: any) => b.blocked_id));
+          setBlockedIds(set);
+          return set;
+        }, () => new Set<string>());
+        fetchFriends(user.id, !!snap);
       }
     };
     init();
@@ -139,6 +154,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
 
       setFriends(accepted); setPending(pendingReqs);
       onPendingCount?.(pendingReqs.length);
+      cacheSet(`friends.${uid}`, { friends: accepted, pending: pendingReqs });
       loadSuggestions(uid, accepted.map(f => f.id));
       loadNewMembers();
     }
@@ -152,7 +168,8 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   const loadSuggestions = async (uid: string, friendIds: string[]) => {
     let hidden: string[] = [];
     try { hidden = JSON.parse((await AsyncStorage.getItem(hiddenKey(uid))) || '[]'); } catch {}
-    const excluded = new Set([uid, ...friendIds, ...blockedIds, ...hidden]);
+    const blocked = await blockedReady.current;
+    const excluded = new Set([uid, ...friendIds, ...blocked, ...hidden]);
     const out = new Map<string, any>();
     const add = (u: any, reason: string, kind: 'contact' | 'mutual' | 'objective' | 'sport') => {
       if (!u?.id || excluded.has(u.id) || out.has(u.id)) return;
@@ -220,8 +237,8 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   // Tes amis qui correspondent sont listés à part, pour ouvrir leur profil.
   const runDiscover = async (terms: string[]) => {
     setSearching(true);
-    const { data } = await supabase.rpc('discover_people', { p_terms: terms, p_limit: 20 });
-    const results = ((data as any[]) || []).filter(u => !blockedIds.has(u.id)).map(u => ({
+    const [{ data }, blocked] = await Promise.all([supabase.rpc('discover_people', { p_terms: terms, p_limit: 20 }), blockedReady.current]);
+    const results = ((data as any[]) || []).filter(u => !blocked.has(u.id)).map(u => ({
       ...u,
       reason: localizeReason(u.reason) || (u.mutual > 0 ? tp('friends.mutual', u.mutual) : `@${u.username}`),
       kind: u.reason?.startsWith('Sport') ? 'sport' : u.reason?.startsWith('Tag') ? 'tag' : u.reason?.startsWith('Objectif') ? 'objective' : u.mutual > 0 ? 'mutual' : 'name',
@@ -249,8 +266,8 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   };
 
   const loadNewMembers = async () => {
-    const { data } = await supabase.rpc('new_members', { p_limit: 10 });
-    const list = ((data as any[]) || []).filter(u => !blockedIds.has(u.id));
+    const [{ data }, blocked] = await Promise.all([supabase.rpc('new_members', { p_limit: 10 }), blockedReady.current]);
+    const list = ((data as any[]) || []).filter(u => !blocked.has(u.id));
     const signed = await signAvatars(list.map(u => u.avatar_url));
     list.forEach(u => { if (u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });
     setNewMembers(list);

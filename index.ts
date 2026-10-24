@@ -1,3 +1,5 @@
+// Heure de départ du JavaScript, pour les repères de temps du démarrage (src/lib/perf.ts).
+(global as any).__REIZ_T0 = Date.now();
 import { registerRootComponent } from 'expo';
 
 import App from './App';

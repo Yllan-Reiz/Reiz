@@ -3,7 +3,7 @@ import { Linking, AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import { useFonts, Inter_300Light, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, Inter_900Black } from '@expo-google-fonts/inter';
-import { supabase } from './src/lib/supabase';
+import { supabase, storedUserId } from './src/lib/supabase';
 import { registerForPushNotifications } from './src/lib/notifications';
 import { handleAuthUrl, ensureProfile } from './src/lib/googleAuth';
 import { cacheClearAll } from './src/lib/cache';
@@ -23,6 +23,7 @@ import { WELCOME_FLOW } from './src/constants';
 import { PostScreen } from './src/screens/PostScreen';
 import { registerLiveActivityToken, endExpiredLiveActivities } from './src/lib/liveActivity';
 import { saveLanguage } from './src/lib/language';
+import { mark } from './src/lib/perf';
 
 // Au-delà, le fil est rechargé au retour dans l'app (liens de photos neufs, posts du jour).
 const STALE_AFTER_MS = 3 * 3600 * 1000;
@@ -101,32 +102,49 @@ function AppInner() {
 
     // Apple / Google : la ligne `users` n'existe pas encore à la première connexion.
     // On la crée AVANT d'entrer dans l'app, sinon le fil se charge sans profil.
+    // Une seule fois par compte : le renouvellement du jeton (toutes les heures) ne doit rien relancer, et surtout
+    // pas ramener sur le fil quelqu'un qui est en train d'écrire un post (c'était le cas avant le 25/10/2026).
+    const enteredUser = { id: null as string | null };
     const enter = async (user: any) => {
+      if (enteredUser.id === user.id) return;
+      enteredUser.id = user.id;
       const viaEmail = (user?.app_metadata?.providers || [user?.app_metadata?.provider]).includes('email');
-      if (!viaEmail) { await ensureProfile(user).catch(() => {}); consumePendingInvite(user.id); }
-      setScreen(pendingDuo.current ? 'post' : 'main');
+      if (!viaEmail) await ensureProfile(user).catch(() => {});
+      maybeRegisterPush(user);
+      consumePendingInvite(user.id);
+      setScreen(s => (s === 'post' ? s : pendingDuo.current ? 'post' : 'main'));
       pendingDuo.current = null;
     };
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        enter(session.user);
-        maybeRegisterPush(session.user);
-        consumePendingInvite(session.user.id);
-      }
+    // Ouverture rapide : une session est enregistrée sur le téléphone, on entre tout de suite (le fil gardé en
+    // mémoire s'affiche) sans attendre que Supabase renouvelle le jeton par le réseau. Le serveur ne répond qu'avec
+    // un jeton valide, et une session refusée ramène à l'accueil (INITIAL_SESSION ci-dessous).
+    storedUserId().then(id => {
+      mark('session:locale');
+      if (!id) return;
+      setScreen(s => (s === 'splash' ? 'main' : s));
       setCheckingAuth(false);
     });
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        enter(session.user);
-        maybeRegisterPush(session.user);
-        consumePendingInvite(session.user.id);
-      } else {
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION') {
+        mark('session:confirmee');
+        setCheckingAuth(false);
+        if (session) { enter(session.user); return; }
+        // Pas de session valide. Si elle est encore enregistrée (renouvellement impossible hors ligne), on garde
+        // l'app ouverte : supabase-js réessaiera tout seul. Sinon, retour à l'accueil.
+        storedUserId().then(id => { if (!id) setScreen(s => (s === 'main' || s === 'post' ? 'splash' : s)); });
+        return;
+      }
+      if (event === 'SIGNED_IN' && session) { enter(session.user); return; }
+      if (event === 'SIGNED_OUT') {
+        enteredUser.id = null;
         registeredUserId.current = null;
         stopAllPresence(); // plus de détection d'arrivée pour un compte déconnecté
         cacheClearAll(); resetSignedCache(); resetUserCards(); resetCloseCircle(); // rien de ce compte ne reste affiché pour le suivant
         setScreen('splash');
       }
+      // TOKEN_REFRESHED, USER_UPDATED : rien à faire.
     });
 
     notifListener.current = Notifications.addNotificationReceivedListener(() => {});
@@ -149,6 +167,7 @@ function AppInner() {
   }, []);
 
   if (checkingAuth || !fontsLoaded) return null;
+  mark('ecran:' + screen);
   if (screen === 'splash') return <Splash onNext={() => setScreen('onboarding')} />;
   if (screen === 'onboarding') return <Onboarding onNext={() => setScreen('main')} />;
   if (screen === 'main') return (

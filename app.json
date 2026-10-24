@@ -103,7 +103,7 @@
     },
     "updates": {
       "url": "https://u.expo.dev/69071c24-329f-4426-b10b-8b5fbe280564",
-      "fallbackToCacheTimeout": 3000
+      "fallbackToCacheTimeout": 0
     },
     "locales": {
       "fr": "./locales/fr.json",

@@ -5,10 +5,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { NAV_BOTTOM_MIN, navClearance } from '../constants';
-import { supabase, currentUser } from '../lib/supabase';
+import { supabase, currentUser, storedUserId } from '../lib/supabase';
 import { calculateStreak, frError, inUnit } from '../lib/helpers';
 import { signMany, signAvatars, signOne } from '../lib/storage';
 import { cacheGet, cacheSet } from '../lib/cache';
+import { mark } from '../lib/perf';
 import { setAppBadge } from '../lib/badge';
 import { selectObjectives } from '../lib/objectives';
 import { hasSchedule, daysLabel, GLASS_OBJECTIVES, GLASS_FRIENDS } from '../constants';
@@ -172,28 +173,33 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   const fetchPendingCount = async (uid?: string | null) => {
     const id = uid ?? userId;
     if (!id) return;
-    const { count } = await supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('receiver_id', id).eq('status', 'pending');
+    const { count, error } = await supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('receiver_id', id).eq('status', 'pending');
+    if (error) return;
     setPendingCount(count || 0);
+    countsRef.current = { ...countsRef.current, pending: count || 0 };
+    cacheSet(`counts.${id}`, countsRef.current);
   };
 
   const fetchUnread = async (uid?: string | null) => {
     const id = uid ?? userId;
     if (!id) return;
-    const { count } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('recipient_id', id).is('read_at', null);
+    const { count, error } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('recipient_id', id).is('read_at', null);
+    if (error) return;
     setUnreadCount(count || 0);
     setAppBadge(count || 0);
+    countsRef.current = { ...countsRef.current, unread: count || 0 };
+    cacheSet(`counts.${id}`, countsRef.current);
   };
 
+  // Le nombre d'amis vient de la liste du cercle (même requête que le fil) : une requête de moins.
   const fetchFriendCount = async (uid?: string | null) => {
     const id = uid ?? userId;
     if (!id) return;
-    const { count } = await supabase
-      .from('friendships')
-      .select('id', { count: 'exact', head: true })
-      .or(`requester_id.eq.${id},receiver_id.eq.${id}`)
-      .eq('status', 'accepted');
-    setFriendCount(count || 0);
+    await fetchCircle(id);
   };
+
+  // Derniers compteurs connus (demandes, non lus, amis), gardés pour l'ouverture suivante.
+  const countsRef = useRef<{ pending?: number; unread?: number; friends?: number }>({});
 
   // Le fil est déjà à l'écran (mémoire locale ou chargement précédent) : on ne remet pas le squelette.
   const painted = useRef(false);
@@ -206,8 +212,10 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       .select('requester_id, receiver_id')
       .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`)
       .eq('status', 'accepted');
-    const ids = [uid, ...(fr || []).map(f => (f.requester_id === uid ? f.receiver_id : f.requester_id))];
+    // Personnes distinctes : une amitié en double ne compte qu'une fois.
+    const ids = [uid, ...new Set((fr || []).map(f => (f.requester_id === uid ? f.receiver_id : f.requester_id)))];
     cacheSet(`circle.${uid}`, ids);
+    if (fr) { setFriendCount(ids.length - 1); cacheSet(`counts.${uid}`, { ...countsRef.current, friends: ids.length - 1 }); }
     return ids;
   };
 
@@ -271,6 +279,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       setFeedMeta(prev => ({ ...Object.fromEntries(visible.map(u => [u.id, emptyMeta()])), ...prev }));
     }
     painted.current = true;
+    if (offset === 0) mark('fil:reseau');
     setLoadingFeed(false);
     setLoadingMore(false);
 
@@ -302,13 +311,17 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     loadFeedPage(dbOffset.current, userId);
   };
 
+  // Objectifs déjà affichés (mémoire locale) : pas de roue de chargement, juste une mise à jour discrète.
+  const objectivesPainted = useRef(false);
+
   const fetchObjectives = async (silent = false) => {
-    if (!silent) setLoadingObj(true);
+    if (!silent && objectivesPainted.current === false) setLoadingObj(true);
     const user = await currentUser();
     if (!user) { setLoadingObj(false); return; }
     const { data, error } = await selectObjectives('id, emoji, title, current_value, target_value, unit, visibility', cols => supabase.from('objectives').select(cols).eq('user_id', user.id).order('created_at', { ascending: false }));
-    if (!error && data) setObjectives((data as Objective[]).map(inUnit));
+    if (!error && data) { setObjectives((data as Objective[]).map(inUnit)); mark('objectifs:reseau'); }
     setLoadingObj(false);
+    objectivesPainted.current = true;
     // Jours postés par objectif (les pastilles de la semaine). Deux semaines de recul suffisent.
     const sinceWeek = new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString();
     const { data: act } = await supabase.from('updates').select('objective_id, created_at').eq('user_id', user.id).gte('created_at', sinceWeek);
@@ -317,6 +330,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       if (u.objective_id) (map[u.objective_id] ||= new Set<string>()).add(new Date(u.created_at).toDateString());
     });
     setActivityByObj(map);
+    if (!error && data) cacheSet(`objectives.${user.id}`, { objectives: data, activity: Object.fromEntries(Object.entries(map).map(([k, v]) => [k, [...v]])) });
   };
 
   const onRefresh = async () => {
@@ -399,28 +413,49 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
 
   useEffect(() => {
     (async () => {
-      const user = await currentUser();
-      if (!user) { setLoadingFeed(false); setLoadingObj(false); return; }
-      setUserId(user.id);
+      // Compte enregistré sur le téléphone : lu sans réseau, même si le jeton a expiré. La mémoire locale de ce
+      // compte s'affiche tout de suite ; les requêtes au serveur attendent d'elles-mêmes le jeton renouvelé.
+      const uid = (await storedUserId()) ?? (await currentUser())?.id;
+      if (!uid) { setLoadingFeed(false); setLoadingObj(false); return; }
+      setUserId(uid);
+      const [cached, cachedObj, cachedStreak, cachedCounts] = await Promise.all([
+        cacheGet<{ updates: Update[]; meta: Record<string, FeedMeta> }>(`feed.${uid}`, 12 * 3600 * 1000),
+        cacheGet<{ objectives: Objective[]; activity: Record<string, string[]> }>(`objectives.${uid}`, 7 * 24 * 3600 * 1000),
+        cacheGet<number>(`streak.${uid}`, 24 * 3600 * 1000),
+        cacheGet<{ pending?: number; unread?: number; friends?: number }>(`counts.${uid}`, 7 * 24 * 3600 * 1000),
+      ]);
       // Dernier fil connu : affiché tout de suite, avant même la réponse du serveur.
-      const cached = await cacheGet<{ updates: Update[]; meta: Record<string, FeedMeta> }>(`feed.${user.id}`, 12 * 3600 * 1000);
       if (cached && cached.updates.length > 0) {
+        mark('fil:memoire');
         setUpdates(cached.updates);
         setFeedMeta(cached.meta || {});
         painted.current = true;
         setLoadingFeed(false);
       }
+      if (cachedObj && !objectivesPainted.current) {
+        setObjectives(cachedObj.objectives.map(inUnit));
+        setActivityByObj(Object.fromEntries(Object.entries(cachedObj.activity || {}).map(([k, v]) => [k, new Set(v)])));
+        objectivesPainted.current = true;
+        setLoadingObj(false);
+      }
+      if (cachedStreak != null) setStreak(cachedStreak);
+      if (cachedCounts) {
+        countsRef.current = cachedCounts;
+        if (cachedCounts.pending != null) setPendingCount(cachedCounts.pending);
+        if (cachedCounts.unread != null) setUnreadCount(cachedCounts.unread);
+        if (cachedCounts.friends != null) setFriendCount(cachedCounts.friends);
+      }
       lastCounts.current = Date.now();
-      supabase.from('users').select('avatar_url').eq('id', user.id).single().then(async ({ data: me }) => {
-        if (me?.avatar_url) setMyAvatar(await signOne(me.avatar_url, { width: 1200 }));
+      // Ta photo : celle d'origine (déjà allégée à l'envoi), sans attendre une version réduite par le serveur.
+      supabase.from('users').select('avatar_url').eq('id', uid).single().then(async ({ data: me }) => {
+        if (me?.avatar_url) setMyAvatar(await signOne(me.avatar_url));
       });
-      loadFeedPage(0, user.id);
-      calculateStreak(user.id).then(setStreak);
-      fetchPendingCount(user.id);
-      fetchFriendCount(user.id);
-      fetchUnread(user.id);
+      loadFeedPage(0, uid); // remplit aussi le nombre d'amis (liste du cercle)
+      calculateStreak(uid).then(n => { setStreak(n); cacheSet(`streak.${uid}`, n); });
+      fetchPendingCount(uid);
+      fetchUnread(uid);
+      fetchObjectives();
     })();
-    fetchObjectives();
   }, []);
 
   // Deep link des notifications : taper une notif ouvre le bon onglet

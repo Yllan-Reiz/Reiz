@@ -247,15 +247,24 @@ const memory = new Map<string, Signed>();
 let hydrated: Promise<void> | null = null;
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
 // La transformation d'images (réduction à la volée) dépend de l'offre Supabase : si elle échoue,
-// on s'en passe pour le reste de la session au lieu de réessayer à chaque photo.
+// on s'en passe au lieu de réessayer à chaque photo. Le refus est mémorisé 12 h sur le téléphone : avant le
+// 25/10/2026, chaque lancement refaisait la tentative (jusqu'à 3 allers-retours par photo) quand le quota était épuisé.
 let transformOk = true;
+const TRANSFORM_OFF_KEY = 'reiz.signed.transformOff';
+const TRANSFORM_OFF_MS = 12 * 3600 * 1000;
+function disableTransforms() {
+  if (!transformOk) return;
+  transformOk = false;
+  AsyncStorage.setItem(TRANSFORM_OFF_KEY, String(Date.now())).catch(() => {});
+}
 
 /** Relit les adresses déjà signées au premier usage (elles survivent entre deux lancements). */
 function hydrate(): Promise<void> {
   if (!hydrated) {
     hydrated = (async () => {
       try {
-        const raw = await AsyncStorage.getItem(SIGNED_KEY);
+        const [raw, off] = await Promise.all([AsyncStorage.getItem(SIGNED_KEY), AsyncStorage.getItem(TRANSFORM_OFF_KEY)]);
+        if (off && Date.now() - Number(off) < TRANSFORM_OFF_MS) transformOk = false;
         if (!raw) return;
         const now = Date.now();
         Object.entries(JSON.parse(raw) as Record<string, Signed>).forEach(([k, e]) => { if (now - e.at < REUSE_MS) memory.set(k, e); });
@@ -301,7 +310,7 @@ async function signOneRaw(path: string, width?: number): Promise<string | null> 
     if (!error && data?.signedUrl && await transformServed(data.signedUrl)) return data.signedUrl;
     // La réduction a échoué : si l'original, lui, se signe, c'est la fonction qui est indisponible.
     const plain = await supabase.storage.from(BUCKET).createSignedUrl(path, EXPIRES_IN);
-    if (plain.data?.signedUrl) transformOk = false;
+    if (plain.data?.signedUrl) disableTransforms();
     return plain.data?.signedUrl ?? null;
   }
   const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, EXPIRES_IN);
@@ -316,7 +325,7 @@ let probe: Promise<boolean> | null = null;
 function transformServed(url: string): Promise<boolean> {
   if (!probe) {
     probe = fetch(url)
-      .then(r => { const ok = r.status < 400 || r.status === 404; if (!ok) transformOk = false; return ok; })
+      .then(r => { const ok = r.status < 400 || r.status === 404; if (!ok) disableTransforms(); return ok; })
       .catch(() => true); // pas de réseau : ce n'est pas la réduction qui est en cause
   }
   return probe;
@@ -330,7 +339,7 @@ export async function originalFor(url: string): Promise<string | null> {
   const m = url.match(/\/storage\/v1\/render\/image\/sign\/[^/]+\/([^?]+)/);
   if (!m) return null;
   const path = decodeURIComponent(m[1]);
-  transformOk = false;
+  disableTransforms();
   [...memory.keys()].forEach(k => { if (k.endsWith(`|${path}`)) memory.delete(k); });
   const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, EXPIRES_IN);
   return data?.signedUrl ?? null;
