@@ -38,13 +38,14 @@ cd ~/Desktop/Reiz-langues && supabase functions deploy send-push live-activity-t
 - [x] Déployer les fonctions serveur (fait le 24/10, vérifié : versions en ligne, essai sans envoi OK).
 - [x] Build 1.1.0 (EAS) : build 17 (commit c967f71, audit complet), sur TestFlight le 24/10. Les builds 14 à 16
       contiennent du code plus ancien : ne pas les utiliser.
-- [ ] Test TestFlight du build 17 dans les 4 langues.
+- [x] Test TestFlight du build 17 dans les 4 langues (validé par Yllan le 24/10).
 - [x] App Store Connect (24/10) : la version « 1.0.1 » jamais soumise a été renommée 1.1.0, build 14 attaché, Nouveautés et
       notes pour Apple (en anglais, boutons anglais) mises à jour. Langues ajoutées : Anglais (États-Unis), Espagnol (Espagne),
       Espagnol (Mexique, version « ustedes »), Hébreu, avec nom, sous-titre, description, mots-clés, texte promo, nouveautés.
       Le 24/10 au soir, le build 14 a été remplacé par le build 17 (enregistré, non soumis).
       Captures : celles en français servent par défaut.
-- [ ] Soumettre la 1.1.0 à la vérification d'Apple (avec l'accord de Yllan).
+- [x] Soumettre la 1.1.0 à la vérification d'Apple : envoyée le 24/10 vers 23 h 50 avec le build 17, état « En attente
+      de vérification ». Publication MANUELLE : après l'accord d'Apple, Yllan clique sur « Publier » dans App Store Connect.
 - [ ] Les pages web CGU et confidentialité restent en français (liens de l'inscription). L'app affiche ses propres traductions
       dans Réglages > Légal.
 
