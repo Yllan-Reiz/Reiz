@@ -1,7 +1,7 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
-node_modules/
+# dependencies (sans « / » : dans la copie de travail des langues, node_modules est un lien, pas un dossier)
+node_modules
 
 # Expo
 .expo/
