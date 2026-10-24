@@ -155,7 +155,8 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
               />
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
                 {QUICK_UNITS.map(u => {
-                  const on = hasTarget && unit === u;
+                  // Unité touchée avant le chiffre : elle s'allume tout de suite (avant, rien ne bougeait).
+                  const on = (hasTarget || touched) && unit === u;
                   return (
                     <TouchableOpacity key={u} onPress={() => pick(() => { setTouched(true); setUnit(u); })} activeOpacity={0.85} accessibilityState={{ selected: on }} style={chip(on)}>
                       <Text style={chipText(on)} maxFontSizeMultiplier={1.3}>{unitLabel(u)}</Text>

@@ -149,6 +149,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   const dbOffset = useRef(0);
   // Carte la plus visible du fil : seule sa vidéo joue (les autres restent en pause).
   const [activeId, setActiveId] = useState<string | null>(null);
+  // Toucher « Accueil » quand on est déjà sur le fil remonte tout en haut (comme Instagram).
+  const feedRef = useRef<FlatList<Update>>(null);
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: { item: Update; isViewable: boolean }[] }) => {
     const first = viewableItems.find(v => v.isViewable);
     setActiveId(first ? first.item.id : null);
@@ -515,6 +517,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       {tab === 'feed' && (
         <View style={{ flex: 1 }}>
           <FlatList
+            ref={feedRef}
             style={s.feed}
             contentContainerStyle={s.feedContent}
             data={updates}
@@ -701,7 +704,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             anim={leftPillAnim}
             icon={tab === 'feed' ? 'home' : 'apps'}
           />
-          <NavTab icon="home" active={tab === 'feed'} onPress={() => setTab('feed')} />
+          <NavTab icon="home" active={tab === 'feed'} onPress={() => (tab === 'feed' ? feedRef.current?.scrollToOffset({ offset: 0, animated: true }) : setTab('feed'))} />
           <NavTab icon="apps" active={tab === 'objectives'} onPress={() => setTab('objectives')} />
         </View>
 

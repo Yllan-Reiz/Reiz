@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Animated, Alert, ActivityIndicator, Modal, useWindowDimensions, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Alert, ActivityIndicator, Modal, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase, currentUser } from '../lib/supabase';
 import { calculateStreak, timeAgo, frError, inUnit } from '../lib/helpers';
@@ -68,16 +68,11 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
       ]);
       if (profileRes.data) {
         setProfile(profileRes.data);
-        // Petite version tout de suite, la nette (lente à préparer côté serveur) dès qu'elle est téléchargée.
+        // Photo d'origine (déjà allégée à l'envoi, gardée sur le téléphone) : les versions réduites par Supabase
+        // coûtaient deux requêtes et sont refusées quand leur quota est épuisé (25/10/2026).
         const path = profileRes.data.avatar_url;
-        if (path) {
-          signOne(path, { width: 300 }).then(small => { if (small) setAvatarUrl(prev => prev ?? small); }).catch(() => {});
-          signOne(path, { width: 1200 }).then(async big => {
-            if (!big) return;
-            await Image.prefetch(big).catch(() => {});
-            setAvatarUrl(big);
-          }).catch(() => {});
-        } else setAvatarUrl(null);
+        if (path) signOne(path).then(url => setAvatarUrl(url)).catch(() => {});
+        else setAvatarUrl(null);
       }
       if (objRes.data) setObjectives((objRes.data as Objective[]).map(inUnit));
       setRecentUpdates(updatesRes.filter(u => u.objectives?.visibility !== 'private'));

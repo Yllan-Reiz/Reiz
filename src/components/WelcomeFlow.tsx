@@ -15,6 +15,7 @@ import { registerForPushNotifications } from '../lib/notifications';
 import { AUTO_SUPPORTED, isAutoEnabled, setAutoEnabled, addPlaceHere } from '../lib/presence';
 import { contactsAvailable, inviteText } from '../lib/contacts';
 import { APP_STORE_URL, daysLabel, ALL_DAYS, WELCOME_FLOW } from '../constants';
+import { CachedImage } from './CachedImage';
 import { ContactsScreen } from './ContactsScreen';
 import { SportCarousel, SPORTS, Sport } from './SportCarousel';
 import { LocationScene } from './LocationScene';
@@ -219,7 +220,9 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
       const savedSport = await AsyncStorage.getItem(sportKey(user.id)).catch(() => null);
       setStartIdx(Math.max(0, SPORTS.findIndex(x => x.id === savedSport)));
       setUserId(user.id); setUsername(p.username ?? null); setName(placeholder ? '' : p.full_name); setBio(p.bio || '');
-      setAvatar(p.avatar_url ? await signOne(p.avatar_url, { width: 1080 }).catch(() => null) : null);
+      // Photo d'origine (déjà allégée à l'envoi) : la version agrandie par Supabase est refusée quand son quota est
+      // épuisé, et l'écran restait noir (25/10/2026).
+      setAvatar(p.avatar_url ? await signOne(p.avatar_url).catch(() => null) : null);
       const list: StepId[] = ['profile'];
       if (preview || !objs.count) list.push('objective');
       // Pas d'écran « lieu » si la détection est déjà active ou impossible sur ce téléphone (Android, build 1.0.0).
@@ -478,7 +481,7 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
                     {/* La photo prend tout le haut de l'écran, comme l'onglet Profil. Toucher la photo la change. */}
                     <TouchableOpacity onPress={pickAvatar} activeOpacity={0.9} style={{ height: heroH }} accessibilityRole="button" accessibilityLabel={t('welcome.pickAvatar')}>
                       {avatar
-                        ? <Image source={{ uri: avatar }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                        ? <CachedImage uri={avatar} style={StyleSheet.absoluteFill} />
                         : <LinearGradient colors={['#3a3a3a', '#141414']} style={StyleSheet.absoluteFill} />}
                       <LinearGradient pointerEvents="none" colors={['rgba(10,10,10,0.7)', 'rgba(10,10,10,0)']} locations={[0, 0.28]} style={StyleSheet.absoluteFill} />
                       <LinearGradient pointerEvents="none" colors={['rgba(10,10,10,0)', 'rgba(10,10,10,0.55)', '#0a0a0a']} locations={[0.38, 0.72, 1]} style={StyleSheet.absoluteFill} />
@@ -594,7 +597,9 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
                         {[56, 68, 94, 68, 56].map((size, i) => (
                           <View key={i} style={{ width: size, height: size, borderRadius: size / 2, marginHorizontal: -7, zIndex: 3 - Math.abs(i - 2), backgroundColor: ['#1d1d1d', '#262626', '#1d1d1d', '#262626', '#1d1d1d'][i], borderWidth: 3, borderColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                             {/* Au centre : toi (ou un groupe si tu n'as pas encore de photo), autour : ton futur cercle. */}
-                            <Image source={i === 2 ? (avatar ? { uri: avatar } : PHOTOS.groupe) : PHOTOS.cercle[i < 2 ? i : i - 1]} style={{ width: size, height: size }} />
+                            {i === 2 && avatar
+                              ? <CachedImage uri={avatar} style={{ width: size, height: size }} />
+                              : <Image source={i === 2 ? PHOTOS.groupe : PHOTOS.cercle[i < 2 ? i : i - 1]} style={{ width: size, height: size }} />}
                           </View>
                         ))}
                       </View>

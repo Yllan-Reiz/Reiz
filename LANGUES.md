@@ -9,6 +9,9 @@ Français (langue principale), anglais, espagnol, hébreu. Préparé le 24/10/20
 - Langue choisie au lancement : celle réglée dans **Réglages > Langue**, sinon celle de l'iPhone si Reiz la parle, sinon l'anglais.
   Changer de langue redémarre l'app.
 - Hébreu : l'app passe de droite à gauche au démarrage (flèches, curseurs et barre du bas inversés).
+  Juste après un passage vers ou depuis l'hébreu, iOS garde l'alignement du texte de l'ancienne langue tant que l'app
+  n'a pas été fermée puis rouverte (le redémarrage de Reiz garde le même processus) : le message de changement de
+  langue le demande. Vérifié sur simulateur le 25/10/2026.
 - Textes légaux : `src/i18n/legal/` (le français fait foi, chaque traduction le dit en tête).
 - Demandes d'autorisation d'iOS (appareil photo, localisation...) : `locales/*.json`.
 - La langue et le fuseau horaire de chacun sont rangés dans `users.language` et `users.timezone` (colonnes ajoutées le 24/10,

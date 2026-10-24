@@ -61,7 +61,10 @@ export function dayKeysFor(nbDays: number): string[] {
 }
 
 // Version affichée dans les paramètres (vient de app.json, jamais saisie à la main).
-export const APP_VERSION = `${Constants.expoConfig?.version ?? '?'} (${Constants.expoConfig?.extra?.buildTag ?? 'dev'})`;
+// Le repère de build (« dev », « test »...) n'est affiché que hors version publiée : les utilisateurs voyaient
+// « 1.1.0 (sortie) », en français dans toutes les langues.
+const BUILD_TAG = Constants.expoConfig?.extra?.buildTag ?? 'dev';
+export const APP_VERSION = `${Constants.expoConfig?.version ?? '?'}${BUILD_TAG === 'sortie' ? '' : ` (${BUILD_TAG})`}`;
 
 // Jours d'entraînement : 1 = lundi ... 7 = dimanche (comme `isodow` dans Postgres).
 // `null` ou liste vide = tous les jours (comportement d'origine, aucun objectif existant ne change).

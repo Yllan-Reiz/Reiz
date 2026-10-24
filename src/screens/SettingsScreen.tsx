@@ -11,7 +11,7 @@ import { WelcomeModal } from '../components/WelcomeFlow';
 import { contactsAvailable } from '../lib/contacts';
 import { APP_VERSION, WELCOME_FLOW } from '../constants';
 import { F } from '../styles';
-import { LANGS, lang, chosenLang, deviceLang, setLanguage, type Lang, t, dirIcon } from '../i18n';
+import { LANGS, lang, chosenLang, deviceLang, setLanguage, type Lang, t, dirIcon, isRTL } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
 
 type View_ = 'root' | 'password' | 'blocked' | 'legal' | 'presence' | 'language';
@@ -35,14 +35,27 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
   const [provider, setProvider] = useState<string>('email');
   // Encouragements perso (users.notif_encouragement). null = pas chargé, ou colonne absente : la ligne est cachée.
   const [encourage, setEncourage] = useState<boolean | null>(null);
+  // Les lignes Email, « Me proposer à mes contacts » et Encouragements arrivent après des requêtes : la liste reste
+  // invisible jusque-là, sinon elle sautait sous le doigt une seconde après l'ouverture (25/10/2026).
+  const [loaded, setLoaded] = useState({ user: false, enc: false, disc: false });
+  const ready = loaded.user && loaded.enc && loaded.disc;
+  useEffect(() => {
+    if (!visible) return;
+    setLoaded({ user: false, enc: false, disc: !contactsAvailable() });
+    // Réseau lent ou requête en échec : la liste s'affiche quand même au bout d'une seconde et demie.
+    const timer = setTimeout(() => setLoaded({ user: true, enc: true, disc: true }), 1500);
+    return () => clearTimeout(timer);
+  }, [visible]);
 
   useEffect(() => {
     if (!visible) return;
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      const { data, error } = await supabase.from('users').select('notif_encouragement').eq('id', user.id).single();
-      setEncourage(!error && data ? (data as any).notif_encouragement !== false : null);
-    });
+      if (user) {
+        const { data, error } = await supabase.from('users').select('notif_encouragement').eq('id', user.id).single();
+        setEncourage(!error && data ? (data as any).notif_encouragement !== false : null);
+      }
+      setLoaded(l => ({ ...l, enc: true }));
+    }, () => setLoaded(l => ({ ...l, enc: true })));
   }, [visible]);
 
   // « Me proposer à mes contacts » (users.discoverable) : quelqu'un qui a ton e-mail dans son carnet peut te trouver
@@ -51,10 +64,12 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
   useEffect(() => {
     if (!visible || !contactsAvailable()) return;
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      const { data, error } = await supabase.from('users').select('discoverable').eq('id', user.id).single();
-      setDiscoverable(!error && data ? (data as any).discoverable !== false : null);
-    });
+      if (user) {
+        const { data, error } = await supabase.from('users').select('discoverable').eq('id', user.id).single();
+        setDiscoverable(!error && data ? (data as any).discoverable !== false : null);
+      }
+      setLoaded(l => ({ ...l, disc: true }));
+    }, () => setLoaded(l => ({ ...l, disc: true })));
   }, [visible]);
   const toggleDiscoverable = async (value: boolean) => {
     setDiscoverable(value);
@@ -79,7 +94,8 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
       setEmail(user?.email || '');
       const providers: string[] = (user?.app_metadata as any)?.providers || [(user?.app_metadata as any)?.provider || 'email'];
       setProvider(providers.includes('email') ? 'email' : providers[0] || 'email');
-    });
+      setLoaded(l => ({ ...l, user: true }));
+    }, () => setLoaded(l => ({ ...l, user: true })));
   }, [visible]);
 
   const back = () => { if (view === 'root') onClose(); else setView('root'); };
@@ -111,7 +127,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
         </View>
 
         {view === 'root' && (
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 40 }} showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ opacity: ready ? 1 : 0 }} pointerEvents={ready ? 'auto' : 'none'} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 40 }} showsVerticalScrollIndicator={false}>
             <Section title={t('settings.secAccount')}>
               <Row icon="person-outline" label={t('settings.editName')} onPress={() => { onClose(); setTimeout(onEditName, 350); }} />
               <Row icon="create-outline" label={t('settings.editBio')} onPress={() => { onClose(); setTimeout(onEditBio, 350); }} />
@@ -306,7 +322,10 @@ function LanguagePicker() {
   ];
   const choose = (code: Lang | null) => {
     if (code === picked) return;
-    Alert.alert(t('settings.restartTitle'), t('settings.restartText'), [
+    // Vers ou depuis l'hébreu : iOS ne bascule l'alignement naturel du texte qu'à une vraie relance de l'app
+    // (le redémarrage de Reiz garde le même processus). On demande donc de fermer puis rouvrir.
+    const flips = ((code ?? deviceLang()) === 'he') !== isRTL();
+    Alert.alert(t('settings.restartTitle'), t(flips ? 'settings.restartTextDir' : 'settings.restartText'), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('settings.restart'), onPress: () => { setLanguage(code); } },
     ]);

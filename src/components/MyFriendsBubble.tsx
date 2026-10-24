@@ -41,7 +41,7 @@ export function MyFriendsBubble({ userId, onOpen, reloadKey }: { userId: string;
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
             <Faces people={people} size={40} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: F.semibold }}>{count} {count > 1 ? 'amis' : 'ami'}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: F.semibold }}>{tp('people.friendsCount', count)}</Text>
               <Ionicons name={dirIcon('chevron-forward')} size={16} color="rgba(255,255,255,0.5)" />
             </View>
           </View>

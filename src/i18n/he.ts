@@ -673,6 +673,7 @@ export const he: Dict = {
     phoneLanguage: 'שפת הטלפון',
     restartTitle: 'שינוי שפה',
     restartText: 'Reiz יופעל מחדש בשפה שבחרתם.',
+    restartTextDir: 'Reiz יופעל מחדש בשפה שבחרתם. כדי שכל הטקסט יתהפך לכיוון הנכון, סגרו את Reiz ופתחו אותו שוב.',
     restart: 'הפעלה מחדש',
     languageHint: 'גם ההתראות יגיעו בשפה הזו.',
   },
@@ -828,6 +829,7 @@ export const he: Dict = {
     otherFriends: 'שאר החברים שלך',
     chooseClose: 'בחרו את הקרובים',
     closeTitle: 'המעגל הקרוב, {n}',
+    friendsCount: { one: 'חבר/ה אחד/ת', other: '{count} חברים' },
   },
   story: {
     unavailableTitle: 'השיתוף לא זמין',

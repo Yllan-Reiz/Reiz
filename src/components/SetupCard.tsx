@@ -105,27 +105,25 @@ export function SetupCard({ userId, hasObjective, friendCount, onAddPhoto, onAdd
             <View style={{ width: `${(doneCount / steps.length) * 100}%`, height: 4, borderRadius: 2, backgroundColor: '#fff' }} />
           </View>
 
-          <View style={{ marginTop: 8 }}>
-            {steps.map((step, i) => (
+          <View style={{ marginTop: 6 }}>
+            {/* Seulement ce qui reste à faire : le compteur et la barre disent déjà ce qui est fait. */}
+            {steps.filter(x => !x.done).map((step, i) => (
               <TouchableOpacity
                 key={step.id}
-                disabled={step.done}
                 activeOpacity={0.8}
                 onPress={() => { Haptics.selectionAsync().catch(() => {}); step.onPress(); }}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: 'rgba(255,255,255,0.08)' }}
               >
-                <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: step.done ? '#fff' : 'rgba(255,255,255,0.12)' }}>
-                  <Ionicons name={step.done ? 'checkmark' : ICONS[step.id]} size={17} color={step.done ? '#000' : '#fff'} />
+                <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' }}>
+                  <Ionicons name={ICONS[step.id]} size={17} color="#fff" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: step.done ? 'rgba(255,255,255,0.45)' : '#fff', fontSize: 15, fontFamily: F.bold, textDecorationLine: step.done ? 'line-through' : 'none' }}>
+                  <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>
                     {t(`setup.${step.id}`)}
                   </Text>
-                  {!step.done && (
-                    <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }}>{t(`setup.${step.id}Sub`)}</Text>
-                  )}
+                  <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }}>{t(`setup.${step.id}Sub`)}</Text>
                 </View>
-                {!step.done && <Ionicons name={dirIcon('chevron-forward')} size={18} color="rgba(255,255,255,0.6)" />}
+                <Ionicons name={dirIcon('chevron-forward')} size={18} color="rgba(255,255,255,0.6)" />
               </TouchableOpacity>
             ))}
           </View>

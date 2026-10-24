@@ -16,7 +16,16 @@ export function FeedVideo({ uri, active, style }: {
   // Le lecteur n'existe que pour la carte visible. Avant, chaque vidéo du fil créait son lecteur dès
   // l'affichage de la carte et commençait à télécharger : plusieurs vidéos de 20 Mo se disputaient la
   // connexion avec les photos, et tout le fil ralentissait.
-  if (!active) return <View style={[style, { backgroundColor: '#111' }]} />;
+  // Carte pas encore à l'écran : une icône de lecture, pour que la case ne passe pas pour une image cassée.
+  if (!active) {
+    return (
+      <View style={[style, { backgroundColor: '#111', alignItems: 'center', justifyContent: 'center' }]}>
+        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="play" size={24} color="rgba(255,255,255,0.85)" style={{ marginLeft: 3 }} />
+        </View>
+      </View>
+    );
+  }
   return <FeedVideoPlayer uri={uri} style={style} />;
 }
 
