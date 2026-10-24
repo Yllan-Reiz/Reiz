@@ -32,10 +32,14 @@ cd ~/Desktop/Reiz-langues && supabase functions deploy send-push live-activity-t
 - [ ] Relecture de l'hébreu par une personne de langue maternelle (`src/i18n/he.ts`, `src/i18n/legal/he.ts`, `locales/he.json`,
       partie `he` de `supabase/functions/_shared/texts.ts`). Formes neutres choisies : pluriel ou « /ה ».
 - [ ] Relecture rapide de l'anglais et de l'espagnol.
-- [ ] Déployer les fonctions serveur (commande ci-dessus).
-- [ ] Build 1.1.0 (EAS), test TestFlight dans les 4 langues.
-- [ ] App Store Connect : ajouter les langues Anglais (États-Unis), Espagnol (Espagne) et Hébreu, coller les fiches ci-dessous.
-      Les captures en français peuvent servir partout au début.
+- [x] Déployer les fonctions serveur (fait le 24/10, vérifié : versions en ligne, essai sans envoi OK).
+- [x] Build 1.1.0 (EAS) : build 14, sur TestFlight le 24/10.
+- [ ] Test TestFlight du build 14 dans les 4 langues.
+- [x] App Store Connect (24/10) : la version « 1.0.1 » jamais soumise a été renommée 1.1.0, build 14 attaché, Nouveautés et
+      notes pour Apple (en anglais, boutons anglais) mises à jour. Langues ajoutées : Anglais (États-Unis), Espagnol (Espagne),
+      Espagnol (Mexique, version « ustedes »), Hébreu, avec nom, sous-titre, description, mots-clés, texte promo, nouveautés.
+      Captures : celles en français servent par défaut.
+- [ ] Soumettre la 1.1.0 à la vérification d'Apple (avec l'accord de Yllan).
 - [ ] Les pages web CGU et confidentialité restent en français (liens de l'inscription). L'app affiche ses propres traductions
       dans Réglages > Légal.
 
