@@ -399,5 +399,9 @@ export async function signOne(stored?: string | null, opts?: SignOpts): Promise<
   return (await signMany([stored], opts))[stored] ?? null;
 }
 
-/** Petite photo de profil (rond de liste, pastille) : version réduite à 200 px de large. */
-export const signAvatars = (stored: (string | null | undefined)[]) => signMany(stored, { width: 200 });
+/**
+ * Photos de profil : la photo d'origine, signée en une seule requête pour tout le lot. Elles sont déjà allégées à
+ * l'envoi (720 px, voir uploadImage) et gardées sur le téléphone par CachedImage : la version réduite par Supabase
+ * coûtait une requête par photo (plus une vérification), et son quota mensuel est souvent épuisé (24/10/2026).
+ */
+export const signAvatars = (stored: (string | null | undefined)[]) => signMany(stored);

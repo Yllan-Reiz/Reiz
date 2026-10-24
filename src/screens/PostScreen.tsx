@@ -19,6 +19,7 @@ import { galleryAvailable, saveToGallery } from '../lib/saveToGallery';
 import { endAllLiveActivities } from '../lib/liveActivity';
 import { s, F } from '../styles';
 import { t, tp, unitLabel, isRTL } from '../i18n';
+import { CachedImage } from '../components/CachedImage';
 
 // Vidéo de progression : 15 s max, comme une story. Au-delà, le fichier pèse
 // trop lourd pour la 4G et le fil devient une plateforme vidéo.
@@ -469,7 +470,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
             ? <>
                 {mediaType === 'video'
                   ? <VideoPreview uri={photoUri} />
-                  : <Image source={{ uri: photoUri }} style={s.postPhotoImg} resizeMode="cover" />}
+                  : <CachedImage uri={photoUri} style={s.postPhotoImg} resizeMode="cover" />}
                 <View style={s.postPhotoChangeBadge}>
                   <Text style={s.postPhotoChangeText}>{t('post.change')}</Text>
                 </View>
@@ -535,7 +536,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
                   <TouchableOpacity key={f.id} onPress={() => toggleWith(f.id)} activeOpacity={0.8} style={{ alignItems: 'center', width: 60 }} accessibilityLabel={t(on ? 'post.untag' : 'post.tag', { name: f.full_name })}>
                     <View style={{ width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: on ? '#fff' : 'transparent', padding: 2 }}>
                       {f.avatar_url
-                        ? <Image source={{ uri: f.avatar_url }} style={{ width: '100%', height: '100%', borderRadius: 24 }} />
+                        ? <CachedImage uri={f.avatar_url} style={{ width: '100%', height: '100%', borderRadius: 24 }} />
                         : <View style={{ flex: 1, borderRadius: 24, backgroundColor: '#2a2a2a', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontFamily: F.bold }}>{f.full_name.charAt(0).toUpperCase()}</Text></View>}
                       {on && (
                         <View style={{ position: 'absolute', right: -2, bottom: -2, width: 18, height: 18, borderRadius: 9, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>

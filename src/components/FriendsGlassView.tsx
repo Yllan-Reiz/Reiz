@@ -6,6 +6,7 @@ import { Friend, PendingRequest } from '../lib/types';
 import { GUTTER } from '../constants';
 import { F } from '../styles';
 import { t, tp, dirIcon } from '../i18n';
+import { CachedImage } from './CachedImage';
 
 // L'onglet Amis = découvrir et ajouter des gens (comme sur les réseaux sociaux) : recherche par nom, tag ou sport,
 // invitation, demandes reçues, amis recommandés, nouveaux sur Reiz. Tes amis et ton cercle proche sont sur ton
@@ -18,7 +19,7 @@ type Person = { id: string; full_name: string; username: string; avatar_url?: st
 function Avatar({ url, name, size = 52, ring }: { url?: string | null; name: string; size?: number; ring?: boolean }) {
   const border = ring ? { borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)' } : { borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' };
   return url
-    ? <Image source={{ uri: url }} style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#222' }, border]} />
+    ? <CachedImage uri={url} style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#222' }, border]} />
     : (
       <View style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }, border]}>
         <Text style={{ color: '#fff', fontSize: size * 0.4, fontFamily: F.bold }}>{name.charAt(0).toUpperCase()}</Text>

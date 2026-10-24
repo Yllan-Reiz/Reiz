@@ -16,6 +16,7 @@ import { DUO_WINDOW_MS } from '../lib/duo';
 import { ShareStoryModal, StoryData } from './ShareStoryModal';
 import { FloatingEmoji, nextFloatId } from './FloatingEmoji';
 import { t, tp, unitLabel } from '../i18n';
+import { CachedImage } from './CachedImage';
 
 // Ouverture/fermeture en fondu-montée. Le contenu reste monté le temps de la
 // sortie, sinon le panneau disparaît d'un coup sec.
@@ -276,7 +277,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   const Avatar = () => (
     <TouchableOpacity onPress={openAuthor} disabled={!openAuthor} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityLabel={t('feed.profileOf', { name: uname })}>
       {avatarUrl
-        ? <Image source={{ uri: avatarUrl }} style={s.avImg} />
+        ? <CachedImage uri={avatarUrl} style={s.avImg} />
         : <View style={s.av}><Text style={s.avText}>{initial}</Text></View>}
     </TouchableOpacity>
   );
@@ -299,7 +300,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
         <View style={{ flexDirection: 'row' }}>
           {withUsers.slice(0, 3).map((w, i) => (
             w.avatar_url
-              ? <Image key={w.id} source={{ uri: w.avatar_url }} style={[s.duoAv, i > 0 && { marginLeft: -7 }]} />
+              ? <CachedImage key={w.id} uri={w.avatar_url} style={[s.duoAv, i > 0 && { marginLeft: -7 }]} />
               : <View key={w.id} style={[s.duoAv, s.duoAvEmpty, i > 0 && { marginLeft: -7 }]}><Text style={s.duoAvText}>{w.full_name.charAt(0).toUpperCase()}</Text></View>
           ))}
         </View>
@@ -335,7 +336,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       {faces.slice(0, STACK_MAX).map((r, i) => (
         <View key={r.user_id} style={[s.brStackItem, i > 0 && { marginLeft: -12 }, { zIndex: STACK_MAX - i }]}>
           {r.avatar_url
-            ? <Image source={{ uri: r.avatar_url }} style={s.brStackAv} />
+            ? <CachedImage uri={r.avatar_url} style={s.brStackAv} />
             : <View style={[s.brStackAv, s.brStackAvEmpty]}><Text style={s.brStackInitial}>{r.name.charAt(0).toUpperCase()}</Text></View>}
           <Floaty index={i} style={s.brStackEmoji}>{r.emoji}</Floaty>
         </View>
@@ -486,7 +487,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
                 onPress={() => { setShowReactors(false); onOpenProfile?.(r.user_id); }}
               >
                 {r.avatar_url
-                  ? <Image source={{ uri: r.avatar_url }} style={{ width: 44, height: 44, borderRadius: 22 }} />
+                  ? <CachedImage uri={r.avatar_url} style={{ width: 44, height: 44, borderRadius: 22 }} />
                   : <View style={[s.av, { width: 44, height: 44, borderRadius: 22 }]}><Text style={s.avText}>{r.name.charAt(0).toUpperCase()}</Text></View>}
                 <Text style={{ flex: 1, color: '#fff', fontSize: 15, fontFamily: F.semibold }}>{r.name}</Text>
                 <Text style={{ fontSize: 26 }}>{r.emoji}</Text>

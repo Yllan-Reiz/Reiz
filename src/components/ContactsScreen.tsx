@@ -8,6 +8,7 @@ import { sha256Hex } from '../lib/sha256';
 import { DeviceContact, Matched, loadDeviceContacts, matchContacts, inviteBySms, inviteByEmail, inviteText } from '../lib/contacts';
 import { s, F } from '../styles';
 import { t } from '../i18n';
+import { CachedImage } from './CachedImage';
 
 // « Mes contacts » : ceux qui sont déjà sur Reiz (à ajouter en un tap) et les autres (à inviter par message).
 // Rien n'est envoyé sans ton tap : « Inviter » ouvre Messages avec le texte prêt, tu appuies toi-même sur Envoyer.
@@ -152,7 +153,7 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
                 return (
                   <View style={s.friendRow}>
                     {u.avatar_url
-                      ? <Image source={{ uri: u.avatar_url }} style={s.friendRowAvImg} />
+                      ? <CachedImage uri={u.avatar_url} style={s.friendRowAvImg} />
                       : <View style={s.friendRowAv}><Text style={s.friendRowAvText}>{initial(u.full_name)}</Text></View>}
                     <View style={s.friendRowInfo}>
                       <Text style={s.friendRowName}>{u.full_name}</Text>

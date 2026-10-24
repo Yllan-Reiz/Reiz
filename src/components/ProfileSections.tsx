@@ -210,7 +210,7 @@ export function ProfileBackdrop({ avatarUrl, scrollY, height }: { avatarUrl: str
       {/* Photo floutée et assombrie, sur tout l'écran : elle apparaît quand on défile. */}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: toBlur }]}>
         {avatarUrl
-          ? <Image source={{ uri: avatarUrl }} blurRadius={Platform.OS === 'ios' ? 30 : 16} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ? <CachedImage uri={avatarUrl} blurRadius={Platform.OS === 'ios' ? 30 : 16} style={StyleSheet.absoluteFill} resizeMode="cover" />
           : <LinearGradient colors={['#2a2a2a', '#0a0a0a']} style={StyleSheet.absoluteFill} />}
         <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10,10,10,0.72)' }]} />
       </Animated.View>
@@ -234,7 +234,7 @@ export function GlassBackdrop({ avatarUrl }: { avatarUrl: string | null }) {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {avatarUrl
-        ? <Image source={{ uri: avatarUrl }} blurRadius={Platform.OS === 'ios' ? 30 : 16} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        ? <CachedImage uri={avatarUrl} blurRadius={Platform.OS === 'ios' ? 30 : 16} style={StyleSheet.absoluteFill} resizeMode="cover" />
         : <LinearGradient colors={['#2a2a2a', '#0a0a0a']} style={StyleSheet.absoluteFill} />}
       <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10,10,10,0.62)' }]} />
       <LinearGradient colors={['rgba(10,10,10,0.55)', 'rgba(10,10,10,0)']} locations={[0, 0.25]} style={StyleSheet.absoluteFill} />
@@ -583,7 +583,7 @@ export function HistoryCarousel({ posts, onOpen, emptyText }: { posts: Update[];
           >
             <GlassSurface radius={30} style={{ flex: 1 }}>
               {p.photo_url && !video
-                ? <Image source={{ uri: p.photo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                ? <CachedImage uri={p.photo_url} style={StyleSheet.absoluteFill} resizeMode="cover" />
                 : video && p.photo_url
                   ? (
                     <>
@@ -739,7 +739,7 @@ function PostTile({ p, width, height, onPress, showPin }: { p: Update; width: nu
   return (
     <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={{ width, height, borderRadius: 10, overflow: 'hidden', backgroundColor: '#141414' }}>
       {p.photo_url && !video ? (
-        <Image source={{ uri: p.photo_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+        <CachedImage uri={p.photo_url} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
       ) : video && p.photo_url ? (
         <VideoPoster uri={p.photo_url} style={{ width: '100%', height: '100%' }} fallback={<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 26 }}>{emoji}</Text></View>} />
       ) : (

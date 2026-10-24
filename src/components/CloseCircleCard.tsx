@@ -8,6 +8,7 @@ import { currentUser } from '../lib/supabase';
 import { useCloseCircle, resetCloseCircle, CloseFriend } from '../lib/closeCircle';
 import { F } from '../styles';
 import { t, tp } from '../i18n';
+import { CachedImage } from './CachedImage';
 
 // Le cercle proche, mis en avant dans le fil tant qu'il est vide ou presque :
 //   0 proche  : grande carte qui explique à quoi ça sert, impossible à masquer ;
@@ -24,7 +25,7 @@ export function Faces({ people, size = 34 }: { people: CloseFriend[]; size?: num
       {people.slice(0, 5).map((p, i) => (
         <View key={p.id} style={{ marginLeft: i === 0 ? 0 : -size * 0.3, width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: '#161616', backgroundColor: '#2a2a2a', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
           {p.avatar_url
-            ? <Image source={{ uri: p.avatar_url }} style={{ width: size, height: size }} />
+            ? <CachedImage uri={p.avatar_url} style={{ width: size, height: size }} />
             : <Text style={{ color: '#fff', fontSize: size * 0.4, fontFamily: F.bold }}>{p.full_name.charAt(0).toUpperCase()}</Text>}
         </View>
       ))}

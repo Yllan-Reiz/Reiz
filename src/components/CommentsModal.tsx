@@ -11,6 +11,7 @@ import { gifsAvailable, gifContent, gifIdOf, gifUrl, Gif } from '../lib/giphy';
 import { GifPicker } from './GifPicker';
 import { s, F } from '../styles';
 import { t } from '../i18n';
+import { CachedImage } from './CachedImage';
 
 type Likes = Record<string, { count: number; mine: boolean }>;
 
@@ -31,7 +32,7 @@ function CommentGif({ id }: { id: string }) {
 function CommentAvatar({ name, url, small }: { name?: string; url?: string | null; small?: boolean }) {
   const size = small ? 26 : 34;
   const box = { width: size, height: size, borderRadius: size / 2 };
-  if (url) return <Image source={{ uri: url }} style={[box, { backgroundColor: '#2a2a2a' }]} />;
+  if (url) return <CachedImage uri={url} style={[box, { backgroundColor: '#2a2a2a' }]} />;
   return (
     <View style={[s.commentAv, box]}>
       <Text style={[s.commentAvText, small && { fontSize: 11 }]}>{(name || 'U').charAt(0).toUpperCase()}</Text>

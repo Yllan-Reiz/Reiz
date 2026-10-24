@@ -12,6 +12,7 @@ import { contactsAvailable } from '../lib/contacts';
 import { APP_VERSION, WELCOME_FLOW } from '../constants';
 import { F } from '../styles';
 import { LANGS, lang, chosenLang, deviceLang, setLanguage, type Lang, t, dirIcon } from '../i18n';
+import { CachedImage } from '../components/CachedImage';
 
 type View_ = 'root' | 'password' | 'blocked' | 'legal' | 'presence' | 'language';
 
@@ -282,7 +283,7 @@ function BlockedList() {
         {list.map((p, i) => (
           <View key={p.id} style={[st.row, i < list.length - 1 && st.rowBorder]}>
             {p.avatar_url
-              ? <Image source={{ uri: p.avatar_url }} style={st.avatar} />
+              ? <CachedImage uri={p.avatar_url} style={st.avatar} />
               : <View style={[st.avatar, { alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: '#fff', fontFamily: F.bold }}>{p.full_name?.charAt(0).toUpperCase()}</Text></View>}
             <View style={{ flex: 1 }}>
               <Text style={st.rowLabel} numberOfLines={1}>{p.full_name}</Text>

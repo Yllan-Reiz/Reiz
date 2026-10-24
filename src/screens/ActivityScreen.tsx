@@ -22,6 +22,7 @@ import { setAppBadge } from '../lib/badge';
 import { gifIdOf } from '../lib/giphy';
 import { placeLabel, localizeDuelResult } from '../lib/helpers';
 import { t, tp, dirIcon } from '../i18n';
+import { CachedImage } from '../components/CachedImage';
 
 type Row = ActivityItem & {
   updates?: { photo_url?: string | null; objectives?: { emoji?: string; title?: string } | null } | null;
@@ -118,7 +119,7 @@ function sectionOf(iso: string) {
 
 function Avatar({ url, name, size }: { url?: string | null; name: string; size: number }) {
   return url
-    ? <Image source={{ uri: url }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#222' }} />
+    ? <CachedImage uri={url} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#222' }} />
     : <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontSize: size * 0.4, fontFamily: F.bold }}>{name.charAt(0).toUpperCase()}</Text></View>;
 }
 
@@ -166,7 +167,7 @@ function ActivityRow({ e, onPress, onAvatar }: { e: Entry; onPress: () => void; 
           <Ionicons name="play" size={15} color="#ddd" />
         </View>
       ) : thumb ? (
-        <Image source={{ uri: thumb }} style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: '#1a1a1a' }} />
+        <CachedImage uri={thumb} style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: '#1a1a1a' }} />
       ) : null}
     </TouchableOpacity>
   );

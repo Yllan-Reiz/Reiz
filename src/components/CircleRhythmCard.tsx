@@ -8,6 +8,7 @@ import { loadCircleRhythm, CircleRhythm, FriendRhythm } from '../lib/rhythm';
 import { DAY_LETTERS } from '../constants';
 import { F } from '../styles';
 import { t } from '../i18n';
+import { CachedImage } from './CachedImage';
 
 // « Ton cercle cette semaine » : la régularité de tes amis d'un coup d'œil. Combien ont posté, qui est à relancer,
 // et en touchant la carte, le détail jour par jour (L M M J V S D) de chacun.
@@ -16,7 +17,7 @@ const label = { color: 'rgba(255,255,255,0.55)', fontSize: 10, fontFamily: F.bol
 
 function Face({ f, size }: { f: FriendRhythm; size: number }) {
   return f.avatar_url
-    ? <Image source={{ uri: f.avatar_url }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#222' }} />
+    ? <CachedImage uri={f.avatar_url} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#222' }} />
     : <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontSize: size * 0.4, fontFamily: F.bold }}>{f.full_name.charAt(0).toUpperCase()}</Text></View>;
 }
 

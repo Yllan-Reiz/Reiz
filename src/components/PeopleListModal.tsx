@@ -7,6 +7,7 @@ import { signAvatars } from '../lib/storage';
 import { setClose } from '../lib/closeCircle';
 import { s, F } from '../styles';
 import { t, tp, dirIcon } from '../i18n';
+import { CachedImage } from './CachedImage';
 
 type Person = { id: string; full_name: string; username: string; avatar_url?: string | null };
 
@@ -111,7 +112,7 @@ export function PeopleListModal({ visible, userId, currentUserId, mode, onClose,
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 }}
                 >
                   {p.avatar_url
-                    ? <Image source={{ uri: p.avatar_url }} style={s.avImg} />
+                    ? <CachedImage uri={p.avatar_url} style={s.avImg} />
                     : <View style={s.av}><Text style={s.avText}>{p.full_name.charAt(0).toUpperCase()}</Text></View>}
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>{p.full_name}{isMe ? t('people.me') : ''}</Text>

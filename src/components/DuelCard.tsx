@@ -9,6 +9,7 @@ import { loadCircleRhythm, FriendRhythm } from '../lib/rhythm';
 import { GUTTER } from '../constants';
 import { F } from '../styles';
 import { t, tp, dirIcon } from '../i18n';
+import { CachedImage } from './CachedImage';
 
 // ============================================================
 // Défi duo : la carte du profil d'un ami (proposer, répondre, suivre, revanche)
@@ -161,7 +162,7 @@ export function DuelBanner({ onOpenProfile, reloadKey }: { onOpenProfile: (id: s
             <GlassSurface radius={22}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingLeft: 14, paddingRight: 12 }}>
                 {d.otherAvatar
-                  ? <Image source={{ uri: d.otherAvatar }} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#222' }} />
+                  ? <CachedImage uri={d.otherAvatar} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#222' }} />
                   : <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#222', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontFamily: F.bold }}>{first.charAt(0).toUpperCase()}</Text></View>}
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }} numberOfLines={1}>{invite ? t('duelCard.challengesYou', { name: first }) : t('duelCard.duelVs', { name: first })}</Text>
@@ -253,7 +254,7 @@ export function ChallengeFriendButton({ onSent }: { onSent?: () => void }) {
                 return (
                   <View key={f.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 }}>
                     {f.avatar_url
-                      ? <Image source={{ uri: f.avatar_url }} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#222' }} />
+                      ? <CachedImage uri={f.avatar_url} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#222' }} />
                       : <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#222', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontFamily: F.bold }}>{f.full_name.charAt(0).toUpperCase()}</Text></View>}
                     <Text style={{ flex: 1, color: '#fff', fontSize: 16, fontFamily: F.bold }} numberOfLines={1}>{f.full_name}</Text>
                     <TouchableOpacity

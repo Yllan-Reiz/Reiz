@@ -17,6 +17,7 @@ import { APP_STORE_URL, GUTTER, navClearance, GLASS_FRIENDS } from '../constants
 import { FriendsGlassView } from '../components/FriendsGlassView';
 import { s, F } from '../styles';
 import { t, tp, dirIcon } from '../i18n';
+import { CachedImage } from '../components/CachedImage';
 
 export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (userId: string) => void; onPendingCount?: (n: number) => void }) {
   const insets = useSafeAreaInsets();
@@ -78,11 +79,11 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   // Helpers d'avatar (image si dispo, sinon initiale)
   const RowAvatar = ({ url, name, active }: { url?: string | null; name: string; active?: boolean }) =>
     url
-      ? <Image source={{ uri: url }} style={[s.friendRowAvImg, active && s.friendRowAvActive]} />
+      ? <CachedImage uri={url} style={[s.friendRowAvImg, active && s.friendRowAvActive]} />
       : <View style={[s.friendRowAv, active && s.friendRowAvActive]}><Text style={s.friendRowAvText}>{name.charAt(0).toUpperCase()}</Text></View>;
   const SuggestAvatar = ({ url, name }: { url?: string | null; name: string }) =>
     url
-      ? <Image source={{ uri: url }} style={s.suggestAvImg} />
+      ? <CachedImage uri={url} style={s.suggestAvImg} />
       : <View style={s.suggestAv}><Text style={s.suggestAvText}>{name.charAt(0).toUpperCase()}</Text></View>;
 
   useEffect(() => {
