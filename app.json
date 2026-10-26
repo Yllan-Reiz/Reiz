@@ -28,6 +28,7 @@
     },
     "android": {
       "package": "com.yllan.reiz",
+      "googleServicesFile": "./google-services.json",
       "blockedPermissions": [
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.WRITE_CONTACTS",

@@ -1,11 +1,13 @@
 {
-  "CFBundleDisplayName": "Reiz",
-  "NSCameraUsageDescription": "Reiz משתמש במצלמה כדי לפרסם את ההתקדמות שלך ואת תמונת הפרופיל.",
-  "NSPhotoLibraryUsageDescription": "Reiz ניגש לגלריה כדי לפרסם את ההתקדמות שלך (תמונה או סרטון) ואת תמונת הפרופיל.",
-  "NSPhotoLibraryAddUsageDescription": "Reiz שומר בגלריה את התמונה או הסרטון שצילמת עכשיו, רק כשמקישים על “שמירה”.",
-  "NSMicrophoneUsageDescription": "Reiz משתמש במיקרופון כדי להקליט את הקול בסרטוני ההתקדמות שלך.",
-  "NSContactsUsageDescription": "Reiz בודק את אנשי הקשר כדי לומר לך מי מהם כבר באפליקציה ולאפשר להזמין את האחרים. Reiz אף פעם לא שומר את אנשי הקשר שלך.",
-  "NSLocationAlwaysUsageDescription": "Reiz משתמש במיקום רק כדי לזהות מתי מגיעים למקום אימון שבחרת (חדר הכושר, המגרש) ולהודיע למעגל הקרוב. הקואורדינטות נשארות בטלפון ולעולם לא נשלחות.",
-  "NSLocationAlwaysAndWhenInUseUsageDescription": "Reiz משתמש במיקום רק כדי לזהות מתי מגיעים למקום אימון שבחרת (חדר הכושר, המגרש) ולהודיע למעגל הקרוב. הקואורדינטות נשארות בטלפון ולעולם לא נשלחות.",
-  "NSLocationWhenInUseUsageDescription": "Reiz קורא את המיקום כששומרים מקום אימון (חדר הכושר, המגרש). המיקום נשאר בטלפון."
+  "ios": {
+    "CFBundleDisplayName": "Reiz",
+    "NSCameraUsageDescription": "Reiz משתמש במצלמה כדי לפרסם את ההתקדמות שלך ואת תמונת הפרופיל.",
+    "NSPhotoLibraryUsageDescription": "Reiz ניגש לגלריה כדי לפרסם את ההתקדמות שלך (תמונה או סרטון) ואת תמונת הפרופיל.",
+    "NSPhotoLibraryAddUsageDescription": "Reiz שומר בגלריה את התמונה או הסרטון שצילמת עכשיו, רק כשמקישים על “שמירה”.",
+    "NSMicrophoneUsageDescription": "Reiz משתמש במיקרופון כדי להקליט את הקול בסרטוני ההתקדמות שלך.",
+    "NSContactsUsageDescription": "Reiz בודק את אנשי הקשר כדי לומר לך מי מהם כבר באפליקציה ולאפשר להזמין את האחרים. Reiz אף פעם לא שומר את אנשי הקשר שלך.",
+    "NSLocationAlwaysUsageDescription": "Reiz משתמש במיקום רק כדי לזהות מתי מגיעים למקום אימון שבחרת (חדר הכושר, המגרש) ולהודיע למעגל הקרוב. הקואורדינטות נשארות בטלפון ולעולם לא נשלחות.",
+    "NSLocationAlwaysAndWhenInUseUsageDescription": "Reiz משתמש במיקום רק כדי לזהות מתי מגיעים למקום אימון שבחרת (חדר הכושר, המגרש) ולהודיע למעגל הקרוב. הקואורדינטות נשארות בטלפון ולעולם לא נשלחות.",
+    "NSLocationWhenInUseUsageDescription": "Reiz קורא את המיקום כששומרים מקום אימון (חדר הכושר, המגרש). המיקום נשאר בטלפון."
+  }
 }

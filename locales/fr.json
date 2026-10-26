@@ -1,11 +1,13 @@
 {
-  "CFBundleDisplayName": "Reiz",
-  "NSCameraUsageDescription": "Reiz utilise l'appareil photo pour publier ta progression et ta photo de profil.",
-  "NSPhotoLibraryUsageDescription": "Reiz accède à ta galerie pour publier ta progression (photo ou vidéo) et ta photo de profil.",
-  "NSPhotoLibraryAddUsageDescription": "Reiz enregistre dans ta galerie la photo ou la vidéo que tu viens de prendre, seulement quand tu touches « Enregistrer ».",
-  "NSMicrophoneUsageDescription": "Reiz utilise le micro pour enregistrer le son de tes vidéos de progression.",
-  "NSContactsUsageDescription": "Reiz regarde tes contacts pour te dire lesquels sont déjà sur l'app et te laisser inviter les autres. Tes contacts ne sont jamais enregistrés par Reiz.",
-  "NSLocationAlwaysUsageDescription": "Reiz utilise ta position uniquement pour détecter ton arrivée à un lieu d'entraînement que tu as choisi (ta salle, ton stade) et prévenir ton cercle proche. Tes coordonnées restent sur ton téléphone et ne sont jamais envoyées.",
-  "NSLocationAlwaysAndWhenInUseUsageDescription": "Reiz utilise ta position uniquement pour détecter ton arrivée à un lieu d'entraînement que tu as choisi (ta salle, ton stade) et prévenir ton cercle proche. Tes coordonnées restent sur ton téléphone et ne sont jamais envoyées.",
-  "NSLocationWhenInUseUsageDescription": "Reiz lit ta position quand tu enregistres un lieu d'entraînement (ta salle, ton stade). Elle reste sur ton téléphone."
+  "ios": {
+    "CFBundleDisplayName": "Reiz",
+    "NSCameraUsageDescription": "Reiz utilise l'appareil photo pour publier ta progression et ta photo de profil.",
+    "NSPhotoLibraryUsageDescription": "Reiz accède à ta galerie pour publier ta progression (photo ou vidéo) et ta photo de profil.",
+    "NSPhotoLibraryAddUsageDescription": "Reiz enregistre dans ta galerie la photo ou la vidéo que tu viens de prendre, seulement quand tu touches « Enregistrer ».",
+    "NSMicrophoneUsageDescription": "Reiz utilise le micro pour enregistrer le son de tes vidéos de progression.",
+    "NSContactsUsageDescription": "Reiz regarde tes contacts pour te dire lesquels sont déjà sur l'app et te laisser inviter les autres. Tes contacts ne sont jamais enregistrés par Reiz.",
+    "NSLocationAlwaysUsageDescription": "Reiz utilise ta position uniquement pour détecter ton arrivée à un lieu d'entraînement que tu as choisi (ta salle, ton stade) et prévenir ton cercle proche. Tes coordonnées restent sur ton téléphone et ne sont jamais envoyées.",
+    "NSLocationAlwaysAndWhenInUseUsageDescription": "Reiz utilise ta position uniquement pour détecter ton arrivée à un lieu d'entraînement que tu as choisi (ta salle, ton stade) et prévenir ton cercle proche. Tes coordonnées restent sur ton téléphone et ne sont jamais envoyées.",
+    "NSLocationWhenInUseUsageDescription": "Reiz lit ta position quand tu enregistres un lieu d'entraînement (ta salle, ton stade). Elle reste sur ton téléphone."
+  }
 }

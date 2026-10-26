@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "964329772082",
+    "project_id": "reiz-app-yllan",
+    "storage_bucket": "reiz-app-yllan.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:964329772082:android:b7ec44d84cf2d7732f982b",
+        "android_client_info": {
+          "package_name": "com.yllan.reiz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD5k-spiJ4wVi5L6gx-apOstFx2EIE2f8U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
