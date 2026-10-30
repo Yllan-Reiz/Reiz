@@ -136,6 +136,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   const [commentCount, setCommentCount] = useState(meta?.commentCount || 0);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showComments, setShowComments] = useState(!!openCommentsOnMount);
+  const [commentsFocus, setCommentsFocus] = useState(false);
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: number; emoji: string }[]>([]);
   const [reactors, setReactors] = useState<Reactor[]>(meta?.reactors || []);
   const [showQuick, setShowQuick] = useState(false);
@@ -456,7 +457,8 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
         updateId={u.id}
         postOwnerId={u.user_id}
         currentUserId={currentUserId}
-        onClose={() => setShowComments(false)}
+        focusInput={commentsFocus}
+        onClose={() => { setShowComments(false); setCommentsFocus(false); }}
         onCountChange={setCommentCount}
         onOpenProfile={onOpenProfile}
       />
@@ -524,12 +526,14 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
           </TouchableOpacity>
         )}
         {u.photo_url && caption ? <Text style={s.feedCaption}>{caption}</Text> : null}
-        <TouchableOpacity onPress={() => setShowComments(true)} hitSlop={{ top: 6, bottom: 6 }} accessibilityLabel={t('feed.comment')}>
-          {commentCount > 0 && (
+        {commentCount > 0 && (
+          <TouchableOpacity onPress={() => setShowComments(true)} hitSlop={{ top: 6, bottom: 3 }} accessibilityLabel={t('feed.comment')}>
             <Text style={s.brCommentsLink}>
               {tp('feed.seeComments', commentCount)}
             </Text>
-          )}
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity onPress={() => { setCommentsFocus(true); setShowComments(true); }} hitSlop={{ top: 3, bottom: 6 }} accessibilityLabel={t('feed.addComment')}>
           <Text style={s.brAddComment}>{t('feed.addComment')}</Text>
         </TouchableOpacity>
         {canDuoReply && (answered ? (

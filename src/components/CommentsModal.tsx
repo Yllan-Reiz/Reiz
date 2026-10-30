@@ -12,13 +12,17 @@ import { GifPicker } from './GifPicker';
 import { s, F } from '../styles';
 import { t } from '../i18n';
 import { CachedImage } from './CachedImage';
+import { BlurView } from 'expo-blur';
 import { GlassSurface } from './GlassSurface';
+import { KeyboardDock, keyboardDockAvailable } from '../../modules/reiz-keyboard-dock';
 
 type Likes = Record<string, { count: number; mine: boolean }>;
 
 // Couleurs posées sur le verre : le fil reste visible, flouté, derrière les commentaires.
 const GLASS_LINE = 'rgba(255,255,255,0.12)';
 const GLASS_FILL = 'rgba(255,255,255,0.09)';
+// iPhone avec le module : la barre suit le clavier toute seule, côté natif. Sinon, on décale la feuille (voir plus bas).
+const DOCKED = keyboardDockAvailable();
 
 /** Un GIF de commentaire : il garde ses proportions (lues au chargement), 180 de large au plus. */
 function CommentGif({ id }: { id: string }) {
@@ -45,7 +49,9 @@ function CommentAvatar({ name, url, small }: { name?: string; url?: string | nul
   );
 }
 
-export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, onClose, onCountChange, onOpenProfile }: {
+export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, focusInput, onClose, onCountChange, onOpenProfile }: {
+  // « Ajouter un commentaire » : le clavier s'ouvre tout de suite, comme sur les réseaux sociaux.
+  focusInput?: boolean;
   visible: boolean;
   updateId: string;
   postOwnerId?: string;
@@ -56,6 +62,8 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
   onOpenProfile?: (id: string) => void;
 }) {
   const insets = useSafeAreaInsets();
+  // Clavier ouvert, il reste 12 points entre le champ et le clavier : le reste de la marge du bas passe dessous.
+  const dockHidden = Math.max(0, insets.bottom - 12);
   const [comments, setComments] = useState<Comment[]>([]);
   const [likes, setLikes] = useState<Likes>({});
   const [loading, setLoading] = useState(true);
@@ -80,7 +88,7 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
     const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
     const animate = (e?: KeyboardEvent) => {
-      if (Platform.OS === 'ios') {
+      if (Platform.OS === 'ios' && !DOCKED) {
         LayoutAnimation.configureNext({
           duration: e?.duration || 250,
           update: { type: LayoutAnimation.Types.keyboard },
@@ -289,10 +297,10 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen" statusBarTranslucent onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen" statusBarTranslucent onRequestClose={onClose} onShow={() => { if (focusInput) inputRef.current?.focus(); }}>
       <View ref={rootRef} style={{ flex: 1 }}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('common.close')} />
-        <Animated.View style={{ flex: 1, marginTop: insets.top + 44, paddingBottom: keyboardPad, transform: [{ translateY: dragY }] }}>
+        <Animated.View style={{ flex: 1, marginTop: insets.top + 44, paddingBottom: DOCKED ? 0 : keyboardPad, transform: [{ translateY: dragY }] }}>
         {/* Déborde en bas : seuls les coins du haut sont arrondis. */}
         <GlassSurface radius={30} intensity={60} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: -60 }}>
           <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10,10,10,0.2)' }]} />
@@ -311,7 +319,10 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
         {loading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#fff" /></View>
         ) : (
-          <ScrollView ref={scrollRef} style={s.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+          <ScrollView ref={scrollRef} style={s.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" alwaysBounceVertical
+            // Le clavier et la barre passent par-dessus la liste : on peut quand même descendre jusqu'au dernier commentaire.
+            contentInset={DOCKED ? { bottom: Math.max(0, keyboardPad - dockHidden) } : undefined}
+            scrollIndicatorInsets={DOCKED ? { bottom: Math.max(0, keyboardPad - dockHidden) } : undefined}>
             {roots.length === 0 ? (
               <View style={{ paddingTop: 40, alignItems: 'center' }}>
                 <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>{t('comments.empty')}</Text>
@@ -326,6 +337,13 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
             <View style={{ height: 24 }} />
           </ScrollView>
         )}
+        <KeyboardDock hiddenBottom={dockHidden}>
+        <View>
+        {/* Son propre verre : la liste passe dessous quand le clavier est ouvert. Déborde en bas, derrière les coins du clavier. */}
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: -40, overflow: 'hidden' }}>
+          <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10,10,10,0.35)' }]} />
+        </View>
         {replyTo && (
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8, backgroundColor: GLASS_FILL, borderTopWidth: 1, borderTopColor: GLASS_LINE }}>
             <Text style={{ color: '#aaa', fontSize: 12, flex: 1 }}>
@@ -336,7 +354,7 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
             </TouchableOpacity>
           </View>
         )}
-        <View style={[s.commentInputRow, { backgroundColor: 'transparent', borderTopColor: GLASS_LINE, paddingBottom: keyboardPad > 0 ? 12 : Math.max(12, insets.bottom) }]}>
+        <View style={[s.commentInputRow, { backgroundColor: 'transparent', borderTopColor: GLASS_LINE, paddingBottom: !DOCKED && keyboardPad > 0 ? 12 : Math.max(12, insets.bottom) }]}>
           {gifsAvailable() && (
             <TouchableOpacity
               onPress={() => { Keyboard.dismiss(); setGifOpen(true); }}
@@ -368,6 +386,8 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
               : <Ionicons name="arrow-up" size={18} color={!newComment.trim() ? 'rgba(255,255,255,0.5)' : '#000'} />}
           </TouchableOpacity>
         </View>
+        </View>
+        </KeyboardDock>
         </Animated.View>
       </View>
       <GifPicker visible={gifOpen} onClose={() => setGifOpen(false)} onPick={sendGif} />
