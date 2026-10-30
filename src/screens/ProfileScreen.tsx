@@ -11,6 +11,7 @@ import { Objective } from '../lib/types';
 import { HEATMAP_MAX_DAYS, GUTTER, navClearance } from '../constants';
 import { s, F } from '../styles';
 import { ProfileSkeleton } from '../components/Skeleton';
+import { JourneyModal } from '../components/JourneyModal';
 import { ProfileHero, ProfileBackdrop, GlassIconButton, StatBubble, AboutBubble, BadgesSection, GoalCards, HistoryCarousel, AchievedList, SectionHeader, computeBadges, isCompleted } from '../components/ProfileSections';
 import { PostViewer } from '../components/PostViewer';
 import { ProfileTags } from '../components/ProfileTags';
@@ -41,6 +42,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<any>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
+  // Objectif atteint dont le parcours est ouvert (1.2).
+  const [journeyId, setJourneyId] = useState<string | null>(null);
   const [activityByObj, setActivityByObj] = useState<Record<string, Set<string>>>({});
   const [friendCount, setFriendCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -396,7 +399,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
               <>
                 {ongoing.length > 0 && <SectionHeader title={t('profile.ongoing')} count={ongoing.length} style={{ paddingHorizontal: GUTTER }} />}
                 <GoalCards items={ongoing} activity={activityByObj} onPress={openObjectiveMenu} />
-                <AchievedList items={achieved} />
+                <AchievedList items={achieved} onOpen={o => setJourneyId(o.id)} />
+                {journeyId && <JourneyModal objectiveId={journeyId} own={true} ownerName={undefined} from="profile" onClose={() => setJourneyId(null)} />}
               </>
             )}
           </View>

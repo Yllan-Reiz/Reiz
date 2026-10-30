@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Modal, Linking, Share, Image, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../lib/supabase';
+import { supabase, currentUser } from '../lib/supabase';
 import { frError } from '../lib/helpers';
 import { signAvatars } from '../lib/storage';
 import { LEGAL_DOCS, LegalDoc, SUPPORT_EMAIL } from '../lib/legal';
 import { PresencePanel } from '../components/PresencePanel';
 import { WelcomeModal } from '../components/WelcomeFlow';
 import { ObjectiveDoneModal } from '../components/ObjectiveDoneModal';
+import { JourneyModal } from '../components/JourneyModal';
 import { contactsAvailable } from '../lib/contacts';
 import { APP_VERSION, WELCOME_FLOW } from '../constants';
 import { F } from '../styles';
@@ -34,6 +35,14 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
   const [welcome, setWelcome] = useState(false);
   // Aperçu de l'écran « Objectif atteint », dans les builds de développement seulement.
   const [donePreview, setDonePreview] = useState(false);
+  // … et « Mon parcours » ouvre le parcours de ton dernier objectif qui a une vidéo (pour tester le montage).
+  const [journeyPreview, setJourneyPreview] = useState<string | null>(null);
+  const openJourneyPreview = async () => {
+    setDonePreview(false);
+    const user = await currentUser();
+    const { data } = await supabase.from('updates').select('objective_id').eq('user_id', user?.id ?? '').like('photo_url', '%.mp4').order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (data?.objective_id) setJourneyPreview(data.objective_id);
+  };
   const [email, setEmail] = useState('');
   const [provider, setProvider] = useState<string>('email');
   // Encouragements perso (users.notif_encouragement). null = pas chargé, ou colonne absente : la ligne est cachée.
@@ -192,8 +201,9 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
         <WelcomeModal visible={welcome} preview onClose={() => setWelcome(false)} />
         {__DEV__ && (
           <ObjectiveDoneModal preview objective={donePreview ? { id: 'apercu', emoji: '🏃', title: 'Courir 10 km', unit: 'séances', target_value: 4 } : null}
-            onShareStory={() => setDonePreview(false)} onNewObjective={() => setDonePreview(false)} onClose={() => setDonePreview(false)} />
+            onJourney={openJourneyPreview} onNewObjective={() => setDonePreview(false)} onClose={() => setDonePreview(false)} />
         )}
+        {__DEV__ && journeyPreview && <JourneyModal objectiveId={journeyPreview} own from="dev" onClose={() => setJourneyPreview(null)} />}
       </View>
     </Modal>
   );

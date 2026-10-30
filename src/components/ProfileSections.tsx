@@ -620,21 +620,24 @@ export function HistoryCarousel({ posts, onOpen, emptyText }: { posts: Update[];
 }
 
 /** Objectifs réussis, en cartes de verre. */
-export function AchievedList({ items }: { items: Objective[] }) {
+export function AchievedList({ items, onOpen }: { items: Objective[]; onOpen?: (o: Objective) => void }) {
   if (items.length === 0) return null;
   return (
     <View style={{ paddingHorizontal: GUTTER }}>
       <SectionHeader title={t('profileSec.achieved')} count={items.length} style={{ marginTop: 4 }} />
       {items.map(o => (
         <GlassSurface key={o.id} radius={22} style={{ marginBottom: 8 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
+          {/* 1.2 : toucher ouvre le parcours de l'objectif (JourneyModal). */}
+          <TouchableOpacity disabled={!onOpen} onPress={() => onOpen?.(o)} activeOpacity={0.8} accessibilityRole={onOpen ? 'button' : undefined}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
             <Text style={{ fontSize: 24 }}>{o.emoji}</Text>
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>{o.title}</Text>
               <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular }}>{t('profileSec.reached', { n: o.target_value, unit: unitLabel(o.unit) })}</Text>
             </View>
             <Text style={{ fontSize: 22 }}>🏆</Text>
-          </View>
+            {onOpen && <Ionicons name={dirIcon('chevron-forward')} size={16} color="rgba(255,255,255,0.5)" />}
+          </TouchableOpacity>
         </GlassSurface>
       ))}
     </View>

@@ -14,6 +14,7 @@ import { Objective } from '../lib/types';
 import { QUICK_UNITS, GUTTER } from '../constants';
 import { ShareStoryModal, StoryData } from '../components/ShareStoryModal';
 import { ObjectiveDoneModal, DoneObjective } from '../components/ObjectiveDoneModal';
+import { JourneyModal } from '../components/JourneyModal';
 import { loadDuoStats, ordinalDuo, DUO_WINDOW_MS } from '../lib/duo';
 import { trimAvailable, trimVideo, cleanTrimmed } from '../lib/videoTools';
 import { galleryAvailable, saveToGallery } from '../lib/saveToGallery';
@@ -98,6 +99,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
   const [story, setStory] = useState<StoryData | null>(null);
   // Objectif que ce post vient de faire gagner : l'écran « Objectif atteint » remplace le simple « Publié ».
   const [done, setDone] = useState<{ objective: DoneObjective; story: StoryData } | null>(null);
+  const [journeyId, setJourneyId] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
@@ -685,10 +687,11 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
       <ShareStoryModal visible={!!story} data={story} onClose={() => { setStory(null); onPublish(); }} />
       <ObjectiveDoneModal
         objective={done?.objective ?? null}
-        onShareStory={() => { const st = done?.story ?? null; setDone(null); setStory(st); }}
+        onJourney={() => { const id = done?.objective.id ?? null; setDone(null); setJourneyId(id); }}
         onNewObjective={() => { setDone(null); onPublish('new_objective'); }}
         onClose={() => { setDone(null); onPublish(); }}
       />
+      <JourneyModal objectiveId={journeyId} own from="victory" onClose={() => { setJourneyId(null); onPublish(); }} />
     </KeyboardAvoidingView>
   );
 }

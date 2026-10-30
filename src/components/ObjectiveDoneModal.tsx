@@ -15,7 +15,7 @@ import { t, unitLabel } from '../i18n';
 // et 3 ont continué à poster sur l'objectif atteint, barre bloquée à 100 %.
 //   Monter la barre  même objectif, cible plus haute (l'historique reste ; la base le remet « en cours »)
 //   Nouvel objectif  ferme et ouvre la création d'objectif
-//   Story            le partage habituel
+//   Mon parcours     toutes les étapes en image ou en vidéo, à partager ou enregistrer (JourneyModal)
 // Le cercle est prévenu par send-push (« 🏆 Léa a atteint son objectif »), pas par l'app.
 // `preview` (Réglages, builds de développement) : rien n'est enregistré ni mesuré.
 
@@ -30,10 +30,10 @@ function nextTarget(o: DoneObjective) {
 }
 const stepOf = (o: DoneObjective) => (o.unit === 'kg' ? 2.5 : o.unit === 'min' ? 5 : Math.max(1, Math.round(o.target_value / 10)));
 
-export function ObjectiveDoneModal({ objective, preview, onShareStory, onNewObjective, onClose }: {
+export function ObjectiveDoneModal({ objective, preview, onJourney, onNewObjective, onClose }: {
   objective: DoneObjective | null;
   preview?: boolean;
-  onShareStory: () => void;
+  onJourney: () => void;
   onNewObjective: () => void;
   onClose: () => void;
 }) {
@@ -114,7 +114,7 @@ export function ObjectiveDoneModal({ objective, preview, onShareStory, onNewObje
               ? <Primary label={t('done.raise')} icon="trending-up" onPress={() => { Haptics.selectionAsync().catch(() => {}); setRaising(true); }} />
               : <Primary label={t('done.newObjective')} icon="flag" onPress={() => { if (!preview) track('objective_next', {}, 'post'); onNewObjective(); }} />}
             {canRaise && <Secondary label={t('done.newObjective')} icon="flag-outline" onPress={() => { if (!preview) track('objective_next', {}, 'post'); onNewObjective(); }} />}
-            <Secondary label={t('post.shareStory')} icon="logo-instagram" onPress={onShareStory} />
+            <Secondary label={t('journey.myJourney')} icon="images-outline" onPress={onJourney} />
             <Quiet label={t('common.later')} onPress={onClose} />
           </>
         )}

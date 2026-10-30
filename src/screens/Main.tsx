@@ -234,7 +234,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     const since = new Date(Date.now() - FEED_WINDOW_HOURS * 3600 * 1000).toISOString();
     const { data, error } = await supabase
       .from('updates')
-      .select('id, caption, progress_value, created_at, photo_url, user_id, pinned_at, with_user_ids, objectives(visibility, unit, target_value, title, emoji), users(full_name, username, avatar_url)')
+      .select('id, caption, progress_value, created_at, photo_url, user_id, pinned_at, with_user_ids, objective_id, objectives(visibility, unit, target_value, title, emoji, completed_at), users(full_name, username, avatar_url)')
       .in('user_id', circleIds)
       .gte('created_at', since)
       .order('created_at', { ascending: false })

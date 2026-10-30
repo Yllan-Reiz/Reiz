@@ -14,8 +14,9 @@ import { isVideo } from '../lib/storage';
 import { togglePin } from '../lib/posts';
 import { DUO_WINDOW_MS } from '../lib/duo';
 import { ShareStoryModal, StoryData } from './ShareStoryModal';
+import { JourneyModal } from './JourneyModal';
 import { FloatingEmoji, nextFloatId } from './FloatingEmoji';
-import { t, tp, unitLabel } from '../i18n';
+import { t, tp, unitLabel, dirIcon } from '../i18n';
 import { CachedImage } from './CachedImage';
 
 // Ouverture/fermeture en fondu-montée. Le contenu reste monté le temps de la
@@ -223,6 +224,11 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   };
 
   const [storyData, setStoryData] = useState<StoryData | null>(null);
+  const [journeyOpen, setJourneyOpen] = useState(false);
+  // Le post de la victoire : celui qui a fait gagner l'objectif (la base date la victoire juste après lui).
+  // Si l'auteur monte la barre ensuite, la date est effacée et le badge part avec elle.
+  const winAt = u.objectives?.completed_at ? new Date(u.objectives.completed_at).getTime() : 0;
+  const isWin = !!u.objective_id && winAt > 0 && Math.abs(new Date(u.created_at).getTime() - winAt) < 10 * 60 * 1000;
   // Compte à rebours du duo : il se valide si vous postez à moins d'1 h d'écart.
   const [, tick] = useState(0);
   useEffect(() => {
@@ -432,6 +438,15 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       {/* Sous le média : la légende, puis les commentaires, comme sur BeReal */}
       <View style={s.brBelow}>
         <Gauge pct={pctValue} label={progressLabel} />
+        {isWin && (
+          <TouchableOpacity onPress={() => setJourneyOpen(true)} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('journey.seeJourney')}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', marginTop: 10, paddingLeft: 10, paddingRight: 12, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }}>
+            <Text style={{ fontSize: 15 }}>🏆</Text>
+            <Text style={{ color: '#fff', fontSize: 13.5, fontFamily: F.bold }}>{t('journey.feedWin')}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13.5, fontFamily: F.semibold }}>{t('journey.seeJourney')}</Text>
+            <Ionicons name={dirIcon('chevron-forward')} size={14} color="rgba(255,255,255,0.6)" />
+          </TouchableOpacity>
+        )}
         {u.photo_url && u.caption ? <Text style={s.feedCaption}>{u.caption}</Text> : null}
         <TouchableOpacity onPress={() => setShowComments(true)} hitSlop={{ top: 6, bottom: 6 }} accessibilityLabel={t('feed.comment')}>
           {commentCount > 0 && (
@@ -468,6 +483,9 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       </Reveal>
 
       <ShareStoryModal visible={!!storyData} data={storyData} onClose={() => setStoryData(null)} />
+      {journeyOpen && u.objective_id && (
+        <JourneyModal objectiveId={u.objective_id} own={u.user_id === currentUserId} ownerName={uname} from="feed" onClose={() => setJourneyOpen(false)} />
+      )}
       {/* Qui a réagi */}
       <Modal visible={showReactors} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowReactors(false)}>
         <View style={s.modalContainer}>
