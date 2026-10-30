@@ -20,6 +20,7 @@ import { trimAvailable, trimVideo, cleanTrimmed } from '../lib/videoTools';
 import { galleryAvailable, saveToGallery } from '../lib/saveToGallery';
 import { endAllLiveActivities } from '../lib/liveActivity';
 import { track } from '../lib/track';
+import { loadTodayMoment, lateMinutes, ON_TIME_MIN, TodayMoment, MomentKind } from '../lib/moment';
 import { s, F } from '../styles';
 import { t, tp, unitLabel, isRTL } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
@@ -100,6 +101,18 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
   // Objectif que ce post vient de faire gagner : l'écran « Objectif atteint » remplace le simple « Publié ».
   const [done, setDone] = useState<{ objective: DoneObjective; story: StoryData } | null>(null);
   const [journeyId, setJourneyId] = useState<string | null>(null);
+  // Le moment Reiz du jour (phase 29) : séance ou récup, et le compte à rebours des 10 minutes « à l'heure ».
+  const [moment, setMoment] = useState<TodayMoment | null>(null);
+  const [momentKind, setMomentKind] = useState<MomentKind>('session');
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    loadTodayMoment().then(m => { setMoment(m); if (m) setMomentKind(m.kind); }, () => {});
+    const id = setInterval(() => setTick(x => x + 1), 15000);
+    return () => clearInterval(id);
+  }, []);
+  // Un moment ne compte qu'une fois par jour, et seulement une fois son heure arrivée.
+  const momentOn = !!moment && !moment.posted && Date.now() >= new Date(moment.at).getTime();
+  const momentLate = moment ? lateMinutes(moment.at) : 0;
   const [publishing, setPublishing] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
@@ -397,6 +410,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
     const { error } = await supabase.from('updates').insert({
       user_id: user.id, objective_id: obj.id,
       caption: caption || obj.title,
+      ...(momentOn ? { moment: momentKind, moment_late_min: lateMinutes(moment!.at) } : {}),
       progress_value: pct,
       photo_url: photoUrl,
       // Seulement les amis encore autorisés (changement d'objectif après avoir coché).
@@ -413,7 +427,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       // Pour le back-office : premier post du compte ou non (le post qu'on vient d'écrire compte déjà).
       supabase.from('updates').select('id', { count: 'exact', head: true }).eq('user_id', user.id)
-        .then(({ count }) => track('post_published', { first: count === 1, duo: !!duoWith }), () => {});
+        .then(({ count }) => track('post_published', { first: count === 1, duo: !!duoWith, moment: momentOn ? momentKind : null }), () => {});
       // Séance postée : la carte du duo (Activité en direct) n'a plus lieu d'être.
       endAllLiveActivities();
       const storyData: StoryData = {
@@ -471,6 +485,26 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
         <GlassIconButton icon="chevron-back" label={t('common.back')} onPress={onBack} />
         <Text style={{ color: '#fff', fontSize: 22, fontFamily: F.black, letterSpacing: -0.5 }}>{t('post.title')}</Text>
       </View>
+
+      {momentOn && (
+        <View style={{ marginHorizontal: GUTTER, marginBottom: 12, padding: 12, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.extrabold }}>{t('moment.title')}</Text>
+            <Text style={{ color: momentLate < ON_TIME_MIN ? '#fff' : 'rgba(255,255,255,0.6)', fontSize: 12.5, fontFamily: F.semibold, marginTop: 2 }}>
+              {momentLate < ON_TIME_MIN ? t('moment.left', { n: ON_TIME_MIN - momentLate }) : t('moment.lateOk')}
+            </Text>
+          </View>
+          {/* Séance ou récup : proposé d'après le jour, modifiable. */}
+          <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, padding: 3 }}>
+            {(['session', 'recovery'] as const).map(k => (
+              <TouchableOpacity key={k} onPress={() => { Haptics.selectionAsync().catch(() => {}); setMomentKind(k); }} accessibilityRole="button" accessibilityState={{ selected: momentKind === k }}
+                style={{ paddingHorizontal: 12, height: 30, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: momentKind === k ? '#fff' : 'transparent' }}>
+                <Text style={{ color: momentKind === k ? '#000' : 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: F.bold }}>{t(k === 'session' ? 'moment.session' : 'moment.recovery')}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
 
       <ScrollView
         showsVerticalScrollIndicator={false}

@@ -153,6 +153,13 @@ function AppInner() {
     // Deep link : taper une notification ouvre le bon onglet (envoyé dans data.type par les edge functions)
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
       const type = (response.notification.request.content.data as any)?.type;
+      // Moment Reiz : directement l'écran de publication (il affiche le compte à rebours).
+      if (type === 'moment') {
+        track('post_open', { from: 'moment' });
+        setPostDuoWith(null);
+        setScreen('post');
+        return;
+      }
       if (type) {
         setScreen('main');
         setNavIntent(String(type));

@@ -77,6 +77,9 @@ type Texts = {
   friendWaitTitle: string; friendWaitBody: string; friendWaitManyTitle: string; friendWaitManyBody: string;
   // Rappel au hasard
   random: string[];
+  // Moment Reiz (phase 29)
+  momentSessionTitle: string; momentRecoveryTitle: string; momentSession: string[]; momentRecovery: string[];
+  momentFriendsOne: string; momentFriends: string;
 };
 
 export const T: Record<Lang, Texts> = {
@@ -134,6 +137,21 @@ export const T: Record<Lang, Texts> = {
       'Chaque jour compte. Poste ta progression.',
       'Ton cercle progresse. Tu ne veux pas rester en arrière ?',
     ],
+    momentSessionTitle: "⚡ Ta séance du jour", momentRecoveryTitle: "🛌 Ta récup du jour",
+    momentSession: [
+      "C'est l'heure. Ta séance ne va pas se poster toute seule.",
+      "10 minutes pour prouver que tu n'es pas sur le canapé.",
+      "Ton objectif t'attend. Et il n'est pas très patient.",
+      "La salle ou le canapé ? Tu as 10 minutes pour nous montrer.",
+      "Ton cercle regarde. Montre-lui ta séance dans les 10 minutes.",
+    ],
+    momentRecovery: [
+      "Étirements, sieste ou pizza ? Montre-nous, aujourd'hui c'est autorisé.",
+      "Jour off. Une photo de ta récup et ta série continue.",
+      "Le canapé compte aussi. Tu as 10 minutes pour le prouver.",
+      "Récupérer, c'est s'entraîner. Montre ta récup du jour.",
+    ],
+    momentFriendsOne: "{names} a déjà posté.", momentFriends: "{names} ont déjà posté.",
   },
   en: {
     someone: 'Someone', yourFriend: 'Your friend', gif: 'GIF', quote: '"{text}"',
@@ -189,6 +207,21 @@ export const T: Record<Lang, Texts> = {
       'Every day counts. Post your progress.',
       "Your circle is moving forward. Don't fall behind.",
     ],
+    momentSessionTitle: "⚡ Your session of the day", momentRecoveryTitle: "🛌 Your recovery of the day",
+    momentSession: [
+      "It's time. Your session won't post itself.",
+      "10 minutes to prove you're not on the couch.",
+      "Your goal is waiting. And it's not very patient.",
+      "Gym or couch? You've got 10 minutes to show us.",
+      "Your circle is watching. Show them your session within 10 minutes.",
+    ],
+    momentRecovery: [
+      "Stretching, nap or pizza? Show us, today it's allowed.",
+      "Day off. One photo of your recovery and your streak keeps going.",
+      "The couch counts too. You've got 10 minutes to prove it.",
+      "Recovery is training too. Show us your recovery of the day.",
+    ],
+    momentFriendsOne: "{names} already posted.", momentFriends: "{names} already posted.",
   },
   es: {
     someone: 'Alguien', yourFriend: 'Tu amigo', gif: 'GIF', quote: '«{text}»',
@@ -244,6 +277,21 @@ export const T: Record<Lang, Texts> = {
       'Cada día cuenta. Publica tu progreso.',
       'Tu círculo avanza. ¿No querrás quedarte atrás?',
     ],
+    momentSessionTitle: "⚡ Tu sesión del día", momentRecoveryTitle: "🛌 Tu recuperación del día",
+    momentSession: [
+      "Es la hora. Tu sesión no se va a publicar sola.",
+      "10 minutos para demostrar que no estás en el sofá.",
+      "Tu objetivo te espera. Y no es muy paciente.",
+      "¿Gimnasio o sofá? Tienes 10 minutos para enseñárnoslo.",
+      "Tu círculo está mirando. Enséñale tu sesión en 10 minutos.",
+    ],
+    momentRecovery: [
+      "¿Estiramientos, siesta o pizza? Enséñanoslo, hoy está permitido.",
+      "Día libre. Una foto de tu recuperación y tu racha sigue.",
+      "El sofá también cuenta. Tienes 10 minutos para demostrarlo.",
+      "Recuperar también es entrenar. Enseña tu recuperación del día.",
+    ],
+    momentFriendsOne: "{names} ya ha publicado.", momentFriends: "{names} ya han publicado.",
   },
   he: {
     someone: 'מישהו', yourFriend: 'החבר/ה שלך', gif: 'GIF', quote: '"{text}"',
@@ -299,6 +347,21 @@ export const T: Record<Lang, Texts> = {
       'כל יום נחשב. פרסמו את ההתקדמות.',
       'המעגל שלך מתקדם. לא רוצים להישאר מאחור?',
     ],
+    momentSessionTitle: "⚡ האימון של היום", momentRecoveryTitle: "🛌 ההתאוששות של היום",
+    momentSession: [
+      "הגיע הזמן. האימון לא יפורסם לבד.",
+      "10 דקות להוכיח שאתם לא על הספה.",
+      "היעד מחכה לכם. והוא לא סבלני במיוחד.",
+      "חדר כושר או ספה? יש לכם 10 דקות להראות לנו.",
+      "המעגל צופה. הראו לו את האימון תוך 10 דקות.",
+    ],
+    momentRecovery: [
+      "מתיחות, שנ\"צ או פיצה? הראו לנו, היום מותר.",
+      "יום חופש. תמונה אחת מההתאוששות והרצף ממשיך.",
+      "גם הספה נחשבת. יש לכם 10 דקות להוכיח את זה.",
+      "התאוששות היא גם אימון. הראו את ההתאוששות של היום.",
+    ],
+    momentFriendsOne: "{names} כבר פרסם/ה.", momentFriends: "{names} כבר פרסמו.",
   },
 };
 

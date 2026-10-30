@@ -1107,6 +1107,26 @@ export const fr = {
     cancelTitle: "Annuler la demande ?",
     cancelText: "{name} ne la verra plus.",
   },
+  moment: {
+    title: "⚡ Moment Reiz",
+    left: "Encore {n} min pour être à l'heure",
+    lateOk: "En retard, mais ça compte quand même",
+    session: "Séance",
+    recovery: "Récup",
+    recoveryBadge: "🛌 Récup",
+    onTime: "⚡ À l'heure",
+    lateMin: "En retard de {n} min",
+    lateH: "En retard de {n} h",
+  },
+  circleToday: {
+    label: "CERCLE DU JOUR",
+    count: "{done} sur {total}",
+    complete: "🔥 Cercle complet",
+    youMissing: "Il ne manque plus que toi",
+    oneLeft: "Il ne manque plus que {name}",
+    left: { one: "Il en manque 1", other: "Il en manque {count}" },
+    fullDays: { one: "1 jour de cercle complet cette semaine", other: "{count} jours de cercle complet cette semaine" },
+  },
 };
 
 export type Dict = typeof fr;

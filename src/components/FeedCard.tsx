@@ -15,6 +15,7 @@ import { togglePin } from '../lib/posts';
 import { DUO_WINDOW_MS } from '../lib/duo';
 import { ShareStoryModal, StoryData } from './ShareStoryModal';
 import { JourneyModal } from './JourneyModal';
+import { lateLabel, ON_TIME_MIN } from '../lib/moment';
 import { FloatingEmoji, nextFloatId } from './FloatingEmoji';
 import { t, tp, unitLabel, dirIcon } from '../i18n';
 import { CachedImage } from './CachedImage';
@@ -416,6 +417,12 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
             {u.objectives?.visibility === 'close' ? `  ★ ${t('vis.close')}` : ''}
           </Text>
           <Duo />
+          {/* Moment Reiz (phase 29) : récup ou séance, à l'heure ou en retard. */}
+          {u.moment && (
+            <Text style={{ color: (u.moment_late_min ?? 99) < ON_TIME_MIN ? '#fff' : 'rgba(255,255,255,0.55)', fontSize: 12.5, fontFamily: F.bold, marginTop: 3 }} numberOfLines={1}>
+              {[u.moment === 'recovery' ? t('moment.recoveryBadge') : null, lateLabel(u.moment_late_min ?? 0)].filter(Boolean).join('  ')}
+            </Text>
+          )}
         </View>
         <MenuBtn />
       </View>

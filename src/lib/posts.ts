@@ -6,7 +6,7 @@ import { t } from '../i18n';
 // Même sélection que le fil, pour réafficher un post à l'identique partout
 // (fil d'activité, grille du profil, posts épinglés).
 // objective_id et completed_at (1.2) : le post de la victoire porte un badge et ouvre le parcours.
-export const POST_SELECT = 'id, caption, progress_value, created_at, photo_url, user_id, pinned_at, with_user_ids, objective_id, objectives(visibility, unit, target_value, emoji, title, completed_at), users(full_name, username, avatar_url)';
+export const POST_SELECT = 'id, caption, progress_value, created_at, photo_url, user_id, pinned_at, with_user_ids, objective_id, moment, moment_late_min, objectives(visibility, unit, target_value, emoji, title, completed_at), users(full_name, username, avatar_url)';
 
 // Nom + petite photo des personnes citées dans les posts (duos, réactions). Gardés 5 minutes en
 // mémoire : le fil les redemandait à chaque chargement, pour des visages qui ne changent presque jamais.

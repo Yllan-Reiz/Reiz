@@ -22,6 +22,7 @@ import { GlassSurface, LIQUID_GLASS } from '../components/GlassSurface';
 import { CreateObjectiveModal } from '../components/CreateObjectiveModal';
 import { SetupCard } from '../components/SetupCard';
 import { PendingRequestsCard } from '../components/PendingRequestsCard';
+import { CircleTodayCard } from '../components/CircleTodayCard';
 import { FeedSkeleton } from '../components/Skeleton';
 import { FriendsTab } from './FriendsTab';
 import { ProfileScreen } from './ProfileScreen';
@@ -235,7 +236,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     const since = new Date(Date.now() - FEED_WINDOW_HOURS * 3600 * 1000).toISOString();
     const { data, error } = await supabase
       .from('updates')
-      .select('id, caption, progress_value, created_at, photo_url, user_id, pinned_at, with_user_ids, objective_id, objectives(visibility, unit, target_value, title, emoji, completed_at), users(full_name, username, avatar_url)')
+      .select('id, caption, progress_value, created_at, photo_url, user_id, pinned_at, with_user_ids, objective_id, moment, moment_late_min, objectives(visibility, unit, target_value, title, emoji, completed_at), users(full_name, username, avatar_url)')
       .in('user_id', circleIds)
       .gte('created_at', since)
       .order('created_at', { ascending: false })
@@ -546,6 +547,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               <>
               {/* 1.2 : les demandes d'ami reçues passent avant le reste, une réponse suffit à avoir un cercle. */}
               <PendingRequestsCard userId={userId} from="feed" onChanged={() => { fetchPendingCount(); fetchFriendCount(); }} onSeeAll={() => setTab('friends')} />
+              {/* Moment Reiz (phase 29) : qui de ton cercle a posté aujourd'hui. */}
+              <CircleTodayCard onOpenProfile={openProfile} />
               <SetupCard
                 userId={userId}
                 hasObjective={loadingObj ? null : objectives.length > 0}
