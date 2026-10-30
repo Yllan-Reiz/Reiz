@@ -17,6 +17,33 @@ const supabase = createClient(
 // même post (plusieurs emojis d'affilée = une seule alerte).
 const THROTTLE_MIN = 10;
 
+// Moins de notifications, et des meilleures (chantier 4 du 30/10/2026, d'après le back-office : 4 par jour en
+// moyenne, un record à 36, 1 sur 5 la nuit, près d'un « X a posté » sur 3 moins d'une heure après le précédent).
+// La ligne reste toujours dans l'Activité et compte dans la pastille : seule la sonnerie est retenue.
+//   heures calmes  22 h 30 à 7 h 30 à l'heure de celui qui reçoit (users.timezone), sauf le duo (une heure pour poster)
+//   regroupement   un post d'ami moins de 45 min après un autre ne sonne pas ; le suivant dit « et 2 autres posts »
+//   plafond        au-delà de 8 notifications dans sa journée, posts d'amis, réactions et « à la salle » ne sonnent plus
+//                  (commentaires, réponses, demandes d'ami, défis et duos sonnent toujours)
+const QUIET_FROM = 22 * 60 + 30;
+const QUIET_TO = 7 * 60 + 30;
+const FRIEND_POST_GAP_MIN = 45;
+const DAILY_CAP = 8;
+const CAPPED_TYPES = ['friend_post', 'reaction', 'comment_like', 'at_gym', 'tag_endorse', 'friend_accept'];
+
+/** Minutes depuis minuit et minuit en UTC, à l'heure de `tz` (Paris si le fuseau est absent ou inconnu). */
+function localClock(tz?: string | null) {
+  const now = new Date();
+  for (const zone of [tz || 'Europe/Paris', 'Europe/Paris']) {
+    try {
+      const local = new Date(now.toLocaleString('en-US', { timeZone: zone }));
+      const offset = local.getTime() - now.getTime();
+      const midnight = new Date(local); midnight.setHours(0, 0, 0, 0);
+      return { minutes: local.getHours() * 60 + local.getMinutes(), midnightISO: new Date(midnight.getTime() - offset).toISOString() };
+    } catch { /* fuseau inconnu : Paris */ }
+  }
+  return { minutes: 12 * 60, midnightISO: now.toISOString() };
+}
+
 const clip = (t: string | null | undefined, n = 60) => {
   if (!t) return '';
   const one = t.replace(/\s+/g, ' ').trim();
@@ -182,6 +209,28 @@ Deno.serve(async (req) => {
   // Le duo peut passer par l'Activité en direct même sans jeton de notification classique.
   if (!token && n.type !== 'duo_tag') return new Response('no token');
 
+  // Heures calmes, regroupement des posts d'amis, plafond du jour (voir en haut du fichier).
+  const clock = localClock((recipientRes.data as any)?.timezone);
+  if (n.type !== 'duo_tag' && (clock.minutes >= QUIET_FROM || clock.minutes < QUIET_TO)) return new Response('quiet');
+  let morePosts = 0;
+  if (n.type === 'friend_post') {
+    const gapSince = new Date(new Date(n.created_at).getTime() - FRIEND_POST_GAP_MIN * 60 * 1000).toISOString();
+    const { count: recentPosts } = await supabase.from('notifications').select('id', { count: 'exact', head: true })
+      .eq('recipient_id', n.recipient_id).eq('type', 'friend_post').lt('created_at', n.created_at).gte('created_at', gapSince);
+    if ((recentPosts || 0) > 0) return new Response('grouped');
+    // Les posts d'amis restés sans sonnerie (et non lus) depuis 3 h : annoncés avec celui-ci.
+    const { count: waiting } = await supabase.from('notifications').select('id', { count: 'exact', head: true })
+      .eq('recipient_id', n.recipient_id).eq('type', 'friend_post').is('read_at', null).lt('created_at', n.created_at)
+      .gte('created_at', new Date(new Date(n.created_at).getTime() - 3 * 3600 * 1000).toISOString());
+    morePosts = waiting || 0;
+  }
+  if (CAPPED_TYPES.includes(n.type)) {
+    // Les lignes du jour (sonnées ou non) : le plafond est donc atteint un peu plus tôt, jamais plus tard.
+    const { count: today } = await supabase.from('notifications').select('id', { count: 'exact', head: true })
+      .eq('recipient_id', n.recipient_id).neq('type', 'new_objective').lt('created_at', n.created_at).gte('created_at', clock.midnightISO);
+    if ((today || 0) >= DAILY_CAP) return new Response('capped');
+  }
+
   // Pastille rouge de l'icône : le nombre de notifications non lues, celle-ci comprise (elle est déjà écrite en base).
   const { count: unread } = await supabase
     .from('notifications')
@@ -250,6 +299,7 @@ Deno.serve(async (req) => {
       }
       title = objLabel ? fill(t.friendPostTitleObj, { name, obj: objLabel }) : fill(t.friendPostTitle, { name });
       body = [progress, upd?.caption ? fill(t.quote, { text: clip(upd.caption, 60) }) : ''].filter(Boolean).join('  ') || t.friendPostBody;
+      if (morePosts > 0) body = `${body} ${morePosts === 1 ? t.friendPostMoreOne : fill(t.friendPostMore, { n: morePosts })}`;
       break;
     }
     case 'duo_tag':
