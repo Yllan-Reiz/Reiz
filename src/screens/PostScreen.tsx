@@ -89,7 +89,7 @@ const fmt = (n: number) => num(Math.round(n * 10) / 10);
 // Séance en duo : 3 amis identifiés maximum (vérifié aussi côté serveur).
 const MAX_DUO = 3;
 
-export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void, onPublish: (next?: 'new_objective') => void, duoWith?: string | null }) {
+export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack: () => void, onPublish: (next?: 'new_objective') => void, duoWith?: string | null, objectiveId?: string | null }) {
   const insets = useSafeAreaInsets();
   const [selectedObj, setSelectedObj] = useState(0);
   const [objectives, setObjectives] = useState<Objective[]>([]);
@@ -165,6 +165,14 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
 
   // Réponse à un duo : on part sur le premier objectif où l'ami peut être identifié
   // (un objectif privé, ou « Cercle proche » sans lui, faisait sauter le duo en silence).
+  // Ouvert depuis un moment Reiz qui parle d'un objectif : celui-là est déjà choisi.
+  const objectivePicked = useRef(false);
+  useEffect(() => {
+    if (!objectiveId || objectivePicked.current || objectives.length === 0) return;
+    objectivePicked.current = true;
+    const i = objectives.findIndex(o => o.id === objectiveId);
+    if (i > 0) setSelectedObj(i);
+  }, [objectiveId, objectives]);
   const duoPicked = useRef(false);
   useEffect(() => {
     if (!duoWith || duoPicked.current || !friendsLoaded || objectives.length === 0) return;

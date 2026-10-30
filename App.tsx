@@ -48,6 +48,8 @@ function AppInner() {
   const [navIntent, setNavIntent] = useState<string | null>(null);
   // Ami à identifier d'office quand on répond à une séance en duo.
   const [postDuoWith, setPostDuoWith] = useState<string | null>(null);
+  // Objectif à choisir d'office quand un moment Reiz en parle (« Plus que 2 séances »).
+  const [postObjective, setPostObjective] = useState<string | null>(null);
   // Remonter Main recharge le fil : utile quand l'accueil vient de créer la photo ou le premier objectif.
   const [mainKey, setMainKey] = useState(0);
   const notifListener = useRef<any>(null);
@@ -157,6 +159,7 @@ function AppInner() {
       if (type === 'moment') {
         track('post_open', { from: 'moment' });
         setPostDuoWith(null);
+        setPostObjective((response.notification.request.content.data as any)?.objective_id ?? null);
         setScreen('post');
         return;
       }
@@ -181,6 +184,7 @@ function AppInner() {
   const openPost = (opts?: { duoWith?: string; from?: string }) => {
     track('post_open', { from: opts?.from ?? (opts?.duoWith ? 'duo' : 'button') });
     setPostDuoWith(opts?.duoWith ?? null);
+    setPostObjective(null);
     setScreen('post');
   };
 
@@ -194,6 +198,6 @@ function AppInner() {
     </>
   );
   // Après un objectif atteint, « Nouvel objectif » ouvre la création d'objectif dans Main.
-  if (screen === 'post') return <PostScreen duoWith={postDuoWith} onBack={() => setScreen('main')} onPublish={(next) => { if (next) setNavIntent(next); setScreen('main'); }} />;
+  if (screen === 'post') return <PostScreen duoWith={postDuoWith} objectiveId={postObjective} onBack={() => setScreen('main')} onPublish={(next) => { if (next) setNavIntent(next); setScreen('main'); }} />;
   return null;
 }

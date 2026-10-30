@@ -75,6 +75,7 @@ type Texts = {
   gap3Title: string; gap3Body: string; gap7Title: string; gap7Body: string; gap14Title: string; gap14Body: string;
   first1Title: string; first1Body: string; first3Title: string; first3Body: string; first7Title: string; first7Body: string;
   friendWaitTitle: string; friendWaitBody: string; friendWaitManyTitle: string; friendWaitManyBody: string;
+  momentBack: string; cheerTitle: string; cheerBody: string;
   // Rappel au hasard
   random: string[];
   // Moment Reiz (phase 29)
@@ -127,6 +128,7 @@ export const T: Record<Lang, Texts> = {
     first7Title: 'Une semaine sur Reiz', first7Body: 'Poste ta première séance pour « {obj} ». Une seule suffit pour lancer ta série.',
     friendWaitTitle: '{name} attend ta réponse 👋', friendWaitBody: "Accepte sa demande pour vous suivre l'un l'autre sur Reiz.",
     friendWaitManyTitle: '{n} personnes attendent ta réponse 👋', friendWaitManyBody: '{names} veulent rejoindre ton cercle.',
+    momentBack: "« {obj} » t'attend. Une petite séance suffit.", cheerTitle: "{name} n'a pas posté depuis {n} jours 👀", cheerBody: "Un petit coup de pouce de ta part ?",
     random: [
       'Ton cercle attend ta progression.',
       "Les meilleurs ne s'arrêtent jamais. Et toi ?",
@@ -197,6 +199,7 @@ export const T: Record<Lang, Texts> = {
     first7Title: 'One week on Reiz', first7Body: 'Post your first session for "{obj}". Just one is enough to start your streak.',
     friendWaitTitle: '{name} is waiting for your answer 👋', friendWaitBody: 'Accept their request to follow each other on Reiz.',
     friendWaitManyTitle: '{n} people are waiting for your answer 👋', friendWaitManyBody: '{names} want to join your circle.',
+    momentBack: "\"{obj}\" is waiting. One short session is enough.", cheerTitle: "{name} hasn't posted for {n} days 👀", cheerBody: "A little nudge from you?",
     random: [
       'Your circle is waiting for your progress.',
       'The best never stop. What about you?',
@@ -267,6 +270,7 @@ export const T: Record<Lang, Texts> = {
     first7Title: 'Una semana en Reiz', first7Body: 'Publica tu primera sesión para «{obj}». Basta con una para empezar tu racha.',
     friendWaitTitle: '{name} espera tu respuesta 👋', friendWaitBody: 'Acepta su solicitud para seguiros en Reiz.',
     friendWaitManyTitle: '{n} personas esperan tu respuesta 👋', friendWaitManyBody: '{names} quieren unirse a tu círculo.',
+    momentBack: "«{obj}» te espera. Basta una sesión corta.", cheerTitle: "{name} lleva {n} días sin publicar 👀", cheerBody: "¿Un empujoncito de tu parte?",
     random: [
       'Tu círculo espera tu progreso.',
       'Los mejores nunca se detienen. ¿Y tú?',
@@ -337,6 +341,7 @@ export const T: Record<Lang, Texts> = {
     first7Title: 'שבוע ב-Reiz', first7Body: 'פרסמו את האימון הראשון ל"{obj}". אחד מספיק כדי להתחיל רצף.',
     friendWaitTitle: '{name} מחכה לתשובה שלכם 👋', friendWaitBody: 'אשרו את הבקשה כדי לעקוב אחד אחרי השני ב-Reiz.',
     friendWaitManyTitle: '{n} אנשים מחכים לתשובה שלכם 👋', friendWaitManyBody: '{names} רוצים להצטרף למעגל שלכם.',
+    momentBack: "\"{obj}\" מחכה לכם. אימון קצר מספיק.", cheerTitle: "{name} לא פרסם/ה כבר {n} ימים 👀", cheerBody: "דחיפה קטנה מכם?",
     random: [
       'המעגל שלך מחכה להתקדמות שלך.',
       'הטובים ביותר לא עוצרים. ואתם?',

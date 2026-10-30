@@ -1,15 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { T, asLang, fill, names, num as fmt, unit as unitIn, type Lang } from './texts.ts';
+import { T, asLang, fill, names } from './texts.ts';
 
-// Encouragements personnels, une fois par matin (10 h 30 à Paris).
-// Quatre situations, une seule notification par personne et par passage :
-//   friend   : une demande d'ami attend depuis plus de 2 jours (une relance par demande, 1.2 du 30/10/2026)
-//   almost   : un objectif est à 75 % ou 90 % (« Plus que 2 séances »)
-//   first    : un compte récent avec un objectif mais aucun post, relancé 1, 3 puis 7 jours après l'inscription
-//   comeback : aucun post depuis 3, 7 ou 14 jours
-// Garde-fous : au plus un message tous les 2 jours par personne, jamais deux fois le
-// même palier (table encouragement_log), rien si la personne a déjà posté aujourd'hui,
-// rien si elle a coupé l'option dans Réglages (users.notif_encouragement).
+// Les messages du matin (10 h 30 à Paris), une seule notification par personne et par passage :
+//   friend : une demande d'ami attend depuis plus de 2 jours (une relance par demande)
+//   cheer  : un ami est à l'arrêt (3, 7 ou 14 jours sans post, un jour prévu manqué) : jusqu'à 2 amis actifs sont
+//            prévenus, ceux qui l'ont en cercle proche d'abord. Le tap ouvre l'Activité et son bouton « Relancer ».
+// Les encouragements « presque au but », « premier post » et « retour » sont partis dans le moment Reiz
+// (notify-moment, chantier 5 du 30/10/2026) : envoyés à 10 h 30, ils ne déclenchaient aucun post dans les 2 h.
+// Garde-fous : au plus un de ces messages tous les 2 jours, l'option Réglages respectée (users.notif_encouragement),
+// des deux côtés pour « cheer » ; jamais entre comptes bloqués, jamais pour un ami sans objectif visible.
 //
 // Test sans rien envoyer : ajouter ?dry=1 à l'URL. Pour cibler une seule personne : ?only=pseudo.
 
@@ -22,14 +21,11 @@ const DAY = 24 * 60 * 60 * 1000;
 const parisDay = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
 const daysBetween = (a: string, b: string) => Math.round((new Date(`${b}T12:00:00Z`).getTime() - new Date(`${a}T12:00:00Z`).getTime()) / DAY);
 
-// « 1 séances » → « 1 séance » (dans chaque langue).
-const ONE_SESSION: Record<Lang, string> = { fr: 'séance', en: 'session', es: 'sesión', he: 'אימון' };
-const unitLabel = (l: Lang, unit: string, n: number) => (n === 1 && unit === 'séances' ? ONE_SESSION[l] : unitIn(l, unit));
 // Jour de la semaine d'un jour Paris « AAAA-MM-JJ » : 1 = lundi ... 7 = dimanche.
 const isoDowOf = (day: string) => { const w = new Date(`${day}T12:00:00Z`).getUTCDay(); return w === 0 ? 7 : w; };
 const first = (name?: string | null) => (name || '').split(' ')[0] || '';
 
-type Msg = { userId: string; kind: 'friend' | 'almost' | 'first' | 'comeback'; ref: string; title: string; body: string; to: string; also?: string[] };
+type Msg = { userId: string; kind: 'friend' | 'cheer'; ref: string; title: string; body: string; to: string; also?: string[] };
 
 Deno.serve(async (req) => {
   const expected = Deno.env.get('CRON_SECRET');
@@ -45,9 +41,9 @@ Deno.serve(async (req) => {
   const since60 = new Date(now.getTime() - 60 * DAY).toISOString();
   const since14 = new Date(now.getTime() - 14 * DAY).toISOString();
 
-  const [usersRes, objRes, updRes, logRes, friendsRes, unreadRes, waitRes, namesRes] = await Promise.all([
-    supabase.from('users').select('id, full_name, username, push_token, notif_encouragement, language, created_at').not('push_token', 'is', null),
-    supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed, training_days').order('created_at'),
+  const [usersRes, objRes, updRes, logRes, friendsRes, unreadRes, waitRes, namesRes, closeRes, blocksRes] = await Promise.all([
+    supabase.from('users').select('id, full_name, username, push_token, notif_encouragement, language').not('push_token', 'is', null),
+    supabase.from('objectives').select('user_id, visibility, training_days'),
     supabase.from('updates').select('user_id, created_at').gte('created_at', since60),
     supabase.from('encouragement_log').select('user_id, kind, ref, sent_at').gte('sent_at', since14),
     supabase.from('friendships').select('requester_id, receiver_id').eq('status', 'accepted'),
@@ -58,18 +54,18 @@ Deno.serve(async (req) => {
       .lt('created_at', new Date(now.getTime() - 2 * DAY).toISOString()).gt('created_at', new Date(now.getTime() - 30 * DAY).toISOString())
       .order('created_at'),
     // Le prénom de celui qui demande, même sans notifications de son côté.
-    supabase.from('users').select('id, full_name'),
+    supabase.from('users').select('id, full_name, notif_encouragement'),
+    supabase.from('close_friends').select('owner_id, friend_id'),
+    supabase.from('blocks').select('blocker_id, blocked_id'),
   ]);
   const unread = new Map<string, number>();
   (unreadRes.data || []).forEach((r: any) => unread.set(r.recipient_id, (unread.get(r.recipient_id) || 0) + 1));
 
-  // Avant la phase 12 la colonne `training_days` n'existe pas : on relit sans elle, tous les jours comptent.
-  let objRows: any[] = objRes.data || [];
-  if (objRes.error) objRows = (await supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed').order('created_at')).data || [];
+  const objRows: any[] = objRes.data || [];
 
   const users = (usersRes.data || []).filter(u => u.notif_encouragement !== false && (!only || u.username === only));
   const nameOf = new Map((usersRes.data || []).map(u => [u.id, u.full_name as string]));
-  const anyName = new Map((namesRes.data || []).map((u: any) => [u.id, u.full_name as string]));
+  const anyName = new Map<string, string>((namesRes.data || []).map((u: any) => [u.id, u.full_name]));
   const waitingOf = new Map<string, { id: string; requester_id: string }[]>();
   (waitRes.data || []).forEach((f: any) => waitingOf.set(f.receiver_id, [...(waitingOf.get(f.receiver_id) || []), f]));
 
@@ -90,29 +86,19 @@ Deno.serve(async (req) => {
     friendsOf.set(f.receiver_id, [...(friendsOf.get(f.receiver_id) || []), f.requester_id]);
   });
 
-  // Preuve sociale : des amis qui ont posté ces 3 derniers jours (« Léa a posté ces derniers jours. »).
-  const friendLineOf = (uid: string, t: (typeof T)[Lang], today: string) => {
-    const recentFriends = (friendsOf.get(uid) || []).filter(fid => {
-      const fd = postDays.get(fid);
-      return fd && [...fd].some(d => daysBetween(d, today) <= 3);
-    }).map(fid => first(nameOf.get(fid)) || t.someone);
-    return recentFriends.length === 1
-      ? fill(t.friendsPostedOne, { a: recentFriends[0] })
-      : recentFriends.length > 1 ? fill(t.friendsPostedTwo, { a: recentFriends[0], b: recentFriends[1] }) : '';
-  };
+  // Seuls ces messages comptent pour l'écart de 2 jours : les encouragements du moment Reiz sont dans le même journal.
+  const recentMorning = (logs: { kind: string; sent_at: string }[]) =>
+    logs.some(l => (l.kind === 'friend' || l.kind === 'cheer') && now.getTime() - new Date(l.sent_at).getTime() < 2 * DAY);
 
   const msgs: Msg[] = [];
   for (const u of users) {
     const lang = asLang(u.language);
     const t = T[lang];
-    const num = (n: number) => fmt(lang, n);
-    const days = postDays.get(u.id) || new Set<string>();
-    const objectives = objectivesOf.get(u.id) || [];
     const logs = logsOf.get(u.id) || [];
-    const recent = logs.some(l => now.getTime() - new Date(l.sent_at).getTime() < 2 * DAY);
+    const recent = recentMorning(logs);
 
-    // 0) Quelqu'un attend sa réponse : passe avant tout le reste, même sans objectif (souvent un compte tout neuf).
-    //    Une relance par demande (encouragement_log, ref friend:<id>), jamais deux messages en 2 jours.
+    // Quelqu'un attend sa réponse, même sans objectif (souvent un compte tout neuf).
+    // Une relance par demande (encouragement_log, ref friend:<id>), jamais deux messages en 2 jours.
     const waiting = (waitingOf.get(u.id) || []).filter(f => !logs.some(l => l.ref === `friend:${f.id}`));
     if (waiting.length > 0 && !recent) {
       const who = waiting.map(f => first(anyName.get(f.requester_id)) || t.someone);
@@ -121,80 +107,43 @@ Deno.serve(async (req) => {
         title: waiting.length === 1 ? fill(t.friendWaitTitle, { name: who[0] }) : fill(t.friendWaitManyTitle, { n: waiting.length }),
         body: waiting.length === 1 ? t.friendWaitBody : fill(t.friendWaitManyBody, { names: names(lang, who) }),
       });
-      continue;
     }
+  }
 
-    if (objectives.length === 0) continue;               // pas encore lancé
-    if (days.has(today)) continue;                       // a déjà posté, on ne l'embête pas
-    // Planning : jamais un jour de repos. Sans planning (training_days vide) l'objectif compte tous les jours.
-    const dow = isoDowOf(today);
-    const scheduledOn = (o: any, d: number) => !o.training_days || o.training_days.length === 0 || o.training_days.length >= 7 || o.training_days.includes(d);
-    if (!objectives.some((o: any) => scheduledOn(o, dow))) continue;
-    if (recent) continue;
-
-    // 1) Un objectif à 75 % ou 90 % : le palier n'est annoncé qu'une fois.
-    let best: { o: any; ratio: number; ref: string } | null = null;
-    for (const o of objectives) {
-      if (o.is_completed || !(o.target_value > 0) || !scheduledOn(o, dow)) continue;
-      const ratio = (o.current_value || 0) / o.target_value;
-      if (ratio < 0.75 || ratio >= 1) continue;
-      const ref = `${o.id}:${ratio >= 0.9 ? 90 : 75}`;
-      if (logs.some(l => l.ref === ref)) continue;
-      if (!best || ratio > best.ratio) best = { o, ratio, ref };
-    }
-    if (best) {
-      const { o } = best;
-      const left = o.target_value - (o.current_value || 0);
-      const pct = o.unit === '%';
-      msgs.push({
-        userId: u.id, kind: 'almost', ref: best.ref, to: u.push_token,
-        title: pct ? fill(t.almostTitlePct, { left: num(left) }) : fill(t.almostTitle, { left: num(left), unit: unitLabel(lang, o.unit, left) }),
-        body: fill(t.almostBody, { obj: `${o.emoji || ''} ${o.title}`.trim(), cur: num(o.current_value || 0), target: num(o.target_value), pct: pct ? ' %' : '' }),
-      });
-      continue;
-    }
-
-    // 2) Premier post : compte de 1 à 14 jours, jamais posté (aucun post sur 60 jours suffit à le dire).
-    //    Paliers 1, 3 et 7 jours, chacun une seule fois ; un jour de repos décale le palier au jour prévu suivant.
-    const age = u.created_at ? daysBetween(parisDay(new Date(u.created_at)), today) : -1;
-    if (days.size === 0 && age >= 1 && age <= 14) {
-      const step = age >= 7 ? 7 : age >= 3 ? 3 : 1;
-      const ref = `first:${step}`;
-      if (logs.some(l => l.ref === ref)) continue;
-      // L'objectif nommé : le plus récent prévu aujourd'hui.
-      const o = objectives.filter((x: any) => !x.is_completed && scheduledOn(x, dow)).pop() || objectives[objectives.length - 1];
-      const obj = `${o.emoji || ''} ${o.title}`.trim();
-      const copy = step === 1
-        ? { title: t.first1Title, body: t.first1Body }
-        : step === 3
-          ? { title: t.first3Title, body: t.first3Body }
-          : { title: t.first7Title, body: t.first7Body };
-      msgs.push({ userId: u.id, kind: 'first', ref, to: u.push_token, title: copy.title, body: [fill(copy.body, { obj }), friendLineOf(u.id, t, today)].filter(Boolean).join(' ') });
-      continue;
-    }
-
-    // 3) Retour : 3, 7 ou 14 jours sans poster (le dernier post doit exister dans les 60 derniers jours).
-    if (days.size === 0) continue;
+  // Le cercle relance : pour chaque ami à l'arrêt, jusqu'à 2 amis actifs.
+  const notified = new Set(msgs.map(m => m.userId));
+  const byId = new Map<string, any>(users.map((u: any) => [u.id, u]));
+  const scheduledOn = (o: any, d: number) => !o.training_days || o.training_days.length === 0 || o.training_days.length >= 7 || o.training_days.includes(d);
+  const closeOf = new Set((closeRes.data || []).map((c: any) => `${c.owner_id}|${c.friend_id}`));
+  const blocked = new Set((blocksRes.data || []).flatMap((b: any) => [`${b.blocker_id}|${b.blocked_id}`, `${b.blocked_id}|${b.blocker_id}`]));
+  for (const person of namesRes.data || []) {
+    if (person.notif_encouragement === false) continue;
+    const objectives = objectivesOf.get(person.id) || [];
+    if (!objectives.some((o: any) => o.visibility !== 'private')) continue;
+    const days = postDays.get(person.id);
+    if (!days || days.size === 0 || days.has(today)) continue;
     const lastDay = [...days].sort().pop()!;
     const gap = daysBetween(lastDay, today);
     if (![3, 7, 14].includes(gap)) continue;
-    // Il faut avoir RATÉ au moins un jour prévu depuis le dernier post (vendredi puis lundi, avec le week-end de repos, n'est pas un oubli).
     let missed = 0;
     for (let k = 1; k < gap; k++) {
       const d = new Date(`${lastDay}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + k);
-      const dd = isoDowOf(d.toISOString().slice(0, 10));
-      if (objectives.some((o: any) => scheduledOn(o, dd))) missed++;
+      if (objectives.some((o: any) => scheduledOn(o, isoDowOf(d.toISOString().slice(0, 10))))) missed++;
     }
     if (missed === 0) continue;
-    const ref = `gap:${gap}:${lastDay}`;
-    if (logs.some(l => l.ref === ref)) continue;
-    const friendLine = friendLineOf(u.id, t, today);
-    const copy = gap === 3
-      ? { title: t.gap3Title, body: t.gap3Body }
-      : gap === 7
-        ? { title: t.gap7Title, body: t.gap7Body }
-        : { title: t.gap14Title, body: t.gap14Body };
-    msgs.push({ userId: u.id, kind: 'comeback', ref, to: u.push_token, title: copy.title, body: [copy.body, friendLine].filter(Boolean).join(' ') });
+    const ref = `cheer:${person.id}:${lastDay}`;
+    const activeRecently = (id: string) => [...(postDays.get(id) || [])].some(d => daysBetween(d, today) <= 3);
+    const candidates = (friendsOf.get(person.id) || [])
+      .filter(id => byId.has(id) && !notified.has(id) && !blocked.has(`${id}|${person.id}`) && activeRecently(id))
+      .filter(id => { const logs = logsOf.get(id) || []; return !recentMorning(logs) && !logs.some(l => l.ref === ref); })
+      .sort((a, b) => Number(closeOf.has(`${b}|${person.id}`)) - Number(closeOf.has(`${a}|${person.id}`)))
+      .slice(0, 2);
+    for (const id of candidates) {
+      const u = byId.get(id)!;
+      const t = T[asLang(u.language)];
+      msgs.push({ userId: id, kind: 'cheer', ref, to: u.push_token, title: fill(t.cheerTitle, { name: first(person.full_name) || t.someone, n: gap }), body: t.cheerBody });
+      notified.add(id);
+    }
   }
 
   if (dry) {
@@ -206,8 +155,8 @@ Deno.serve(async (req) => {
     await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Une relance de demande d'ami ouvre l'onglet Amis.
-      body: JSON.stringify(msgs.slice(i, i + 100).map(m => ({ to: m.to, title: m.title, body: m.body, sound: 'default', badge: (unread.get(m.userId) || 0) + 1, data: { type: m.kind === 'friend' ? 'friend_request' : 'reminder' } }))),
+      // Une relance de demande d'ami ouvre l'onglet Amis ; un ami à l'arrêt, l'Activité et son bouton « Relancer ».
+      body: JSON.stringify(msgs.slice(i, i + 100).map(m => ({ to: m.to, title: m.title, body: m.body, sound: 'default', badge: (unread.get(m.userId) || 0) + 1, data: { type: m.kind === 'friend' ? 'friend_request' : 'activity' } }))),
     });
   }
   if (msgs.length > 0) {
