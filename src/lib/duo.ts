@@ -67,6 +67,20 @@ export async function loadDuoStats(me: string, friend: string): Promise<DuoStats
 /** « 3e duo », « 1er duo » : pour la célébration. */
 export const ordinalDuo = (n: number) => (n === 1 ? t('duo.first') : t('duo.nth', { n }));
 
+/** Posts d'amis qui m'identifient et auxquels j'ai déjà répondu : un de mes posts les identifie à moins d'1 h,
+ *  avant OU après le leur. Avant le 30/10/2026 seul « après » comptait : qui avait posté en premier voyait
+ *  « Poste pour valider » sous la réponse de son ami. */
+export function answeredDuoIds(posts: { id: string; user_id?: string; created_at: string; with_user_ids?: string[] }[], me: string): Set<string> {
+  const done = new Set<string>();
+  const mine = posts.filter(q => q.user_id === me);
+  posts.forEach(p => {
+    if (p.user_id === me || !p.user_id || !(p.with_user_ids || []).includes(me)) return;
+    const at = new Date(p.created_at).getTime();
+    if (mine.some(q => (q.with_user_ids || []).includes(p.user_id!) && Math.abs(new Date(q.created_at).getTime() - at) <= DUO_WINDOW_MS)) done.add(p.id);
+  });
+  return done;
+}
+
 /** Paires de posts d'un fil qui forment un duo validé (les deux ids sont renvoyés). */
 export function validatedDuoIds(posts: { id: string; user_id?: string; created_at: string; with_user_ids?: string[] }[]): Set<string> {
   const out = new Set<string>();

@@ -50,6 +50,7 @@ type Texts = {
   objectiveDoneTitle: string; objectiveDoneBody: string; objectiveDoneBodyNoObj: string;
   friendPostMoreOne: string; friendPostMore: string;
   duoTagTitle: string; duoTagBodyObj: string; duoTagBody: string;
+  duoDoneTitle: string; duoDoneBody: string;
   atGymTitlePlace: string; atGymTitle: string; atGymBody: string; defaultPlace: string;
   tagEndorseTitle: string; tagEndorseBodyTag: string; tagEndorseBody: string;
   friendRequestTitle: string; friendRequestBody: string;
@@ -95,6 +96,7 @@ export const T: Record<Lang, Texts> = {
     objectiveDoneTitle: '🏆 {name} a atteint son objectif', objectiveDoneBody: '« {obj} ». Va lui dire bravo.', objectiveDoneBodyNoObj: 'Va lui dire bravo.',
     friendPostMoreOne: 'Et 1 autre post de ton cercle.', friendPostMore: 'Et {n} autres posts de ton cercle.',
     duoTagTitle: "{name} t'a identifié dans sa séance 🤝", duoTagBodyObj: "{obj}. Poste la tienne dans l'heure pour valider le duo.", duoTagBody: "Poste la tienne dans l'heure pour valider le duo.",
+    duoDoneTitle: "🤝 Duo validé avec {name}", duoDoneBody: "Vous avez posté tous les deux. Bien joué.",
     atGymTitlePlace: '{name} est à {place} 💪', atGymTitle: '{name} est à la salle 💪', atGymBody: "Viens t'entraîner avec {first}.", defaultPlace: 'la salle',
     tagEndorseTitle: '{name} a validé ton tag', tagEndorseBodyTag: '« {tag} » sur ton profil', tagEndorseBody: 'Va voir ton profil.',
     friendRequestTitle: '{name} veut rejoindre ton cercle', friendRequestBody: 'Accepte pour suivre ses progrès, et lui les tiens.',
@@ -166,6 +168,7 @@ export const T: Record<Lang, Texts> = {
     objectiveDoneTitle: '🏆 {name} reached their goal', objectiveDoneBody: '"{obj}". Go cheer them on.', objectiveDoneBodyNoObj: 'Go cheer them on.',
     friendPostMoreOne: 'Plus 1 more post from your circle.', friendPostMore: 'Plus {n} more posts from your circle.',
     duoTagTitle: '{name} tagged you in their session 🤝', duoTagBodyObj: '{obj}. Post yours within the hour to confirm the duo.', duoTagBody: 'Post yours within the hour to confirm the duo.',
+    duoDoneTitle: "🤝 Duo confirmed with {name}", duoDoneBody: "You both posted. Nice work.",
     atGymTitlePlace: '{name} is at {place} 💪', atGymTitle: '{name} is at the gym 💪', atGymBody: 'Go train with {first}.', defaultPlace: 'the gym',
     tagEndorseTitle: '{name} endorsed your tag', tagEndorseBodyTag: '"{tag}" on your profile', tagEndorseBody: 'Go check your profile.',
     friendRequestTitle: '{name} wants to join your circle', friendRequestBody: 'Accept to follow their progress, and they follow yours.',
@@ -237,6 +240,7 @@ export const T: Record<Lang, Texts> = {
     objectiveDoneTitle: '🏆 {name} ha alcanzado su objetivo', objectiveDoneBody: '«{obj}». Ve a darle la enhorabuena.', objectiveDoneBodyNoObj: 'Ve a darle la enhorabuena.',
     friendPostMoreOne: 'Y 1 publicación más de tu círculo.', friendPostMore: 'Y {n} publicaciones más de tu círculo.',
     duoTagTitle: '{name} te ha etiquetado en su sesión 🤝', duoTagBodyObj: '{obj}. Publica la tuya antes de una hora para confirmar el dúo.', duoTagBody: 'Publica la tuya antes de una hora para confirmar el dúo.',
+    duoDoneTitle: "🤝 Dúo confirmado con {name}", duoDoneBody: "Habéis publicado los dos. Bien hecho.",
     atGymTitlePlace: '{name} está en {place} 💪', atGymTitle: '{name} está en el gimnasio 💪', atGymBody: 'Ve a entrenar con {first}.', defaultPlace: 'el gimnasio',
     tagEndorseTitle: '{name} ha validado tu etiqueta', tagEndorseBodyTag: '«{tag}» en tu perfil', tagEndorseBody: 'Ve a ver tu perfil.',
     friendRequestTitle: '{name} quiere unirse a tu círculo', friendRequestBody: 'Acepta para seguir su progreso, y que siga el tuyo.',
@@ -308,6 +312,7 @@ export const T: Record<Lang, Texts> = {
     objectiveDoneTitle: '🏆 {name} השיג/ה את היעד', objectiveDoneBody: '"{obj}". לכו להגיד כל הכבוד.', objectiveDoneBodyNoObj: 'לכו להגיד כל הכבוד.',
     friendPostMoreOne: 'ועוד פוסט אחד מהמעגל שלך.', friendPostMore: 'ועוד {n} פוסטים מהמעגל שלך.',
     duoTagTitle: '{name} תייג/ה אותך באימון 🤝', duoTagBodyObj: '{obj}. פרסמו את שלכם תוך שעה כדי לאשר את הזוג.', duoTagBody: 'פרסמו את שלכם תוך שעה כדי לאשר את הזוג.',
+    duoDoneTitle: "🤝 הזוג עם {name} אושר", duoDoneBody: "שניכם פרסמתם. כל הכבוד.",
     atGymTitlePlace: '{name} נמצא/ת ב{place} 💪', atGymTitle: '{name} בחדר הכושר 💪', atGymBody: 'בואו להתאמן עם {first}.', defaultPlace: 'חדר הכושר',
     tagEndorseTitle: '{name} אישר/ה את התג שלך', tagEndorseBodyTag: '"{tag}" בפרופיל שלך', tagEndorseBody: 'לכו לראות את הפרופיל.',
     friendRequestTitle: '{name} רוצה להצטרף למעגל שלך', friendRequestBody: 'אשרו כדי לעקוב אחרי ההתקדמות אחד של השני.',

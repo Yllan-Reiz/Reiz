@@ -592,6 +592,8 @@ export const he: Dict = {
     hide: 'לא להציע יותר את {name}',
   },
   duelCard: {
+    challengeThisWeek: "⚔️ לאתגר את {name} השבוע",
+    challengeWith: "⚔️ להתחיל אתגר עם {name}",
     sent: 'האתגר נשלח',
     received: 'התקבל אתגר',
     week: 'דו־קרב השבוע',

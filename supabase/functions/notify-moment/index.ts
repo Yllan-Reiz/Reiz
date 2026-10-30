@@ -17,6 +17,9 @@ import { T, asLang, fill, names, num as fmt, unit as unitIn, type Lang } from '.
 //   first    : compte de 1 à 14 jours sans aucun post, paliers 1, 3 et 7 jours
 //   comeback : aucun post depuis 3, 7 ou 14 jours, avec au moins un jour prévu manqué
 // Journal : encouragement_log. Le tap ouvre la publication sur l'objectif concerné (data.objective_id).
+//
+// Ordre des textes (chantier 6) : duel en cours (y compris un jour de repos), puis l'encouragement, puis la série
+// en jeu à partir de 3 jours, puis le texte taquin. Duel et série viennent de l'ancien rappel de 19 h.
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SERVICE_KEY')!);
 
@@ -65,14 +68,15 @@ Deno.serve(async (req) => {
   const since60 = new Date(now.getTime() - 60 * DAY).toISOString();
   const since14 = new Date(now.getTime() - 14 * DAY).toISOString();
 
-  const [usersRes, objRes, updRes, momRes, friendsRes, unreadRes, logRes] = await Promise.all([
+  const [usersRes, objRes, updRes, momRes, friendsRes, unreadRes, logRes, duelRes] = await Promise.all([
     supabase.from('users').select('id, full_name, push_token, language, timezone, notif_encouragement, created_at'),
     supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed, training_days').order('created_at'),
-    supabase.from('updates').select('user_id, created_at').gte('created_at', since60),
+    supabase.from('updates').select('user_id, created_at, moment, objectives(visibility)').gte('created_at', since60),
     supabase.from('moments').select('user_id, day, kind, at, sent_at').gte('day', new Date(now.getTime() - 2 * DAY).toISOString().slice(0, 10)),
     supabase.from('friendships').select('requester_id, receiver_id').eq('status', 'accepted'),
     supabase.from('notifications').select('recipient_id').is('read_at', null),
     supabase.from('encouragement_log').select('user_id, ref').gte('sent_at', since14),
+    supabase.from('duo_challenges').select('challenger_id, opponent_id, starts_at, ends_at').eq('status', 'active'),
   ]);
   if (momRes.error) return new Response(`moments: ${momRes.error.message}`, { status: 500 });
 
@@ -102,6 +106,28 @@ Deno.serve(async (req) => {
   const unread = new Map<string, number>();
   (unreadRes.data || []).forEach((r: any) => unread.set(r.recipient_id, (unread.get(r.recipient_id) || 0) + 1));
   const postedToday = (uid: string, day: string) => (postsOf.get(uid) || []).some(d => local(tzOf.get(uid), d).day === day);
+
+  // Score d'un duel : comme la base (duel_days), les jours de Paris avec un post visible, hors récup.
+  const scoreRows = updRes.data || [];
+  const duelScore = (uid: string, from: number, to: number) => new Set(scoreRows
+    .filter((r: any) => r.user_id === uid && r.moment !== 'recovery' && r.objectives?.visibility !== 'private')
+    .map((r: any) => new Date(r.created_at))
+    .filter((d: Date) => d.getTime() >= from && d.getTime() < to)
+    .map((d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }))).size;
+  // Série jusqu'à hier : un jour de repos ne la casse pas, un jour prévu sans post l'arrête.
+  const streakOf = (u: any) => {
+    const plan = plans.get(u.id);
+    const days = new Set((postsOf.get(u.id) || []).map(d => local(u.timezone, d).day));
+    let n = 0;
+    let d = new Date(now.getTime() - DAY);
+    for (let i = 0; i < 60; i++) {
+      const L = local(u.timezone, d);
+      if (days.has(L.day)) n++;
+      else if (plan?.every || plan?.days.has(L.dow)) break;
+      d = new Date(d.getTime() - DAY);
+    }
+    return n;
+  };
 
   /** L'encouragement du jour, s'il y en a un : le texte remplace le taquin, l'objectif est ouvert au tap. */
   const encouragementFor = (u: any, day: string) => {
@@ -205,18 +231,33 @@ Deno.serve(async (req) => {
     const posted = (friendsOf.get(u.id) || []).filter(id => postedToday(id, L.day)).map(id => first(nameOf.get(id))).filter(Boolean);
     const social = posted.length === 0 ? '' : fill(posted.length > 1 ? t.momentFriends : t.momentFriendsOne, { names: names(lang, posted.slice(0, 2)) });
     const line = pick(session ? t.momentSession : t.momentRecovery, `${u.id}${m.day}`);
-    const enc = session ? encouragementFor(u, L.day) : null;
+    const duel = (duelRes.data || []).find((d: any) => d.challenger_id === u.id || d.opponent_id === u.id);
+    let duelText: { title: string; body: string } | null = null;
+    if (duel) {
+      const other = duel.challenger_id === u.id ? duel.opponent_id : duel.challenger_id;
+      const from = new Date(duel.starts_at).getTime();
+      const to = new Date(duel.ends_at).getTime();
+      const mine = duelScore(u.id, from, to);
+      const theirs = duelScore(other, from, to);
+      duelText = {
+        title: fill(t.dailyDuelTitle, { who: first(nameOf.get(other)) || t.someone }),
+        body: fill(mine < theirs ? t.dailyDuelBehind : mine > theirs ? t.dailyDuelAhead : t.dailyDuelTie, { mine, theirs }),
+      };
+    }
+    const enc = !duelText && session ? encouragementFor(u, L.day) : null;
     if (enc) logs.push({ user_id: u.id, kind: enc.kind, ref: enc.ref });
+    const streak = !duelText && !enc && session ? streakOf(u) : 0;
+    const special = duelText || enc || (streak >= 3 ? { title: fill(t.dailyStreakTitle, { n: streak }), body: t.dailyStreakBody } : null);
     pushes.push({
       to: u.push_token,
-      title: enc ? enc.title : session ? t.momentSessionTitle : t.momentRecoveryTitle,
-      body: enc ? enc.body : [line, social].filter(Boolean).join(' '),
+      title: special ? special.title : session ? t.momentSessionTitle : t.momentRecoveryTitle,
+      body: special ? special.body : [line, social].filter(Boolean).join(' '),
       sound: 'default',
       badge: (unread.get(u.id) || 0) + 1,
       // Taper la notification ouvre directement la publication, en mode moment.
       data: { type: 'moment', kind: m.kind, ...(enc ? { objective_id: enc.objectiveId } : {}) },
       _who: u.full_name,
-      _kind: enc?.kind ?? m.kind,
+      _kind: duelText ? 'duel' : enc?.kind ?? (streak >= 3 ? 'streak' : m.kind),
     });
     done.push({ user_id: u.id, day: m.day, skipped: null });
   }

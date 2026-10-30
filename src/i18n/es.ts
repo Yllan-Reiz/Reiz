@@ -590,6 +590,8 @@ export const es: Dict = {
     hide: 'Dejar de sugerir a {name}',
   },
   duelCard: {
+    challengeThisWeek: "⚔️ Retar a {name} esta semana",
+    challengeWith: "⚔️ Lanzar un reto con {name}",
     sent: 'RETO ENVIADO',
     received: 'RETO RECIBIDO',
     week: 'DUELO DE LA SEMANA',

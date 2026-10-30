@@ -84,7 +84,7 @@ const STACK_MAX = 4;
 
 // Les réactions et le compteur de commentaires arrivent pré-chargés via `meta`
 // (chargés en lot par le feed) : zéro requête au montage de la carte.
-export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, onPinChanged, onDuoReply, onOpenProfile, duoDone, duoValidated, closeAuthor }: {
+export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, onPinChanged, onDuoReply, onOpenProfile, duoDone, duoValidated, closeAuthor, duelBusyIds, onChallenge }: {
   // L'auteur est dans ton cercle proche : une étoile à côté de son prénom.
   closeAuthor?: boolean;
   u: Update;
@@ -105,6 +105,9 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   // Déjà répondu à ce duo : le bouton devient une confirmation.
   duoDone?: boolean;
   duoValidated?: boolean;
+  /** Amis avec qui un défi est déjà ouvert ; sans cette liste (hors du fil), pas de bouton « Lancer un défi ». */
+  duelBusyIds?: Set<string>;
+  onChallenge?: (id: string, name: string) => void;
 }) {
   // Le fil parle la même langue que le reste de l'app : un objectif chiffré
   // s'affiche en séances (ou en km, en reps...), le pourcentage ne reste que
@@ -226,17 +229,32 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
 
   const [storyData, setStoryData] = useState<StoryData | null>(null);
   const [journeyOpen, setJourneyOpen] = useState(false);
+  // Post en duo qui me concerne : l'autre personne de la séance, si nous n'avons pas déjà un défi ouvert.
+  const duoPartner = !duelBusyIds || !onChallenge || !currentUserId || !u.with_users?.length ? null
+    : u.user_id === currentUserId ? u.with_users.find(w => !duelBusyIds.has(w.id)) ?? null
+    : u.with_users.some(w => w.id === currentUserId) && u.user_id && !duelBusyIds.has(u.user_id) ? { id: u.user_id, full_name: u.users?.full_name || '' }
+    : null;
   // Le post de la victoire : celui qui a fait gagner l'objectif (la base date la victoire juste après lui).
   // Si l'auteur monte la barre ensuite, la date est effacée et le badge part avec elle.
   const winAt = u.objectives?.completed_at ? new Date(u.objectives.completed_at).getTime() : 0;
   const isWin = !!u.objective_id && winAt > 0 && Math.abs(new Date(u.created_at).getTime() - winAt) < 10 * 60 * 1000;
+  // Ouvert depuis l'Activité, personne ne dit si j'ai déjà répondu : la carte le vérifie (mon post à moins d'1 h).
+  const [duoAnswered, setDuoAnswered] = useState(false);
+  useEffect(() => {
+    if (!canDuoReply || duoDone !== undefined || !currentUserId || !u.user_id) return;
+    const at = new Date(u.created_at).getTime();
+    supabase.from('updates').select('id', { count: 'exact', head: true }).eq('user_id', currentUserId).contains('with_user_ids', [u.user_id])
+      .gte('created_at', new Date(at - DUO_WINDOW_MS).toISOString()).lte('created_at', new Date(at + DUO_WINDOW_MS).toISOString())
+      .then(({ count }) => setDuoAnswered((count || 0) > 0), () => {});
+  }, [canDuoReply, duoDone, currentUserId, u.user_id, u.created_at]);
+  const answered = duoDone ?? duoAnswered;
   // Compte à rebours du duo : il se valide si vous postez à moins d'1 h d'écart.
   const [, tick] = useState(0);
   useEffect(() => {
-    if (!canDuoReply || duoDone) return;
+    if (!canDuoReply || answered) return;
     const id = setInterval(() => tick(n => n + 1), 30000);
     return () => clearInterval(id);
-  }, [canDuoReply, duoDone]);
+  }, [canDuoReply, answered]);
   const duoLeftMin = Math.ceil((DUO_WINDOW_MS - (Date.now() - new Date(u.created_at).getTime())) / 60000);
   const [pinned, setPinned] = useState(!!u.pinned_at);
   useEffect(() => { setPinned(!!u.pinned_at); }, [u.pinned_at]);
@@ -454,6 +472,12 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
             <Ionicons name={dirIcon('chevron-forward')} size={14} color="rgba(255,255,255,0.6)" />
           </TouchableOpacity>
         )}
+        {duoPartner && (
+          <TouchableOpacity onPress={() => onChallenge!(duoPartner.id, duoPartner.full_name)} activeOpacity={0.85} accessibilityRole="button"
+            style={{ alignSelf: 'flex-start', marginTop: 10, paddingHorizontal: 12, height: 34, borderRadius: 17, justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }}>
+            <Text style={{ color: '#fff', fontSize: 13.5, fontFamily: F.bold }}>{t('duelCard.challengeWith', { name: duoPartner.full_name.split(' ')[0] })}</Text>
+          </TouchableOpacity>
+        )}
         {u.photo_url && u.caption ? <Text style={s.feedCaption}>{u.caption}</Text> : null}
         <TouchableOpacity onPress={() => setShowComments(true)} hitSlop={{ top: 6, bottom: 6 }} accessibilityLabel={t('feed.comment')}>
           {commentCount > 0 && (
@@ -463,7 +487,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
           )}
           <Text style={s.brAddComment}>{t('feed.addComment')}</Text>
         </TouchableOpacity>
-        {canDuoReply && (duoDone ? (
+        {canDuoReply && (answered ? (
           <View style={[s.duoReplyBtn, s.duoReplyDone]}>
             <Text style={s.duoReplyDoneText}>{t('feed.duoPosted')}</Text>
           </View>

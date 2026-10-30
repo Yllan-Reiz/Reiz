@@ -23,13 +23,16 @@ import { CreateObjectiveModal } from '../components/CreateObjectiveModal';
 import { SetupCard } from '../components/SetupCard';
 import { PendingRequestsCard } from '../components/PendingRequestsCard';
 import { CircleTodayCard } from '../components/CircleTodayCard';
+import { DuelBanner } from '../components/DuelCard';
+import { loadDuels, proposeDuel } from '../lib/duel';
+import { track } from '../lib/track';
 import { FeedSkeleton } from '../components/Skeleton';
 import { FriendsTab } from './FriendsTab';
 import { ProfileScreen } from './ProfileScreen';
 import { FriendProfileScreen } from './FriendProfileScreen';
 import { ActivityScreen } from './ActivityScreen';
 import { attachDuoNames, attachReactors } from '../lib/posts';
-import { validatedDuoIds } from '../lib/duo';
+import { validatedDuoIds, answeredDuoIds } from '../lib/duo';
 import { ObjectiveEditSheet } from '../components/ObjectiveEditSheet';
 import { ObjectivesTab } from '../components/ObjectivesTab';
 import { useCloseCircle } from '../lib/closeCircle';
@@ -102,17 +105,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   const [tab, setTab] = useState('feed');
   const [userId, setUserId] = useState<string | null>(null);
   const [updates, setUpdates] = useState<Update[]>([]);
-  // Duos auxquels j'ai déjà répondu : un de mes posts identifie l'auteur, publié après le sien.
-  const duoDone = useMemo(() => {
-    const done = new Set<string>();
-    if (!userId) return done;
-    const mine = updates.filter(q => q.user_id === userId);
-    updates.forEach(p => {
-      if (p.user_id === userId || !(p.with_user_ids || []).includes(userId)) return;
-      if (mine.some(q => (q.with_user_ids || []).includes(p.user_id!) && q.created_at > p.created_at)) done.add(p.id);
-    });
-    return done;
-  }, [updates, userId]);
+  // Duos auxquels j'ai déjà répondu : un de mes posts identifie l'auteur, à moins d'1 h du sien.
+  const duoDone = useMemo(() => (userId ? answeredDuoIds(updates, userId) : new Set<string>()), [updates, userId]);
   // Séances dont le duo est validé : les deux posts du binôme sont dans le fil, à moins d'1 h d'écart.
   const duoPairs = useMemo(() => validatedDuoIds(updates), [updates]);
   // Amis de ton cercle proche : une étoile à côté de leur prénom dans le fil.
@@ -147,6 +141,26 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   // Nb d'amis acceptés — sert à savoir si le nouvel utilisateur a déjà lancé son cercle.
   // null = pas encore chargé (évite d'afficher la carte d'activation par erreur).
   const [friendCount, setFriendCount] = useState<number | null>(null);
+  // Chantier 6 : amis avec qui un défi est déjà ouvert (le bouton « Lancer un défi » des posts en duo les évite).
+  const [duelBusyIds, setDuelBusyIds] = useState<Set<string> | undefined>(undefined);
+  const [duelKey, setDuelKey] = useState(0);
+  useEffect(() => {
+    loadDuels().then(list => {
+      if (list) setDuelBusyIds(new Set(list.filter(d => d.status === 'active' || d.status === 'pending').map(d => d.otherId)));
+    }).catch(() => {});
+  }, [duelKey]);
+  const challengeFromFeed = (id: string, name: string) => {
+    const who = name.split(' ')[0];
+    Alert.alert(t('duelCard.confirmTitle', { name: who }), t('friendProfile.duelConfirm', { name: who }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('duelCard.challenge'), onPress: async () => {
+        const err = await proposeDuel(id);
+        if (err) { Alert.alert(t('duelCard.duel'), err); return; }
+        track('duel_propose', { from: 'feed' }, 'feed');
+        setDuelKey(k => k + 1);
+      } },
+    ]);
+  };
   // Offset réel en base (avant filtrage des posts privés) pour une pagination exacte
   const dbOffset = useRef(0);
   // Carte la plus visible du fil : seule sa vidéo joue (les autres restent en pause).
@@ -549,6 +563,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               <PendingRequestsCard userId={userId} from="feed" onChanged={() => { fetchPendingCount(); fetchFriendCount(); }} onSeeAll={() => setTab('friends')} />
               {/* Moment Reiz (phase 29) : qui de ton cercle a posté aujourd'hui. */}
               <CircleTodayCard onOpenProfile={openProfile} />
+              {/* Défis en cours et invitations reçues : de retour dans le fil (ils restent aussi dans l'Activité). */}
+              <DuelBanner onOpenProfile={openProfile} reloadKey={duelKey} />
               <SetupCard
                 userId={userId}
                 hasObjective={loadingObj ? null : objectives.length > 0}
@@ -592,6 +608,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 isActive={item.id === activeId}
                 onDuoReply={(authorId) => onPost({ duoWith: authorId })}
                 onOpenProfile={openProfile}
+                duelBusyIds={duelBusyIds}
+                onChallenge={challengeFromFeed}
                 duoDone={duoDone.has(item.id)}
                 duoValidated={duoPairs.has(item.id)}
                 closeAuthor={!!item.user_id && closeIds.has(item.user_id)}

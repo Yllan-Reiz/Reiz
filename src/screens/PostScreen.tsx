@@ -20,6 +20,7 @@ import { trimAvailable, trimVideo, cleanTrimmed } from '../lib/videoTools';
 import { galleryAvailable, saveToGallery } from '../lib/saveToGallery';
 import { endAllLiveActivities } from '../lib/liveActivity';
 import { track } from '../lib/track';
+import { loadDuels, proposeDuel } from '../lib/duel';
 import { loadTodayMoment, lateMinutes, ON_TIME_MIN, TodayMoment, MomentKind } from '../lib/moment';
 import { s, F } from '../styles';
 import { t, tp, unitLabel, isRTL } from '../i18n';
@@ -475,7 +476,17 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
           }
         }
       }
+      // Séance à deux, sans défi en cours avec cet ami : le bon moment pour le proposer (chantier 6 : 14 paires
+      // postent en duo, aucune ne s'était lancé de défi).
+      const duels = tagged.length > 0 ? await loadDuels().catch(() => null) : null;
+      const rival = duels ? tagged.find(f => !duels.some(d => d.otherId === f.id && (d.status === 'active' || d.status === 'pending'))) : undefined;
       Alert.alert(title, message, [
+        ...(rival ? [{ text: t('duelCard.challengeThisWeek', { name: rival.full_name.split(' ')[0] }), onPress: async () => {
+          const err = await proposeDuel(rival.id);
+          if (err) Alert.alert(t('duelCard.duel'), err);
+          else track('duel_propose', { from: 'post' }, 'post');
+          onPublish();
+        } }] : []),
         { text: t('post.shareStory'), onPress: () => setStory(storyData) },
         { text: t('post.finish'), style: 'cancel', onPress: () => onPublish() },
       ]);

@@ -209,9 +209,22 @@ Deno.serve(async (req) => {
   // Le duo peut passer par l'Activité en direct même sans jeton de notification classique.
   if (!token && n.type !== 'duo_tag') return new Response('no token');
 
+  // Duo : celui qui reçoit a déjà posté en identifiant l'auteur, à moins d'1 h ? Ce n'est plus « poste la tienne »,
+  // c'est le duo qui se valide : pas de compte à rebours, un simple message (qui respecte les heures calmes).
+  let duoAnswered = false;
+  const taggedAt = (updateRes.data as any)?.created_at;
+  if (n.type === 'duo_tag' && n.actor_id && taggedAt) {
+    const at = new Date(taggedAt).getTime();
+    const { count } = await supabase.from('updates').select('id', { count: 'exact', head: true })
+      .eq('user_id', n.recipient_id).contains('with_user_ids', [n.actor_id])
+      .gte('created_at', new Date(at - 3600 * 1000).toISOString()).lte('created_at', new Date(at + 3600 * 1000).toISOString());
+    duoAnswered = (count || 0) > 0;
+    if (duoAnswered && !token) return new Response('no token');
+  }
+
   // Heures calmes, regroupement des posts d'amis, plafond du jour (voir en haut du fichier).
   const clock = localClock((recipientRes.data as any)?.timezone);
-  if (n.type !== 'duo_tag' && (clock.minutes >= QUIET_FROM || clock.minutes < QUIET_TO)) return new Response('quiet');
+  if ((n.type !== 'duo_tag' || duoAnswered) && (clock.minutes >= QUIET_FROM || clock.minutes < QUIET_TO)) return new Response('quiet');
   let morePosts = 0;
   if (n.type === 'friend_post') {
     const gapSince = new Date(new Date(n.created_at).getTime() - FRIEND_POST_GAP_MIN * 60 * 1000).toISOString();
@@ -303,8 +316,8 @@ Deno.serve(async (req) => {
       break;
     }
     case 'duo_tag':
-      title = fill(t.duoTagTitle, { name });
-      body = objLabel ? fill(t.duoTagBodyObj, { obj: objLabel }) : t.duoTagBody;
+      title = duoAnswered ? fill(t.duoDoneTitle, { name }) : fill(t.duoTagTitle, { name });
+      body = duoAnswered ? t.duoDoneBody : objLabel ? fill(t.duoTagBodyObj, { obj: objLabel }) : t.duoTagBody;
       break;
     case 'at_gym':
       // n.preview = nom du lieu choisi par la personne (« Basic-Fit »). Jamais de coordonnées.
@@ -345,7 +358,7 @@ Deno.serve(async (req) => {
   }
 
   // Duo : la carte avec compte à rebours remplace la notification classique (elle a sa propre alerte).
-  if (n.type === 'duo_tag' && n.actor_id && upd?.created_at) {
+  if (n.type === 'duo_tag' && !duoAnswered && n.actor_id && upd?.created_at) {
     // Les visages de la séance : l'auteur, puis les autres amis identifiés (sans toi). Initiales, pas de photos :
     // une carte d'Activité en direct ne peut pas télécharger d'image.
     const others = ((upd.with_user_ids || []) as string[]).filter(id => id !== n.recipient_id);

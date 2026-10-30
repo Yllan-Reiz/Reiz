@@ -591,6 +591,8 @@ export const fr = {
     hide: 'Ne plus proposer {name}',
   },
   duelCard: {
+    challengeThisWeek: "⚔️ Défier {name} cette semaine",
+    challengeWith: "⚔️ Lancer un défi avec {name}",
     sent: 'DÉFI ENVOYÉ',
     received: 'DÉFI REÇU',
     week: 'DUEL DE LA SEMAINE',
