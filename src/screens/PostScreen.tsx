@@ -11,7 +11,7 @@ import { uploadImage, uploadVideo, compressVideo, signAvatars } from '../lib/sto
 import { GlassIconButton } from '../components/ProfileSections';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Objective } from '../lib/types';
-import { QUICK_UNITS, GUTTER } from '../constants';
+import { QUICK_UNITS, GUTTER, hasSchedule, todayIso } from '../constants';
 import { ShareStoryModal, StoryData } from '../components/ShareStoryModal';
 import { ObjectiveDoneModal, DoneObjective } from '../components/ObjectiveDoneModal';
 import { JourneyModal } from '../components/JourneyModal';
@@ -40,6 +40,9 @@ function VideoPreview({ uri }: { uri: string }) {
 const THUMB = 22;
 
 // Barre de progression qu'on fait glisser du doigt, comme un volume.
+// Ces unités se comptent une par une : une séance de plus, c'est +1. Le reste (kg, km...) dépend de ce qu'on a fait.
+const isCountUnit = (u: string) => /^(s[ée]ances?|fois|x)$/i.test(u.trim());
+
 // `onChange` reçoit une part de 0 à 1 ; c'est l'écran qui l'arrondit dans l'unité.
 function ProgressSlider({ pct, onChange }: { pct: number; onChange: (ratio: number) => void }) {
   const track = useRef<View>(null);
@@ -138,7 +141,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
     const load = async () => {
       const user = await currentUser();
       if (!user) { setLoadingObj(false); return; }
-      const { data, error } = await supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility').eq('user_id', user.id).order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility, training_days').eq('user_id', user.id).order('created_at', { ascending: false });
       if (!error && data) setObjectives((data as Objective[]).map(inUnit));
       setLoadingObj(false);
 
@@ -197,6 +200,21 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
       return [...prev, id];
     });
   };
+
+  // Une séance sert souvent plusieurs objectifs (prépa compétition, squat, bench les mêmes jours) : les autres objectifs
+  // prévus aujourd'hui avancent avec ce post, sans post en plus dans le fil. Un compteur (séances, fois) prend +1, coché
+  // d'office ; une charge ou une distance ne se devine pas : on la tape, et vide veut dire qu'on n'y touche pas.
+  const alsoToday = objectives.filter(o => o.id !== obj?.id && o.unit !== '%' && (o.current_value || 0) < o.target_value && hasSchedule(o.training_days) && o.training_days!.includes(todayIso()));
+  const [alsoOff, setAlsoOff] = useState<string[]>([]);
+  const [alsoTyped, setAlsoTyped] = useState<Record<string, string>>({});
+  /** La nouvelle valeur de chaque autre objectif à faire avancer. Jamais au-delà de la cible, jamais en arrière. */
+  const alsoUpdates = () => alsoToday.flatMap(o => {
+    const current = o.current_value || 0;
+    if (isCountUnit(o.unit)) return alsoOff.includes(o.id) ? [] : [{ o, next: Math.min(o.target_value, current + 1) }];
+    const n = Number((alsoTyped[o.id] ?? '').replace(',', '.'));
+    if (!(n > current)) return [];
+    return [{ o, next: Math.min(o.target_value, Math.round(n * 10) / 10) }];
+  });
 
   // Un objectif chiffré (4 séances, 10 km...) se compte dans son unité, pas en
   // pourcentage : `value` est toujours la vraie valeur, le pourcentage n'en est
@@ -429,6 +447,9 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
     if (!error) {
       await supabase.from('objectives').update({ current_value: absoluteValue, unit: obj.unit, target_value: obj.target_value }).eq('id', obj.id);
     }
+    const also = error ? [] : await Promise.all(alsoUpdates().map(async u => ({
+      ...u, failed: !!(await supabase.from('objectives').update({ current_value: u.next }).eq('id', u.o.id)).error,
+    })));
     setPublishing(false);
     if (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
@@ -458,6 +479,12 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
         return;
       }
       let title = t('post.publishedTitle');
+      const alsoDone = also.filter(u => !u.failed);
+      const alsoNote = [
+        alsoDone.length > 0 ? t('post.alsoUpdated', { list: andList(alsoDone.map(u => u.o.title)) }) : '',
+        ...alsoDone.filter(u => u.next >= u.o.target_value).map(u => t('post.alsoReached', { title: u.o.title })),
+        also.some(u => u.failed) ? t('post.alsoFailed', { list: andList(also.filter(u => u.failed).map(u => u.o.title)) }) : '',
+      ].filter(Boolean).join('\n');
       let message = t('post.publishedText');
       if (tagged.length > 0) {
         storyData.duoNames = andList(tagged.map(f => f.full_name.split(' ')[0]));
@@ -481,7 +508,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
       // postent en duo, aucune ne s'était lancé de défi).
       const duels = tagged.length > 0 ? await loadDuels().catch(() => null) : null;
       const rival = duels ? tagged.find(f => !duels.some(d => d.otherId === f.id && (d.status === 'active' || d.status === 'pending'))) : undefined;
-      Alert.alert(title, message, [
+      Alert.alert(title, alsoNote ? `${alsoNote}\n\n${message}` : message, [
         ...(rival ? [{ text: t('duelCard.challengeThisWeek', { name: rival.full_name.split(' ')[0] }), onPress: async () => {
           const err = await proposeDuel(rival.id);
           if (err) Alert.alert(t('duelCard.duel'), err);
@@ -708,6 +735,47 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
                 </View>
               </View>
             )}
+          </>}
+
+          {/* Les autres objectifs prévus aujourd'hui */}
+          {alsoToday.length > 0 && <>
+            <Text style={[s.postLabel, { marginTop: 28 }]}>{t('post.alsoLabel')}</Text>
+            <Text style={{ color: '#888', fontSize: 13, fontFamily: F.regular, marginTop: -6, marginBottom: 10 }}>{t('post.alsoHint')}</Text>
+            <View style={{ gap: 8 }}>
+              {alsoToday.map(o => {
+                const count = isCountUnit(o.unit);
+                const on = count && !alsoOff.includes(o.id);
+                const body = (
+                  <>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: '#fff', fontSize: 14, fontFamily: F.bold }} numberOfLines={1}>{o.title}</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12.5, fontFamily: F.regular, marginTop: 2 }}>
+                        {count && on
+                          ? `${fmt(o.current_value || 0)} → ${fmt(Math.min(o.target_value, (o.current_value || 0) + 1))} ${t('post.outOf', { target: fmt(o.target_value), unit: unitLabel(o.unit) })}`
+                          : `${fmt(o.current_value || 0)} ${t('post.outOf', { target: fmt(o.target_value), unit: unitLabel(o.unit) })}`}
+                      </Text>
+                    </View>
+                    {count
+                      ? <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? '#fff' : 'rgba(255,255,255,0.35)'} />
+                      : <TextInput
+                          style={{ width: 92, height: 38, borderRadius: 19, paddingHorizontal: 12, textAlign: 'center', color: '#fff', fontFamily: F.bold, fontSize: 14, backgroundColor: 'rgba(255,255,255,0.1)' }}
+                          value={alsoTyped[o.id] ?? ''}
+                          onChangeText={v => setAlsoTyped(m => ({ ...m, [o.id]: v }))}
+                          keyboardType="decimal-pad"
+                          returnKeyType="done"
+                          placeholder={unitLabel(o.unit)}
+                          placeholderTextColor="rgba(255,255,255,0.45)"
+                          maxLength={7}
+                          accessibilityLabel={t('post.alsoValue', { title: o.title })}
+                        />}
+                  </>
+                );
+                const row = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12, minHeight: 60, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' };
+                return count
+                  ? <TouchableOpacity key={o.id} style={row} activeOpacity={0.8} accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={() => { Haptics.selectionAsync().catch(() => {}); setAlsoOff(l => (l.includes(o.id) ? l.filter(x => x !== o.id) : [...l, o.id])); }}>{body}</TouchableOpacity>
+                  : <View key={o.id} style={row}>{body}</View>;
+              })}
+            </View>
           </>}
 
           {/* Caption */}
