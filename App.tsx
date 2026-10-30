@@ -186,6 +186,7 @@ function AppInner() {
       {WELCOME_FLOW ? <WelcomeFlow onChanged={() => setMainKey(k => k + 1)} onPost={() => openPost({ from: 'welcome' })} /> : <FindFriendsPrompt />}
     </>
   );
-  if (screen === 'post') return <PostScreen duoWith={postDuoWith} onBack={() => setScreen('main')} onPublish={() => setScreen('main')} />;
+  // Après un objectif atteint, « Nouvel objectif » ouvre la création d'objectif dans Main.
+  if (screen === 'post') return <PostScreen duoWith={postDuoWith} onBack={() => setScreen('main')} onPublish={(next) => { if (next) setNavIntent(next); setScreen('main'); }} />;
   return null;
 }

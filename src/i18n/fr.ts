@@ -1053,6 +1053,15 @@ export const fr = {
     notifs: 'Active les notifications',
     notifsSub: "Pour savoir quand ton cercle poste ou t'encourage",
   },
+  done: {
+    eyebrow: "OBJECTIF ATTEINT",
+    reached: "{n} {unit}, c'est gagné. Ton cercle voit ta victoire dans le fil.",
+    reachedPct: "100 %, c'est gagné. Ton cercle voit ta victoire dans le fil.",
+    newTarget: "TA NOUVELLE CIBLE",
+    raise: "Monter la barre",
+    saveRaise: "C'est parti",
+    newObjective: "Nouvel objectif",
+  },
 };
 
 export type Dict = typeof fr;

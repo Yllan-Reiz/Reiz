@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
       ? supabase.from('users').select('full_name').eq('id', n.actor_id).single()
       : Promise.resolve({ data: null }),
     n.update_id
-      ? supabase.from('updates').select('caption, progress_value, created_at, with_user_ids, objectives(emoji, title, unit, target_value)').eq('id', n.update_id).single()
+      ? supabase.from('updates').select('caption, progress_value, created_at, with_user_ids, objective_id, objectives(emoji, title, unit, target_value)').eq('id', n.update_id).single()
       : Promise.resolve({ data: null }),
   ]);
 
@@ -233,10 +233,25 @@ Deno.serve(async (req) => {
       title = fill(t.nudgeTitle, { name });
       body = t.nudgeBody;
       break;
-    case 'friend_post':
+    case 'friend_post': {
+      // Le post qui fait franchir la cible (100 %, alors que le post d'avant sur cet objectif était en dessous) :
+      // « 🏆 Léa a atteint son objectif ». Même type friend_post : les versions installées l'affichent comme avant.
+      let reached = false;
+      if (upd?.objective_id && Number(upd.progress_value) >= 100) {
+        const { data: prev } = await supabase.from('updates').select('progress_value')
+          .eq('objective_id', upd.objective_id).lt('created_at', upd.created_at)
+          .order('created_at', { ascending: false }).limit(1).maybeSingle();
+        reached = !prev || Number((prev as any).progress_value) < 100;
+      }
+      if (reached) {
+        title = fill(t.objectiveDoneTitle, { name });
+        body = objLabel ? fill(t.objectiveDoneBody, { obj: objLabel }) : t.objectiveDoneBodyNoObj;
+        break;
+      }
       title = objLabel ? fill(t.friendPostTitleObj, { name, obj: objLabel }) : fill(t.friendPostTitle, { name });
       body = [progress, upd?.caption ? fill(t.quote, { text: clip(upd.caption, 60) }) : ''].filter(Boolean).join('  ') || t.friendPostBody;
       break;
+    }
     case 'duo_tag':
       title = fill(t.duoTagTitle, { name });
       body = objLabel ? fill(t.duoTagBodyObj, { obj: objLabel }) : t.duoTagBody;

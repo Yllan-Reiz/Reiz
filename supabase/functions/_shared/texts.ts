@@ -47,6 +47,7 @@ type Texts = {
   commentTitle: string; replyTitle: string; commentLikeTitle: string;
   nudgeTitle: string; nudgeBody: string;
   friendPostTitleObj: string; friendPostTitle: string; friendPostBody: string;
+  objectiveDoneTitle: string; objectiveDoneBody: string; objectiveDoneBodyNoObj: string;
   duoTagTitle: string; duoTagBodyObj: string; duoTagBody: string;
   atGymTitlePlace: string; atGymTitle: string; atGymBody: string; defaultPlace: string;
   tagEndorseTitle: string; tagEndorseBodyTag: string; tagEndorseBody: string;
@@ -85,6 +86,7 @@ export const T: Record<Lang, Texts> = {
     commentTitle: '{name} a commenté {post}', replyTitle: "{name} t'a répondu", commentLikeTitle: '{name} a aimé ton commentaire ❤️',
     nudgeTitle: '{name} te relance 💪', nudgeBody: "Ça fait quelques jours sans séance. Poste la prochaine, ton cercle t'attend.",
     friendPostTitleObj: '{name} a posté : {obj}', friendPostTitle: '{name} vient de publier', friendPostBody: 'Viens voir sa progression et réagis.',
+    objectiveDoneTitle: '🏆 {name} a atteint son objectif', objectiveDoneBody: '« {obj} ». Va lui dire bravo.', objectiveDoneBodyNoObj: 'Va lui dire bravo.',
     duoTagTitle: "{name} t'a identifié dans sa séance 🤝", duoTagBodyObj: "{obj}. Poste la tienne dans l'heure pour valider le duo.", duoTagBody: "Poste la tienne dans l'heure pour valider le duo.",
     atGymTitlePlace: '{name} est à {place} 💪', atGymTitle: '{name} est à la salle 💪', atGymBody: "Viens t'entraîner avec {first}.", defaultPlace: 'la salle',
     tagEndorseTitle: '{name} a validé ton tag', tagEndorseBodyTag: '« {tag} » sur ton profil', tagEndorseBody: 'Va voir ton profil.',
@@ -136,6 +138,7 @@ export const T: Record<Lang, Texts> = {
     commentTitle: '{name} commented on {post}', replyTitle: '{name} replied to you', commentLikeTitle: '{name} liked your comment ❤️',
     nudgeTitle: '{name} is nudging you 💪', nudgeBody: "It's been a few days without a session. Post the next one, your circle is waiting.",
     friendPostTitleObj: '{name} posted: {obj}', friendPostTitle: '{name} just posted', friendPostBody: 'Come see their progress and react.',
+    objectiveDoneTitle: '🏆 {name} reached their goal', objectiveDoneBody: '"{obj}". Go cheer them on.', objectiveDoneBodyNoObj: 'Go cheer them on.',
     duoTagTitle: '{name} tagged you in their session 🤝', duoTagBodyObj: '{obj}. Post yours within the hour to confirm the duo.', duoTagBody: 'Post yours within the hour to confirm the duo.',
     atGymTitlePlace: '{name} is at {place} 💪', atGymTitle: '{name} is at the gym 💪', atGymBody: 'Go train with {first}.', defaultPlace: 'the gym',
     tagEndorseTitle: '{name} endorsed your tag', tagEndorseBodyTag: '"{tag}" on your profile', tagEndorseBody: 'Go check your profile.',
@@ -187,6 +190,7 @@ export const T: Record<Lang, Texts> = {
     commentTitle: '{name} ha comentado {post}', replyTitle: '{name} te ha respondido', commentLikeTitle: '{name} ha dado me gusta a tu comentario ❤️',
     nudgeTitle: '{name} te da un empujón 💪', nudgeBody: 'Llevas unos días sin sesión. Publica la próxima, tu círculo te espera.',
     friendPostTitleObj: '{name} ha publicado: {obj}', friendPostTitle: '{name} acaba de publicar', friendPostBody: 'Ven a ver su progreso y reacciona.',
+    objectiveDoneTitle: '🏆 {name} ha alcanzado su objetivo', objectiveDoneBody: '«{obj}». Ve a darle la enhorabuena.', objectiveDoneBodyNoObj: 'Ve a darle la enhorabuena.',
     duoTagTitle: '{name} te ha etiquetado en su sesión 🤝', duoTagBodyObj: '{obj}. Publica la tuya antes de una hora para confirmar el dúo.', duoTagBody: 'Publica la tuya antes de una hora para confirmar el dúo.',
     atGymTitlePlace: '{name} está en {place} 💪', atGymTitle: '{name} está en el gimnasio 💪', atGymBody: 'Ve a entrenar con {first}.', defaultPlace: 'el gimnasio',
     tagEndorseTitle: '{name} ha validado tu etiqueta', tagEndorseBodyTag: '«{tag}» en tu perfil', tagEndorseBody: 'Ve a ver tu perfil.',
@@ -238,6 +242,7 @@ export const T: Record<Lang, Texts> = {
     commentTitle: '{name} הגיב/ה על {post}', replyTitle: '{name} השיב/ה לך', commentLikeTitle: '{name} אהב/ה את התגובה שלך ❤️',
     nudgeTitle: '{name} נותן/ת לך דחיפה 💪', nudgeBody: 'עברו כמה ימים בלי אימון. פרסמו את הבא, המעגל מחכה.',
     friendPostTitleObj: '{name} פרסם/ה: {obj}', friendPostTitle: '{name} פרסם/ה עכשיו', friendPostBody: 'בואו לראות את ההתקדמות ולהגיב.',
+    objectiveDoneTitle: '🏆 {name} השיג/ה את היעד', objectiveDoneBody: '"{obj}". לכו להגיד כל הכבוד.', objectiveDoneBodyNoObj: 'לכו להגיד כל הכבוד.',
     duoTagTitle: '{name} תייג/ה אותך באימון 🤝', duoTagBodyObj: '{obj}. פרסמו את שלכם תוך שעה כדי לאשר את הזוג.', duoTagBody: 'פרסמו את שלכם תוך שעה כדי לאשר את הזוג.',
     atGymTitlePlace: '{name} נמצא/ת ב{place} 💪', atGymTitle: '{name} בחדר הכושר 💪', atGymBody: 'בואו להתאמן עם {first}.', defaultPlace: 'חדר הכושר',
     tagEndorseTitle: '{name} אישר/ה את התג שלך', tagEndorseBodyTag: '"{tag}" בפרופיל שלך', tagEndorseBody: 'לכו לראות את הפרופיל.',

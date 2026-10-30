@@ -1052,4 +1052,13 @@ export const en: Dict = {
     notifs: 'Turn on notifications',
     notifsSub: 'Know when your circle posts or cheers you on',
   },
+  done: {
+    eyebrow: "GOAL REACHED",
+    reached: "{n} {unit}, you did it. Your circle sees your win in the feed.",
+    reachedPct: "100%, you did it. Your circle sees your win in the feed.",
+    newTarget: "YOUR NEW TARGET",
+    raise: "Raise the bar",
+    saveRaise: "Let's go",
+    newObjective: "New goal",
+  },
 };

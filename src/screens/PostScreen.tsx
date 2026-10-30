@@ -13,6 +13,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { Objective } from '../lib/types';
 import { QUICK_UNITS, GUTTER } from '../constants';
 import { ShareStoryModal, StoryData } from '../components/ShareStoryModal';
+import { ObjectiveDoneModal, DoneObjective } from '../components/ObjectiveDoneModal';
 import { loadDuoStats, ordinalDuo, DUO_WINDOW_MS } from '../lib/duo';
 import { trimAvailable, trimVideo, cleanTrimmed } from '../lib/videoTools';
 import { galleryAvailable, saveToGallery } from '../lib/saveToGallery';
@@ -86,7 +87,7 @@ const fmt = (n: number) => num(Math.round(n * 10) / 10);
 // Séance en duo : 3 amis identifiés maximum (vérifié aussi côté serveur).
 const MAX_DUO = 3;
 
-export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void, onPublish: () => void, duoWith?: string | null }) {
+export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void, onPublish: (next?: 'new_objective') => void, duoWith?: string | null }) {
   const insets = useSafeAreaInsets();
   const [selectedObj, setSelectedObj] = useState(0);
   const [objectives, setObjectives] = useState<Objective[]>([]);
@@ -95,6 +96,8 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
   const [caption, setCaption] = useState('');
   // Après publication : proposition de partager la progression en story Instagram.
   const [story, setStory] = useState<StoryData | null>(null);
+  // Objectif que ce post vient de faire gagner : l'écran « Objectif atteint » remplace le simple « Publié ».
+  const [done, setDone] = useState<{ objective: DoneObjective; story: StoryData } | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
@@ -387,6 +390,8 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
     const absoluteValue = isPercent
       ? Math.round((value / 100) * obj.target_value * 10) / 10
       : value;
+    // Ce post fait-il franchir la cible ? (il ne l'était pas avant, il l'est maintenant)
+    const reachedNow = obj.target_value > 0 && (obj.current_value || 0) < obj.target_value && absoluteValue >= obj.target_value;
     const { error } = await supabase.from('updates').insert({
       user_id: user.id, objective_id: obj.id,
       caption: caption || obj.title,
@@ -422,6 +427,10 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
       // Séance en duo : prénoms identifiés, et si c'est une réponse à un duo, le décompte
       // du binôme (« 3e duo avec Eden, 2 semaines d'affilée ») avec la photo de l'autre.
       const tagged = canTag ? friends.filter(f => withIds.includes(f.id) && taggable.some(t => t.id === f.id)) : [];
+      if (reachedNow) {
+        setDone({ objective: { id: obj.id, emoji: obj.emoji, title: obj.title, unit: obj.unit, target_value: obj.target_value }, story: storyData });
+        return;
+      }
       let title = t('post.publishedTitle');
       let message = t('post.publishedText');
       if (tagged.length > 0) {
@@ -444,7 +453,7 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
       }
       Alert.alert(title, message, [
         { text: t('post.shareStory'), onPress: () => setStory(storyData) },
-        { text: t('post.finish'), style: 'cancel', onPress: onPublish },
+        { text: t('post.finish'), style: 'cancel', onPress: () => onPublish() },
       ]);
     }
   };
@@ -674,6 +683,12 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
         </TouchableOpacity>
       </View>
       <ShareStoryModal visible={!!story} data={story} onClose={() => { setStory(null); onPublish(); }} />
+      <ObjectiveDoneModal
+        objective={done?.objective ?? null}
+        onShareStory={() => { const st = done?.story ?? null; setDone(null); setStory(st); }}
+        onNewObjective={() => { setDone(null); onPublish('new_objective'); }}
+        onClose={() => { setDone(null); onPublish(); }}
+      />
     </KeyboardAvoidingView>
   );
 }

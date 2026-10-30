@@ -451,6 +451,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     setProfileStack([]);
     // Les nouveaux push envoient « activity » : on ouvre directement le fil d'activité.
     setShowActivity(navIntent === 'activity');
+    // Objectif atteint puis « Nouvel objectif » : l'onglet des objectifs, création ouverte.
+    if (navIntent === 'new_objective') { setTab('objectives'); setShowCreateModal(true); onNavIntentHandled?.(); return; }
     setTab(navIntent === 'friend_request' ? 'friends' : 'feed');
     onNavIntentHandled?.();
   }, [navIntent]);

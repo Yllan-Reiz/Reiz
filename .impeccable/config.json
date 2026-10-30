@@ -23,6 +23,12 @@
         ],
         "createdAt": "2026-10-11T16:07:51.856Z",
         "reason": "Claude: écrans de téléphone et photos qui rognent volontairement leur contenu, pas de popover"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#000",
+        "createdAt": "2026-10-30T12:52:03.167Z",
+        "reason": "Claude: black text on the white primary button, same as Primary in WelcomeFlow.tsx and emptyStateBtnText in styles.ts"
       }
     ]
   }

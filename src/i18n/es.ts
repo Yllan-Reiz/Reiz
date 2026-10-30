@@ -1052,4 +1052,13 @@ export const es: Dict = {
     notifs: 'Activa las notificaciones',
     notifsSub: 'Para saber cuándo tu círculo publica o te anima',
   },
+  done: {
+    eyebrow: "OBJETIVO CONSEGUIDO",
+    reached: "{n} {unit}, lo has conseguido. Tu círculo ve tu victoria en el feed.",
+    reachedPct: "100 %, lo has conseguido. Tu círculo ve tu victoria en el feed.",
+    newTarget: "TU NUEVA META",
+    raise: "Subir el listón",
+    saveRaise: "¡Vamos!",
+    newObjective: "Nuevo objetivo",
+  },
 };

@@ -8,6 +8,7 @@ import { signAvatars } from '../lib/storage';
 import { LEGAL_DOCS, LegalDoc, SUPPORT_EMAIL } from '../lib/legal';
 import { PresencePanel } from '../components/PresencePanel';
 import { WelcomeModal } from '../components/WelcomeFlow';
+import { ObjectiveDoneModal } from '../components/ObjectiveDoneModal';
 import { contactsAvailable } from '../lib/contacts';
 import { APP_VERSION, WELCOME_FLOW } from '../constants';
 import { F } from '../styles';
@@ -31,6 +32,8 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
   const [view, setView] = useState<View_>('root');
   const [doc, setDoc] = useState<LegalDoc | null>(null);
   const [welcome, setWelcome] = useState(false);
+  // Aperçu de l'écran « Objectif atteint », dans les builds de développement seulement.
+  const [donePreview, setDonePreview] = useState(false);
   const [email, setEmail] = useState('');
   const [provider, setProvider] = useState<string>('email');
   // Encouragements perso (users.notif_encouragement). null = pas chargé, ou colonne absente : la ligne est cachée.
@@ -167,6 +170,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
 
             <Section title={t('settings.secHelp')}>
               {WELCOME_FLOW && <Row icon="sparkles-outline" label={t('settings.replayWelcome')} value={t('settings.preview')} onPress={() => setWelcome(true)} />}
+              {__DEV__ && <Row icon="trophy-outline" label={t('done.eyebrow')} value={t('settings.preview')} onPress={() => setDonePreview(true)} />}
               <Row icon="chatbubble-ellipses-outline" label={t('settings.support')} value={SUPPORT_EMAIL} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Reiz`).catch(() => {})} last />
             </Section>
 
@@ -186,6 +190,10 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
         {view === 'legal' && doc && <LegalReader doc={doc} bottom={insets.bottom} />}
         {/* Aperçu de l'accueil des nouveaux comptes : rien n'est enregistré. */}
         <WelcomeModal visible={welcome} preview onClose={() => setWelcome(false)} />
+        {__DEV__ && (
+          <ObjectiveDoneModal preview objective={donePreview ? { id: 'apercu', emoji: '🏃', title: 'Courir 10 km', unit: 'séances', target_value: 4 } : null}
+            onShareStory={() => setDonePreview(false)} onNewObjective={() => setDonePreview(false)} onClose={() => setDonePreview(false)} />
+        )}
       </View>
     </Modal>
   );
