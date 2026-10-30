@@ -123,6 +123,7 @@ export const es: Dict = {
     objHint: 'Toca «…» para editar un objetivo. Mantén pulsado para eliminarlo',
   },
   feed: {
+    editCaption: "Editar la descripción",
     deleteTitle: 'Eliminar esta publicación',
     deleteText: 'Esta acción es definitiva.',
     reportSentTitle: 'Denuncia enviada',

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, ReactNode } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, Alert, Animated, Easing, Pressable, Modal, FlatList } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, Alert, Animated, Easing, Pressable, Modal, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
@@ -11,6 +11,7 @@ import { CommentsModal } from './CommentsModal';
 import { FadeInImage } from './FadeInImage';
 import { FeedVideo } from './FeedVideo';
 import { isVideo } from '../lib/storage';
+import { track } from '../lib/track';
 import { togglePin } from '../lib/posts';
 import { DUO_WINDOW_MS } from '../lib/duo';
 import { ShareStoryModal, StoryData } from './ShareStoryModal';
@@ -84,6 +85,10 @@ const STACK_MAX = 4;
 
 // Les réactions et le compteur de commentaires arrivent pré-chargés via `meta`
 // (chargés en lot par le feed) : zéro requête au montage de la carte.
+// Proportions des photos déjà vues, pour ne pas faire sauter la carte au retour dans le fil.
+const photoRatios = new Map<string, number>();
+const EDIT_CAPTION_MS = 5 * 60 * 1000;
+
 export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, onPinChanged, onDuoReply, onOpenProfile, duoDone, duoValidated, closeAuthor, duelBusyIds, onChallenge }: {
   // L'auteur est dans ton cercle proche : une étoile à côté de son prénom.
   closeAuthor?: boolean;
@@ -118,7 +123,8 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   const objTarget = objIn?.target_value;
   const progressLabel = objUnit && objUnit !== '%' && objTarget
     // Valeur reconstituée depuis le % : pas de faux chiffre après la virgule (251,1 kg).
-    ? `${num(objTarget >= 10 ? Math.round((pctValue / 100) * objTarget) : Math.round((pctValue / 100) * objTarget * 10) / 10)} / ${num(objTarget)} ${unitLabel(objUnit)}`
+    // Depuis la 1.2 le % est exact (215 kg reste 215) : on garde alors le chiffre après la virgule.
+    ? `${num(objTarget >= 10 && Number.isInteger(pctValue) ? Math.round((pctValue / 100) * objTarget) : Math.round((pctValue / 100) * objTarget * 10) / 10)} / ${num(objTarget)} ${unitLabel(objUnit)}`
     : `${pctValue}%`;
 
   const [reactions, setReactions] = useState<{ [emoji: string]: number }>(meta?.reactions || {});
@@ -229,6 +235,32 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
 
   const [storyData, setStoryData] = useState<StoryData | null>(null);
   const [journeyOpen, setJourneyOpen] = useState(false);
+  // La photo garde ses proportions : plus de cadre 2:3 qui zoome dedans (bornes : 9:16 à 16:9, le reste avec des bandes).
+  const photoKey = (u.photo_url || '').split('?')[0];
+  const [photoRatio, setPhotoRatio] = useState(photoRatios.get(photoKey) ?? 3 / 4);
+  useEffect(() => {
+    if (!u.photo_url || isVideo(u.photo_url) || photoRatios.has(photoKey)) return;
+    let alive = true;
+    Image.getSize(u.photo_url, (w, h) => {
+      if (!h) return;
+      const r = Math.max(9 / 16, Math.min(16 / 9, w / h));
+      photoRatios.set(photoKey, r);
+      if (alive) setPhotoRatio(r);
+    }, () => {});
+    return () => { alive = false; };
+  }, [u.photo_url, photoKey]);
+  // Légende modifiable 5 minutes après l'envoi.
+  const [caption, setCaption] = useState(u.caption);
+  useEffect(() => { setCaption(u.caption); }, [u.caption]);
+  const [editingCaption, setEditingCaption] = useState<string | null>(null);
+  const saveCaption = async () => {
+    const next = (editingCaption ?? '').trim() || u.objectives?.title || '';
+    const { error } = await supabase.from('updates').update({ caption: next }).eq('id', u.id);
+    if (error) { Alert.alert(t('common.error'), frError(error)); return; }
+    setCaption(next);
+    setEditingCaption(null);
+    track('caption_edit', {}, 'feed');
+  };
   // Post en duo qui me concerne : l'autre personne de la séance, si nous n'avons pas déjà un défi ouvert.
   const duoPartner = !duelBusyIds || !onChallenge || !currentUserId || !u.with_users?.length ? null
     : u.user_id === currentUserId ? u.with_users.find(w => !duelBusyIds.has(w.id)) ?? null
@@ -275,13 +307,14 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
             title: u.objectives?.title || u.caption,
             progressLabel: progressLabel,
             pct: pctValue,
-            caption: u.caption,
+            caption,
             username: u.users?.username,
           });
 
   const openMenu = () => {
     if (isMine) {
       Alert.alert(t('feed.yourPost'), undefined, [
+        ...(Date.now() - new Date(u.created_at).getTime() < EDIT_CAPTION_MS ? [{ text: t('feed.editCaption'), onPress: () => setEditingCaption(caption || '') }] : []),
         { text: t('feed.shareStory'), onPress: shareStory },
         { text: pinned ? t('feed.unpin') : t('feed.pin'), onPress: pinPost },
         { text: t('feed.deletePost'), style: 'destructive', onPress: deletePost },
@@ -337,12 +370,6 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   };
   const MenuBtn = () => (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-      {/* Sur tes posts : le partage en story est visible, plus caché dans le menu. */}
-      {isMine && (
-        <TouchableOpacity style={s.cardMenuBtn} onPress={shareStory} hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }} accessibilityLabel={t('feed.shareStory')}>
-          <Ionicons name="paper-plane-outline" size={18} color="rgba(255,255,255,0.85)" />
-        </TouchableOpacity>
-      )}
       <TouchableOpacity style={s.cardMenuBtn} onPress={openMenu} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }} accessibilityLabel={t('feed.moreOptions')}>
         <Ionicons name="ellipsis-horizontal" size={18} color="rgba(255,255,255,0.7)" />
       </TouchableOpacity>
@@ -379,6 +406,13 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   // et la barre d'emojis quand on appuie dessus.
   const Overlay = () => (
     <>
+      {/* Sur tes posts : le partage (Instagram...) bien visible, en haut à droite de la photo. */}
+      {isMine && (
+        <TouchableOpacity onPress={shareStory} activeOpacity={0.8} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityRole="button" accessibilityLabel={t('feed.shareStory')}
+          style={{ position: 'absolute', top: 12, right: 12, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.45)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="arrow-redo-outline" size={20} color="#fff" />
+        </TouchableOpacity>
+      )}
       {showQuick ? (
         <View style={s.brQuickBar}>
           {QUICK_REACTIONS.map(e => (
@@ -394,6 +428,15 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
         <View style={s.brBottomRow} pointerEvents="box-none">
           <Stack />
           <View style={{ flex: 1 }} pointerEvents="none" />
+          {/* Commenter, à côté de réagir : la fonction se voit sans chercher sous la photo. */}
+          <TouchableOpacity style={[s.brReactBtn, { marginRight: 8 }]} onPress={() => setShowComments(true)} activeOpacity={0.8} accessibilityLabel={t('feed.comment')}>
+            <Ionicons name="chatbubble-outline" size={22} color="#fff" />
+            {commentCount > 0 && (
+              <View style={{ position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: '#000', fontSize: 11, fontFamily: F.extrabold }}>{commentCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
           <TouchableOpacity style={[s.brReactBtn, !!myLast && s.brReactBtnMine]} onPress={() => { Haptics.selectionAsync().catch(() => {}); setShowEmojiPicker(false); setShowQuick(true); }} activeOpacity={0.8} accessibilityLabel={t('feed.react')}>
             {myLast
               ? <Floaty index={2} style={{ fontSize: 22 }}>{myLast}</Floaty>
@@ -431,7 +474,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
         <View style={s.cardMeta}>
           <Text style={s.cardName} onPress={openAuthor} suppressHighlighting numberOfLines={1}>{uname}{closeAuthor ? ' ★' : ''}</Text>
           <Text style={s.brSub} numberOfLines={1}>
-            {u.objectives?.title && u.caption?.trim().toLowerCase() !== u.objectives.title.trim().toLowerCase() ? `${u.objectives.emoji || ''} ${u.objectives.title}`.trim() + ' · ' : ''}{timeAgo(u.created_at, true)}
+            {u.objectives?.title && caption?.trim().toLowerCase() !== u.objectives.title.trim().toLowerCase() ? `${u.objectives.emoji || ''} ${u.objectives.title}`.trim() + ' · ' : ''}{timeAgo(u.created_at, true)}
             {u.objectives?.visibility === 'close' ? `  ★ ${t('vis.close')}` : ''}
           </Text>
           <Duo />
@@ -450,12 +493,12 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
         <Pressable style={s.feedPhotoWrap} onPress={() => showQuick && setShowQuick(false)} disabled={!showQuick}>
           {isVid
             ? <FeedVideo uri={u.photo_url} active={isActive} style={s.feedPhoto} />
-            : <FadeInImage uri={u.photo_url} style={s.feedPhoto} />}
+            : <FadeInImage uri={u.photo_url} style={[s.feedPhoto, { aspectRatio: photoRatio }]} resizeMode="contain" />}
           <Overlay />
         </Pressable>
       ) : (
         <Pressable style={s.feedNoPhoto} onPress={() => showQuick && setShowQuick(false)} disabled={!showQuick}>
-          <Text style={s.feedNoPhotoCaption}>{u.caption || u.objectives?.title || ''}</Text>
+          <Text style={s.feedNoPhotoCaption}>{caption || u.objectives?.title || ''}</Text>
           <Overlay />
         </Pressable>
       )}
@@ -478,7 +521,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
             <Text style={{ color: '#fff', fontSize: 13.5, fontFamily: F.bold }}>{t('duelCard.challengeWith', { name: duoPartner.full_name.split(' ')[0] })}</Text>
           </TouchableOpacity>
         )}
-        {u.photo_url && u.caption ? <Text style={s.feedCaption}>{u.caption}</Text> : null}
+        {u.photo_url && caption ? <Text style={s.feedCaption}>{caption}</Text> : null}
         <TouchableOpacity onPress={() => setShowComments(true)} hitSlop={{ top: 6, bottom: 6 }} accessibilityLabel={t('feed.comment')}>
           {commentCount > 0 && (
             <Text style={s.brCommentsLink}>
@@ -514,6 +557,17 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       </Reveal>
 
       <ShareStoryModal visible={!!storyData} data={storyData} onClose={() => setStoryData(null)} />
+      <Modal visible={editingCaption !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEditingCaption(null)}>
+        <View style={s.modalContainer}>
+          <View style={s.modalHeader}>
+            <TouchableOpacity onPress={() => setEditingCaption(null)}><Text style={s.modalCancel}>{t('common.cancel')}</Text></TouchableOpacity>
+            <Text style={s.modalTitle}>{t('feed.editCaption')}</Text>
+            <TouchableOpacity onPress={saveCaption}><Text style={[s.modalCancel, { color: '#fff', fontFamily: F.bold }]}>{t('common.save')}</Text></TouchableOpacity>
+          </View>
+          <TextInput value={editingCaption ?? ''} onChangeText={setEditingCaption} autoFocus multiline maxLength={300} placeholderTextColor="rgba(255,255,255,0.3)"
+            style={{ color: '#fff', fontSize: 17, fontFamily: F.regular, padding: 20, minHeight: 140, textAlignVertical: 'top' }} />
+        </View>
+      </Modal>
       {journeyOpen && u.objective_id && (
         <JourneyModal objectiveId={u.objective_id} own={u.user_id === currentUserId} ownerName={uname} from="feed" onClose={() => setJourneyOpen(false)} />
       )}

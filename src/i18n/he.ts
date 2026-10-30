@@ -125,6 +125,7 @@ export const he: Dict = {
     objHint: 'הקישו על "…" כדי לערוך יעד. לחיצה ארוכה כדי למחוק אותו',
   },
   feed: {
+    editCaption: "עריכת הכיתוב",
     deleteTitle: 'מחיקת הפוסט',
     deleteText: 'אי אפשר לבטל את הפעולה הזו.',
     reportSentTitle: 'הדיווח נשלח',

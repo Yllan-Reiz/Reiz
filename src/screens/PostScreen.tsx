@@ -26,15 +26,15 @@ import { s, F } from '../styles';
 import { t, tp, unitLabel, isRTL } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
 
-// Vidéo de progression : 15 s max, comme une story. Au-delà, le fichier pèse
+// Vidéo de progression : 25 s max (15 s jusqu'à la 1.1). Au-delà, le fichier pèse
 // trop lourd pour la 4G et le fil devient une plateforme vidéo.
-const VIDEO_MAX_SEC = 15;
+const VIDEO_MAX_SEC = 25;
 const VIDEO_MAX_MB = 45;
 
 // Aperçu de la vidéo choisie, muet et en boucle.
 function VideoPreview({ uri }: { uri: string }) {
   const player = useVideoPlayer(uri, p => { p.loop = true; p.muted = true; p.play(); });
-  return <VideoView player={player} style={s.postPhotoImg} contentFit="cover" nativeControls={false} />;
+  return <VideoView player={player} style={s.postPhotoImg} contentFit="contain" nativeControls={false} />;
 }
 
 const THUMB = 22;
@@ -302,7 +302,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
         text: t('common.takePhoto'),
         onPress: async () => {
           if (!(await needCamera())) return;
-          const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [4, 3] });
+          const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 }); // sans recadrage : la photo reste telle que prise
           if (!result.canceled) acceptAsset(result.assets[0], false, true);
         }
       },
@@ -331,9 +331,9 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
             // d'iOS ne s'applique plus qu'aux photos, la coupe des vidéos passe par notre éditeur.
             mediaTypes: trim ? ['images'] : ['images', 'videos'],
             quality: 0.7,
-            // Sans l'éditeur (build 1.0.0), allowsEditing permet aussi de couper une vidéo trop longue sur iPhone.
-            allowsEditing: true,
-            aspect: [4, 3],
+            // Photo sans recadrage (le 4:3 imposé zoomait). Sans l'éditeur (build 1.0.0), allowsEditing permet encore de
+            // couper une vidéo trop longue sur iPhone.
+            allowsEditing: !trim,
             videoMaxDuration: VIDEO_MAX_SEC,
             videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
           });
@@ -420,7 +420,8 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
       user_id: user.id, objective_id: obj.id,
       caption: caption || obj.title,
       ...(momentOn ? { moment: momentKind, moment_late_min: lateMinutes(moment!.at) } : {}),
-      progress_value: pct,
+      // Pourcentage exact, pas arrondi : 215 sur 240 kg arrondi à 90 % s'affichait 216 kg dans le fil.
+      progress_value: isPercent || !(target > 0) ? pct : Math.min(100, Math.round((value / target) * 1000000) / 10000),
       photo_url: photoUrl,
       // Seulement les amis encore autorisés (changement d'objectif après avoir coché).
       with_user_ids: canTag ? withIds.filter(id => taggable.some(f => f.id === id)) : [],
@@ -538,7 +539,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
             ? <>
                 {mediaType === 'video'
                   ? <VideoPreview uri={photoUri} />
-                  : <CachedImage uri={photoUri} style={s.postPhotoImg} resizeMode="cover" />}
+                  : <CachedImage uri={photoUri} style={s.postPhotoImg} resizeMode="contain" />}
                 <View style={s.postPhotoChangeBadge}>
                   <Text style={s.postPhotoChangeText}>{t('post.change')}</Text>
                 </View>

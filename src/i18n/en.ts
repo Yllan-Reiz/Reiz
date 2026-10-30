@@ -123,6 +123,7 @@ export const en: Dict = {
     objHint: 'Tap "…" to edit a goal. Long press to delete it',
   },
   feed: {
+    editCaption: "Edit caption",
     deleteTitle: 'Delete this post',
     deleteText: "This can't be undone.",
     reportSentTitle: 'Report sent',

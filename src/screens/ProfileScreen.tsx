@@ -6,7 +6,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase, currentUser, storedUserId } from '../lib/supabase';
 import { cacheGet, cacheSet } from '../lib/cache';
 import { frError, inUnit } from '../lib/helpers';
-import { uploadImage, signOne } from '../lib/storage';
+import * as Haptics from 'expo-haptics';
+import { uploadImage, signOne, resetSignedCache } from '../lib/storage';
 import { Objective } from '../lib/types';
 import { HEATMAP_MAX_DAYS, GUTTER, navClearance } from '../constants';
 import { s, F } from '../styles';
@@ -50,8 +51,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
   const [saving, setSaving] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const localAvatar = useRef(false);
   const [refreshingProfile, setRefreshingProfile] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
@@ -117,7 +118,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
       // Elle arrive à part : le reste du profil s'affiche sans l'attendre.
       const path = profileRes.data.avatar_url;
       avatarP = path ? signOne(path).catch(() => null) : Promise.resolve(null);
-      avatarP.then(u => setAvatarUrl(u));
+      // Photo tout juste changée : on garde celle du téléphone à l'écran, pas de saut vers l'adresse signée.
+      avatarP.then(u => { if (!localAvatar.current) setAvatarUrl(u); });
     }
     if (objRes.data) setObjectives((objRes.data as Objective[]).map(inUnit));
     if (updatesRes.data) {
@@ -208,22 +210,27 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
     ]);
   };
 
+  // Fluide : la nouvelle photo s'affiche tout de suite, l'envoi se fait derrière. En cas d'échec, l'ancienne revient.
   const uploadAvatar = async (uri: string) => {
-    setUploadingAvatar(true);
+    const previous = avatarUrl;
+    localAvatar.current = true;
+    setAvatarUrl(uri);
+    Haptics.selectionAsync().catch(() => {});
     const user = await currentUser();
-    if (!user) { setUploadingAvatar(false); return; }
+    if (!user) { localAvatar.current = false; setAvatarUrl(previous); return; }
     // On enregistre le chemin, pas une URL : le bucket est privé et chaque
     // affichage génère une URL signée (qui change à chaque fois, ce qui règle
     // aussi le cache d'images sans avoir besoin d'un paramètre anti-cache).
     const { path, error } = await uploadImage(`avatars/${user.id}.jpg`, uri, true);
     if (error || !path) {
-      setUploadingAvatar(false);
+      localAvatar.current = false;
+      setAvatarUrl(previous);
       Alert.alert(t('common.error'), frError(error));
       return;
     }
     await supabase.from('users').update({ avatar_url: path }).eq('id', user.id);
-    await loadProfile(true);
-    setUploadingAvatar(false);
+    resetSignedCache();
+    loadProfile(true);
   };
 
   // Suppression d'un objectif : la base efface en cascade les publications
@@ -313,7 +320,6 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
           <ProfileHero height={heroH}>
             <GlassIconButton icon="camera-outline" label={t('profile.changePhoto')} onPress={handlePickAvatar} style={{ position: 'absolute', top: topBtn, left: GUTTER }} />
             <GlassIconButton icon="settings-outline" label={t('settings.title')} onPress={openSettings} style={{ position: 'absolute', top: topBtn, right: GUTTER }} />
-            {uploadingAvatar && <ActivityIndicator color="#fff" style={{ position: 'absolute', top: heroH / 2 }} />}
 
             {editingName ? (
               <View style={s.profileNameEdit}>

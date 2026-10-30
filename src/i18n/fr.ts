@@ -124,6 +124,7 @@ export const fr = {
     objHint: 'Touche « … » pour modifier un objectif. Appui long pour le supprimer',
   },
   feed: {
+    editCaption: "Modifier la légende",
     deleteTitle: 'Supprimer ce post',
     deleteText: 'Cette action est définitive.',
     reportSentTitle: 'Signalement envoyé',
