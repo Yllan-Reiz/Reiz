@@ -630,6 +630,13 @@ export const en: Dict = {
     noFriends: 'Add friends to challenge them.',
     inDuel: 'In a duel',
   },
+  quickReactions: {
+    title: 'My reactions',
+    section: 'REACTIONS',
+    hint: 'Tap a slot, then the emoji to put there. These are the 6 emojis in your reaction bar.',
+    slot: 'Slot {n}: {emoji}',
+    reset: 'Restore the original ones',
+  },
   settings: {
     title: 'Settings',
     password: 'Password',

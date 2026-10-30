@@ -632,6 +632,13 @@ export const he: Dict = {
     noFriends: 'הוסיפו חברים כדי לאתגר אותם.',
     inDuel: 'בדו־קרב',
   },
+  quickReactions: {
+    title: 'התגובות שלי',
+    section: 'תגובות',
+    hint: 'בחירת משבצת ואז האימוג׳י שיופיע בה. אלה 6 האימוג׳ים בסרגל התגובות.',
+    slot: 'משבצת {n}: {emoji}',
+    reset: 'חזרה לאימוג׳ים המקוריים',
+  },
   settings: {
     title: 'הגדרות',
     password: 'סיסמה',

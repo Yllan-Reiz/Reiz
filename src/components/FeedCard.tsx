@@ -7,6 +7,8 @@ import { timeAgo, frError, inUnit, num } from '../lib/helpers';
 import { Update, FeedMeta, Reactor } from '../lib/types';
 import { ALL_REACTION_EMOJIS } from '../constants';
 import { s, F } from '../styles';
+import { useQuickReactions } from '../lib/quickReactions';
+import { QuickReactionsEditor } from './QuickReactionsEditor';
 import { CommentsModal } from './CommentsModal';
 import { FadeInImage } from './FadeInImage';
 import { FeedVideo } from './FeedVideo';
@@ -80,7 +82,6 @@ function Floaty({ children, index = 0, style }: { children: ReactNode; index?: n
 }
 
 // Réactions en un tap, comme sur BeReal : la barre s'ouvre sur la photo.
-const QUICK_REACTIONS = ['🔥', '💪', '👏', '😮', '😂', '❤️'];
 const STACK_MAX = 4;
 
 // Les réactions et le compteur de commentaires arrivent pré-chargés via `meta`
@@ -135,6 +136,8 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: number; emoji: string }[]>([]);
   const [reactors, setReactors] = useState<Reactor[]>(meta?.reactors || []);
   const [showQuick, setShowQuick] = useState(false);
+  const quickReactions = useQuickReactions();
+  const [editingQuick, setEditingQuick] = useState(false);
   const [showReactors, setShowReactors] = useState(false);
 
   // Resynchronise quand le feed est rafraîchi (pull-to-refresh)
@@ -415,7 +418,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       )}
       {showQuick ? (
         <View style={s.brQuickBar}>
-          {QUICK_REACTIONS.map(e => (
+          {quickReactions.map(e => (
             <TouchableOpacity key={e} onPress={() => toggleReaction(e)} style={[s.brQuickItem, myReactions.includes(e) && s.brQuickItemOn]} accessibilityLabel={t('feed.reactWith', { emoji: e })}>
               <Text style={s.brQuickEmoji}>{e}</Text>
             </TouchableOpacity>
@@ -548,6 +551,10 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       {/* Tous les emojis (bouton + de la barre) */}
       <Reveal visible={showEmojiPicker}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.emojiPickerRow} contentContainerStyle={{ gap: 6, paddingHorizontal: 2, paddingVertical: 10 }}>
+          {/* Choisir ses 6 réactions : le crayon est là où l'on cherche un autre emoji. */}
+          <TouchableOpacity style={s.emojiPickerItem} onPress={() => setEditingQuick(true)} accessibilityRole="button" accessibilityLabel={t('quickReactions.title')}>
+            <Ionicons name="pencil" size={18} color="#fff" />
+          </TouchableOpacity>
           {ALL_REACTION_EMOJIS.map(emoji => (
             <TouchableOpacity key={emoji} style={[s.emojiPickerItem, myReactions.includes(emoji) && s.emojiPickerItemActive]} onPress={() => toggleReaction(emoji)}>
               <Text style={s.emojiPickerItemText}>{emoji}</Text>
@@ -557,6 +564,16 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       </Reveal>
 
       <ShareStoryModal visible={!!storyData} data={storyData} onClose={() => setStoryData(null)} />
+      <Modal visible={editingQuick} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEditingQuick(false)}>
+        <View style={s.modalContainer}>
+          <View style={s.modalHeader}>
+            <TouchableOpacity onPress={() => setEditingQuick(false)}><Text style={s.modalCancel}>{t('common.close')}</Text></TouchableOpacity>
+            <Text style={s.modalTitle}>{t('quickReactions.title')}</Text>
+            <View style={{ width: 50 }} />
+          </View>
+          <QuickReactionsEditor />
+        </View>
+      </Modal>
       <Modal visible={editingCaption !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEditingCaption(null)}>
         <View style={s.modalContainer}>
           <View style={s.modalHeader}>

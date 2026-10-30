@@ -7,6 +7,7 @@ import { frError } from '../lib/helpers';
 import { signAvatars } from '../lib/storage';
 import { LEGAL_DOCS, LegalDoc, SUPPORT_EMAIL } from '../lib/legal';
 import { PresencePanel } from '../components/PresencePanel';
+import { QuickReactionsEditor } from '../components/QuickReactionsEditor';
 import { WelcomeModal } from '../components/WelcomeFlow';
 import { ObjectiveDoneModal } from '../components/ObjectiveDoneModal';
 import { JourneyModal } from '../components/JourneyModal';
@@ -16,7 +17,7 @@ import { F } from '../styles';
 import { LANGS, lang, chosenLang, deviceLang, setLanguage, type Lang, t, dirIcon, isRTL } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
 
-type View_ = 'root' | 'password' | 'blocked' | 'legal' | 'presence' | 'language';
+type View_ = 'root' | 'password' | 'blocked' | 'legal' | 'presence' | 'language' | 'reactions';
 
 // Page Réglages, organisée comme sur Instagram : Compte, Confidentialité, Notifications,
 // Légal, Aide, puis les actions sensibles tout en bas.
@@ -111,7 +112,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
   }, [visible]);
 
   const back = () => { if (view === 'root') onClose(); else setView('root'); };
-  const titles: Record<View_, string> = { root: t('settings.title'), password: t('settings.password'), blocked: t('settings.blocked'), legal: doc?.title || t('settings.legal'), presence: t('settings.presence'), language: t('settings.language') };
+  const titles: Record<View_, string> = { root: t('settings.title'), password: t('settings.password'), blocked: t('settings.blocked'), legal: doc?.title || t('settings.legal'), presence: t('settings.presence'), language: t('settings.language'), reactions: t('quickReactions.title') };
 
   const exportData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -151,6 +152,10 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
 
             <Section title={t('settings.secLanguage')}>
               <Row icon="language-outline" label={t('settings.language')} value={LANGS.find(l => l.code === lang())?.name} onPress={() => setView('language')} last />
+            </Section>
+
+            <Section title={t('quickReactions.section')}>
+              <Row icon="happy-outline" label={t('quickReactions.title')} onPress={() => setView('reactions')} last />
             </Section>
 
             <Section title={t('settings.secPrivacy')}>
@@ -196,6 +201,7 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
         {view === 'presence' && <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}><PresencePanel /></ScrollView>}
         {view === 'blocked' && <BlockedList />}
         {view === 'language' && <LanguagePicker />}
+        {view === 'reactions' && <QuickReactionsEditor />}
         {view === 'legal' && doc && <LegalReader doc={doc} bottom={insets.bottom} />}
         {/* Aperçu de l'accueil des nouveaux comptes : rien n'est enregistré. */}
         <WelcomeModal visible={welcome} preview onClose={() => setWelcome(false)} />

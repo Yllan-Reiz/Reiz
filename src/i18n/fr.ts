@@ -631,6 +631,13 @@ export const fr = {
     noFriends: 'Ajoute des amis pour les défier.',
     inDuel: 'En duel',
   },
+  quickReactions: {
+    title: 'Mes réactions',
+    section: 'RÉACTIONS',
+    hint: "Touche une case, puis l'emoji à mettre à la place. Ce sont les 6 emojis de ta barre de réactions.",
+    slot: 'Case {n} : {emoji}',
+    reset: 'Remettre ceux de départ',
+  },
   settings: {
     title: 'Réglages',
     password: 'Mot de passe',
