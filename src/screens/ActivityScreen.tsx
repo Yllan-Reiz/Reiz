@@ -288,7 +288,8 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
 
   if (openPost) {
     return (
-      <View style={s.container}>
+      // En calque, le post couvre tout l'écran comme la liste : sinon il se place sous la page restée montée dessous.
+      <View style={[s.container, overlay && { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 20 }]}>
         <View style={[s.header, { paddingTop: insets.top + 6 }]}>
           <TouchableOpacity style={s.backBtn} onPress={() => setOpenPost(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={t('common.back')}>
             <Ionicons name={dirIcon('chevron-back')} size={20} color="#888" />
