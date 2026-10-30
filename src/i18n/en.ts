@@ -97,6 +97,7 @@ export const en: Dict = {
     private: 'Private',
   },
   main: {
+    feedEmptyCta: "Post",
     deleteObjTitle: 'Delete goal',
     deleteObjText: 'Delete "{title}"? All its updates will be deleted too.',
     welcomeTitle: 'Welcome to Reiz',
@@ -226,6 +227,13 @@ export const en: Dict = {
     publish: 'Post',
   },
   welcome: {
+    postTitle: "Your first session",
+    postSub: "One photo is enough. Your circle sees it right away and can react.",
+    postCta: "Post my first photo",
+    footPost: "You can delete a post at any time.",
+    postMockYou: "You",
+    postMockReaction: "Léa reacted 🔥",
+    postMockObj: "Your goal",
     avatarTitle: 'Profile photo',
     chooseOption: 'Choose an option',
     photoFailed: "Your photo couldn't be sent. Try again.",
@@ -1027,6 +1035,8 @@ export const en: Dict = {
     dayUnit: ' d',
   },
   setup: {
+    post: "Share your first post",
+    postSub: "A photo of your session, your circle sees it right away",
     label: 'YOUR PROFILE, {done} OF {total}',
     hide: 'Hide for 3 days',
     title: { one: 'Just one step left', other: '{count} steps left' },

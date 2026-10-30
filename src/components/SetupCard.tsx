@@ -9,30 +9,35 @@ import { PresencePanel } from './PresencePanel';
 import { supabase } from '../lib/supabase';
 import { loadPlaces, AUTO_SUPPORTED } from '../lib/presence';
 import { registerForPushNotifications } from '../lib/notifications';
+import { track } from '../lib/track';
 import { s, F } from '../styles';
 import { t, tp, dirIcon } from '../i18n';
 
 // En haut du fil, visible par toi seul : ce qui manque encore à ton profil depuis l'inscription (photo, premier
 // objectif, amis, salle, notifications). Chaque ligne mène à l'endroit où le faire. La carte disparaît quand tout
 // est fait, et la croix la repousse de 3 jours. Remplace l'ancienne carte « Bienvenue » à 2 étapes (25/10/2026).
+// 1.2 : « Publie ton premier post » en tête dès qu'un objectif existe. 20 inscrits sur 30 n'avaient jamais posté
+// au 30/10/2026, alors que la carte ne le demandait pas.
 
-type StepId = 'photo' | 'objective' | 'friends' | 'place' | 'notifs';
+type StepId = 'post' | 'photo' | 'objective' | 'friends' | 'place' | 'notifs';
 const LATER_MS = 3 * 24 * 3600 * 1000;
 const laterKey = (uid: string) => `reiz.setup.later.${uid}`;
 const ICONS: Record<StepId, keyof typeof Ionicons.glyphMap> = {
-  photo: 'camera-outline', objective: 'flag-outline', friends: 'people-outline', place: 'location-outline', notifs: 'notifications-outline',
+  post: 'add-circle-outline', photo: 'camera-outline', objective: 'flag-outline', friends: 'people-outline', place: 'location-outline', notifs: 'notifications-outline',
 };
 
-export function SetupCard({ userId, hasObjective, friendCount, onAddPhoto, onAddObjective, onFindFriends }: {
+export function SetupCard({ userId, hasObjective, friendCount, onPost, onAddPhoto, onAddObjective, onFindFriends }: {
   userId: string | null;
   /** null tant que ce n'est pas chargé : la carte attend pour ne pas clignoter. */
   hasObjective: boolean | null;
   friendCount: number | null;
+  onPost: () => void;
   onAddPhoto: () => void;
   onAddObjective: () => void;
   onFindFriends: () => void;
 }) {
   const [hasPhoto, setHasPhoto] = useState<boolean | null>(null);
+  const [hasPosted, setHasPosted] = useState<boolean | null>(null);
   const [hasPlace, setHasPlace] = useState<boolean | null>(AUTO_SUPPORTED ? null : true);
   const [notifs, setNotifs] = useState<boolean | null>(null);
   const [later, setLater] = useState<boolean | null>(null);
@@ -49,6 +54,9 @@ export function SetupCard({ userId, hasObjective, friendCount, onAddPhoto, onAdd
     if (!userId) return;
     supabase.from('users').select('avatar_url').eq('id', userId).maybeSingle()
       .then(({ data }) => setHasPhoto(!!data?.avatar_url), () => setHasPhoto(true));
+    // Un seul post suffit : la carte est relue à chaque retour sur le fil (Main est remonté après la publication).
+    supabase.from('updates').select('id', { count: 'exact', head: true }).eq('user_id', userId)
+      .then(({ count, error }) => setHasPosted(error ? true : (count ?? 0) > 0), () => setHasPosted(true));
     AsyncStorage.getItem(laterKey(userId))
       .then(v => setLater(!!v && Date.now() - Number(v) < LATER_MS), () => setLater(false));
     checkDevice();
@@ -64,9 +72,11 @@ export function SetupCard({ userId, hasObjective, friendCount, onAddPhoto, onAdd
     checkDevice();
   };
 
-  if (!userId || later !== false || hasObjective === null || friendCount === null || hasPhoto === null || hasPlace === null || notifs === null) return null;
+  if (!userId || later !== false || hasObjective === null || friendCount === null || hasPhoto === null || hasPosted === null || hasPlace === null || notifs === null) return null;
 
   const steps: { id: StepId; done: boolean; onPress: () => void }[] = [
+    // Sans objectif il n'y a rien à poster : la ligne arrive une fois l'objectif créé.
+    ...(hasObjective ? [{ id: 'post' as const, done: hasPosted, onPress: onPost }] : []),
     { id: 'photo', done: hasPhoto, onPress: onAddPhoto },
     { id: 'objective', done: hasObjective, onPress: onAddObjective },
     { id: 'friends', done: friendCount > 0, onPress: onFindFriends },
@@ -111,7 +121,7 @@ export function SetupCard({ userId, hasObjective, friendCount, onAddPhoto, onAdd
               <TouchableOpacity
                 key={step.id}
                 activeOpacity={0.8}
-                onPress={() => { Haptics.selectionAsync().catch(() => {}); step.onPress(); }}
+                onPress={() => { Haptics.selectionAsync().catch(() => {}); track('setup_tap', { step: step.id }, 'feed'); step.onPress(); }}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: 'rgba(255,255,255,0.08)' }}
               >
                 <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' }}>

@@ -17,6 +17,7 @@ import { loadDuoStats, ordinalDuo, DUO_WINDOW_MS } from '../lib/duo';
 import { trimAvailable, trimVideo, cleanTrimmed } from '../lib/videoTools';
 import { galleryAvailable, saveToGallery } from '../lib/saveToGallery';
 import { endAllLiveActivities } from '../lib/liveActivity';
+import { track } from '../lib/track';
 import { s, F } from '../styles';
 import { t, tp, unitLabel, isRTL } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
@@ -403,6 +404,9 @@ export function PostScreen({ onBack, onPublish, duoWith }: { onBack: () => void,
       Alert.alert(t('common.error'), frError(error));
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      // Pour le back-office : premier post du compte ou non (le post qu'on vient d'écrire compte déjà).
+      supabase.from('updates').select('id', { count: 'exact', head: true }).eq('user_id', user.id)
+        .then(({ count }) => track('post_published', { first: count === 1, duo: !!duoWith }), () => {});
       // Séance postée : la carte du duo (Activité en direct) n'a plus lieu d'être.
       endAllLiveActivities();
       const storyData: StoryData = {

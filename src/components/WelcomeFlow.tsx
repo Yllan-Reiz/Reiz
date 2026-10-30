@@ -14,6 +14,7 @@ import { uploadImage, signOne, resetSignedCache } from '../lib/storage';
 import { registerForPushNotifications } from '../lib/notifications';
 import { AUTO_SUPPORTED, isAutoEnabled, setAutoEnabled, addPlaceHere } from '../lib/presence';
 import { contactsAvailable, inviteText } from '../lib/contacts';
+import { track } from '../lib/track';
 import { APP_STORE_URL, daysLabel, ALL_DAYS, WELCOME_FLOW } from '../constants';
 import { CachedImage } from './CachedImage';
 import { ContactsScreen } from './ContactsScreen';
@@ -32,6 +33,8 @@ import { t, unitLabel, dirIcon } from '../i18n';
 //   3. Lieu       la détection automatique du lieu d'entraînement (iPhone, build 1.0.1 et plus)
 //   4. Notifs     l'explication AVANT la demande du système (sinon la demande tombe sans contexte)
 //   5. Amis       retrouver ses contacts (1.1.0) et partager son lien
+//   6. Post       la première photo (1.2) : ouvre la publication. Seulement avec un objectif et aucun post.
+// Chaque écran vu, fait ou passé est enregistré (lib/track.ts) pour voir dans le back-office où l'on décroche.
 // Il s'ouvre UNE SEULE FOIS PAR COMPTE, pour tout compte de moins de 2 jours (e-mail, Apple ou Google).
 // Passer un écran ne crée rien.
 // Pour revenir à l'ancien accueil (une simple fenêtre « Retrouve tes amis »), mettre WELCOME_FLOW à false.
@@ -42,7 +45,7 @@ const seenKey = (userId: string) => `${KEY}.${userId}`;
 const EASE = Easing.bezier(0.23, 1, 0.32, 1);
 const DAY_MS = 24 * 3600 * 1000;
 
-type StepId = 'profile' | 'objective' | 'place' | 'notifs' | 'friends';
+type StepId = 'profile' | 'objective' | 'place' | 'notifs' | 'friends' | 'post';
 
 // Photos de sportifs (Unsplash, licence libre, voir assets/onboarding/CREDITS.md) pour les écrans d'exemple.
 const PHOTOS = {
@@ -68,8 +71,9 @@ export async function welcomePending(user?: { id?: string; created_at?: string }
   try { return !(await AsyncStorage.getItem(seenKey(user.id))); } catch { return false; }
 }
 
-/** Version automatique, montée une fois dans App.tsx. `onChanged` : quelque chose a été écrit, l'app doit se recharger. */
-export function WelcomeFlow({ onChanged }: { onChanged?: () => void }) {
+/** Version automatique, montée une fois dans App.tsx. `onChanged` : quelque chose a été écrit, l'app doit se recharger.
+ *  `onPost` : le dernier écran ouvre la publication pour le premier post. */
+export function WelcomeFlow({ onChanged, onPost }: { onChanged?: () => void; onPost?: () => void }) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -82,7 +86,7 @@ export function WelcomeFlow({ onChanged }: { onChanged?: () => void }) {
     return () => { alive = false; };
   }, []);
 
-  return <WelcomeModal visible={show} onClose={(changed) => { setShow(false); if (changed) onChanged?.(); }} />;
+  return <WelcomeModal visible={show} onPost={onPost} onClose={(changed) => { setShow(false); if (changed) onChanged?.(); }} />;
 }
 
 /** Apparition douce : le contenu monte de quelques points en fondu. Une seule fois, à l'affichage. */
@@ -170,7 +174,7 @@ function MockNotif({ photo, title, body, when }: { photo: ImageSourcePropType; t
 /**
  * Le parcours lui-même. `preview` = aperçu : tous les écrans, rien n'est enregistré, aucune autorisation demandée.
  */
-export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; preview?: boolean; onClose: (changed: boolean) => void }) {
+export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: boolean; preview?: boolean; onClose: (changed: boolean) => void; onPost?: () => void }) {
   const insets = useSafeAreaInsets();
   const { width: winW, height: winH } = useWindowDimensions();
   // Écran profil : la photo occupe le haut de l'écran, bord à bord, comme l'onglet Profil.
@@ -181,6 +185,10 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
   const [contacts, setContacts] = useState(false);
   const wrote = useRef(false);
   const initial = useRef({ name: '', bio: '' });
+  // L'objectif montré sur l'écran du premier post (« 🏃 Courir ») : celui qui existait, ou celui créé à l'étape 2.
+  // Gardé aussi dans une ref : go() doit le savoir juste après la création, avant le rendu suivant.
+  const [objLabel, setObjLabel] = useState('');
+  const objRef = useRef('');
 
   const [userId, setUserId] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
@@ -206,14 +214,18 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
     (async () => {
       const user = await currentUser();
       if (!user) return;
-      const [row, objs, perm, autoOn] = await Promise.all([
+      const [row, objs, posts, perm, autoOn] = await Promise.all([
         supabase.from('users').select('full_name, username, bio, avatar_url').eq('id', user.id).maybeSingle(),
-        supabase.from('objectives').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('objectives').select('emoji, title', { count: 'exact' }).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
+        supabase.from('updates').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         Notifications.getPermissionsAsync().catch(() => null),
         AUTO_SUPPORTED ? isAutoEnabled().catch(() => false) : Promise.resolve(true),
       ]);
       if (!alive) return;
       const p: any = row.data || {};
+      const lastObj: any = objs.data?.[0];
+      objRef.current = lastObj ? `${lastObj.emoji || ''} ${lastObj.title}`.trim() : '';
+      setObjLabel(objRef.current);
       initial.current = { name: p.full_name || '', bio: p.bio || '' };
       // « Athlète » = nom de secours d'un compte Apple ou Google sans prénom (voir ensureProfile) : on laisse le champ vide.
       const placeholder = !p.full_name || p.full_name === 'Athlète';
@@ -229,6 +241,8 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
       if (preview || (AUTO_SUPPORTED && !autoOn)) list.push('place');
       if (preview || perm?.status === 'undetermined') list.push('notifs');
       list.push('friends');
+      // Le premier post, seulement pour qui n'a encore rien posté (l'écran est sauté sans objectif, voir go()).
+      if (preview || !posts.count) list.push('post');
       if (alive) setSteps(list);
     })().catch(() => { if (alive) setSteps(['profile', 'friends']); });
     return () => { alive = false; };
@@ -236,15 +250,25 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
 
   const step: StepId | null = steps ? steps[idx] : null;
 
-  const finish = useCallback(async () => {
+  const finish = useCallback(async (via: 'end' | 'skip_all' | 'post' = 'end') => {
+    if (!preview) track('welcome_end', { step, via }, 'welcome');
     if (!preview && userId) await AsyncStorage.setItem(seenKey(userId), '1').catch(() => {});
     onClose(wrote.current);
-  }, [preview, onClose, userId]);
+  }, [preview, onClose, userId, step]);
 
-  const go = (to: number) => {
+  // Chaque écran vu, pour le back-office (pas en aperçu depuis les Réglages).
+  useEffect(() => {
+    if (visible && !preview && step) track('welcome_step', { step, index: idx, action: 'view' }, 'welcome');
+  }, [visible, preview, step, idx]);
+
+  /** `action` : l'écran quitté a été fait (« done »), passé (« skip ») ou simplement franchi (« next »). */
+  const go = (to: number, action?: 'done' | 'skip' | 'next') => {
     if (!steps) return;
     Keyboard.dismiss();
-    if (to >= steps.length) { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); finish(); return; }
+    if (action && step && !preview) track('welcome_step', { step, index: idx, action }, 'welcome');
+    // Pas d'objectif (« Je choisirai plus tard ») : rien à poster, l'accueil s'arrête avant l'écran du premier post.
+    const skipPost = steps[to] === 'post' && !preview && !objRef.current;
+    if (to >= steps.length || skipPost) { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); finish(); return; }
     Haptics.selectionAsync().catch(() => {});
     setPhase('pick');
     setIdx(Math.max(0, to));
@@ -336,7 +360,9 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
     const title = objTitle.trim();
     if (!title) { Alert.alert(t('welcome.objNameTitle'), t('welcome.objNameText')); return false; }
     if (days.length === 0) { Alert.alert(t('welcome.daysTitle'), t('welcome.daysText')); return false; }
-    if (preview) return true;
+    // Montré sur l'écran du premier post, aperçu compris.
+    const label = `${SPORTS[sportIdx].emoji} ${title}`;
+    if (preview) { objRef.current = label; setObjLabel(label); return true; }
     if (!userId) return false;
     const sp = SPORTS[sportIdx];
     const row = { user_id: userId, title, emoji: sp.emoji, target_value: target, current_value: 0, unit: sp.unit, visibility: 'friends', duration_days: null };
@@ -346,6 +372,8 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
     if (error && trainingDays && /training_days/i.test(error.message || '')) ({ error } = await supabase.from('objectives').insert(row));
     if (error) { Alert.alert(t('common.error'), frError(error)); return false; }
     wrote.current = true;
+    objRef.current = label;
+    setObjLabel(label);
     return true;
   };
 
@@ -357,14 +385,14 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
     } else if (step === 'objective') {
       setBusy(true); const ok = await createObjective(); setBusy(false); if (!ok) return;
     }
-    go(idx + 1);
+    go(idx + 1, 'done');
   };
 
   // ---- Lieu d'entraînement ----
   // « Activer » donne les autorisations maintenant (l'écran explique pourquoi) : la salle s'ajoutera depuis le fil,
   // une fois sur place. « J'y suis » enregistre en plus l'endroit où l'on se trouve.
   const enablePlace = async (here: boolean) => {
-    if (preview) { go(idx + 1); return; }
+    if (preview) { go(idx + 1, 'done'); return; }
     const finishPlace = async (label?: string) => {
       setBusy(true);
       try {
@@ -383,7 +411,7 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
           e?.message === 'denied' ? t('welcome.locDeniedText') : t('welcome.noPositionText'),
         );
       }
-      go(idx + 1);
+      go(idx + 1, 'done');
     };
     if (!here) { finishPlace(); return; }
     Alert.prompt(t('welcome.gymNameTitle'), t('welcome.gymNameText'), [
@@ -396,7 +424,7 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
     setBusy(true);
     if (!preview && userId) await registerForPushNotifications(userId).catch(() => {});
     setBusy(false);
-    go(idx + 1);
+    go(idx + 1, 'done');
   };
 
   const share = async () => {
@@ -419,20 +447,20 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
     foot = t('welcome.footProfile');
   } else if (step === 'objective') {
     primary = <Primary label={t('welcome.createObjective')} icon="flag" onPress={onContinue} busy={busy} disabled={!sp || !objTitle.trim()} />;
-    below = <Secondary quiet label={t('welcome.chooseLater')} onPress={() => go(idx + 1)} />;
+    below = <Secondary quiet label={t('welcome.chooseLater')} onPress={() => go(idx + 1, 'skip')} />;
     foot = t('welcome.footObjective');
   } else if (step === 'place') {
     primary = <Primary label={t('welcome.enableDetection')} icon="location" onPress={() => enablePlace(false)} busy={busy} />;
     below = (
       <>
         <Secondary label={t('welcome.atMyGym')} icon="locate-outline" onPress={() => enablePlace(true)} />
-        <Secondary quiet label={t('common.later')} onPress={() => go(idx + 1)} />
+        <Secondary quiet label={t('common.later')} onPress={() => go(idx + 1, 'skip')} />
       </>
     );
     foot = t('welcome.footPlace');
   } else if (step === 'notifs') {
     primary = <Primary label={t('welcome.enableNotifs')} icon="notifications" onPress={enablePush} busy={busy} />;
-    below = <Secondary quiet label={t('common.later')} onPress={() => go(idx + 1)} />;
+    below = <Secondary quiet label={t('common.later')} onPress={() => go(idx + 1, 'skip')} />;
     foot = t('welcome.footNotifs');
   } else if (step === 'friends') {
     primary = showContacts
@@ -441,10 +469,16 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
     below = (
       <>
         {showContacts && <Secondary label={t('welcome.shareLink')} icon="share-outline" onPress={share} />}
-        <Secondary quiet label={t('welcome.enterReiz')} onPress={() => go(idx + 1)} />
+        {/* Écran suivant = le premier post : « Continuer » ; sinon on entre dans l'app. */}
+        <Secondary quiet label={steps?.[idx + 1] === 'post' && (preview || objLabel) ? t('common.continue') : t('welcome.enterReiz')} onPress={() => go(idx + 1, 'next')} />
       </>
     );
     foot = showContacts ? t('welcome.footContacts') : t('welcome.footShare');
+  } else if (step === 'post') {
+    // La publication s'ouvre par-dessus le fil, l'accueil est terminé. En aperçu (Réglages), on ferme seulement.
+    primary = <Primary label={t('welcome.postCta')} icon="camera" onPress={() => { Haptics.selectionAsync().catch(() => {}); finish('post').then(() => { if (!preview) onPost?.(); }); }} />;
+    below = <Secondary quiet label={t('welcome.enterReiz')} onPress={() => go(idx + 1, 'skip')} />;
+    foot = t('welcome.footPost');
   }
 
   return (
@@ -463,7 +497,7 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
                 <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= idx ? '#fff' : 'rgba(255,255,255,0.18)' }} />
               ))}
             </View>
-            <TouchableOpacity onPress={finish} hitSlop={10} accessibilityLabel={t('welcome.skipAll')} style={{ minWidth: 28, alignItems: 'flex-end' }}>
+            <TouchableOpacity onPress={() => finish('skip_all')} hitSlop={10} accessibilityLabel={t('welcome.skipAll')} style={{ minWidth: 28, alignItems: 'flex-end' }}>
               <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, fontFamily: F.semibold }}>{t('welcome.skip')}</Text>
             </TouchableOpacity>
           </View>
@@ -471,7 +505,7 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
           {!step ? (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#fff" /></View>
           ) : step === 'objective' && phase === 'pick' ? (
-            <SportCarousel initialIndex={startIdx} bottomInset={insets.bottom} onContinue={pickSport} onSkip={() => go(idx + 1)} />
+            <SportCarousel initialIndex={startIdx} bottomInset={insets.bottom} onContinue={pickSport} onSkip={() => go(idx + 1, 'skip')} />
           ) : (
             <>
               <ScrollView key={step} style={{ flex: 1 }} contentContainerStyle={step === 'profile' || step === 'place' ? { flexGrow: 1, paddingBottom: 24 } : { flexGrow: 1, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24, justifyContent: 'center' }}
@@ -620,6 +654,18 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
                     </Rise>
                   </>
                 )}
+
+                {step === 'post' && (
+                  <>
+                    <Rise style={{ alignItems: 'center' }}>
+                      <FirstPostPreview photo={(sp ?? SPORTS[startIdx])?.photo ?? PHOTOS.groupe} avatar={avatar} name={name.trim()} objective={objLabel || t('welcome.postMockObj')} />
+                    </Rise>
+                    <Rise delay={80} style={{ marginTop: 34 }}>
+                      <Title>{t('welcome.postTitle')}</Title>
+                      <Sub>{t('welcome.postSub')}</Sub>
+                    </Rise>
+                  </>
+                )}
               </ScrollView>
 
               <View style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: insets.bottom + 14 }}>
@@ -642,6 +688,48 @@ function Stepper({ icon, label, onPress, disabled }: { icon: any; label: string;
       style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.35 : 1 }}>
       <Ionicons name={icon} size={22} color="#fff" />
     </TouchableOpacity>
+  );
+}
+
+/** L'écran du premier post : à quoi ressemblera le sien dans le fil (photo de sa discipline en attendant la sienne,
+ *  son nom, son objectif), avec un ami qui réagit. */
+function FirstPostPreview({ photo, avatar, name, objective }: { photo: ImageSourcePropType; avatar: string | null; name: string; objective: string }) {
+  const w = 236;
+  const h = 295;
+  return (
+    <View style={{ width: w + 44, paddingBottom: 16, alignItems: 'center' }}>
+      <View style={{ width: w, height: h, borderRadius: 26, overflow: 'hidden', backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
+        <Image source={photo} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <LinearGradient pointerEvents="none" colors={['rgba(10,10,10,0.6)', 'rgba(10,10,10,0)', 'rgba(10,10,10,0)', 'rgba(10,10,10,0.85)']} locations={[0, 0.3, 0.5, 1]} style={StyleSheet.absoluteFill} />
+        <View style={{ position: 'absolute', top: 12, left: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {avatar
+            ? <CachedImage uri={avatar} style={{ width: 30, height: 30, borderRadius: 15 }} />
+            : <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="person" size={16} color="#fff" /></View>}
+          <Text numberOfLines={1} style={{ color: '#fff', fontSize: 14, fontFamily: F.bold, flexShrink: 1 }}>{name || t('welcome.postMockYou')}</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular }}>{t('welcome.mockNow')}</Text>
+        </View>
+        {/* L'appareil photo au centre : c'est SA photo qui ira ici. */}
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+          <GlassSurface radius={30} variant="clear" style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="camera" size={26} color="#fff" />
+          </GlassSurface>
+        </View>
+        <View style={{ position: 'absolute', left: 14, right: 14, bottom: 14 }}>
+          <Text numberOfLines={2} style={{ color: '#fff', fontSize: 17, fontFamily: F.extrabold, letterSpacing: -0.3 }}>{objective}</Text>
+          <View style={{ height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.2)', marginTop: 8, overflow: 'hidden' }}>
+            <View style={{ width: '12%', height: 4, borderRadius: 2, backgroundColor: '#fff' }} />
+          </View>
+        </View>
+      </View>
+      <Rise delay={420} y={8} style={{ position: 'absolute', right: 0, bottom: 0 }}>
+        <GlassCard radius={20}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 5, paddingRight: 12, paddingVertical: 5, backgroundColor: 'rgba(255,255,255,0.06)' }}>
+            <Image source={PHOTOS.lea} style={{ width: 28, height: 28, borderRadius: 14 }} />
+            <Text style={{ color: '#fff', fontSize: 13.5, fontFamily: F.bold }}>{t('welcome.postMockReaction')}</Text>
+          </View>
+        </GlassCard>
+      </Rise>
+    </View>
   );
 }
 

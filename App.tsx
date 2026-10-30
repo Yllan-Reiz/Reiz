@@ -21,6 +21,7 @@ import { FindFriendsPrompt } from './src/components/FindFriendsPrompt';
 import { WelcomeFlow, welcomePending } from './src/components/WelcomeFlow';
 import { WELCOME_FLOW } from './src/constants';
 import { PostScreen } from './src/screens/PostScreen';
+import { track } from './src/lib/track';
 import { registerLiveActivityToken, endExpiredLiveActivities } from './src/lib/liveActivity';
 import { saveLanguage } from './src/lib/language';
 import { mark } from './src/lib/perf';
@@ -75,6 +76,7 @@ function AppInner() {
       if (!id) return;
       setPostDuoWith(id);
       pendingDuo.current = id;
+      track('post_open', { from: 'duo_card' });
       setScreen(s => {
         if (s !== 'main' && s !== 'post') return s; // pas encore connecté : enter() s'en chargera
         pendingDuo.current = null;
@@ -168,13 +170,20 @@ function AppInner() {
 
   if (checkingAuth || !fontsLoaded) return null;
   mark('ecran:' + screen);
+  // Ouvre la publication. `from` dit d'où (bouton, carte du profil, fil vide, accueil...) pour le back-office.
+  const openPost = (opts?: { duoWith?: string; from?: string }) => {
+    track('post_open', { from: opts?.from ?? (opts?.duoWith ? 'duo' : 'button') });
+    setPostDuoWith(opts?.duoWith ?? null);
+    setScreen('post');
+  };
+
   if (screen === 'splash') return <Splash onNext={() => setScreen('onboarding')} />;
   if (screen === 'onboarding') return <Onboarding onNext={() => setScreen('main')} />;
   if (screen === 'main') return (
     <>
-      <Main key={mainKey} onPost={(opts) => { setPostDuoWith(opts?.duoWith ?? null); setScreen('post'); }} navIntent={navIntent} onNavIntentHandled={() => setNavIntent(null)} />
+      <Main key={mainKey} onPost={openPost} navIntent={navIntent} onNavIntentHandled={() => setNavIntent(null)} />
       <WhatsNewModal />
-      {WELCOME_FLOW ? <WelcomeFlow onChanged={() => setMainKey(k => k + 1)} /> : <FindFriendsPrompt />}
+      {WELCOME_FLOW ? <WelcomeFlow onChanged={() => setMainKey(k => k + 1)} onPost={() => openPost({ from: 'welcome' })} /> : <FindFriendsPrompt />}
     </>
   );
   if (screen === 'post') return <PostScreen duoWith={postDuoWith} onBack={() => setScreen('main')} onPublish={() => setScreen('main')} />;

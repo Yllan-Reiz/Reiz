@@ -91,7 +91,7 @@ function PostButton({ onPress }: { onPress: () => void }) {
 
 export function Main({ onPost, navIntent, onNavIntentHandled }: {
   // duoWith : ouvre la publication avec cet ami déjà identifié (réponse à un duo).
-  onPost: (opts?: { duoWith?: string }) => void;
+  onPost: (opts?: { duoWith?: string; from?: string }) => void;
   navIntent?: string | null;
   onNavIntentHandled?: () => void;
 }) {
@@ -544,6 +544,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 userId={userId}
                 hasObjective={loadingObj ? null : objectives.length > 0}
                 friendCount={friendCount}
+                onPost={() => onPost({ from: 'setup_card' })}
                 onAddPhoto={() => setTab('profile')}
                 onAddObjective={() => setShowCreateModal(true)}
                 onFindFriends={() => setTab('friends')}
@@ -556,6 +557,10 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 <View style={{ paddingTop: 40, alignItems: 'center' }}>
                   <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>{t('main.feedEmpty')}</Text>
                   <Text style={{ color: '#777', marginTop: 4, fontSize: 12 }}>{t('main.feedEmptySub')}</Text>
+                  {/* Le texte invite à publier : le bouton le permet tout de suite (1.2). */}
+                  <TouchableOpacity style={[s.emptyStateBtn, { marginTop: 16 }]} onPress={() => onPost({ from: 'feed_empty' })} accessibilityRole="button" accessibilityLabel={t('main.feedEmptyCta')}>
+                    <Text style={s.emptyStateBtnText}>{t('main.feedEmptyCta')}</Text>
+                  </TouchableOpacity>
                 </View>
               )
             }

@@ -97,6 +97,7 @@ export const es: Dict = {
     private: 'Privado',
   },
   main: {
+    feedEmptyCta: "Publicar",
     deleteObjTitle: 'Eliminar objetivo',
     deleteObjText: '¿Eliminar «{title}»? Todas sus actualizaciones también se eliminarán.',
     welcomeTitle: 'Bienvenido a Reiz',
@@ -226,6 +227,13 @@ export const es: Dict = {
     publish: 'Publicar',
   },
   welcome: {
+    postTitle: "Tu primera sesión",
+    postSub: "Basta con una foto. Tu círculo la ve enseguida y puede reaccionar.",
+    postCta: "Publicar mi primera foto",
+    footPost: "Puedes borrar una publicación cuando quieras.",
+    postMockYou: "Tú",
+    postMockReaction: "Léa ha reaccionado 🔥",
+    postMockObj: "Tu objetivo",
     avatarTitle: 'Foto de perfil',
     chooseOption: 'Elige una opción',
     photoFailed: 'No se ha podido enviar la foto. Vuelve a intentarlo.',
@@ -1027,6 +1035,8 @@ export const es: Dict = {
     dayUnit: ' d',
   },
   setup: {
+    post: "Publica tu primera foto",
+    postSub: "Una foto de tu sesión, tu círculo la ve enseguida",
     label: 'TU PERFIL, {done} DE {total}',
     hide: 'Ocultar durante 3 días',
     title: { one: 'Solo te queda un paso', other: 'Te faltan {count} pasos' },

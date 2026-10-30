@@ -98,6 +98,7 @@ export const fr = {
     private: 'Privé',
   },
   main: {
+    feedEmptyCta: "Publier",
     deleteObjTitle: "Supprimer l'objectif",
     deleteObjText: 'Supprimer « {title} » ? Toutes ses mises à jour seront aussi supprimées.',
     welcomeTitle: 'Bienvenue sur Reiz',
@@ -227,6 +228,13 @@ export const fr = {
     publish: 'Publier',
   },
   welcome: {
+    postTitle: "Ta première séance",
+    postSub: "Une photo suffit. Ton cercle la voit tout de suite et peut réagir.",
+    postCta: "Poster ma première photo",
+    footPost: "Tu peux supprimer un post à tout moment.",
+    postMockYou: "Toi",
+    postMockReaction: "Léa a réagi 🔥",
+    postMockObj: "Ton objectif",
     avatarTitle: 'Photo de profil',
     chooseOption: 'Choisis une option',
     photoFailed: "La photo n'a pas pu être envoyée. Réessaie.",
@@ -1028,6 +1036,8 @@ export const fr = {
     dayUnit: ' j',
   },
   setup: {
+    post: "Publie ton premier post",
+    postSub: "Une photo de ta séance, ton cercle la voit tout de suite",
     label: 'TON PROFIL, {done} SUR {total}',
     hide: 'Masquer pendant 3 jours',
     title: { one: "Plus qu'une étape", other: 'Il te manque {count} étapes' },

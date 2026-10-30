@@ -99,6 +99,7 @@ export const he: Dict = {
     private: 'פרטי',
   },
   main: {
+    feedEmptyCta: "פרסום",
     deleteObjTitle: 'מחיקת היעד',
     deleteObjText: 'למחוק את "{title}"? כל העדכונים שלו יימחקו גם הם.',
     welcomeTitle: 'ברוכים הבאים ל-Reiz',
@@ -228,6 +229,13 @@ export const he: Dict = {
     publish: 'פרסום',
   },
   welcome: {
+    postTitle: "האימון הראשון שלכם",
+    postSub: "תמונה אחת מספיקה. המעגל רואה אותה מיד ויכול להגיב.",
+    postCta: "לפרסם את התמונה הראשונה",
+    footPost: "אפשר למחוק פוסט בכל רגע.",
+    postMockYou: "אתם",
+    postMockReaction: "לאה הגיבה 🔥",
+    postMockObj: "היעד שלכם",
     avatarTitle: 'תמונת פרופיל',
     chooseOption: 'בחרו אפשרות',
     photoFailed: 'לא הצלחנו לשלוח את התמונה. נסו שוב.',
@@ -1029,6 +1037,8 @@ export const he: Dict = {
     dayUnit: ' ימים',
   },
   setup: {
+    post: "פרסמו את הפוסט הראשון",
+    postSub: "תמונה מהאימון, המעגל רואה אותה מיד",
     label: 'הפרופיל שלך, {done} מתוך {total}',
     hide: 'להסתיר ל-3 ימים',
     title: { one: 'נשאר צעד אחד', other: 'נשארו {count} צעדים' },
