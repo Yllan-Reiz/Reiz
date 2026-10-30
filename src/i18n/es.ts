@@ -633,7 +633,7 @@ export const es: Dict = {
   quickReactions: {
     title: 'Mis reacciones',
     section: 'REACCIONES',
-    hint: 'Toca una casilla y luego el emoji que quieres poner. Son los 6 emojis de tu barra de reacciones.',
+    hint: 'Toca una casilla y luego elige un emoji en el teclado. Son los 6 emojis de tu barra de reacciones.',
     slot: 'Casilla {n}: {emoji}',
     reset: 'Volver a los originales',
   },

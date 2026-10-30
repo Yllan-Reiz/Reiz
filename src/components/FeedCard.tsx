@@ -9,6 +9,7 @@ import { ALL_REACTION_EMOJIS } from '../constants';
 import { s, F } from '../styles';
 import { useQuickReactions } from '../lib/quickReactions';
 import { QuickReactionsEditor } from './QuickReactionsEditor';
+import { EmojiKeyboardInput, emojiKeyboardAvailable } from '../../modules/reiz-emoji-keyboard';
 import { CommentsModal } from './CommentsModal';
 import { FadeInImage } from './FadeInImage';
 import { FeedVideo } from './FeedVideo';
@@ -549,7 +550,18 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       </View>
 
       {/* Tous les emojis (bouton + de la barre) */}
-      <Reveal visible={showEmojiPicker}>
+      {showEmojiPicker && emojiKeyboardAvailable() && (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setShowEmojiPicker(false)}>
+          <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }} onPress={() => setShowEmojiPicker(false)} accessibilityRole="button" accessibilityLabel={t('common.close')} />
+          <EmojiKeyboardInput active onEmoji={toggleReaction} />
+          <TouchableOpacity onPress={() => { setShowEmojiPicker(false); setTimeout(() => setEditingQuick(true), 350); }} activeOpacity={0.7} accessibilityRole="button"
+            style={{ position: 'absolute', top: 72, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, height: 44, borderRadius: 22, backgroundColor: '#1c1c1c' }}>
+            <Ionicons name="pencil" size={16} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 14, fontFamily: F.semibold }}>{t('quickReactions.title')}</Text>
+          </TouchableOpacity>
+        </Modal>
+      )}
+      <Reveal visible={showEmojiPicker && !emojiKeyboardAvailable()}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.emojiPickerRow} contentContainerStyle={{ gap: 6, paddingHorizontal: 2, paddingVertical: 10 }}>
           {/* Choisir ses 6 réactions : le crayon est là où l'on cherche un autre emoji. */}
           <TouchableOpacity style={s.emojiPickerItem} onPress={() => setEditingQuick(true)} accessibilityRole="button" accessibilityLabel={t('quickReactions.title')}>

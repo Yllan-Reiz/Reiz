@@ -634,7 +634,7 @@ export const fr = {
   quickReactions: {
     title: 'Mes réactions',
     section: 'RÉACTIONS',
-    hint: "Touche une case, puis l'emoji à mettre à la place. Ce sont les 6 emojis de ta barre de réactions.",
+    hint: "Touche une case, puis choisis un emoji dans le clavier. Ce sont les 6 emojis de ta barre de réactions.",
     slot: 'Case {n} : {emoji}',
     reset: 'Remettre ceux de départ',
   },

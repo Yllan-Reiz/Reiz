@@ -633,7 +633,7 @@ export const en: Dict = {
   quickReactions: {
     title: 'My reactions',
     section: 'REACTIONS',
-    hint: 'Tap a slot, then the emoji to put there. These are the 6 emojis in your reaction bar.',
+    hint: 'Tap a slot, then pick an emoji on the keyboard. These are the 6 emojis in your reaction bar.',
     slot: 'Slot {n}: {emoji}',
     reset: 'Restore the original ones',
   },
