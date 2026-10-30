@@ -74,7 +74,7 @@ export async function loadPost(updateId: string, currentUserId: string | null): 
   const { data } = await supabase.from('updates').select(POST_SELECT).eq('id', updateId).maybeSingle();
   if (!data) return null;
   const u = data as unknown as Update;
-  const [signed, avatars] = await Promise.all([signMany([u.photo_url], { width: 1080 }), signAvatars([u.users?.avatar_url])]);
+  const [signed, avatars] = await Promise.all([signMany([u.photo_url]), signAvatars([u.users?.avatar_url])]);
   if (u.photo_url) u.photo_url = signed[u.photo_url] ?? undefined;
   if (u.users?.avatar_url) u.users.avatar_url = avatars[u.users.avatar_url] ?? undefined;
   await attachDuoNames([u]);

@@ -161,14 +161,15 @@ export async function compressVideo(uri: string): Promise<string> {
 }
 
 /**
- * Photo allégée AVANT l'envoi, sur le téléphone : 1440 px au plus (720 px pour une photo de profil), JPEG qualité 0,72.
- * Ce qui est stocké est déjà léger (150 à 300 Ko au lieu de 1 à 2 Mo) : moins d'espace, et des photos légères même
+ * Photo allégée AVANT l'envoi, sur le téléphone : 1440 px au plus (720 px pour une photo de profil), JPEG qualité 0,8
+ * (0,72 jusqu'au 30/10/2026 : 10 % de poids en plus, nettement moins de traces de compression, mesuré sur 3 photos).
+ * Ce qui est stocké est déjà léger (200 à 500 Ko au lieu de 1 à 2 Mo) : moins d'espace, et des photos légères même
  * quand Supabase ne fournit pas de version réduite (quota dépassé). Sans le module : la photo telle quelle.
  */
 export async function compressImage(uri: string, maxSide: number): Promise<string> {
   try {
     const { Image: ImageCompressor } = require('react-native-compressor');
-    return await ImageCompressor.compress(uri, { compressionMethod: 'manual', maxWidth: maxSide, maxHeight: maxSide, quality: 0.72, output: 'jpg' });
+    return await ImageCompressor.compress(uri, { compressionMethod: 'manual', maxWidth: maxSide, maxHeight: maxSide, quality: 0.8, output: 'jpg' });
   } catch {
     return uri;
   }

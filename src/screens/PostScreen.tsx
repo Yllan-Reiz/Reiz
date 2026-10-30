@@ -302,7 +302,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
         text: t('common.takePhoto'),
         onPress: async () => {
           if (!(await needCamera())) return;
-          const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 }); // sans recadrage : la photo reste telle que prise
+          const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 }); // sans recadrage : la photo reste telle que prise
           if (!result.canceled) acceptAsset(result.assets[0], false, true);
         }
       },
@@ -330,7 +330,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
             // Avec l'éditeur de rognage, photos et vidéos ont chacune leur bouton : le recadrage
             // d'iOS ne s'applique plus qu'aux photos, la coupe des vidéos passe par notre éditeur.
             mediaTypes: trim ? ['images'] : ['images', 'videos'],
-            quality: 0.7,
+            quality: 0.9, // la vraie compression se fait à l'envoi (compressImage) : ne pas abîmer la photo deux fois
             // Photo sans recadrage (le 4:3 imposé zoomait). Sans l'éditeur (build 1.0.0), allowsEditing permet encore de
             // couper une vidéo trop longue sur iPhone.
             allowsEditing: !trim,

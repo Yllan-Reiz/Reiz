@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Pressable, StyleProp, ViewStyle } from 'react-native';
+import { View, Pressable, Platform, StyleProp, ViewStyle } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -8,16 +8,22 @@ import { t } from '../i18n';
 // Vidéo courte d'une publication (15 s max), à la façon d'Instagram :
 // muette et en boucle, elle ne joue que si la carte est à l'écran (`active`),
 // sinon dix vidéos tourneraient en même temps. Un tap coupe ou remet le son.
-export function FeedVideo({ uri, active, style }: {
+// En préparation, on ne charge que le début : une vidéo jamais regardée ne doit pas coûter son poids entier.
+const PRELOAD_SEC = 4;
+const FULL_BUFFER_SEC = Platform.OS === 'ios' ? 0 : 20; // valeurs par défaut d'expo-video (0 = iOS décide)
+
+export function FeedVideo({ uri, active, preload = false, style }: {
   uri: string;
   active: boolean;
+  /** Carte voisine : le lecteur se tient prêt en pause et ne charge que le début de la vidéo. */
+  preload?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   // Le lecteur n'existe que pour la carte visible. Avant, chaque vidéo du fil créait son lecteur dès
   // l'affichage de la carte et commençait à télécharger : plusieurs vidéos de 20 Mo se disputaient la
   // connexion avec les photos, et tout le fil ralentissait.
   // Carte pas encore à l'écran : une icône de lecture, pour que la case ne passe pas pour une image cassée.
-  if (!active) {
+  if (!active && !preload) {
     return (
       <View style={[style, { backgroundColor: '#111', alignItems: 'center', justifyContent: 'center' }]}>
         <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
@@ -26,18 +32,24 @@ export function FeedVideo({ uri, active, style }: {
       </View>
     );
   }
-  return <FeedVideoPlayer uri={uri} style={style} />;
+  return <FeedVideoPlayer uri={uri} playing={active} style={style} />;
 }
 
-function FeedVideoPlayer({ uri, style }: { uri: string; style?: StyleProp<ViewStyle> }) {
+function FeedVideoPlayer({ uri, playing, style }: { uri: string; playing: boolean; style?: StyleProp<ViewStyle> }) {
   const [muted, setMuted] = useState(true);
   const player = useVideoPlayer(uri, p => {
     p.loop = true;
     p.muted = true;
-    p.play();
+    if (!playing) p.bufferOptions = { preferredForwardBufferDuration: PRELOAD_SEC };
   });
 
+  // Pas de useCaching d'expo-video : essayé le 30/10/2026, les vidéos du fil ne se lisaient plus du tout sur iOS.
   useEffect(() => { player.muted = muted; }, [muted, player]);
+  useEffect(() => {
+    if (!playing) { player.pause(); return; }
+    player.bufferOptions = { preferredForwardBufferDuration: FULL_BUFFER_SEC };
+    player.play();
+  }, [playing, player]);
 
   return (
     <Pressable

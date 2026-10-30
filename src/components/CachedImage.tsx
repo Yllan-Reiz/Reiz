@@ -15,18 +15,36 @@ function expoImage(): any | null {
   return ExpoImage;
 }
 
-/** La partie stable d'une adresse signée Supabase : le chemin du fichier (et la taille demandée). */
+/**
+ * La partie stable d'une adresse signée Supabase : le chemin du fichier et, pour une photo réduite, sa taille.
+ * PIÈGE (bug des photos floues, corrigé le 30/10/2026) : la taille n'est pas écrite dans l'adresse, elle est DANS le
+ * jeton. Sans la lire, la vignette de 200 px de l'Activité et la photo du fil avaient la même clé : la première
+ * téléchargée servait pour les deux, et le fil affichait la vignette étirée.
+ */
 export const stableKey = (uri: string) => {
   const [base, query = ''] = uri.split('?');
-  const width = /(?:^|&)width=(\d+)/.exec(query)?.[1];
-  return width ? `${base}#w${width}` : base;
+  const size = transformOf(query);
+  return size ? `${base}#${size}` : base;
 };
+
+function transformOf(query: string): string | null {
+  const payload = /(?:^|&)token=[^.&]+\.([^.&]+)\./.exec(query)?.[1];
+  if (!payload) return null;
+  try {
+    return /"transformations?":"([^"]+)"/.exec(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Ce qu'on sait d'une image à la fin du chargement. `cached` : venue du téléphone, sans passer par le réseau. */
+export type ImageLoadInfo = { width?: number; height?: number; cached: boolean };
 
 export function CachedImage({ uri, style, resizeMode = 'cover', onLoad, blurRadius }: {
   uri: string;
   style?: StyleProp<ImageStyle>;
   resizeMode?: ImageResizeMode;
-  onLoad?: () => void;
+  onLoad?: (info: ImageLoadInfo) => void;
   blurRadius?: number;
 }) {
   // Photo réduite refusée (quota Supabase, lien expiré) : on retente une fois avec la photo d'origine.
@@ -40,7 +58,7 @@ export function CachedImage({ uri, style, resizeMode = 'cover', onLoad, blurRadi
   };
 
   const Img = expoImage();
-  if (!Img) return <RNImage source={{ uri: src }} style={style} resizeMode={resizeMode} onLoad={onLoad} onError={onError} blurRadius={blurRadius} />;
+  if (!Img) return <RNImage source={{ uri: src }} style={style} resizeMode={resizeMode} onLoad={e => { const src = e.nativeEvent.source; onLoad?.({ width: src?.width, height: src?.height, cached: false }); }} onError={onError} blurRadius={blurRadius} />;
   return (
     <Img
       source={{ uri: src, cacheKey: stableKey(src) }}
@@ -51,7 +69,7 @@ export function CachedImage({ uri, style, resizeMode = 'cover', onLoad, blurRadi
       onError={onError}
       transition={0}
       blurRadius={blurRadius}
-      onLoad={onLoad}
+      onLoad={(e: any) => onLoad?.({ width: e?.source?.width, height: e?.source?.height, cached: !!e?.cacheType && e.cacheType !== 'none' })}
     />
   );
 }

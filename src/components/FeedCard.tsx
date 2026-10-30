@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, ReactNode } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, Alert, Animated, Easing, Pressable, Modal, FlatList } from 'react-native';
+import { useState, useEffect, useRef, memo, ReactNode } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Animated, Easing, Pressable, Modal, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
@@ -22,7 +22,7 @@ import { JourneyModal } from './JourneyModal';
 import { lateLabel, ON_TIME_MIN } from '../lib/moment';
 import { FloatingEmoji, nextFloatId } from './FloatingEmoji';
 import { t, tp, unitLabel, dirIcon } from '../i18n';
-import { CachedImage } from './CachedImage';
+import { CachedImage, ImageLoadInfo } from './CachedImage';
 
 // Ouverture/fermeture en fondu-montée. Le contenu reste monté le temps de la
 // sortie, sinon le panneau disparaît d'un coup sec.
@@ -91,7 +91,7 @@ const STACK_MAX = 4;
 const photoRatios = new Map<string, number>();
 const EDIT_CAPTION_MS = 5 * 60 * 1000;
 
-export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, onPinChanged, onDuoReply, onOpenProfile, duoDone, duoValidated, closeAuthor, duelBusyIds, onChallenge }: {
+export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, preloadVideo = false, onPinChanged, onDuoReply, onOpenProfile, duoDone, duoValidated, closeAuthor, duelBusyIds, onChallenge }: {
   // L'auteur est dans ton cercle proche : une étoile à côté de son prénom.
   closeAuthor?: boolean;
   u: Update;
@@ -103,6 +103,8 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   openCommentsOnMount?: boolean;
   // Carte la plus visible à l'écran : seule sa vidéo joue.
   isActive?: boolean;
+  // Carte voisine de celle qu'on regarde : sa vidéo se tient prête, pour démarrer sans écran noir.
+  preloadVideo?: boolean;
   // Appelé après épinglage / désépinglage, pour que le profil se mette à jour.
   onPinChanged?: () => void;
   // Séance en duo : l'ami identifié publie la sienne, avec l'auteur identifié en retour.
@@ -242,17 +244,13 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   // La photo garde ses proportions : plus de cadre 2:3 qui zoome dedans (bornes : 9:16 à 16:9, le reste avec des bandes).
   const photoKey = (u.photo_url || '').split('?')[0];
   const [photoRatio, setPhotoRatio] = useState(photoRatios.get(photoKey) ?? 3 / 4);
-  useEffect(() => {
-    if (!u.photo_url || isVideo(u.photo_url) || photoRatios.has(photoKey)) return;
-    let alive = true;
-    Image.getSize(u.photo_url, (w, h) => {
-      if (!h) return;
-      const r = Math.max(9 / 16, Math.min(16 / 9, w / h));
-      photoRatios.set(photoKey, r);
-      if (alive) setPhotoRatio(r);
-    }, () => {});
-    return () => { alive = false; };
-  }, [u.photo_url, photoKey]);
+  // Lues sur la photo affichée. Avant le 30/10/2026, Image.getSize téléchargeait chaque photo une deuxième fois, juste pour ses dimensions.
+  const onPhotoLoaded = ({ width: w, height: h }: ImageLoadInfo) => {
+    if (!w || !h) return;
+    const r = Math.max(9 / 16, Math.min(16 / 9, w / h));
+    photoRatios.set(photoKey, r);
+    setPhotoRatio(r);
+  };
   // Légende modifiable 5 minutes après l'envoi.
   const [caption, setCaption] = useState(u.caption);
   useEffect(() => { setCaption(u.caption); }, [u.caption]);
@@ -496,8 +494,8 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       {u.photo_url ? (
         <Pressable style={s.feedPhotoWrap} onPress={() => showQuick && setShowQuick(false)} disabled={!showQuick}>
           {isVid
-            ? <FeedVideo uri={u.photo_url} active={isActive} style={s.feedPhoto} />
-            : <FadeInImage uri={u.photo_url} style={[s.feedPhoto, { aspectRatio: photoRatio }]} resizeMode="contain" />}
+            ? <FeedVideo uri={u.photo_url} active={isActive} preload={preloadVideo} style={s.feedPhoto} />
+            : <FadeInImage uri={u.photo_url} style={[s.feedPhoto, { aspectRatio: photoRatio }]} resizeMode="contain" onLoaded={onPhotoLoaded} />}
           <Overlay />
         </Pressable>
       ) : (
@@ -631,3 +629,11 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
     </View>
   );
 }
+
+// Version du fil : une carte ne se redessine que si ce qu'elle affiche a changé. Sans ça, chaque carte du fil se
+// redessinait dès qu'une autre passait à l'écran, et le défilement accrochait. Les fonctions (on...) sont volontairement
+// ignorées : celles du fil ne dépendent que de l'utilisateur connecté et de fonctions stables.
+export const FeedCardInFeed = memo(FeedCard, (a, b) =>
+  a.u === b.u && a.meta === b.meta && a.currentUserId === b.currentUserId
+  && a.isActive === b.isActive && a.preloadVideo === b.preloadVideo && a.duelBusyIds === b.duelBusyIds
+  && a.duoDone === b.duoDone && a.duoValidated === b.duoValidated && a.closeAuthor === b.closeAuthor);

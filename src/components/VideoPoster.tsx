@@ -21,6 +21,8 @@ export function VideoPoster({ uri, style, fallback }: { uri: string; style?: Sty
 function PosterPlayer({ uri, style, fallback }: { uri: string; style?: StyleProp<ViewStyle>; fallback?: ReactNode }) {
   const [ready, setReady] = useState(false);
   const player = useVideoPlayer(uri, p => {
+    // Un aperçu n'a besoin que de sa première image, pas de plusieurs Mo de vidéo.
+    p.bufferOptions = { preferredForwardBufferDuration: 2 };
     p.muted = true;
     p.loop = false;
     p.pause();

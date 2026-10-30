@@ -16,7 +16,7 @@ import { hasSchedule, daysLabel, GLASS_OBJECTIVES, GLASS_FRIENDS } from '../cons
 import { Update, Objective, FeedMeta } from '../lib/types';
 import { s, F } from '../styles';
 import { FlameStreak } from '../components/FlameStreak';
-import { FeedCard } from '../components/FeedCard';
+import { FeedCardInFeed } from '../components/FeedCard';
 import { NavTab } from '../components/NavTab';
 import { GlassSurface, LIQUID_GLASS } from '../components/GlassSurface';
 import { CreateObjectiveModal } from '../components/CreateObjectiveModal';
@@ -264,8 +264,9 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
 
     // 2. Le bucket est privé : chemins -> URLs signées. Presque toujours déjà en mémoire (voir storage.ts).
     const [signed, avatars] = await Promise.all([
-      // Photos réduites à 1080 px de large (l'écran n'en affiche pas plus) : les plus lourdes pèsent 2 Mo.
-      signMany(visible.map(u => u.photo_url), { width: 1080 }),
+      // La photo stockée, déjà allégée à l'envoi (1440 px, voir compressImage) : une seule requête pour toute la page,
+      // la meilleure qualité, et pas de quota Supabase. Avant le 30/10/2026 : une requête par photo pour une version 1080 px.
+      signMany(visible.map(u => u.photo_url)),
       signAvatars(visible.map(u => u.users?.avatar_url)),
     ]);
     visible.forEach(u => {
@@ -600,12 +601,14 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 ) : null}
               </View>
             }
-            renderItem={({ item }) => (
-              <FeedCard
+            renderItem={({ item, index }) => (
+              <FeedCardInFeed
                 u={item}
                 meta={feedMeta[item.id]}
                 currentUserId={userId}
                 isActive={item.id === activeId}
+                // La vidéo d'à côté reste prête dans les deux sens : ni écran noir, ni nouveau téléchargement en remontant.
+                preloadVideo={(index > 0 && updates[index - 1].id === activeId) || updates[index + 1]?.id === activeId}
                 onDuoReply={(authorId) => onPost({ duoWith: authorId })}
                 onOpenProfile={openProfile}
                 duelBusyIds={duelBusyIds}
