@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Modal, Image, Keyboard, LayoutAnimation, Platform, Alert, Pressable, KeyboardEvent } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Modal, Image, Keyboard, LayoutAnimation, Platform, Alert, Pressable, KeyboardEvent, Animated, PanResponder, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -12,8 +12,13 @@ import { GifPicker } from './GifPicker';
 import { s, F } from '../styles';
 import { t } from '../i18n';
 import { CachedImage } from './CachedImage';
+import { GlassSurface } from './GlassSurface';
 
 type Likes = Record<string, { count: number; mine: boolean }>;
+
+// Couleurs posées sur le verre : le fil reste visible, flouté, derrière les commentaires.
+const GLASS_LINE = 'rgba(255,255,255,0.12)';
+const GLASS_FILL = 'rgba(255,255,255,0.09)';
 
 /** Un GIF de commentaire : il garde ses proportions (lues au chargement), 180 de large au plus. */
 function CommentGif({ id }: { id: string }) {
@@ -224,6 +229,23 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
     ]);
   };
 
+  // Fermer en tirant vers le bas : le geste que donnait la feuille d'iOS, à refaire sur une feuille transparente.
+  const dragY = useRef(new Animated.Value(0)).current;
+  useEffect(() => { if (visible) dragY.setValue(0); }, [visible, dragY]);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const dragToClose = useRef(PanResponder.create({
+    // Dès le toucher : la poignée et le titre ne servent qu'à ça (« Fermer » garde son propre toucher).
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+    onPanResponderMove: (_, g) => { dragY.setValue(Math.max(0, g.dy)); },
+    onPanResponderRelease: (_, g) => {
+      if (g.dy > 110 || g.vy > 0.9) closeRef.current();
+      else Animated.spring(dragY, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
+    },
+    onPanResponderTerminate: () => { Animated.spring(dragY, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start(); },
+  })).current;
+
   const roots = comments.filter(c => !c.parent_id);
   const repliesOf = (id: string) => comments.filter(c => c.parent_id === id);
 
@@ -242,7 +264,7 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
           <CommentAvatar name={c.users?.full_name} url={c.users?.avatar_url} small={isReply} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <View style={s.commentContent}>
+          <View style={[s.commentContent, { backgroundColor: GLASS_FILL }]}>
             <Text style={s.commentName} onPress={onOpenProfile ? () => goProfile(c.user_id) : undefined} suppressHighlighting>{c.users?.full_name || t('common.user')}</Text>
             {gifIdOf(c.content) ? <CommentGif id={gifIdOf(c.content)!} /> : <Text style={s.commentText}>{c.content}</Text>}
           </View>
@@ -267,14 +289,24 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View ref={rootRef} style={[s.modalContainer, { paddingBottom: keyboardPad }]}>
-        <View style={s.modalHeader}>
+    <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen" statusBarTranslucent onRequestClose={onClose}>
+      <View ref={rootRef} style={{ flex: 1 }}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('common.close')} />
+        <Animated.View style={{ flex: 1, marginTop: insets.top + 44, paddingBottom: keyboardPad, transform: [{ translateY: dragY }] }}>
+        {/* Déborde en bas : seuls les coins du haut sont arrondis. */}
+        <GlassSurface radius={30} intensity={60} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: -60 }}>
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10,10,10,0.2)' }]} />
+        </GlassSurface>
+        {/* On tire la poignée ou le titre vers le bas pour fermer, comme une feuille iOS. */}
+        <View {...dragToClose.panHandlers}>
+        <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)', marginTop: 8 }} />
+        <View style={[s.modalHeader, { paddingTop: 12, borderBottomColor: GLASS_LINE }]}>
           <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Text style={s.modalCancel}>{t('common.close')}</Text>
           </TouchableOpacity>
           <Text style={s.modalTitle}>{t('comments.title')}</Text>
           <View style={{ width: 46 }} />
+        </View>
         </View>
         {loading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#fff" /></View>
@@ -295,7 +327,7 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
           </ScrollView>
         )}
         {replyTo && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8, backgroundColor: '#111', borderTopWidth: 1, borderTopColor: '#1a1a1a' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8, backgroundColor: GLASS_FILL, borderTopWidth: 1, borderTopColor: GLASS_LINE }}>
             <Text style={{ color: '#aaa', fontSize: 12, flex: 1 }}>
               {t('comments.replyingTo')} <Text style={{ color: '#fff', fontFamily: F.bold }}>{replyTo.name}</Text>
             </Text>
@@ -304,22 +336,22 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
             </TouchableOpacity>
           </View>
         )}
-        <View style={[s.commentInputRow, { paddingBottom: keyboardPad > 0 ? 12 : Math.max(12, insets.bottom) }]}>
+        <View style={[s.commentInputRow, { backgroundColor: 'transparent', borderTopColor: GLASS_LINE, paddingBottom: keyboardPad > 0 ? 12 : Math.max(12, insets.bottom) }]}>
           {gifsAvailable() && (
             <TouchableOpacity
               onPress={() => { Keyboard.dismiss(); setGifOpen(true); }}
               disabled={sending}
               accessibilityLabel={t('comments.addGif')}
-              style={{ height: 36, paddingHorizontal: 10, borderRadius: 18, borderWidth: 1.5, borderColor: '#2a2a2a', backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center' }}
+              style={{ height: 36, paddingHorizontal: 10, borderRadius: 18, borderWidth: 1, borderColor: GLASS_LINE, backgroundColor: GLASS_FILL, alignItems: 'center', justifyContent: 'center' }}
             >
               <Text style={{ color: '#fff', fontSize: 12, fontFamily: F.black, letterSpacing: 0.5 }}>GIF</Text>
             </TouchableOpacity>
           )}
           <TextInput
             ref={inputRef}
-            style={s.commentInput}
+            style={[s.commentInput, { backgroundColor: GLASS_FILL, borderWidth: 1, borderColor: GLASS_LINE }]}
             placeholder={replyTo ? t('comments.replyTo', { name: replyTo.name }) : t('comments.placeholder')}
-            placeholderTextColor="#666"
+            placeholderTextColor="rgba(255,255,255,0.5)"
             value={newComment}
             onChangeText={setNewComment}
             onBlur={() => { if (!Keyboard.isVisible()) setKeyboardPad(0); }}
@@ -327,15 +359,16 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, o
             maxLength={500}
           />
           <TouchableOpacity
-            style={[s.sendBtn, (!newComment.trim() || sending) && s.sendBtnDisabled]}
+            style={[s.sendBtn, (!newComment.trim() || sending) && { backgroundColor: GLASS_FILL }]}
             onPress={sending || !newComment.trim() ? undefined : () => handleSend()}
             accessibilityLabel={t('common.send')}
           >
             {sending
               ? <ActivityIndicator color="#000" size="small" />
-              : <Ionicons name="arrow-up" size={18} color={!newComment.trim() ? '#666' : '#000'} />}
+              : <Ionicons name="arrow-up" size={18} color={!newComment.trim() ? 'rgba(255,255,255,0.5)' : '#000'} />}
           </TouchableOpacity>
         </View>
+        </Animated.View>
       </View>
       <GifPicker visible={gifOpen} onClose={() => setGifOpen(false)} onPick={sendGif} />
     </Modal>
