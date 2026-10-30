@@ -72,7 +72,11 @@ export function CircleTodayCard({ reloadKey, onOpenProfile }: { reloadKey?: numb
           <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, fontFamily: F.bold }}>{t('circleToday.count', { done, total: faces.length })}</Text>
         </View>
         <Text style={{ color: '#fff', fontSize: 20, fontFamily: F.black, letterSpacing: -0.5, marginTop: 8 }}>
-          {complete ? t('circleToday.complete') : meMissing ? t('circleToday.youMissing') : missing.length === 1 ? t('circleToday.oneLeft', { name: missing[0] }) : tp('circleToday.left', missing.length)}
+          {/* Toi seul manquant, un seul ami manquant, sinon combien manquent (toi compris). */}
+          {complete ? t('circleToday.complete')
+            : meMissing && missing.length === 0 ? t('circleToday.youMissing')
+            : !meMissing && missing.length === 1 ? t('circleToday.oneLeft', { name: missing[0] })
+            : tp('circleToday.left', faces.length - done)}
         </Text>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
           {faces.map(f => (

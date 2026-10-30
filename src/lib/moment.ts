@@ -6,6 +6,8 @@ import { t } from '../i18n';
 // Sans la table (base d'avant la phase 29) ou sans moment aujourd'hui : null, l'écran de publication reste normal.
 
 export type MomentKind = 'session' | 'recovery';
+/** `at` : l'heure où la notification est partie (sent_at), à défaut l'heure prévue. La tâche passe toutes les
+ *  5 minutes : le push peut partir jusqu'à 5 minutes après l'heure prévue, les 10 minutes se comptent depuis le push. */
 export type TodayMoment = { kind: MomentKind; at: string; posted: boolean };
 
 export const ON_TIME_MIN = 10;
@@ -15,12 +17,12 @@ const todayLocal = () => new Date().toLocaleDateString('en-CA');
 export async function loadTodayMoment(): Promise<TodayMoment | null> {
   const user = await currentUser();
   if (!user) return null;
-  const { data, error } = await supabase.from('moments').select('kind, at').eq('user_id', user.id).eq('day', todayLocal()).maybeSingle();
+  const { data, error } = await supabase.from('moments').select('kind, at, sent_at').eq('user_id', user.id).eq('day', todayLocal()).maybeSingle();
   if (error || !data) return null;
   const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
   const { count } = await supabase.from('updates').select('id', { count: 'exact', head: true })
     .eq('user_id', user.id).not('moment', 'is', null).gte('created_at', midnight.toISOString());
-  return { kind: data.kind as MomentKind, at: data.at, posted: (count || 0) > 0 };
+  return { kind: data.kind as MomentKind, at: (data as any).sent_at ?? data.at, posted: (count || 0) > 0 };
 }
 
 /** Minutes écoulées depuis le moment (0 avant). */
