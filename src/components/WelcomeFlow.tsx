@@ -15,6 +15,7 @@ import { registerForPushNotifications } from '../lib/notifications';
 import { AUTO_SUPPORTED, isAutoEnabled, setAutoEnabled, addPlaceHere } from '../lib/presence';
 import { contactsAvailable, inviteText } from '../lib/contacts';
 import { track } from '../lib/track';
+import { PendingRequestsCard } from './PendingRequestsCard';
 import { APP_STORE_URL, daysLabel, ALL_DAYS, WELCOME_FLOW } from '../constants';
 import { CachedImage } from './CachedImage';
 import { ContactsScreen } from './ContactsScreen';
@@ -642,6 +643,8 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
                       <Title>{t('welcome.friendsTitle')}</Title>
                       <Sub>{t('welcome.friendsSub')}</Sub>
                     </Rise>
+                    {/* Quelqu'un t'a déjà ajouté pendant l'inscription : accepter ici (1.2). Pas en aperçu. */}
+                    {!preview && <Rise delay={120} style={{ marginTop: 20 }}><PendingRequestsCard userId={userId} from="welcome" onChanged={() => { wrote.current = true; }} style={{ marginBottom: 0 }} /></Rise>}
                     <Rise delay={160} style={{ marginTop: 24 }}>
                       <GlassCard radius={16}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14 }}>

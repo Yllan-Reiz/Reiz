@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, TextInput, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from './GlassSurface';
 import { SectionHeader } from './ProfileSections';
-import { Friend, PendingRequest } from '../lib/types';
+import { Friend, PendingRequest, SentRequest } from '../lib/types';
 import { GUTTER } from '../constants';
 import { F } from '../styles';
 import { t, tp, dirIcon } from '../i18n';
@@ -42,7 +43,7 @@ function RoundBtn({ icon, onPress, label, primary, filled }: { icon: any; onPres
   );
 }
 
-function Row({ person, onPress, onLongPress, ring, right }: { person: Person; onPress: () => void; onLongPress?: () => void; ring?: boolean; right?: React.ReactNode }) {
+function Row({ person, onPress, onLongPress, ring, right, sub }: { person: Person; onPress: () => void; onLongPress?: () => void; ring?: boolean; right?: React.ReactNode; sub?: string }) {
   return (
     <TouchableOpacity onPress={onPress} onLongPress={onLongPress} activeOpacity={0.8} style={{ marginBottom: 10 }}>
       <GlassCard radius={26}>
@@ -50,7 +51,7 @@ function Row({ person, onPress, onLongPress, ring, right }: { person: Person; on
           <Avatar url={person.avatar_url} name={person.full_name} ring={ring} />
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#fff', fontSize: 17, fontFamily: F.bold }} numberOfLines={1}>{person.full_name}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, fontFamily: F.regular, marginTop: 1 }} numberOfLines={1}>@{person.username}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, fontFamily: F.regular, marginTop: 1 }} numberOfLines={1}>{sub ?? `@${person.username}`}</Text>
           </View>
           {right}
         </View>
@@ -74,6 +75,10 @@ const SPORT_SEARCH: { id: string; label: string; terms: string[] }[] = [
 export function FriendsGlassView(p: {
   friends: Friend[];
   pending: PendingRequest[];
+  /** Mes demandes sans réponse (1.2) : relancer par message ou annuler. */
+  sent: SentRequest[];
+  onNudge: (r: SentRequest) => void;
+  onCancelSent: (r: SentRequest) => void;
   suggestions: any[];
   searchResults: any[];
   searchQuery: string;
@@ -108,6 +113,9 @@ export function FriendsGlassView(p: {
   isFriend: (userId: string) => boolean;
   bottomPad: number;
 }) {
+  // Demandes envoyées : les 3 plus anciennes, le reste sur demande (on peut en avoir envoyé une vingtaine).
+  const [allSent, setAllSent] = useState(false);
+  const sentShown = allSent ? p.sent : p.sent.slice(0, 3);
   const close = p.friends.filter(f => p.closeIds.has(f.id));
   const others = p.friends.filter(f => !p.closeIds.has(f.id));
   const star = (f: Friend) => <RoundBtn icon={p.closeIds.has(f.id) ? 'star' : 'star-outline'} filled={p.closeIds.has(f.id)} label={p.closeIds.has(f.id) ? t('friends.closeRemove', { name: f.full_name }) : t('friends.closeAdd', { name: f.full_name })} onPress={() => p.onToggleClose(f.id)} />;
@@ -233,6 +241,34 @@ export function FriendsGlassView(p: {
               </View>
             } />
           ))}
+        </View>
+      )}
+
+      {/* Demandes envoyées, sans réponse : souvent quelqu'un qu'on connaît, un message de toi vaut mieux qu'une
+          notification. « Relancer » ouvre la feuille de partage avec un message prêt (1.2). */}
+      {p.sent.length > 0 && p.searchQuery.trim().length < 2 && (
+        <View style={{ paddingHorizontal: GUTTER, marginTop: 26 }}>
+          <SectionHeader title={t('requests.sentTitle')} count={p.sent.length} />
+          {sentShown.map(r => {
+            const days = Math.floor((Date.now() - new Date(r.created_at).getTime()) / (24 * 3600 * 1000));
+            return (
+              <Row key={r.friendship_id} person={r} onPress={() => p.onViewProfile(r.id)} sub={days < 1 ? t('requests.sentToday') : tp('requests.sentDays', days)} right={
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <TouchableOpacity onPress={() => p.onNudge(r)} accessibilityRole="button" accessibilityLabel={t('requests.nudgeA11y', { name: r.full_name })} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                    style={{ height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>{t('requests.nudge')}</Text>
+                  </TouchableOpacity>
+                  <RoundBtn icon="close" label={t('requests.cancelA11y', { name: r.full_name })} onPress={() => p.onCancelSent(r)} />
+                </View>
+              } />
+            );
+          })}
+          {p.sent.length > sentShown.length && (
+            <TouchableOpacity onPress={() => setAllSent(true)} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 4 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: F.semibold }}>{t('requests.seeAllSent', { n: p.sent.length })}</Text>
+              <Ionicons name={dirIcon('chevron-down')} size={15} color="rgba(255,255,255,0.6)" />
+            </TouchableOpacity>
+          )}
         </View>
       )}
 

@@ -1087,6 +1087,26 @@ export const fr = {
     myJourney: "Partager mon parcours",
     feedWin: "Objectif atteint",
   },
+  requests: {
+    seeAllSent: "Voir les {n} demandes envoyées",
+    label: { one: "1 DEMANDE D'AMI", other: "{count} DEMANDES D'AMIS" },
+    wants: "veut rejoindre ton cercle",
+    accept: "Accepter la demande de {name}",
+    acceptShort: "Accepter",
+    decline: "Refuser la demande de {name}",
+    seeAll: "Voir les {n} demandes",
+    sentTitle: "Demandes envoyées",
+    sentToday: "Envoyée aujourd'hui",
+    sentDays: { one: "Il y a 1 jour", other: "Il y a {count} jours" },
+    nudge: "Relancer",
+    nudgeA11y: "Relancer {name}",
+    nudgeText: "Salut {name}, je t'ai envoyé une demande sur Reiz. Accepte-la pour qu'on se suive sur nos objectifs !",
+    nudgeTextUser: "Salut {name}, je t'ai envoyé une demande sur Reiz (@{username}). Accepte-la pour qu'on se suive sur nos objectifs !",
+    cancel: "Annuler la demande",
+    cancelA11y: "Annuler la demande à {name}",
+    cancelTitle: "Annuler la demande ?",
+    cancelText: "{name} ne la verra plus.",
+  },
 };
 
 export type Dict = typeof fr;

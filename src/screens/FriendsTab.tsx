@@ -13,7 +13,8 @@ import { ShareProfileSheet } from '../components/ShareProfileSheet';
 import { ContactsScreen } from '../components/ContactsScreen';
 import { GlassSurface } from '../components/GlassSurface';
 import * as Haptics from 'expo-haptics';
-import { Friend, PendingRequest } from '../lib/types';
+import { Friend, PendingRequest, SentRequest } from '../lib/types';
+import { track } from '../lib/track';
 import { APP_STORE_URL, GUTTER, navClearance, GLASS_FRIENDS } from '../constants';
 import { FriendsGlassView } from '../components/FriendsGlassView';
 import { s, F } from '../styles';
@@ -24,6 +25,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   const insets = useSafeAreaInsets();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pending, setPending] = useState<PendingRequest[]>([]);
+  const [sentReqs, setSentReqs] = useState<SentRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
@@ -133,7 +135,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     if (!silent) setLoading(true);
     const { data, error } = await supabase
       .from('friendships')
-      .select('id, status, requester_id, receiver_id, requester:users!friendships_requester_id_fkey(id, full_name, username, avatar_url), receiver:users!friendships_receiver_id_fkey(id, full_name, username, avatar_url)')
+      .select('id, status, created_at, requester_id, receiver_id, requester:users!friendships_requester_id_fkey(id, full_name, username, avatar_url), receiver:users!friendships_receiver_id_fkey(id, full_name, username, avatar_url)')
       .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`);
     if (!error && data) {
       const accepted: Friend[] = [];
@@ -141,21 +143,29 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       // Demandes que J'AI envoyées, toujours en attente : le bouton reste sur « Envoyé » d'une visite à l'autre
       // (avant le 25/10/2026, seule la mémoire de l'écran le savait, et « Ajouter » revenait au retour sur l'onglet).
       const sent: string[] = [];
+      const sentList: SentRequest[] = [];
       data.forEach((f: any) => {
         const isRequester = f.requester_id === uid;
         const other = isRequester ? f.receiver : f.requester;
         if (!other) return;
         if (f.status === 'accepted') accepted.push({ id: other.id, full_name: other.full_name, username: other.username, friendship_id: f.id, status: f.status, is_requester: isRequester, avatar_url: other.avatar_url });
-        else if (f.status === 'pending' && isRequester) sent.push(other.id);
+        else if (f.status === 'pending' && isRequester) {
+          sent.push(other.id);
+          sentList.push({ id: other.id, full_name: other.full_name, username: other.username, friendship_id: f.id, avatar_url: other.avatar_url, created_at: f.created_at });
+        }
         else if (f.status === 'pending' && !isRequester) pendingReqs.push({ id: other.id, full_name: other.full_name, username: other.username, friendship_id: f.id, avatar_url: other.avatar_url });
       });
       // Bucket privé : les avatars des deux listes sont signés en une requête.
       const signed = await signAvatars([
         ...accepted.map(f => f.avatar_url),
         ...pendingReqs.map(p => p.avatar_url),
+        ...sentList.map(p => p.avatar_url),
       ]);
       accepted.forEach(f => { if (f.avatar_url) f.avatar_url = signed[f.avatar_url] ?? null; });
       pendingReqs.forEach(p => { if (p.avatar_url) p.avatar_url = signed[p.avatar_url] ?? null; });
+      sentList.forEach(p => { if (p.avatar_url) p.avatar_url = signed[p.avatar_url] ?? null; });
+      // Les plus anciennes d'abord : ce sont elles qu'il faut relancer.
+      setSentReqs(sentList.sort((a, b) => a.created_at.localeCompare(b.created_at)));
 
       setFriends(accepted); setPending(pendingReqs);
       setSentIds(prev => new Set([...prev, ...sent]));
@@ -313,6 +323,31 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     if (currentUserId) fetchFriends(currentUserId);
   };
 
+  // Relancer : un message de toi, par l'app de ton choix (WhatsApp, Messages...). Rien n'est envoyé sans ton geste.
+  const nudgeSent = async (r: SentRequest) => {
+    Haptics.selectionAsync().catch(() => {});
+    const first = r.full_name.split(' ')[0];
+    const days = Math.floor((Date.now() - new Date(r.created_at).getTime()) / (24 * 3600 * 1000));
+    try {
+      const res = await Share.share({ message: `${myUsername ? t('requests.nudgeTextUser', { name: first, username: myUsername }) : t('requests.nudgeText', { name: first })}\n${APP_STORE_URL}` });
+      if (res.action === Share.sharedAction) track('friend_nudge', { days }, 'friends');
+    } catch {}
+  };
+
+  const cancelSent = (r: SentRequest) => {
+    Alert.alert(t('requests.cancelTitle'), t('requests.cancelText', { name: r.full_name.split(' ')[0] }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('requests.cancel'), style: 'destructive', onPress: async () => {
+        const { error } = await supabase.from('friendships').delete().eq('id', r.friendship_id);
+        if (error) { Alert.alert(t('common.error'), frError(error)); return; }
+        track('friend_cancel', {}, 'friends');
+        setSentIds(prev => { const next = new Set(prev); next.delete(r.id); return next; });
+        setSentReqs(list => list.filter(x => x.friendship_id !== r.friendship_id));
+        if (currentUserId) fetchFriends(currentUserId, true);
+      } },
+    ]);
+  };
+
   const declineRequest = async (friendshipId: string) => {
     await supabase.from('friendships').delete().eq('id', friendshipId);
     if (currentUserId) fetchFriends(currentUserId);
@@ -337,6 +372,9 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
         <FriendsGlassView
           friends={friends}
           pending={pending}
+          sent={sentReqs}
+          onNudge={nudgeSent}
+          onCancelSent={cancelSent}
           suggestions={suggestions}
           searchResults={searchResults}
           searchQuery={searchQuery}

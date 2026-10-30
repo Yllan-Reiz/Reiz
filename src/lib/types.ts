@@ -11,6 +11,8 @@ export type ActivityItem = {
 };
 export type Friend = { id: string; full_name: string; username: string; friendship_id: string; status: string; is_requester: boolean; avatar_url?: string | null; };
 export type PendingRequest = { id: string; full_name: string; username: string; friendship_id: string; avatar_url?: string | null; };
+/** Demande que j'ai envoyée, toujours sans réponse (1.2 : relancer ou annuler). */
+export type SentRequest = PendingRequest & { created_at: string };
 
 // Données agrégées d'un post (réactions + commentaires), chargées en lot par le feed
 // pour éviter une requête par carte.

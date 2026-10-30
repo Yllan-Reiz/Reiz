@@ -21,6 +21,7 @@ import { NavTab } from '../components/NavTab';
 import { GlassSurface, LIQUID_GLASS } from '../components/GlassSurface';
 import { CreateObjectiveModal } from '../components/CreateObjectiveModal';
 import { SetupCard } from '../components/SetupCard';
+import { PendingRequestsCard } from '../components/PendingRequestsCard';
 import { FeedSkeleton } from '../components/Skeleton';
 import { FriendsTab } from './FriendsTab';
 import { ProfileScreen } from './ProfileScreen';
@@ -542,6 +543,9 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             // Le fil commence par les posts, avec au-dessus ce qui manque à ton profil (SetupCard, pour toi seul).
             // La salle, les duels et le cercle proche sont dans l'Activité (le cœur).
             ListHeaderComponent={
+              <>
+              {/* 1.2 : les demandes d'ami reçues passent avant le reste, une réponse suffit à avoir un cercle. */}
+              <PendingRequestsCard userId={userId} from="feed" onChanged={() => { fetchPendingCount(); fetchFriendCount(); }} onSeeAll={() => setTab('friends')} />
               <SetupCard
                 userId={userId}
                 hasObjective={loadingObj ? null : objectives.length > 0}
@@ -551,6 +555,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 onAddObjective={() => setShowCreateModal(true)}
                 onFindFriends={() => setTab('friends')}
               />
+              </>
             }
             ListEmptyComponent={
               loadingFeed ? (

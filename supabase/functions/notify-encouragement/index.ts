@@ -1,8 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { T, asLang, fill, num as fmt, unit as unitIn, type Lang } from './texts.ts';
+import { T, asLang, fill, names, num as fmt, unit as unitIn, type Lang } from './texts.ts';
 
 // Encouragements personnels, une fois par matin (10 h 30 à Paris).
-// Trois situations, une seule notification par personne et par passage :
+// Quatre situations, une seule notification par personne et par passage :
+//   friend   : une demande d'ami attend depuis plus de 2 jours (une relance par demande, 1.2 du 30/10/2026)
 //   almost   : un objectif est à 75 % ou 90 % (« Plus que 2 séances »)
 //   first    : un compte récent avec un objectif mais aucun post, relancé 1, 3 puis 7 jours après l'inscription
 //   comeback : aucun post depuis 3, 7 ou 14 jours
@@ -28,7 +29,7 @@ const unitLabel = (l: Lang, unit: string, n: number) => (n === 1 && unit === 's�
 const isoDowOf = (day: string) => { const w = new Date(`${day}T12:00:00Z`).getUTCDay(); return w === 0 ? 7 : w; };
 const first = (name?: string | null) => (name || '').split(' ')[0] || '';
 
-type Msg = { userId: string; kind: 'almost' | 'first' | 'comeback'; ref: string; title: string; body: string; to: string };
+type Msg = { userId: string; kind: 'friend' | 'almost' | 'first' | 'comeback'; ref: string; title: string; body: string; to: string; also?: string[] };
 
 Deno.serve(async (req) => {
   const expected = Deno.env.get('CRON_SECRET');
@@ -44,7 +45,7 @@ Deno.serve(async (req) => {
   const since60 = new Date(now.getTime() - 60 * DAY).toISOString();
   const since14 = new Date(now.getTime() - 14 * DAY).toISOString();
 
-  const [usersRes, objRes, updRes, logRes, friendsRes, unreadRes] = await Promise.all([
+  const [usersRes, objRes, updRes, logRes, friendsRes, unreadRes, waitRes, namesRes] = await Promise.all([
     supabase.from('users').select('id, full_name, username, push_token, notif_encouragement, language, created_at').not('push_token', 'is', null),
     supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed, training_days').order('created_at'),
     supabase.from('updates').select('user_id, created_at').gte('created_at', since60),
@@ -52,6 +53,12 @@ Deno.serve(async (req) => {
     supabase.from('friendships').select('requester_id, receiver_id').eq('status', 'accepted'),
     // Pour la pastille de l'icône : les notifications non lues de chacun.
     supabase.from('notifications').select('recipient_id').is('read_at', null),
+    // Demandes d'ami sans réponse depuis 2 à 30 jours.
+    supabase.from('friendships').select('id, requester_id, receiver_id, created_at').eq('status', 'pending')
+      .lt('created_at', new Date(now.getTime() - 2 * DAY).toISOString()).gt('created_at', new Date(now.getTime() - 30 * DAY).toISOString())
+      .order('created_at'),
+    // Le prénom de celui qui demande, même sans notifications de son côté.
+    supabase.from('users').select('id, full_name'),
   ]);
   const unread = new Map<string, number>();
   (unreadRes.data || []).forEach((r: any) => unread.set(r.recipient_id, (unread.get(r.recipient_id) || 0) + 1));
@@ -62,6 +69,9 @@ Deno.serve(async (req) => {
 
   const users = (usersRes.data || []).filter(u => u.notif_encouragement !== false && (!only || u.username === only));
   const nameOf = new Map((usersRes.data || []).map(u => [u.id, u.full_name as string]));
+  const anyName = new Map((namesRes.data || []).map((u: any) => [u.id, u.full_name as string]));
+  const waitingOf = new Map<string, { id: string; requester_id: string }[]>();
+  (waitRes.data || []).forEach((f: any) => waitingOf.set(f.receiver_id, [...(waitingOf.get(f.receiver_id) || []), f]));
 
   // Jours Paris où chacun a posté (60 derniers jours).
   const postDays = new Map<string, Set<string>>();
@@ -98,14 +108,29 @@ Deno.serve(async (req) => {
     const num = (n: number) => fmt(lang, n);
     const days = postDays.get(u.id) || new Set<string>();
     const objectives = objectivesOf.get(u.id) || [];
+    const logs = logsOf.get(u.id) || [];
+    const recent = logs.some(l => now.getTime() - new Date(l.sent_at).getTime() < 2 * DAY);
+
+    // 0) Quelqu'un attend sa réponse : passe avant tout le reste, même sans objectif (souvent un compte tout neuf).
+    //    Une relance par demande (encouragement_log, ref friend:<id>), jamais deux messages en 2 jours.
+    const waiting = (waitingOf.get(u.id) || []).filter(f => !logs.some(l => l.ref === `friend:${f.id}`));
+    if (waiting.length > 0 && !recent) {
+      const who = waiting.map(f => first(anyName.get(f.requester_id)) || t.someone);
+      msgs.push({
+        userId: u.id, kind: 'friend', ref: `friend:${waiting[0].id}`, also: waiting.slice(1).map(f => `friend:${f.id}`), to: u.push_token,
+        title: waiting.length === 1 ? fill(t.friendWaitTitle, { name: who[0] }) : fill(t.friendWaitManyTitle, { n: waiting.length }),
+        body: waiting.length === 1 ? t.friendWaitBody : fill(t.friendWaitManyBody, { names: names(lang, who) }),
+      });
+      continue;
+    }
+
     if (objectives.length === 0) continue;               // pas encore lancé
     if (days.has(today)) continue;                       // a déjà posté, on ne l'embête pas
     // Planning : jamais un jour de repos. Sans planning (training_days vide) l'objectif compte tous les jours.
     const dow = isoDowOf(today);
     const scheduledOn = (o: any, d: number) => !o.training_days || o.training_days.length === 0 || o.training_days.length >= 7 || o.training_days.includes(d);
     if (!objectives.some((o: any) => scheduledOn(o, dow))) continue;
-    const logs = logsOf.get(u.id) || [];
-    if (logs.some(l => now.getTime() - new Date(l.sent_at).getTime() < 2 * DAY)) continue;
+    if (recent) continue;
 
     // 1) Un objectif à 75 % ou 90 % : le palier n'est annoncé qu'une fois.
     let best: { o: any; ratio: number; ref: string } | null = null;
@@ -181,11 +206,12 @@ Deno.serve(async (req) => {
     await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(msgs.slice(i, i + 100).map(m => ({ to: m.to, title: m.title, body: m.body, sound: 'default', badge: (unread.get(m.userId) || 0) + 1, data: { type: 'reminder' } }))),
+      // Une relance de demande d'ami ouvre l'onglet Amis.
+      body: JSON.stringify(msgs.slice(i, i + 100).map(m => ({ to: m.to, title: m.title, body: m.body, sound: 'default', badge: (unread.get(m.userId) || 0) + 1, data: { type: m.kind === 'friend' ? 'friend_request' : 'reminder' } }))),
     });
   }
   if (msgs.length > 0) {
-    await supabase.from('encouragement_log').insert(msgs.map(m => ({ user_id: m.userId, kind: m.kind, ref: m.ref })));
+    await supabase.from('encouragement_log').insert(msgs.flatMap(m => [m.ref, ...(m.also || [])].map(ref => ({ user_id: m.userId, kind: m.kind, ref }))));
   }
   return new Response(`Encouraged ${msgs.length} users`);
 });
