@@ -2,8 +2,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { T, asLang, fill, num as fmt, unit as unitIn, type Lang } from './texts.ts';
 
 // Encouragements personnels, une fois par matin (10 h 30 à Paris).
-// Deux situations, une seule notification par personne et par passage :
+// Trois situations, une seule notification par personne et par passage :
 //   almost   : un objectif est à 75 % ou 90 % (« Plus que 2 séances »)
+//   first    : un compte récent avec un objectif mais aucun post, relancé 1, 3 puis 7 jours après l'inscription
 //   comeback : aucun post depuis 3, 7 ou 14 jours
 // Garde-fous : au plus un message tous les 2 jours par personne, jamais deux fois le
 // même palier (table encouragement_log), rien si la personne a déjà posté aujourd'hui,
@@ -27,7 +28,7 @@ const unitLabel = (l: Lang, unit: string, n: number) => (n === 1 && unit === 's�
 const isoDowOf = (day: string) => { const w = new Date(`${day}T12:00:00Z`).getUTCDay(); return w === 0 ? 7 : w; };
 const first = (name?: string | null) => (name || '').split(' ')[0] || '';
 
-type Msg = { userId: string; kind: 'almost' | 'comeback'; ref: string; title: string; body: string; to: string };
+type Msg = { userId: string; kind: 'almost' | 'first' | 'comeback'; ref: string; title: string; body: string; to: string };
 
 Deno.serve(async (req) => {
   const expected = Deno.env.get('CRON_SECRET');
@@ -44,8 +45,8 @@ Deno.serve(async (req) => {
   const since14 = new Date(now.getTime() - 14 * DAY).toISOString();
 
   const [usersRes, objRes, updRes, logRes, friendsRes, unreadRes] = await Promise.all([
-    supabase.from('users').select('id, full_name, username, push_token, notif_encouragement, language').not('push_token', 'is', null),
-    supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed, training_days'),
+    supabase.from('users').select('id, full_name, username, push_token, notif_encouragement, language, created_at').not('push_token', 'is', null),
+    supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed, training_days').order('created_at'),
     supabase.from('updates').select('user_id, created_at').gte('created_at', since60),
     supabase.from('encouragement_log').select('user_id, kind, ref, sent_at').gte('sent_at', since14),
     supabase.from('friendships').select('requester_id, receiver_id').eq('status', 'accepted'),
@@ -57,7 +58,7 @@ Deno.serve(async (req) => {
 
   // Avant la phase 12 la colonne `training_days` n'existe pas : on relit sans elle, tous les jours comptent.
   let objRows: any[] = objRes.data || [];
-  if (objRes.error) objRows = (await supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed')).data || [];
+  if (objRes.error) objRows = (await supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed').order('created_at')).data || [];
 
   const users = (usersRes.data || []).filter(u => u.notif_encouragement !== false && (!only || u.username === only));
   const nameOf = new Map((usersRes.data || []).map(u => [u.id, u.full_name as string]));
@@ -78,6 +79,17 @@ Deno.serve(async (req) => {
     friendsOf.set(f.requester_id, [...(friendsOf.get(f.requester_id) || []), f.receiver_id]);
     friendsOf.set(f.receiver_id, [...(friendsOf.get(f.receiver_id) || []), f.requester_id]);
   });
+
+  // Preuve sociale : des amis qui ont posté ces 3 derniers jours (« Léa a posté ces derniers jours. »).
+  const friendLineOf = (uid: string, t: (typeof T)[Lang], today: string) => {
+    const recentFriends = (friendsOf.get(uid) || []).filter(fid => {
+      const fd = postDays.get(fid);
+      return fd && [...fd].some(d => daysBetween(d, today) <= 3);
+    }).map(fid => first(nameOf.get(fid)) || t.someone);
+    return recentFriends.length === 1
+      ? fill(t.friendsPostedOne, { a: recentFriends[0] })
+      : recentFriends.length > 1 ? fill(t.friendsPostedTwo, { a: recentFriends[0], b: recentFriends[1] }) : '';
+  };
 
   const msgs: Msg[] = [];
   for (const u of users) {
@@ -117,7 +129,26 @@ Deno.serve(async (req) => {
       continue;
     }
 
-    // 2) Retour : 3, 7 ou 14 jours sans poster (le dernier post doit exister dans les 60 derniers jours).
+    // 2) Premier post : compte de 1 à 14 jours, jamais posté (aucun post sur 60 jours suffit à le dire).
+    //    Paliers 1, 3 et 7 jours, chacun une seule fois ; un jour de repos décale le palier au jour prévu suivant.
+    const age = u.created_at ? daysBetween(parisDay(new Date(u.created_at)), today) : -1;
+    if (days.size === 0 && age >= 1 && age <= 14) {
+      const step = age >= 7 ? 7 : age >= 3 ? 3 : 1;
+      const ref = `first:${step}`;
+      if (logs.some(l => l.ref === ref)) continue;
+      // L'objectif nommé : le plus récent prévu aujourd'hui.
+      const o = objectives.filter((x: any) => !x.is_completed && scheduledOn(x, dow)).pop() || objectives[objectives.length - 1];
+      const obj = `${o.emoji || ''} ${o.title}`.trim();
+      const copy = step === 1
+        ? { title: t.first1Title, body: t.first1Body }
+        : step === 3
+          ? { title: t.first3Title, body: t.first3Body }
+          : { title: t.first7Title, body: t.first7Body };
+      msgs.push({ userId: u.id, kind: 'first', ref, to: u.push_token, title: copy.title, body: [fill(copy.body, { obj }), friendLineOf(u.id, t, today)].filter(Boolean).join(' ') });
+      continue;
+    }
+
+    // 3) Retour : 3, 7 ou 14 jours sans poster (le dernier post doit exister dans les 60 derniers jours).
     if (days.size === 0) continue;
     const lastDay = [...days].sort().pop()!;
     const gap = daysBetween(lastDay, today);
@@ -132,14 +163,7 @@ Deno.serve(async (req) => {
     if (missed === 0) continue;
     const ref = `gap:${gap}:${lastDay}`;
     if (logs.some(l => l.ref === ref)) continue;
-    // Preuve sociale : des amis qui ont posté ces 3 derniers jours.
-    const recentFriends = (friendsOf.get(u.id) || []).filter(fid => {
-      const fd = postDays.get(fid);
-      return fd && [...fd].some(d => daysBetween(d, today) <= 3);
-    }).map(fid => first(nameOf.get(fid)) || t.someone);
-    const friendLine = recentFriends.length === 1
-      ? fill(t.friendsPostedOne, { a: recentFriends[0] })
-      : recentFriends.length > 1 ? fill(t.friendsPostedTwo, { a: recentFriends[0], b: recentFriends[1] }) : '';
+    const friendLine = friendLineOf(u.id, t, today);
     const copy = gap === 3
       ? { title: t.gap3Title, body: t.gap3Body }
       : gap === 7

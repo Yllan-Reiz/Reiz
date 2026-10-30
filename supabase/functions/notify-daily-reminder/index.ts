@@ -32,7 +32,8 @@ function parisMidnightISO() {
 // leurs objectifs, `training_days` ; sans planning = tous les jours). Le message le plus parlant gagne :
 //   1. un duel en cours (« Il mène 3 à 2 »)
 //   2. une série en jeu, à partir de 3 jours d'affilée
-//   3. sinon, qui a déjà posté dans le cercle
+//   3. un compte de moins de 15 jours qui n'a jamais posté : « Ton premier post » (au lieu de « Pas encore posté »)
+//   4. sinon, qui a déjà posté dans le cercle
 // Test sans rien envoyer : ?dry=1.
 Deno.serve(async (req) => {
   const expected = Deno.env.get('CRON_SECRET');
@@ -45,7 +46,7 @@ Deno.serve(async (req) => {
   const since40 = new Date(Date.now() - 40 * DAY).toISOString();
 
   const [usersRes, postedRes, objRes, friendsRes, updRes, duelRes, unreadRes] = await Promise.all([
-    supabase.from('users').select('id, full_name, push_token, language'),
+    supabase.from('users').select('id, full_name, push_token, language, created_at'),
     supabase.from('updates').select('user_id').gte('created_at', sinceISO),
     supabase.from('objectives').select('user_id, training_days'),
     supabase.from('friendships').select('requester_id, receiver_id').eq('status', 'accepted'),
@@ -123,6 +124,13 @@ Deno.serve(async (req) => {
       let body = posted.length > 0
         ? fill(posted.length > 1 ? t.dailyBodyPosted : t.dailyBodyPostedOne, { names: who })
         : t.dailyBodyNobody;
+
+      // Jamais posté (rien sur 40 jours pour un compte de moins de 15 jours) : on parle du premier post.
+      const isNew = !!u.created_at && Date.now() - new Date(u.created_at).getTime() < 15 * DAY && !rowsOf.has(u.id);
+      if (isNew) {
+        title = t.dailyFirstTitle;
+        body = posted.length > 0 ? fill(posted.length > 1 ? t.dailyFirstBodyPosted : t.dailyFirstBodyPostedOne, { names: who }) : t.dailyFirstBody;
+      }
 
       const streak = streakEndingYesterday(u.id);
       if (streak >= 3) {

@@ -67,10 +67,12 @@ type Texts = {
   dailyTitle: string; dailyBodyPosted: string; dailyBodyPostedOne: string; dailyBodyNobody: string;
   dailyStreakTitle: string; dailyStreakBodyPosted: string; dailyStreakBodyPostedOne: string; dailyStreakBody: string;
   dailyDuelTitle: string; dailyDuelBehind: string; dailyDuelAhead: string; dailyDuelTie: string;
+  dailyFirstTitle: string; dailyFirstBodyPosted: string; dailyFirstBodyPostedOne: string; dailyFirstBody: string;
   // Encouragements
   almostTitlePct: string; almostTitle: string; almostBody: string;
   friendsPostedOne: string; friendsPostedTwo: string;
   gap3Title: string; gap3Body: string; gap7Title: string; gap7Body: string; gap14Title: string; gap14Body: string;
+  first1Title: string; first1Body: string; first3Title: string; first3Body: string; first7Title: string; first7Body: string;
   // Rappel au hasard
   random: string[];
 };
@@ -106,11 +108,16 @@ export const T: Record<Lang, Texts> = {
     dailyStreakBodyPostedOne: 'Une séance et elle continue. {names} a déjà posté.', dailyStreakBody: "Une séance aujourd'hui et elle continue.",
     dailyDuelTitle: '⚔️ Ton duel contre {who}', dailyDuelBehind: "Il mène {theirs} à {mine}. Poste aujourd'hui pour revenir.",
     dailyDuelAhead: "Tu mènes {mine} à {theirs}. Poste aujourd'hui pour creuser l'écart.", dailyDuelTie: 'Égalité {mine} à {theirs}. Ta séance du jour fait la différence.',
+    dailyFirstTitle: '📸 Ton premier post', dailyFirstBodyPosted: "{names} ont posté aujourd'hui. Ton cercle attend ta première photo.",
+    dailyFirstBodyPostedOne: "{names} a posté aujourd'hui. Ton cercle attend ta première photo.", dailyFirstBody: 'Ton cercle attend ta première photo. Une seule suffit pour commencer.',
     almostTitlePct: 'Plus que {left} % 🔥', almostTitle: 'Plus que {left} {unit} 🔥', almostBody: '« {obj} » : {cur} / {target}{pct}. Tu y es presque.',
     friendsPostedOne: '{a} a posté ces derniers jours.', friendsPostedTwo: '{a} et {b} ont posté ces derniers jours.',
     gap3Title: 'Ça fait 3 jours 👀', gap3Body: 'Une petite séance suffit pour relancer la machine.',
     gap7Title: 'Une semaine sans poster', gap7Body: 'Reviens avec une séance, même courte.',
     gap14Title: 'Ton cercle pense à toi', gap14Body: 'Pose-toi un petit objectif et reprends en douceur.',
+    first1Title: "Ton premier post t'attend 📸", first1Body: '« {obj} » commence avec une photo. Ton cercle la verra tout de suite.',
+    first3Title: "Ton cercle ne t'a pas encore vu 👀", first3Body: "Une photo de ta séance pour « {obj} », et ils pourront t'encourager.",
+    first7Title: 'Une semaine sur Reiz', first7Body: 'Poste ta première séance pour « {obj} ». Une seule suffit pour lancer ta série.',
     random: [
       'Ton cercle attend ta progression.',
       "Les meilleurs ne s'arrêtent jamais. Et toi ?",
@@ -152,11 +159,16 @@ export const T: Record<Lang, Texts> = {
     dailyStreakBodyPostedOne: 'One session and it keeps going. {names} already posted.', dailyStreakBody: 'One session today and it keeps going.',
     dailyDuelTitle: '⚔️ Your duel against {who}', dailyDuelBehind: "They're leading {theirs} to {mine}. Post today to catch up.",
     dailyDuelAhead: "You're leading {mine} to {theirs}. Post today to pull ahead.", dailyDuelTie: "Tied {mine} to {theirs}. Today's session makes the difference.",
+    dailyFirstTitle: '📸 Your first post', dailyFirstBodyPosted: '{names} posted today. Your circle is waiting for your first photo.',
+    dailyFirstBodyPostedOne: '{names} posted today. Your circle is waiting for your first photo.', dailyFirstBody: 'Your circle is waiting for your first photo. Just one is enough to start.',
     almostTitlePct: 'Only {left}% to go 🔥', almostTitle: 'Only {left} {unit} to go 🔥', almostBody: '"{obj}": {cur} / {target}{pct}. You\'re almost there.',
     friendsPostedOne: '{a} posted in the last few days.', friendsPostedTwo: '{a} and {b} posted in the last few days.',
     gap3Title: "It's been 3 days 👀", gap3Body: 'One short session is enough to get going again.',
     gap7Title: 'A week without posting', gap7Body: 'Come back with a session, even a short one.',
     gap14Title: 'Your circle is thinking of you', gap14Body: 'Set yourself a small goal and ease back in.',
+    first1Title: 'Your first post is waiting 📸', first1Body: '"{obj}" starts with one photo. Your circle will see it right away.',
+    first3Title: "Your circle hasn't seen you yet 👀", first3Body: 'One photo of your session for "{obj}" and they can cheer you on.',
+    first7Title: 'One week on Reiz', first7Body: 'Post your first session for "{obj}". Just one is enough to start your streak.',
     random: [
       'Your circle is waiting for your progress.',
       'The best never stop. What about you?',
@@ -198,11 +210,16 @@ export const T: Record<Lang, Texts> = {
     dailyStreakBodyPostedOne: 'Una sesión y sigue. {names} ya ha publicado.', dailyStreakBody: 'Una sesión hoy y sigue.',
     dailyDuelTitle: '⚔️ Tu duelo contra {who}', dailyDuelBehind: 'Va ganando {theirs} a {mine}. Publica hoy para remontar.',
     dailyDuelAhead: 'Vas ganando {mine} a {theirs}. Publica hoy para ampliar la ventaja.', dailyDuelTie: 'Empate {mine} a {theirs}. Tu sesión de hoy marca la diferencia.',
+    dailyFirstTitle: '📸 Tu primera publicación', dailyFirstBodyPosted: '{names} han publicado hoy. Tu círculo espera tu primera foto.',
+    dailyFirstBodyPostedOne: '{names} ha publicado hoy. Tu círculo espera tu primera foto.', dailyFirstBody: 'Tu círculo espera tu primera foto. Basta con una para empezar.',
     almostTitlePct: 'Solo te queda un {left} % 🔥', almostTitle: 'Solo te quedan {left} {unit} 🔥', almostBody: '«{obj}»: {cur} / {target}{pct}. Ya casi lo tienes.',
     friendsPostedOne: '{a} ha publicado estos días.', friendsPostedTwo: '{a} y {b} han publicado estos días.',
     gap3Title: 'Ya van 3 días 👀', gap3Body: 'Basta una sesión corta para volver a arrancar.',
     gap7Title: 'Una semana sin publicar', gap7Body: 'Vuelve con una sesión, aunque sea corta.',
     gap14Title: 'Tu círculo piensa en ti', gap14Body: 'Márcate un objetivo pequeño y retoma con calma.',
+    first1Title: 'Tu primera publicación te espera 📸', first1Body: '«{obj}» empieza con una foto. Tu círculo la verá enseguida.',
+    first3Title: 'Tu círculo aún no te ha visto 👀', first3Body: 'Una foto de tu sesión para «{obj}» y podrán animarte.',
+    first7Title: 'Una semana en Reiz', first7Body: 'Publica tu primera sesión para «{obj}». Basta con una para empezar tu racha.',
     random: [
       'Tu círculo espera tu progreso.',
       'Los mejores nunca se detienen. ¿Y tú?',
@@ -244,11 +261,16 @@ export const T: Record<Lang, Texts> = {
     dailyStreakBodyPostedOne: 'אימון אחד והוא ממשיך. {names} כבר פרסם/ה.', dailyStreakBody: 'אימון אחד היום והוא ממשיך.',
     dailyDuelTitle: '⚔️ הדו־קרב שלך מול {who}', dailyDuelBehind: '{theirs} מול {mine} לטובתם. פרסמו היום כדי לחזור.',
     dailyDuelAhead: 'אתם מובילים {mine} מול {theirs}. פרסמו היום כדי להגדיל את הפער.', dailyDuelTie: 'תיקו {mine} מול {theirs}. האימון של היום יכריע.',
+    dailyFirstTitle: '📸 הפוסט הראשון שלכם', dailyFirstBodyPosted: '{names} פרסמו היום. המעגל מחכה לתמונה הראשונה שלכם.',
+    dailyFirstBodyPostedOne: '{names} פרסם/ה היום. המעגל מחכה לתמונה הראשונה שלכם.', dailyFirstBody: 'המעגל מחכה לתמונה הראשונה שלכם. אחת מספיקה כדי להתחיל.',
     almostTitlePct: 'נותרו רק {left}% 🔥', almostTitle: 'נותרו רק {left} {unit} 🔥', almostBody: '"{obj}": {cur} / {target}{pct}. כמעט שם.',
     friendsPostedOne: '{a} פרסם/ה בימים האחרונים.', friendsPostedTwo: '{a} ו{b} פרסמו בימים האחרונים.',
     gap3Title: 'עברו 3 ימים 👀', gap3Body: 'אימון קצר מספיק כדי לחזור לעניינים.',
     gap7Title: 'שבוע בלי לפרסם', gap7Body: 'חזרו עם אימון, גם קצר.',
     gap14Title: 'המעגל חושב עליכם', gap14Body: 'הציבו לעצמכם יעד קטן וחזרו בהדרגה.',
+    first1Title: 'הפוסט הראשון שלכם מחכה 📸', first1Body: '"{obj}" מתחיל בתמונה אחת. המעגל יראה אותה מיד.',
+    first3Title: 'המעגל עוד לא ראה אתכם 👀', first3Body: 'תמונה אחת מהאימון ל"{obj}", והם יוכלו לעודד אתכם.',
+    first7Title: 'שבוע ב-Reiz', first7Body: 'פרסמו את האימון הראשון ל"{obj}". אחד מספיק כדי להתחיל רצף.',
     random: [
       'המעגל שלך מחכה להתקדמות שלך.',
       'הטובים ביותר לא עוצרים. ואתם?',
