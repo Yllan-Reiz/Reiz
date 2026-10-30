@@ -394,7 +394,7 @@ export async function signMany(stored: (string | null | undefined)[], opts?: Sig
   }
   // Avec réduction : le serveur ne signe qu'un chemin à la fois, on en lance quelques-uns en parallèle.
   if (resized.length > 0) {
-    await pool(resized, 6, async m => {
+    await pool(resized, 10, async m => {
       const url = await signOneRaw(m.path, m.width);
       if (url) remember(m, url);
     });

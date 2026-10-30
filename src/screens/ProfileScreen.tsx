@@ -8,7 +8,7 @@ import { cacheGet, cacheSet } from '../lib/cache';
 import { frError, inUnit } from '../lib/helpers';
 import * as Haptics from 'expo-haptics';
 import { uploadImage, signOne, resetSignedCache } from '../lib/storage';
-import { Objective } from '../lib/types';
+import { Objective, Update, FeedMeta } from '../lib/types';
 import { HEATMAP_MAX_DAYS, GUTTER, navClearance } from '../constants';
 import { s, F } from '../styles';
 import { ProfileSkeleton } from '../components/Skeleton';
@@ -26,7 +26,6 @@ import { ObjectiveEditSheet } from '../components/ObjectiveEditSheet';
 import { CloseCircleBubble } from '../components/CloseCircleBubble';
 import { resetCloseCircle } from '../lib/closeCircle';
 import { forgetLiveActivityToken } from '../lib/liveActivity';
-import { Update, FeedMeta } from '../lib/types';
 import { t, tp, formatDate } from '../i18n';
 import { mark } from '../lib/perf';
 

@@ -59,10 +59,10 @@ export function PeopleListModal({ visible, userId, currentUserId, mode, onClose,
     if (!currentUserId) return;
     const on = closeIds.has(id);
     Haptics.selectionAsync().catch(() => {});
-    setCloseIds(prev => { const n = new Set(prev); on ? n.delete(id) : n.add(id); return n; });
+    setCloseIds(prev => { const n = new Set(prev); if (on) n.delete(id); else n.add(id); return n; });
     if (!on) setShown(prev => new Set(prev).add(id));
     const ok = await setClose(id, !on);
-    if (!ok) setCloseIds(prev => { const n = new Set(prev); on ? n.add(id) : n.delete(id); return n; });
+    if (!ok) setCloseIds(prev => { const n = new Set(prev); if (on) n.add(id); else n.delete(id); return n; });
   };
 
   // TES amis (ton profil) : l'étoile du cercle proche et « Retirer » sont ici, plus dans l'onglet Amis.

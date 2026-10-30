@@ -82,6 +82,23 @@ Testé seulement sur simulateur, sans rien publier sur le compte de Yllan :
 - Bandeau « nouvelle version » (chantier 7), repartage (non tranché).
 - Objectifs par semaine, e-mail de rappel des demandes d'ami, réglages de notifications par type.
 
+## Audit de fluidité (31/10/2026, commit après 6ffd1e3)
+
+Outils : `npx tsc --noEmit` (aucune erreur) et `npx eslint src App.tsx modules` (config ajoutée, 0 erreur, 55 avertissements
+sans effet). Base Supabase : index en place, aucune requête lente. Corrigé dans l'app :
+
+- Carte du fil : cinq morceaux (avatar, duo, menu, pile de visages, calque sur la photo) étaient définis comme composants
+  pendant le rendu. React les démontait et remontait à chaque rendu de la carte : visages rechargés, emojis qui
+  sautaient, toucher perdu. Ce sont maintenant des éléments.
+- Jauge de progression : animée sur le pilote natif (avant : 700 ms de calcul JavaScript par carte pendant le défilement).
+- En-tête du fil (demandes, cercle du jour, défis, mise en route) mémorisé : il ne se redessinait plus à chaque arrêt du
+  défilement.
+- Cercle du jour : au retour dans l'app, plus de relecture de 30 jours de posts du cercle (lecture de moins de 5 minutes gardée).
+- Onglet Amis : les avatars des lignes sortis du composant (même défaut que la carte du fil).
+- Vignettes des profils signées 10 à la fois au lieu de 6.
+- Un hook appelé après un retour anticipé dans Main (attrapé par le lint, corrigé).
+- `node_modules` était un lien symbolique vers ~/Desktop/Reiz committé dans git : retiré, chaque dossier a le sien.
+
 ## Commandes d'envoi
 
 Déjà préparées, à lancer une fois d'accord :

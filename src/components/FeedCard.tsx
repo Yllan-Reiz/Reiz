@@ -52,15 +52,20 @@ function Reveal({ visible, children }: { visible: boolean; children: ReactNode }
 }
 
 // Jauge de progression sous chaque post : elle se remplit à l'affichage.
+// Sur le pilote natif (glissement d'une barre pleine largeur) : animer la largeur passait par JavaScript, et chaque
+// carte qui arrivait à l'écran prenait 700 ms de calcul au fil pendant le défilement (corrigé le 31/10/2026).
 function Gauge({ pct, label }: { pct: number; label: string }) {
   const fill = useRef(new Animated.Value(0)).current;
+  const [trackW, setTrackW] = useState(0);
   useEffect(() => {
-    Animated.timing(fill, { toValue: pct, duration: 700, delay: 120, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
-  }, [pct]);
+    Animated.timing(fill, { toValue: pct / 100, duration: 700, delay: 120, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [pct, fill]);
   return (
     <View style={s.gaugeRow}>
-      <View style={s.gaugeTrack}>
-        <Animated.View style={[s.gaugeFill, { width: fill.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }) }]} />
+      <View style={s.gaugeTrack} onLayout={e => setTrackW(e.nativeEvent.layout.width)}>
+        {trackW > 0 && (
+          <Animated.View style={[s.gaugeFill, { width: trackW, transform: [{ translateX: fill.interpolate({ inputRange: [0, 1], outputRange: [-trackW, 0] }) }] }]} />
+        )}
       </View>
       <Text style={s.gaugeLabel}>{label}</Text>
     </View>
@@ -335,7 +340,9 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   const initial = uname.charAt(0).toUpperCase();
   const avatarUrl: string | undefined = u.users?.avatar_url;
   const openAuthor = onOpenProfile && u.user_id ? () => onOpenProfile(u.user_id!) : undefined;
-  const Avatar = () => (
+  // Ces morceaux sont des éléments, pas des composants : définis comme composants dans le rendu, React les démontait
+  // et les remontait à chaque rendu de la carte (visages rechargés, emojis qui sautaient, toucher perdu).
+  const avatar = (
     <TouchableOpacity onPress={openAuthor} disabled={!openAuthor} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} accessibilityLabel={t('feed.profileOf', { name: uname })}>
       {avatarUrl
         ? <CachedImage uri={avatarUrl} style={s.avImg} />
@@ -353,13 +360,11 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       { text: t('common.cancel'), style: 'cancel' as const },
     ]);
   };
-  const Duo = () => {
-    const withUsers = u.with_users || [];
-    if (!duoLabel) return null;
-    return (
+  const duoUsers = u.with_users || [];
+  const duo = !duoLabel ? null : (
       <TouchableOpacity style={[s.duoRow, duoValidated && { backgroundColor: '#242424', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }]} onPress={openDuo} disabled={!onOpenProfile} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6 }} accessibilityLabel={t('feed.sessionWith', { names: duoLabel })}>
         <View style={{ flexDirection: 'row' }}>
-          {withUsers.slice(0, 3).map((w, i) => (
+          {duoUsers.slice(0, 3).map((w, i) => (
             w.avatar_url
               ? <CachedImage key={w.id} uri={w.avatar_url} style={[s.duoAv, i > 0 && { marginLeft: -7 }]} />
               : <View key={w.id} style={[s.duoAv, s.duoAvEmpty, i > 0 && { marginLeft: -7 }]}><Text style={s.duoAvText}>{w.full_name.charAt(0).toUpperCase()}</Text></View>
@@ -369,9 +374,8 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
           ? <Text style={s.duoText} numberOfLines={1}><Text style={s.duoNames}>{t('feed.duoValidated')}</Text> {t('feed.with')} <Text style={s.duoNames}>{duoLabel}</Text></Text>
           : <Text style={s.duoText} numberOfLines={1}>{t('feed.with')} <Text style={s.duoNames}>{duoLabel}</Text></Text>}
       </TouchableOpacity>
-    );
-  };
-  const MenuBtn = () => (
+  );
+  const menuBtn = (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <TouchableOpacity style={s.cardMenuBtn} onPress={openMenu} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }} accessibilityLabel={t('feed.moreOptions')}>
         <Ionicons name="ellipsis-horizontal" size={18} color="rgba(255,255,255,0.7)" />
@@ -386,7 +390,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   // avec son emoji en pastille. Un tap ouvre la liste complète.
   // Un visage par personne (son emoji le plus récent), comme sur BeReal.
   const faces = reactors.filter((r, i) => reactors.findIndex(x => x.user_id === r.user_id) === i);
-  const Stack = () => faces.length === 0 ? null : (
+  const stack = faces.length === 0 ? null : (
     <TouchableOpacity style={s.brStack} onPress={() => setShowReactors(true)} activeOpacity={0.8} accessibilityLabel={t('feed.seeReactions')}>
       {faces.slice(0, STACK_MAX).map((r, i) => (
         <View key={r.user_id} style={[s.brStackItem, i > 0 && { marginLeft: -12 }, { zIndex: STACK_MAX - i }]}>
@@ -407,7 +411,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   // Ce qui se pose sur le média (photo, vidéo ou cadre texte) : progression en
   // liseré tout en bas, pile de visages à gauche, bouton de réaction à droite,
   // et la barre d'emojis quand on appuie dessus.
-  const Overlay = () => (
+  const overlay = (
     <>
       {/* Sur tes posts : le partage (Instagram...) bien visible, en haut à droite de la photo. */}
       {isMine && (
@@ -429,7 +433,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
         </View>
       ) : (
         <View style={s.brBottomRow} pointerEvents="box-none">
-          <Stack />
+          {stack}
           <View style={{ flex: 1 }} pointerEvents="none" />
           {/* Commenter, à côté de réagir : la fonction se voit sans chercher sous la photo. */}
           <TouchableOpacity style={[s.brReactBtn, { marginRight: 8 }]} onPress={() => setShowComments(true)} activeOpacity={0.8} accessibilityLabel={t('feed.comment')}>
@@ -474,14 +478,14 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
 
       {/* En-tête au-dessus du média, sur le noir : photo, prénom, progression et heure */}
       <View style={s.brHeader}>
-        <Avatar />
+        {avatar}
         <View style={s.cardMeta}>
           <Text style={s.cardName} onPress={openAuthor} suppressHighlighting numberOfLines={1}>{uname}{closeAuthor ? ' ★' : ''}</Text>
           <Text style={s.brSub} numberOfLines={1}>
             {u.objectives?.title && caption?.trim().toLowerCase() !== u.objectives.title.trim().toLowerCase() ? `${u.objectives.emoji || ''} ${u.objectives.title}`.trim() + ' · ' : ''}{timeAgo(u.created_at, true)}
             {u.objectives?.visibility === 'close' ? `  ★ ${t('vis.close')}` : ''}
           </Text>
-          <Duo />
+          {duo}
           {/* Moment Reiz (phase 29) : récup ou séance, à l'heure ou en retard. */}
           {u.moment && (
             <Text style={{ color: (u.moment_late_min ?? 99) < ON_TIME_MIN ? '#fff' : 'rgba(255,255,255,0.55)', fontSize: 12.5, fontFamily: F.bold, marginTop: 3 }} numberOfLines={1}>
@@ -489,7 +493,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
             </Text>
           )}
         </View>
-        <MenuBtn />
+        {menuBtn}
       </View>
 
       {/* Le média. Toucher ailleurs que sur un bouton referme la barre d'emojis. */}
@@ -498,12 +502,12 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
           {isVid
             ? <FeedVideo uri={u.photo_url} active={isActive} preload={preloadVideo} style={s.feedPhoto} />
             : <FadeInImage uri={u.photo_url} style={[s.feedPhoto, { aspectRatio: photoRatio }]} resizeMode="contain" onLoaded={onPhotoLoaded} />}
-          <Overlay />
+          {overlay}
         </Pressable>
       ) : (
         <Pressable style={s.feedNoPhoto} onPress={() => showQuick && setShowQuick(false)} disabled={!showQuick}>
           <Text style={s.feedNoPhotoCaption}>{caption || u.objectives?.title || ''}</Text>
-          <Overlay />
+          {overlay}
         </Pressable>
       )}
 

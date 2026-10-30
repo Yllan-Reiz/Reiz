@@ -4,7 +4,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { NAV_BOTTOM_MIN, navClearance } from '../constants';
 import { supabase, currentUser, storedUserId } from '../lib/supabase';
 import { calculateStreak, frError, inUnit } from '../lib/helpers';
 import { signMany, signAvatars, signOne } from '../lib/storage';
@@ -12,7 +11,7 @@ import { cacheGet, cacheSet } from '../lib/cache';
 import { mark } from '../lib/perf';
 import { setAppBadge } from '../lib/badge';
 import { selectObjectives } from '../lib/objectives';
-import { hasSchedule, daysLabel, GLASS_OBJECTIVES, GLASS_FRIENDS } from '../constants';
+import { NAV_BOTTOM_MIN, navClearance, hasSchedule, daysLabel, GLASS_OBJECTIVES, GLASS_FRIENDS } from '../constants';
 import { Update, Objective, FeedMeta } from '../lib/types';
 import { s, F } from '../styles';
 import { FlameStreak } from '../components/FlameStreak';
@@ -476,6 +475,29 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
 
   const progressPct = (obj: Objective) => obj.target_value > 0 ? Math.min(Math.round((obj.current_value / obj.target_value) * 100), 100) : 0;
 
+  // L'en-tête du fil (demandes, cercle du jour, défis, mise en route) ne se redessine que si ce qu'il montre change :
+  // chaque arrêt du défilement redessine Main (carte active), il ne faut pas que ces quatre cartes suivent.
+  const feedHeader = useMemo(() => (
+              <>
+              {/* 1.2 : les demandes d'ami reçues passent avant le reste, une réponse suffit à avoir un cercle. */}
+              <PendingRequestsCard userId={userId} from="feed" onChanged={() => { fetchPendingCount(); fetchFriendCount(); }} onSeeAll={() => setTab('friends')} />
+              {/* Moment Reiz (phase 29) : qui de ton cercle a posté aujourd'hui. */}
+              <CircleTodayCard onOpenProfile={openProfile} />
+              {/* Défis en cours et invitations reçues : de retour dans le fil (ils restent aussi dans l'Activité). */}
+              <DuelBanner onOpenProfile={openProfile} reloadKey={duelKey} />
+              <SetupCard
+                userId={userId}
+                hasObjective={loadingObj ? null : objectives.length > 0}
+                friendCount={friendCount}
+                onPost={() => onPost({ from: 'setup_card' })}
+                onAddPhoto={() => setTab('profile')}
+                onAddObjective={() => setShowCreateModal(true)}
+                onFindFriends={() => setTab('friends')}
+              />
+              </>
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [userId, duelKey, loadingObj, objectives.length, friendCount, onPost]);
+
   if (viewingFriendId) return <FriendProfileScreen key={viewingFriendId} userId={viewingFriendId} onClose={() => setProfileStack(st => st.slice(0, -1))} onOpenProfile={openProfile} onDuo={(id) => onPost({ duoWith: id })} />;
   // L'activité s'ouvre PAR-DESSUS la page où tu es (le fil, les objectifs, les amis...) : le verre floute cette
   // page au lieu de la remplacer par un fond à part. Elle reste montée dessous, tu la retrouves intacte en fermant.
@@ -558,25 +580,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             removeClippedSubviews={Platform.OS === 'android'}
             // Le fil commence par les posts, avec au-dessus ce qui manque à ton profil (SetupCard, pour toi seul).
             // La salle, les duels et le cercle proche sont dans l'Activité (le cœur).
-            ListHeaderComponent={
-              <>
-              {/* 1.2 : les demandes d'ami reçues passent avant le reste, une réponse suffit à avoir un cercle. */}
-              <PendingRequestsCard userId={userId} from="feed" onChanged={() => { fetchPendingCount(); fetchFriendCount(); }} onSeeAll={() => setTab('friends')} />
-              {/* Moment Reiz (phase 29) : qui de ton cercle a posté aujourd'hui. */}
-              <CircleTodayCard onOpenProfile={openProfile} />
-              {/* Défis en cours et invitations reçues : de retour dans le fil (ils restent aussi dans l'Activité). */}
-              <DuelBanner onOpenProfile={openProfile} reloadKey={duelKey} />
-              <SetupCard
-                userId={userId}
-                hasObjective={loadingObj ? null : objectives.length > 0}
-                friendCount={friendCount}
-                onPost={() => onPost({ from: 'setup_card' })}
-                onAddPhoto={() => setTab('profile')}
-                onAddObjective={() => setShowCreateModal(true)}
-                onFindFriends={() => setTab('friends')}
-              />
-              </>
-            }
+            ListHeaderComponent={feedHeader}
             ListEmptyComponent={
               loadingFeed ? (
                 <FeedSkeleton />

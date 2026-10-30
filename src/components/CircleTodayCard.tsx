@@ -20,11 +20,13 @@ export function CircleTodayCard({ reloadKey, onOpenProfile }: { reloadKey?: numb
   const [faces, setFaces] = useState<Face[] | null>(null);
   const [fullDays, setFullDays] = useState(0);
 
-  const load = useCallback(async () => {
+  // `force` : à l'arrivée et après un post, on relit tout ; au simple retour dans l'app, la lecture d'il y a moins de
+  // 5 minutes suffit (c'était 30 jours de posts du cercle rechargés à chaque changement d'application).
+  const load = useCallback(async (force = true) => {
     const user = await currentUser();
     if (!user) return;
     const [rhythm, close, me] = await Promise.all([
-      loadCircleRhythm(true),
+      loadCircleRhythm(force),
       loadCloseCircle().catch(() => []),
       supabase.from('users').select('full_name, avatar_url').eq('id', user.id).maybeSingle(),
     ]);
@@ -52,9 +54,9 @@ export function CircleTodayCard({ reloadKey, onOpenProfile }: { reloadKey?: numb
     setFullDays(full);
   }, []);
 
-  useEffect(() => { load(); }, [load, reloadKey]);
+  useEffect(() => { load(true); }, [load, reloadKey]);
   useEffect(() => {
-    const sub = AppState.addEventListener('change', st => { if (st === 'active') load(); });
+    const sub = AppState.addEventListener('change', st => { if (st === 'active') load(false); });
     return () => sub.remove();
   }, [load]);
 

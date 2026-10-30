@@ -21,6 +21,19 @@ import { s, F } from '../styles';
 import { t, tp, dirIcon } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
 
+// Avatars des lignes (image si dispo, sinon initiale). Hors du composant : définis dedans, React les recréait à chaque
+// rendu et rechargeait tous les visages de la liste.
+function RowAvatar({ url, name, active }: { url?: string | null; name: string; active?: boolean }) {
+  return url
+    ? <CachedImage uri={url} style={[s.friendRowAvImg, active && s.friendRowAvActive]} />
+    : <View style={[s.friendRowAv, active && s.friendRowAvActive]}><Text style={s.friendRowAvText}>{name.charAt(0).toUpperCase()}</Text></View>;
+}
+function SuggestAvatar({ url, name }: { url?: string | null; name: string }) {
+  return url
+    ? <CachedImage uri={url} style={s.suggestAvImg} />
+    : <View style={s.suggestAv}><Text style={s.suggestAvText}>{name.charAt(0).toUpperCase()}</Text></View>;
+}
+
 export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (userId: string) => void; onPendingCount?: (n: number) => void }) {
   const insets = useSafeAreaInsets();
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -81,16 +94,6 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       await Share.share({ message, title: t('friends.shareTitle') });
     } catch {}
   };
-
-  // Helpers d'avatar (image si dispo, sinon initiale)
-  const RowAvatar = ({ url, name, active }: { url?: string | null; name: string; active?: boolean }) =>
-    url
-      ? <CachedImage uri={url} style={[s.friendRowAvImg, active && s.friendRowAvActive]} />
-      : <View style={[s.friendRowAv, active && s.friendRowAvActive]}><Text style={s.friendRowAvText}>{name.charAt(0).toUpperCase()}</Text></View>;
-  const SuggestAvatar = ({ url, name }: { url?: string | null; name: string }) =>
-    url
-      ? <CachedImage uri={url} style={s.suggestAvImg} />
-      : <View style={s.suggestAv}><Text style={s.suggestAvText}>{name.charAt(0).toUpperCase()}</Text></View>;
 
   useEffect(() => {
     const init = async () => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Modal, Linking, Share, Image, Switch } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Modal, Linking, Share, Image, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase, currentUser } from '../lib/supabase';
@@ -393,7 +393,6 @@ function LegalReader({ doc, bottom }: { doc: LegalDoc; bottom: number }) {
   );
 }
 
-import { StyleSheet } from 'react-native';
 const st = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 52 },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
