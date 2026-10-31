@@ -1147,7 +1147,5 @@ export const he: Dict = {
     oneLeft: "חסר/ה רק {name}",
     left: { one: "חסר אחד", other: "חסרים {count}" },
     fullDays: { one: "יום אחד של מעגל מלא השבוע", other: "{count} ימים של מעגל מלא השבוע" },
-    missing: "עוד לא פרסמו: {names}",
-    you: "אתם",
   },
 };
