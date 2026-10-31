@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Linking, AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
+import * as Updates from 'expo-updates';
 import { useFonts, Inter_300Light, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, Inter_900Black } from '@expo-google-fonts/inter';
 import { supabase, storedUserId } from './src/lib/supabase';
 import { registerForPushNotifications } from './src/lib/notifications';
@@ -28,6 +29,10 @@ import { mark } from './src/lib/perf';
 
 // Au-delà, le fil est rechargé au retour dans l'app (liens de photos neufs, posts du jour).
 const STALE_AFTER_MS = 3 * 3600 * 1000;
+// Une mise à jour à distance téléchargée s'applique au retour dans l'app après au moins ce temps en arrière-plan
+// (avant, il fallait fermer et rouvrir l'app deux fois : personne ne voyait les nouveautés). Jamais pendant une
+// publication en cours, pour ne pas perdre le texte.
+const APPLY_UPDATE_AFTER_MS = 30 * 1000;
 
 export default function App() {
   return (
@@ -57,6 +62,13 @@ function AppInner() {
   const registeredUserId = useRef<string | null>(null);
   // Carte du duo touchée alors que l'app démarrait : on ouvre la publication une fois connecté.
   const pendingDuo = useRef<string | null>(null);
+  // Mise à jour à distance déjà téléchargée (expo-updates la récupère au lancement) : appliquée au prochain retour
+  // dans l'app, depuis le fil uniquement.
+  const { isUpdatePending } = Updates.useUpdates();
+  const updateReady = useRef(false);
+  updateReady.current = isUpdatePending;
+  const screenRef = useRef(screen);
+  screenRef.current = screen;
 
   // Compte tout neuf : la demande d'autorisation du système attend l'écran d'accueil qui explique pourquoi (sinon elle tombe sans contexte).
   const maybeRegisterPush = async (user: { id: string; created_at?: string }) => {
@@ -99,6 +111,10 @@ function AppInner() {
     const appStateSub = AppState.addEventListener('change', st => {
       if (st === 'background') backgroundAt = Date.now();
       if (st !== 'active') return;
+      if (updateReady.current && screenRef.current === 'main' && backgroundAt && Date.now() - backgroundAt > APPLY_UPDATE_AFTER_MS) {
+        Updates.reloadAsync().catch(() => {});
+        return;
+      }
       endExpiredLiveActivities();
       if (backgroundAt && Date.now() - backgroundAt > STALE_AFTER_MS) setMainKey(k => k + 1);
       backgroundAt = 0;
