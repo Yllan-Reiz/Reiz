@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Modal, Image, Keyboard, LayoutAnimation, Platform, Alert, Pressable, KeyboardEvent, Animated, PanResponder, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,13 +10,52 @@ import { Comment } from '../lib/types';
 import { gifsAvailable, gifContent, gifIdOf, gifUrl, Gif } from '../lib/giphy';
 import { GifPicker } from './GifPicker';
 import { s, F } from '../styles';
-import { t } from '../i18n';
+import { t, isRTL } from '../i18n';
 import { CachedImage } from './CachedImage';
 import { BlurView } from 'expo-blur';
 import { GlassSurface } from './GlassSurface';
 import { KeyboardDock, keyboardDockAvailable } from '../../modules/reiz-keyboard-dock';
 
 type Likes = Record<string, { count: number; mine: boolean }>;
+
+// Glisser un commentaire vers la droite pour y répondre, comme dans une messagerie (31/10/2026). Le geste ne part
+// que s'il est franchement horizontal, pour laisser la liste défiler ; passé le seuil, une petite vibration dit que
+// la réponse est armée, et elle s'ouvre quand on lâche. En hébreu, le geste est miroir (vers la gauche).
+const REPLY_AT = 64;
+const SWIPE_MAX = 96;
+function SwipeToReply({ onReply, children }: { onReply: () => void; children: ReactNode }) {
+  const x = useRef(new Animated.Value(0)).current;
+  const armed = useRef(false);
+  const replyRef = useRef(onReply);
+  replyRef.current = onReply;
+  const dir = isRTL() ? -1 : 1;
+  const back = () => Animated.spring(x, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
+  const pan = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, g) => g.dx * dir > 10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderGrant: () => { armed.current = false; },
+    onPanResponderMove: (_, g) => {
+      const d = Math.max(0, Math.min(g.dx * dir, SWIPE_MAX));
+      x.setValue(d);
+      if (!armed.current && d >= REPLY_AT) { armed.current = true; Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); }
+    },
+    onPanResponderRelease: (_, g) => { back(); if (g.dx * dir >= REPLY_AT) replyRef.current(); },
+    onPanResponderTerminate: back,
+  })).current;
+  const iconOpacity = x.interpolate({ inputRange: [0, REPLY_AT / 2, REPLY_AT], outputRange: [0, 0.35, 1], extrapolate: 'clamp' });
+  const iconScale = x.interpolate({ inputRange: [0, REPLY_AT], outputRange: [0.6, 1], extrapolate: 'clamp' });
+  const translateX = x.interpolate({ inputRange: [0, SWIPE_MAX], outputRange: [0, SWIPE_MAX * dir] });
+  return (
+    <View {...pan.panHandlers}>
+      <Animated.View pointerEvents="none" style={{ position: 'absolute', [dir === 1 ? 'left' : 'right']: 2, top: 0, bottom: 16, width: 44, alignItems: 'center', justifyContent: 'center', opacity: iconOpacity, transform: [{ scale: iconScale }] }}>
+        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="arrow-undo" size={17} color="#fff" style={isRTL() ? { transform: [{ scaleX: -1 }] } : undefined} />
+        </View>
+      </Animated.View>
+      <Animated.View style={{ transform: [{ translateX }] }}>{children}</Animated.View>
+    </View>
+  );
+}
 
 // Couleurs posées sur le verre : le fil reste visible, flouté, derrière les commentaires.
 const GLASS_LINE = 'rgba(255,255,255,0.12)';
@@ -267,7 +306,8 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, f
   const renderComment = (c: Comment, isReply = false) => {
     const lk = likes[c.id] || { count: 0, mine: false };
     return (
-      <Pressable key={c.id} onLongPress={() => onLongPress(c)} delayLongPress={350} style={[s.commentRow, isReply && { marginLeft: 44, marginBottom: 12 }]}>
+      <SwipeToReply key={c.id} onReply={() => startReply(c)}>
+      <Pressable onLongPress={() => onLongPress(c)} delayLongPress={350} style={[s.commentRow, isReply && { marginLeft: 44, marginBottom: 12 }]}>
         <TouchableOpacity onPress={() => goProfile(c.user_id)} disabled={!onOpenProfile} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
           <CommentAvatar name={c.users?.full_name} url={c.users?.avatar_url} small={isReply} />
         </TouchableOpacity>
@@ -293,6 +333,7 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, f
           {lk.count > 0 && <Text style={{ color: '#888', fontSize: 10, marginTop: 2 }}>{lk.count}</Text>}
         </TouchableOpacity>
       </Pressable>
+      </SwipeToReply>
     );
   };
 
