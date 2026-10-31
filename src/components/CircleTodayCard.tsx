@@ -91,7 +91,7 @@ export function CircleTodayCard({ reloadKey }: { reloadKey?: number; onOpenProfi
         {/* Qui manque, quand le titre ne le dit pas déjà (il nomme un seul manquant). */}
         {!complete && (missing.length >= 2 || (missing.length === 1 && meMissing)) && (
           <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12.5, fontFamily: F.semibold, marginTop: 10 }} numberOfLines={2}>
-            {t(meMissing ? 'circleToday.missingYou' : 'circleToday.missing', { names: andList(missing) })}
+            {t('circleToday.missing', { names: andList(meMissing ? [...missing, t('circleToday.you')] : missing) })}
           </Text>
         )}
         {fullDays > 0 && (

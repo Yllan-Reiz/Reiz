@@ -1146,6 +1146,6 @@ export const es: Dict = {
     left: { one: "Falta 1", other: "Faltan {count}" },
     fullDays: { one: "1 día de círculo completo esta semana", other: "{count} días de círculo completo esta semana" },
     missing: "Aún no han publicado: {names}",
-    missingYou: "Aún no han publicado: {names} y tú",
+    you: "tú",
   },
 };

@@ -1147,7 +1147,7 @@ export const fr = {
     left: { one: "Il en manque 1", other: "Il en manque {count}" },
     fullDays: { one: "1 jour de cercle complet cette semaine", other: "{count} jours de cercle complet cette semaine" },
     missing: "Pas encore posté : {names}",
-    missingYou: "Pas encore posté : {names} et toi",
+    you: "toi",
   },
 };
 
