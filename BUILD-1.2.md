@@ -99,6 +99,14 @@ sans effet). Base Supabase : index en place, aucune requête lente. Corrigé dan
 - Un hook appelé après un retour anticipé dans Main (attrapé par le lint, corrigé).
 - `node_modules` était un lien symbolique vers ~/Desktop/Reiz committé dans git : retiré, chaque dossier a le sien.
 
+## Retours de la bêta du build 18 (31/10/2026, commits 9353add et c5e40a4, pas dans le build 18)
+
+- Relancer une demande d'ami se fait dans l'app : notification « X attend toujours ta réponse » chez l'ami, au plus une
+  fois tous les 2 jours. Serveur en place : fonction friend_request_remind (phase30-relance-demande.sql) et send-push v19.
+- Un seul cadre 2:3 pour toutes les photos du fil (les horizontales sortaient toutes petites).
+- Les vidéos jouent tant qu'un bout de la carte est visible, plus de cadre gris au défilement.
+Ces trois points sont en JavaScript seulement : build 19, ou mise à jour à distance du build 18.
+
 ## Commandes d'envoi
 
 Déjà préparées, à lancer une fois d'accord :
