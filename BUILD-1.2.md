@@ -105,7 +105,8 @@ sans effet). Base Supabase : index en place, aucune requête lente. Corrigé dan
   fois tous les 2 jours. Serveur en place : fonction friend_request_remind (phase30-relance-demande.sql) et send-push v19.
 - Un seul cadre 2:3 pour toutes les photos du fil (les horizontales sortaient toutes petites).
 - Les vidéos jouent tant qu'un bout de la carte est visible, plus de cadre gris au défilement.
-Ces trois points sont en JavaScript seulement : build 19, ou mise à jour à distance du build 18.
+Ces trois points sont en JavaScript seulement. Mise à jour à distance publiée le 31/10/2026 (canal production, version 1.2.0,
+groupe bd3cdfb2) : le build 18 la récupère à l'ouverture. Un build 19 reste nécessaire pour la soumission à Apple.
 
 ## Commandes d'envoi
 
