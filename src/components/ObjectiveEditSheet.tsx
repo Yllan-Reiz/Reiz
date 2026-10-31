@@ -160,7 +160,7 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
                   {weeks === undefined
                     ? (objective.deadline ? t('goal.until', { date: deadlineLabel(objective.deadline) }) : t('goal.noDeadline'))
                     : weeks ? t('goal.until', { date: deadlineLabel(addWeeks(localDay(), weeks)) }) : t('goal.noDeadline')}
-                  {isRhythm(objective) ? `. ${t('goal.perWeekHint')}` : ''}
+                  {isRhythm(objective) ? `\n${t('goal.perWeekHint')}` : ''}
                 </Text>
               </View>
             </GlassCard>

@@ -211,7 +211,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
                   )}
                 </View>
                 <Text style={hint}>
-                  {deadline ? `${t('goal.until', { date: deadlineLabel(deadline) })}. ` : ''}
+                  {deadline ? `${t('goal.until', { date: deadlineLabel(deadline) })}\n` : ''}
                   {rhythm ? t('goal.deadlineHint') : t('goal.deadlineRecordHint')}
                 </Text>
               </View>

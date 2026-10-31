@@ -115,6 +115,20 @@ pas sur certains appareils. Version 2 du module : les notifications du clavier f
 sert plus qu'au glissement au doigt. Le JavaScript ignore la v1 et reprend le décalage classique (vérifié : barre visible).
 Donc : mise à jour à distance = clavier qui marche sur le build 18 ; build 19 = barre collée et glissement au doigt.
 
+## Phase 31 : objectifs à rythme et échéance (31/10/2026, commits 19e15d9 et suivants, hors build 19)
+
+Retour des testeurs : « 4 séances » est un rythme hebdo, pas un total, l'app disait « bravo » au bout de 4 posts
+(7 objectifs sur 14 dépassés). Désormais un objectif = un rythme (« 4 par semaine ») ou un record (« 240 kg »), avec une
+échéance (4/8/12/16 semaines ; facultative pour un record). La cible d'un rythme = par semaine x semaines, la jauge monte
+sur la période, « Semaine 3 sur 12, 2 sur 4 cette semaine », un post = une séance, bilan à l'échéance (prolonger, nouvel
+objectif, parcours). Jours off : plus de moment Reiz, la série ne casse qu'un jour prévu sans post, le cercle du jour ne
+compte que ceux qui ont une séance prévue.
+- Base : phase31-rythme-echeance.sql APPLIQUÉ le 31/10 (colonnes per_week, starts_at, trigger adapté).
+- À faire ensemble : phase31b-conversion-rythmes.sql (convertit et rouvre les 14 rythmes) + mise à jour à distance +
+  `supabase functions deploy notify-moment`.
+- Vérifié sur simulateur : création d'un rythme (3/semaine, 8 semaines = 24, jusqu'au 26 déc.), carte, publication
+  « Séance 1 sur 24 ». Non vérifié : bilan à l'échéance, modification d'échéance, série sur vrai compte.
+
 ## Commandes d'envoi
 
 Déjà préparées, à lancer une fois d'accord :
