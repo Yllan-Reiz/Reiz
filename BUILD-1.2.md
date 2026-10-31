@@ -123,4 +123,4 @@ Déjà préparées, à lancer une fois d'accord :
 eas build --platform ios --profile production --auto-submit
 ```
 
-Puis, après le test TestFlight : écrire les Nouveautés de l'App Store en 4 langues et soumettre à Apple.
+Fait le 31/10/2026 à 2 h 24 : version 1.2.0 créée dans App Store Connect (build 19, Nouveautés en fr/en/es-ES/es-MX/he, compte de démo et remarques repris de la 1.1.0, publication manuelle) et SOUMISE à Apple, état « En attente de vérification ». La 1.1.0 validée n'a jamais été publiée : publier la 1.2.0 dès son accord.
