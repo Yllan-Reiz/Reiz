@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, AppState } from 'react-native';
+import { View, Text, AppState } from 'react-native';
 import { supabase, currentUser } from '../lib/supabase';
 import { signOne } from '../lib/storage';
 import { loadCircleRhythm, FriendRhythm } from '../lib/rhythm';
@@ -7,6 +7,7 @@ import { loadCloseCircle } from '../lib/closeCircle';
 import { GlassSurface } from './GlassSurface';
 import { F } from '../styles';
 import { t, tp } from '../i18n';
+import { andList } from '../lib/helpers';
 
 // Le cercle du jour (moment Reiz, phase 29, 30/10/2026) : à la place du flou de BeReal, on montre qui de ton cercle
 // a posté aujourd'hui. Chaque post allume un visage ; quand tout le monde a posté, « 🔥 Cercle complet ».
@@ -16,7 +17,7 @@ import { t, tp } from '../i18n';
 type Face = { id: string; name: string; avatar: string | null; posted: boolean; me?: boolean };
 const MAX = 7;
 
-export function CircleTodayCard({ reloadKey, onOpenProfile }: { reloadKey?: number; onOpenProfile?: (id: string) => void }) {
+export function CircleTodayCard({ reloadKey }: { reloadKey?: number; onOpenProfile?: (id: string) => void }) {
   const [faces, setFaces] = useState<Face[] | null>(null);
   const [fullDays, setFullDays] = useState(0);
 
@@ -80,16 +81,19 @@ export function CircleTodayCard({ reloadKey, onOpenProfile }: { reloadKey?: numb
             : !meMissing && missing.length === 1 ? t('circleToday.oneLeft', { name: missing[0] })
             : tp('circleToday.left', faces.length - done)}
         </Text>
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
+        {/* Une jauge, un segment par membre (31/10/2026) : les visages ne tenaient pas sur une ligne sur les iPhone étroits et
+            n'apportaient rien, la carte dit déjà qui manque. */}
+        <View style={{ flexDirection: 'row', gap: 4, marginTop: 14 }}>
           {faces.map(f => (
-            <TouchableOpacity key={f.id} disabled={f.me || !onOpenProfile} onPress={() => onOpenProfile?.(f.id)} accessibilityLabel={f.name}
-              style={{ width: 40, height: 40, borderRadius: 20, padding: 2, borderWidth: 2, borderColor: f.posted ? '#fff' : 'rgba(255,255,255,0.14)', opacity: f.posted ? 1 : 0.45 }}>
-              {f.avatar
-                ? <Image source={{ uri: f.avatar }} style={{ width: 32, height: 32, borderRadius: 16 }} />
-                : <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontFamily: F.bold, fontSize: 13 }}>{(f.name || '?').charAt(0).toUpperCase()}</Text></View>}
-            </TouchableOpacity>
+            <View key={f.id} style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: f.posted ? '#fff' : 'rgba(255,255,255,0.14)' }} />
           ))}
         </View>
+        {/* Qui manque, quand le titre ne le dit pas déjà (il nomme un seul manquant). */}
+        {!complete && (missing.length >= 2 || (missing.length === 1 && meMissing)) && (
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12.5, fontFamily: F.semibold, marginTop: 10 }} numberOfLines={2}>
+            {t(meMissing ? 'circleToday.missingYou' : 'circleToday.missing', { names: andList(missing) })}
+          </Text>
+        )}
         {fullDays > 0 && (
           <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12.5, fontFamily: F.semibold, marginTop: 12 }}>{tp('circleToday.fullDays', fullDays)}</Text>
         )}
