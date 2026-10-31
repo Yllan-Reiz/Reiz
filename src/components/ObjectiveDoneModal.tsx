@@ -19,7 +19,9 @@ import { t, unitLabel } from '../i18n';
 // Le cercle est prévenu par send-push (« 🏆 Léa a atteint son objectif »), pas par l'app.
 // `preview` (Réglages, builds de développement) : rien n'est enregistré ni mesuré.
 
-export type DoneObjective = { id: string; emoji?: string | null; title: string; unit: string; target_value: number };
+export type DoneObjective = { id: string; emoji?: string | null; title: string; unit: string; target_value: number;
+  /** Rythme arrivé à échéance (phase 31) : le bilan remplace « Monter la barre » par « Prolonger ». */
+  summary?: { done: number; total: number } };
 
 const EASE = Easing.bezier(0.23, 1, 0.32, 1);
 
@@ -30,11 +32,13 @@ function nextTarget(o: DoneObjective) {
 }
 const stepOf = (o: DoneObjective) => (o.unit === 'kg' ? 2.5 : o.unit === 'min' ? 5 : Math.max(1, Math.round(o.target_value / 10)));
 
-export function ObjectiveDoneModal({ objective, preview, onJourney, onNewObjective, onClose }: {
+export function ObjectiveDoneModal({ objective, preview, onJourney, onNewObjective, onExtend, onClose }: {
   objective: DoneObjective | null;
   preview?: boolean;
   onJourney: () => void;
   onNewObjective: () => void;
+  /** Bilan d'un rythme : repousse l'échéance de 4 semaines. */
+  onExtend?: () => Promise<void> | void;
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
@@ -53,8 +57,10 @@ export function ObjectiveDoneModal({ objective, preview, onJourney, onNewObjecti
   }, [objective, pop, preview]);
 
   if (!objective) return null;
+  const summary = objective.summary;
+  const pct = summary ? Math.round((summary.done / Math.max(1, summary.total)) * 100) : 0;
   // Un objectif en % n'a pas de cible chiffrée à relever : seulement « Nouvel objectif ».
-  const canRaise = objective.unit !== '%' && objective.target_value > 0;
+  const canRaise = !summary && objective.unit !== '%' && objective.target_value > 0;
   const label = `${objective.emoji || ''} ${objective.title}`.trim();
   const step = stepOf(objective);
 
@@ -80,12 +86,12 @@ export function ObjectiveDoneModal({ objective, preview, onJourney, onNewObjecti
         </View>
 
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Animated.Text style={{ fontSize: 96, opacity: pop, transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }}>🏆</Animated.Text>
+          <Animated.Text style={{ fontSize: 96, opacity: pop, transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }}>{summary && pct < 60 ? '🏁' : '🏆'}</Animated.Text>
           <Animated.View style={{ alignItems: 'center', opacity: pop, transform: [{ translateY: pop.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }}>
-            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5, marginTop: 18 }}>{t('done.eyebrow')}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5, marginTop: 18 }}>{summary ? t('goal.summaryTitle') : t('done.eyebrow')}</Text>
             <Text style={{ color: '#fff', fontSize: 34, lineHeight: 38, fontFamily: F.black, letterSpacing: -1.1, textAlign: 'center', marginTop: 8 }}>{label}</Text>
             <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16, lineHeight: 24, fontFamily: F.regular, textAlign: 'center', marginTop: 10 }}>
-              {canRaise ? t('done.reached', { n: num(objective.target_value), unit: unitLabel(objective.unit) }) : t('done.reachedPct')}
+              {summary ? t('goal.summary', { done: num(summary.done), total: num(summary.total), pct }) : canRaise ? t('done.reached', { n: num(objective.target_value), unit: unitLabel(objective.unit) }) : t('done.reachedPct')}
             </Text>
           </Animated.View>
 
@@ -110,10 +116,12 @@ export function ObjectiveDoneModal({ objective, preview, onJourney, onNewObjecti
           </>
         ) : (
           <>
-            {canRaise
+            {summary && onExtend
+              ? <Primary label={t('goal.extend')} icon="calendar-outline" busy={saving} onPress={async () => { if (saving) return; setSaving(true); try { await onExtend(); } finally { setSaving(false); } }} />
+              : canRaise
               ? <Primary label={t('done.raise')} icon="trending-up" onPress={() => { Haptics.selectionAsync().catch(() => {}); setRaising(true); }} />
               : <Primary label={t('done.newObjective')} icon="flag" onPress={() => { if (!preview) track('objective_next', {}, 'post'); onNewObjective(); }} />}
-            {canRaise && <Secondary label={t('done.newObjective')} icon="flag-outline" onPress={() => { if (!preview) track('objective_next', {}, 'post'); onNewObjective(); }} />}
+            {(canRaise || (summary && onExtend)) && <Secondary label={t('done.newObjective')} icon="flag-outline" onPress={() => { if (!preview) track('objective_next', {}, 'post'); onNewObjective(); }} />}
             <Secondary label={t('journey.myJourney')} icon="images-outline" onPress={onJourney} />
             <Quiet label={t('common.later')} onPress={onClose} />
           </>

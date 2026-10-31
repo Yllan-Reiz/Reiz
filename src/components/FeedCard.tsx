@@ -14,6 +14,7 @@ import { CommentsModal } from './CommentsModal';
 import { FadeInImage } from './FadeInImage';
 import { FeedVideo } from './FeedVideo';
 import { isVideo } from '../lib/storage';
+import { isRhythm, weekLabel } from '../lib/goal';
 import { track } from '../lib/track';
 import { togglePin } from '../lib/posts';
 import { DUO_WINDOW_MS } from '../lib/duo';
@@ -133,6 +134,8 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
     // Depuis la 1.2 le % est exact (215 kg reste 215) : on garde alors le chiffre après la virgule.
     ? `${num(objTarget >= 10 && Number.isInteger(pctValue) ? Math.round((pctValue / 100) * objTarget) : Math.round((pctValue / 100) * objTarget * 10) / 10)} / ${num(objTarget)} ${unitLabel(objUnit)}`
     : `${pctValue}%`;
+  // Rythme hebdo (phase 31) : « 12 / 48 séances, semaine 3 sur 12 ».
+  const rhythmInfo = objIn && isRhythm(objIn as any) ? weekLabel(objIn as any) : null;
 
   const [reactions, setReactions] = useState<{ [emoji: string]: number }>(meta?.reactions || {});
   const [myReactions, setMyReactions] = useState<string[]>(meta?.mine || []);
@@ -503,7 +506,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
 
       {/* Sous le média : la légende, puis les commentaires, comme sur BeReal */}
       <View style={s.brBelow}>
-        <Gauge pct={pctValue} label={progressLabel} />
+        <Gauge pct={pctValue} label={rhythmInfo ? `${progressLabel}, ${rhythmInfo.toLowerCase()}` : progressLabel} />
         {isWin && (
           <TouchableOpacity onPress={() => setJourneyOpen(true)} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('journey.seeJourney')}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', marginTop: 10, paddingLeft: 10, paddingRight: 12, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }}>

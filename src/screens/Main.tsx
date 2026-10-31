@@ -19,6 +19,9 @@ import { FeedCardInFeed } from '../components/FeedCard';
 import { NavTab } from '../components/NavTab';
 import { GlassSurface, LIQUID_GLASS } from '../components/GlassSurface';
 import { CreateObjectiveModal } from '../components/CreateObjectiveModal';
+import { ObjectiveDoneModal, DoneObjective } from '../components/ObjectiveDoneModal';
+import { JourneyModal } from '../components/JourneyModal';
+import { isRhythm, deadlinePassed, addWeeks, localDay, rhythmTarget, deadlineLabel } from '../lib/goal';
 import { SetupCard } from '../components/SetupCard';
 import { PendingRequestsCard } from '../components/PendingRequestsCard';
 import { CircleTodayCard } from '../components/CircleTodayCard';
@@ -251,7 +254,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     const since = new Date(Date.now() - FEED_WINDOW_HOURS * 3600 * 1000).toISOString();
     const { data, error } = await supabase
       .from('updates')
-      .select('id, caption, progress_value, created_at, photo_url, user_id, pinned_at, with_user_ids, objective_id, moment, moment_late_min, objectives(visibility, unit, target_value, title, emoji, completed_at), users(full_name, username, avatar_url)')
+      .select('id, caption, progress_value, created_at, photo_url, user_id, pinned_at, with_user_ids, objective_id, moment, moment_late_min, objectives(visibility, unit, target_value, title, emoji, completed_at, per_week, deadline, starts_at), users(full_name, username, avatar_url)')
       .in('user_id', circleIds)
       .gte('created_at', since)
       .order('created_at', { ascending: false })
@@ -323,8 +326,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     if (!silent && objectivesPainted.current === false) setLoadingObj(true);
     const user = await currentUser();
     if (!user) { setLoadingObj(false); return; }
-    const { data, error } = await selectObjectives('id, emoji, title, current_value, target_value, unit, visibility', cols => supabase.from('objectives').select(cols).eq('user_id', user.id).order('created_at', { ascending: false }));
-    if (!error && data) { setObjectives((data as Objective[]).map(inUnit)); mark('objectifs:reseau'); }
+    const { data, error } = await selectObjectives('id, emoji, title, current_value, target_value, unit, visibility, is_completed, completed_at', cols => supabase.from('objectives').select(cols).eq('user_id', user.id).order('created_at', { ascending: false }));
+    if (!error && data) { setObjectives((data as Objective[]).map(inUnit)); mark('objectifs:reseau'); closeEndedRhythms(data as Objective[]); }
     setLoadingObj(false);
     objectivesPainted.current = true;
     // Jours postés par objectif (les pastilles de la semaine). Deux semaines de recul suffisent.
@@ -336,6 +339,31 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     });
     setActivityByObj(map);
     if (!error && data) cacheSet(`objectives.${user.id}`, { objectives: data, activity: Object.fromEntries(Object.entries(map).map(([k, v]) => [k, [...v]])) });
+  };
+
+  // Rythme arrivé à échéance (phase 31) : clos en base, et le bilan s'ouvre une fois (« 41 séances sur 48, 85 % »).
+  const [bilan, setBilan] = useState<(DoneObjective & { per_week: number; starts_at: string | null; deadline: string }) | null>(null);
+  const [journeyId, setJourneyId] = useState<string | null>(null);
+  const bilanShown = useRef(new Set<string>());
+  const closeEndedRhythms = async (list: Objective[]) => {
+    const ended = list.find(o => isRhythm(o) && !o.is_completed && deadlinePassed(o) && !bilanShown.current.has(o.id));
+    if (!ended) return;
+    bilanShown.current.add(ended.id);
+    const { error } = await supabase.from('objectives').update({ is_completed: true, completed_at: new Date().toISOString() }).eq('id', ended.id);
+    if (error) return;
+    setObjectives(prev => prev.map(o => (o.id === ended.id ? { ...o, is_completed: true } : o)));
+    setBilan({ id: ended.id, emoji: ended.emoji, title: ended.title, unit: ended.unit, target_value: ended.target_value, per_week: ended.per_week!, starts_at: ended.starts_at ?? null, deadline: ended.deadline!,
+      summary: { done: ended.current_value || 0, total: ended.target_value } });
+  };
+  const extendBilan = async () => {
+    if (!bilan) return;
+    const deadline = addWeeks(localDay(), 4);
+    const target = rhythmTarget(bilan.per_week, bilan.starts_at || localDay(), deadline);
+    const { error } = await supabase.from('objectives').update({ deadline, target_value: target, is_completed: false, completed_at: null }).eq('id', bilan.id);
+    if (error) { Alert.alert(t('common.error'), frError(error)); return; }
+    setBilan(null);
+    Alert.alert(bilan.title, t('goal.extended', { date: deadlineLabel(deadline) }));
+    fetchObjectives(true);
   };
 
   const onRefresh = async () => {
@@ -526,6 +554,14 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         onDelete={o => handleDeleteObjective(o.id, o.title)}
       />
       <CreateObjectiveModal visible={showCreateModal} onClose={() => setShowCreateModal(false)} onCreated={() => { setShowCreateModal(false); fetchObjectives(true); }} />
+      <ObjectiveDoneModal
+        objective={bilan}
+        onExtend={extendBilan}
+        onJourney={() => { const id = bilan?.id ?? null; setBilan(null); setJourneyId(id); }}
+        onNewObjective={() => { setBilan(null); setShowCreateModal(true); }}
+        onClose={() => setBilan(null)}
+      />
+      <JourneyModal objectiveId={journeyId} own from="bilan" onClose={() => setJourneyId(null)} />
 
       <View style={[s.header, { paddingTop: insets.top + 6 }, tab === 'profile' && { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }]}>
         {/* Sur le profil, l'en-tête flotte par-dessus la photo : un fondu noir derrière

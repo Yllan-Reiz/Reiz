@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
 
   const [usersRes, objRes, updRes, momRes, friendsRes, unreadRes, logRes, duelRes] = await Promise.all([
     supabase.from('users').select('id, full_name, push_token, language, timezone, notif_encouragement, created_at'),
-    supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed, training_days').order('created_at'),
+    supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed, training_days, per_week').order('created_at'),
     supabase.from('updates').select('user_id, created_at, moment, objectives(visibility)').gte('created_at', since60),
     supabase.from('moments').select('user_id, day, kind, at, sent_at').gte('day', new Date(now.getTime() - 2 * DAY).toISOString().slice(0, 10)),
     supabase.from('friendships').select('requester_id, receiver_id').eq('status', 'accepted'),
@@ -146,7 +146,8 @@ Deno.serve(async (req) => {
 
     let best: { o: any; ratio: number; ref: string } | null = null;
     for (const o of objectives) {
-      if (o.is_completed || !(o.target_value > 0) || !scheduledOn(o, dow)) continue;
+      // Un rythme hebdo (per_week) n'a pas de « presque au but » : il se termine à l'échéance, pas en passant la cible.
+      if (o.is_completed || o.per_week || !(o.target_value > 0) || !scheduledOn(o, dow)) continue;
       const ratio = (o.current_value || 0) / o.target_value;
       if (ratio < 0.75 || ratio >= 1) continue;
       const ref = `${o.id}:${ratio >= 0.9 ? 90 : 75}`;
@@ -201,7 +202,10 @@ Deno.serve(async (req) => {
     const L = local(u.timezone);
     let m = moments.get(`${u.id}|${L.day}`);
     if (!m) {
+      // Jour de repos : plus de moment (phase 31, 31/10/2026). 8 moments « récup » envoyés, 1 post derrière : on ne
+      // relance que les jours d'entraînement prévus. Poster un jour off reste possible, juste pas demandé.
       const kind = plan.every || plan.days.has(L.dow) ? 'session' : 'recovery';
+      if (kind === 'recovery') continue;
       let minutes: number;
       if (kind === 'session') {
         const mins = (postsOf.get(u.id) || []).filter(d => d.getTime() >= since30).map(d => local(u.timezone, d).minutes).sort((a, b) => a - b);

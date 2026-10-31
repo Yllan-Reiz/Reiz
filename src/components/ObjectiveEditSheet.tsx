@@ -10,6 +10,8 @@ import { ALL_DAYS, hasSchedule, GUTTER } from '../constants';
 import { TrainingDaysPicker } from './TrainingDays';
 import { F } from '../styles';
 import { t } from '../i18n';
+import { isRhythm, WEEK_CHOICES, weeksLabel, addWeeks, localDay, deadlineLabel, rhythmTarget } from '../lib/goal';
+import { knowsGoalColumns } from '../lib/objectives';
 
 // Modifier un objectif déjà créé : qui le voit, les jours où tu t'entraînes, ou le supprimer.
 // Même feuille depuis l'onglet des objectifs et depuis le profil.
@@ -37,12 +39,15 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
 }) {
   const [visibility, setVisibility] = useState('friends');
   const [days, setDays] = useState<number[]>(ALL_DAYS);
+  // Nouvelle échéance, en semaines à partir d'aujourd'hui (phase 31). undefined = on garde l'actuelle.
+  const [weeks, setWeeks] = useState<number | null | undefined>(undefined);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!objective) return;
     setVisibility(objective.visibility || 'friends');
     setDays(hasSchedule(objective.training_days) ? objective.training_days! : ALL_DAYS);
+    setWeeks(undefined);
     setSaving(false);
   }, [objective]);
 
@@ -54,6 +59,16 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
     const patch: Partial<Objective> = {};
     if (visibility !== objective.visibility) patch.visibility = visibility;
     if (JSON.stringify(newDays) !== JSON.stringify(sortedOrNull(objective.training_days))) patch.training_days = newDays;
+    if (weeks !== undefined) {
+      const deadline = weeks ? addWeeks(localDay(), weeks) : null;
+      if (deadline !== (objective.deadline ?? null)) {
+        patch.deadline = deadline;
+        // Rythme : la cible suit la période (4 par semaine sur 12 semaines = 48), les séances faites restent.
+        if (isRhythm(objective) && deadline) patch.target_value = rhythmTarget(objective.per_week!, objective.starts_at || localDay(), deadline);
+        // Une échéance repoussée rouvre un objectif clos par le bilan.
+        if (isRhythm(objective) && deadline && objective.is_completed) { patch.is_completed = false; patch.completed_at = null; }
+      }
+    }
     if (Object.keys(patch).length === 0) { onClose(); return; }
     setSaving(true);
     const { error } = await supabase.from('objectives').update(patch).eq('id', objective.id);
@@ -119,6 +134,37 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
               <TrainingDaysPicker value={days} onChange={setDays} />
             </View>
           </GlassCard>
+
+          {!!objective && knowsGoalColumns() && (
+            <GlassCard radius={28} style={{ marginTop: 14 }}>
+              <View style={{ padding: 18 }}>
+                <Text style={label}>{t('goal.deadline')}</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                  {WEEK_CHOICES.map(w => {
+                    const on = weeks === w;
+                    return (
+                      <TouchableOpacity key={w} onPress={() => { Haptics.selectionAsync().catch(() => {}); setWeeks(w); }} activeOpacity={0.85} accessibilityState={{ selected: on }}
+                        style={{ height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', backgroundColor: on ? '#fff' : 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: on ? '#fff' : 'rgba(255,255,255,0.14)' }}>
+                        <Text style={{ color: on ? '#000' : '#fff', fontSize: 14, fontFamily: F.bold }}>{weeksLabel(w)}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {!isRhythm(objective) && (
+                    <TouchableOpacity onPress={() => { Haptics.selectionAsync().catch(() => {}); setWeeks(null); }} activeOpacity={0.85} accessibilityState={{ selected: weeks === null }}
+                      style={{ height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', backgroundColor: weeks === null ? '#fff' : 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: weeks === null ? '#fff' : 'rgba(255,255,255,0.14)' }}>
+                      <Text style={{ color: weeks === null ? '#000' : '#fff', fontSize: 14, fontFamily: F.bold }}>{t('goal.noDeadline')}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 18, fontFamily: F.regular, marginTop: 12 }}>
+                  {weeks === undefined
+                    ? (objective.deadline ? t('goal.until', { date: deadlineLabel(objective.deadline) }) : t('goal.noDeadline'))
+                    : weeks ? t('goal.until', { date: deadlineLabel(addWeeks(localDay(), weeks)) }) : t('goal.noDeadline')}
+                  {isRhythm(objective) ? `. ${t('goal.perWeekHint')}` : ''}
+                </Text>
+              </View>
+            </GlassCard>
+          )}
 
           <TouchableOpacity onPress={remove} activeOpacity={0.85} style={{ marginTop: 26 }} accessibilityRole="button">
             <GlassSurface radius={20} tintColor="rgba(255,69,58,0.12)" style={{ height: 52, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, borderWidth: 1, borderColor: 'rgba(255,69,58,0.35)' }}>

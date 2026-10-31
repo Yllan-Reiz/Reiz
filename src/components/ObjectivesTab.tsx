@@ -6,6 +6,8 @@ import { Objective } from '../lib/types';
 import { ALL_DAYS, GUTTER, hasSchedule, daysLabel } from '../constants';
 import { F } from '../styles';
 import { t, unitLabel } from '../i18n';
+import { isRhythm, rhythmLine, deadlineLabel, deadlinePassed } from '../lib/goal';
+import { currentWeekKeys } from '../constants';
 
 // L'onglet des objectifs dans le design du profil : bulle de verre à 3 zones, titres en gras, cartes de verre
 // avec la valeur en grand, la semaine en pastilles L M M J V S D, un bouton « Mise à jour » blanc.
@@ -42,6 +44,9 @@ function ObjectiveGlassCard({ o, done, activity, onUpdate, onEdit, onDelete }: {
   const inPct = o.unit === '%';
   const vis = VIS_ICON[o.visibility] || VIS_ICON.friends;
   const scheduled = hasSchedule(o.training_days);
+  // Phase 31 : semaine en cours d'un rythme, échéance en pastille.
+  const doneThisWeek = currentWeekKeys().filter(d => activity.has(d)).length;
+  const rhythmText = isRhythm(o) ? rhythmLine(o, doneThisWeek) : null;
   return (
     <Pressable onLongPress={onDelete} delayLongPress={450} style={{ marginBottom: 14 }}>
       <Glass radius={32}>
@@ -63,7 +68,9 @@ function ObjectiveGlassCard({ o, done, activity, onUpdate, onEdit, onDelete }: {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
             <Chip icon={vis.icon} label={vis.label} />
             {scheduled && <Chip icon="calendar-outline" label={daysLabel(o.training_days)} />}
+            {!!o.deadline && <Chip icon="flag-outline" label={deadlinePassed(o) && !done ? t('goal.ended') : deadlineLabel(o.deadline)} />}
           </View>
+          {!!rhythmText && <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontFamily: F.semibold, marginTop: 12 }}>{rhythmText}</Text>}
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16 }}>
             <View style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.16)', overflow: 'hidden' }}>

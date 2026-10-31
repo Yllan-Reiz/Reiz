@@ -12,6 +12,8 @@ import { GlassIconButton } from '../components/ProfileSections';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Objective } from '../lib/types';
 import { QUICK_UNITS, GUTTER, hasSchedule, todayIso } from '../constants';
+import { isRhythm, weekLabel } from '../lib/goal';
+import { GOAL_COLUMNS, knowsGoalColumns } from '../lib/objectives';
 import { ShareStoryModal, StoryData } from '../components/ShareStoryModal';
 import { ObjectiveDoneModal, DoneObjective } from '../components/ObjectiveDoneModal';
 import { JourneyModal } from '../components/JourneyModal';
@@ -141,8 +143,8 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
     const load = async () => {
       const user = await currentUser();
       if (!user) { setLoadingObj(false); return; }
-      const { data, error } = await supabase.from('objectives').select('id, emoji, title, current_value, target_value, unit, visibility, training_days').eq('user_id', user.id).order('created_at', { ascending: false });
-      if (!error && data) setObjectives((data as Objective[]).map(inUnit));
+      const { data, error } = await supabase.from('objectives').select((knowsGoalColumns() ? `id, emoji, title, current_value, target_value, unit, visibility, training_days, ${GOAL_COLUMNS}` : 'id, emoji, title, current_value, target_value, unit, visibility, training_days') as string).eq('user_id', user.id).order('created_at', { ascending: false });
+      if (!error && data) setObjectives((data as unknown as Objective[]).map(inUnit));
       setLoadingObj(false);
 
       const { data: fr } = await supabase
@@ -220,6 +222,8 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
   // pourcentage : `value` est toujours la vraie valeur, le pourcentage n'en est
   // que la conséquence. Les objectifs en % gardent l'ancien pas de 5.
   const isPercent = !obj || obj.unit === '%';
+  // Rythme hebdo (phase 31) : pas de curseur, ce post est une séance de plus.
+  const rhythm = isRhythm(obj);
   const target = obj?.target_value ?? 100;
   const max = isPercent ? 100 : target;
   // Pas du curseur : 1 par défaut, plus large sur les gros objectifs (10 000 pas).
@@ -258,7 +262,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
       const p = obj.target_value > 0 ? Math.min(Math.round((obj.current_value / obj.target_value) * 100), 100) : 0;
       setValue(p);
     } else {
-      setValue(obj.current_value || 0);
+      setValue(isRhythm(obj) ? (obj.current_value || 0) + 1 : (obj.current_value || 0));
     }
     setTyping(null); setConverting(false);
   }, [selectedObj, objectives]);
@@ -433,7 +437,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
       ? Math.round((value / 100) * obj.target_value * 10) / 10
       : value;
     // Ce post fait-il franchir la cible ? (il ne l'était pas avant, il l'est maintenant)
-    const reachedNow = obj.target_value > 0 && (obj.current_value || 0) < obj.target_value && absoluteValue >= obj.target_value;
+    const reachedNow = !rhythm && obj.target_value > 0 && (obj.current_value || 0) < obj.target_value && absoluteValue >= obj.target_value;
     const { error } = await supabase.from('updates').insert({
       user_id: user.id, objective_id: obj.id,
       caption: caption || obj.title,
@@ -655,6 +659,12 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
           {/* Progression */}
           {obj && <>
             <Text style={[s.postLabel, { marginTop: 28 }]}>{t('post.progressLabel')}</Text>
+            {rhythm ? (
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 24, padding: 18, alignItems: 'center' }}>
+                <Text style={s.postProgressPct}>{t('goal.postSession', { n: fmt(value), total: fmt(obj.target_value) })}</Text>
+                <Text style={[s.postProgressVal, { marginTop: 4 }]}>{weekLabel(obj)}</Text>
+              </View>
+            ) : (
             <View style={s.postProgressWrap}>
               <TouchableOpacity
                 style={s.postProgressBtn}
@@ -699,6 +709,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
                 <Ionicons name="add" size={22} color="#fff" />
               </TouchableOpacity>
             </View>
+            )}
             {isPercent && !converting && (
               <TouchableOpacity onPress={() => setConverting(true)} style={{ paddingVertical: 12 }}>
                 <Text style={{ color: '#aaa', fontSize: 13, fontFamily: F.semibold }}>{t('post.pickUnit')}</Text>

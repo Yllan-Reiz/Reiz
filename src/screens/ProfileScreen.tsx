@@ -101,7 +101,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
     postsP.then(p => { if (p) setPosts(p); });
     const [profileRes, objRes, updatesRes, friendsRes] = await Promise.all([
       supabase.from('users').select('full_name, username, created_at, avatar_url, bio, sport').eq('id', user.id).single(),
-      selectObjectives('id, emoji, title, current_value, target_value, unit, visibility, duration_days, is_completed', cols => supabase.from('objectives').select(cols).eq('user_id', user.id).order('created_at', { ascending: false })),
+      selectObjectives('id, emoji, title, current_value, target_value, unit, visibility, duration_days, is_completed, completed_at', cols => supabase.from('objectives').select(cols).eq('user_id', user.id).order('created_at', { ascending: false })),
       supabase.from('updates').select('objective_id, created_at').eq('user_id', user.id).gte('created_at', sinceISO),
       supabase.from('friendships').select('requester_id, receiver_id').or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`).eq('status', 'accepted'),
     ]);

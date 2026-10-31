@@ -14,6 +14,7 @@ import { CachedImage } from './CachedImage';
 import { GlassSurface } from './GlassSurface';
 import { DuoStats } from '../lib/duo';
 import { s, F } from '../styles';
+import { isRhythm, rhythmLine, deadlineLabel } from '../lib/goal';
 import { t, tp, unitLabel, formatDate, dirIcon } from '../i18n';
 
 // ============================================================
@@ -47,8 +48,9 @@ export function bestStreak(posts: Update[]): number {
   return best;
 }
 
+// Un rythme hebdo (phase 31) n'est atteint qu'à l'échéance, jamais en passant la cible.
 export const isCompleted = (o: Objective & { is_completed?: boolean | null }) =>
-  !!o.is_completed || (o.target_value > 0 && o.current_value >= o.target_value);
+  !!o.is_completed || (!isRhythm(o) && o.target_value > 0 && o.current_value >= o.target_value);
 
 const BADGE_META: { id: string; emoji: string; title: string }[] = [
   { id: 'first', emoji: '🌱', title: t('badgeNames.first') },
@@ -668,8 +670,10 @@ export function ObjectiveCard({ o, postedDays, daysCount, onMenu }: {
   const week = dayKeysFor(7);
   const todayKey = week[week.length - 1];
   const vis = VIS_ICON[o.visibility] || VIS_ICON.friends;
-  const doneThisWeek = week.filter(d => postedDays.has(d)).length;
-  const infinite = o.duration_days == null;
+  const doneThisWeek = currentWeekKeys().filter(d => postedDays.has(d)).length;
+  // Phase 31 : l'échéance remplace l'ancienne durée en jours ; un rythme montre sa semaine en cours.
+  const sub = o.deadline ? t('goal.until', { date: deadlineLabel(o.deadline) }) : (o.duration_days == null ? '' : tp('profileSec.nDays', o.duration_days));
+  const rhythmText = isRhythm(o) ? rhythmLine(o, doneThisWeek) : null;
   return (
     <GlassSurface radius={26} style={{ marginBottom: 12 }}>
     <View style={{ padding: 18 }}>
@@ -681,7 +685,7 @@ export function ObjectiveCard({ o, postedDays, daysCount, onMenu }: {
           <Text style={{ color: '#fff', fontSize: 16, fontFamily: F.bold }} numberOfLines={1}>{o.title}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
             <Ionicons name={vis.icon} size={12} color="#777" />
-            <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular }}>{vis.label}{infinite ? '' : `, ${tp('profileSec.nDays', o.duration_days!)}`}</Text>
+            <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular }} numberOfLines={1}>{vis.label}{sub ? `, ${sub}` : ''}</Text>
           </View>
         </View>
         {onMenu && (
@@ -701,6 +705,7 @@ export function ObjectiveCard({ o, postedDays, daysCount, onMenu }: {
       <View style={{ height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.12)', marginTop: 10, overflow: 'hidden' }}>
         <View style={{ width: `${pct}%`, height: '100%', backgroundColor: '#fff', borderRadius: 4 }} />
       </View>
+      {!!rhythmText && <Text style={{ color: '#aaa', fontSize: 12.5, fontFamily: F.semibold, marginTop: 8 }}>{rhythmText}</Text>}
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 18 }}>
         {week.map((d, i) => {
@@ -723,7 +728,7 @@ export function ObjectiveCard({ o, postedDays, daysCount, onMenu }: {
         })}
       </View>
       <Text style={{ color: '#888', fontSize: 12, fontFamily: F.semibold, marginTop: 14 }}>
-        {tp('profileSec.daysThisWeek', doneThisWeek)}, {tp(infinite ? 'profileSec.daysOfLast' : 'profileSec.daysOf', postedDays.size, { total: daysCount })}
+        {tp('profileSec.daysThisWeek', doneThisWeek)}, {tp(o.deadline || o.duration_days != null ? 'profileSec.daysOf' : 'profileSec.daysOfLast', postedDays.size, { total: daysCount })}
       </Text>
     </View>
     </GlassSurface>

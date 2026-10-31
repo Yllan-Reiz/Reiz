@@ -9,6 +9,8 @@ import { F } from '../styles';
 import { GlassSurface, GlassCard } from './GlassSurface';
 import { TrainingDaysPicker } from './TrainingDays';
 import { t, unitLabel } from '../i18n';
+import { WEEK_CHOICES, weeksLabel, addWeeks, localDay, deadlineLabel, rhythmTarget } from '../lib/goal';
+import { knowsGoalColumns } from '../lib/objectives';
 
 // Créer un objectif. Même DA que « Modifier l'objectif » : fond noir, sections en verre, choix actif en blanc.
 const VISIBILITY = [
@@ -50,6 +52,8 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
   const [visibility, setVisibility] = useState('friends');
   // Jours où tu t'entraînes (par défaut tous) : les rappels et ton cercle ne parlent que de ceux-là.
   const [days, setDays] = useState<number[]>(ALL_DAYS);
+  // Échéance en semaines (phase 31). Un rythme en a toujours une ; un record peut s'en passer (null).
+  const [weeks, setWeeks] = useState<number | null>(8);
   const [saving, setSaving] = useState(false);
   // Tant que « Combien ? » n'a pas été touché, il se remplit tout seul d'après le nom.
   const [touched, setTouched] = useState(false);
@@ -62,12 +66,16 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
     else setTargetValue('');
   };
 
-  const reset = () => { setTitle(''); setUnit('séances'); setTargetValue(''); setVisibility('friends'); setTouched(false); setDays(ALL_DAYS); };
+  const reset = () => { setTitle(''); setUnit('séances'); setTargetValue(''); setVisibility('friends'); setTouched(false); setDays(ALL_DAYS); setWeeks(8); };
 
   // Un objectif se compte toujours dans son unité (kg, séances, km...), jamais en %.
   const hasTarget = targetValue.trim() !== '';
   const finalUnit = unit;
   const finalTarget = Number(targetValue.replace(',', '.'));
+  // Séances ou fois : un rythme hebdo (« 4 par semaine »). Le reste (kg, km, min...) : un record.
+  const rhythm = knowsGoalColumns() && (unit === 'séances' || unit === 'fois');
+  const today = localDay();
+  const deadline = weeks ? addWeeks(today, weeks) : null;
 
   const handleCreate = async () => {
     if (!title.trim()) { Alert.alert(t('common.error'), t('objective.needName')); return; }
@@ -75,15 +83,22 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
     const target = finalTarget;
     if (isNaN(target) || target <= 0) { Alert.alert(t('common.error'), t('objective.positive')); return; }
     if (days.length === 0) { Alert.alert(t('welcome.daysTitle'), t('welcome.daysText')); return; }
+    if (rhythm && (!deadline || target > 14)) { Alert.alert(t('goal.deadline'), target > 14 ? t('objective.positive') : t('goal.deadlineNeeded')); return; }
     setSaving(true);
     const user = await currentUser();
     if (!user) { setSaving(false); Alert.alert(t('common.error'), t('post.mustBeSignedIn')); return; }
-    const row = {
+    const row: Record<string, unknown> = {
       user_id: user.id, title: title.trim(), emoji: guessEmoji(title, finalUnit),
-      target_value: target, current_value: 0,
+      // Rythme : la cible est le total de séances sur la période, la jauge monte jusqu'à l'échéance.
+      target_value: rhythm && deadline ? rhythmTarget(target, today, deadline) : target, current_value: 0,
       unit: finalUnit, visibility,
-      duration_days: null, // un objectif n'a pas de date de fin
+      duration_days: null,
     };
+    if (knowsGoalColumns()) {
+      row.starts_at = today;
+      row.deadline = deadline;
+      if (rhythm) row.per_week = target;
+    }
     // Tous les jours = rien à enregistrer. Si la base ne connaît pas encore la colonne, on crée l'objectif sans.
     const trainingDays = days.length === 7 ? null : days;
     let { error } = await supabase.from('objectives').insert(trainingDays ? { ...row, training_days: trainingDays } : row);
@@ -91,7 +106,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
       ({ error } = await supabase.from('objectives').insert(row));
     }
     setSaving(false);
-    if (error) { Alert.alert(t('common.error'), frError(error)); return; }
+    if (error) { Alert.alert(t('common.error'), /per_week|starts_at|deadline/i.test(error.message || '') ? t('goal.dbNeeded') : frError(error)); return; }
     Alert.alert(t('objective.createdTitle'), t('objective.createdText', { title }));
     reset(); onCreated();
   };
@@ -143,7 +158,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
           {/* Le chiffre visé et son unité */}
           <GlassCard radius={28} style={{ marginTop: 14 }}>
             <View style={{ padding: 18 }}>
-              <Text style={label}>{t('objective.howMuch')}</Text>
+              <Text style={label}>{rhythm ? t('goal.perWeek') : t('objective.howMuch')}</Text>
               <TextInput
                 style={[field, { fontSize: 22, fontFamily: F.black }]}
                 placeholder="4"
@@ -165,12 +180,43 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
                 })}
               </View>
               <Text style={hint}>
-                {hasTarget
+                {rhythm && hasTarget && weeks && deadline
+                  ? t('goal.rhythmTotal', { per: targetValue, weeks, total: rhythmTarget(finalTarget || 0, today, deadline) })
+                  : rhythm ? t('goal.perWeekHint')
+                  : hasTarget
                   ? t('objective.unitHint', { unit: unitLabel(unit), target: targetValue })
                   : t('objective.unitHintEmpty')}
               </Text>
             </View>
           </GlassCard>
+
+          {/* L'échéance (phase 31) : obligatoire pour un rythme, facultative pour un record. */}
+          {knowsGoalColumns() && (
+            <GlassCard radius={28} style={{ marginTop: 14 }}>
+              <View style={{ padding: 18 }}>
+                <Text style={label}>{t('goal.deadline')}</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                  {WEEK_CHOICES.map(w => {
+                    const on = weeks === w;
+                    return (
+                      <TouchableOpacity key={w} onPress={() => pick(() => setWeeks(w))} activeOpacity={0.85} accessibilityState={{ selected: on }} style={chip(on)}>
+                        <Text style={chipText(on)} maxFontSizeMultiplier={1.3}>{weeksLabel(w)}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {!rhythm && (
+                    <TouchableOpacity onPress={() => pick(() => setWeeks(null))} activeOpacity={0.85} accessibilityState={{ selected: weeks === null }} style={chip(weeks === null)}>
+                      <Text style={chipText(weeks === null)} maxFontSizeMultiplier={1.3}>{t('goal.noDeadline')}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <Text style={hint}>
+                  {deadline ? `${t('goal.until', { date: deadlineLabel(deadline) })}. ` : ''}
+                  {rhythm ? t('goal.deadlineHint') : t('goal.deadlineRecordHint')}
+                </Text>
+              </View>
+            </GlassCard>
+          )}
 
           <GlassCard radius={28} style={{ marginTop: 14 }}>
             <View style={{ padding: 18 }}>

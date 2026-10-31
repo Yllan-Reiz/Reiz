@@ -1147,6 +1147,28 @@ export const fr = {
     left: { one: "Il en manque 1", other: "Il en manque {count}" },
     fullDays: { one: "1 jour de cercle complet cette semaine", other: "{count} jours de cercle complet cette semaine" },
   },
+  goal: {
+    perWeek: "COMBIEN PAR SEMAINE ?",
+    perWeekHint: "Un post = une séance. La jauge monte sur toute la période.",
+    deadline: "ÉCHÉANCE",
+    weeks: { one: '{count} semaine', other: '{count} semaines' },
+    until: "Jusqu'au {date}",
+    noDeadline: "Sans date",
+    deadlineHint: "Sans date de fin, on va nulle part. Une compétition, une date butoir : fixe-la.",
+    deadlineRecordHint: "Facultatif pour un record, mais une date aide à tenir.",
+    rhythmTotal: "{per} par semaine pendant {weeks} semaines : {total} séances au total.",
+    week: "Semaine {n} sur {total}",
+    thisWeek: "{done} sur {per} cette semaine",
+    postSession: "Séance {n} sur {total}",
+    ended: "Échéance passée",
+    summaryTitle: "ÉCHÉANCE ATTEINTE",
+    summary: "{done} séances sur {total}, soit {pct} %.",
+    extend: "Prolonger de 4 semaines",
+    extended: "Prolongé jusqu'au {date}.",
+    circleOff: "Jour off pour le cercle",
+    deadlineNeeded: "Choisis une échéance.",
+    dbNeeded: "La base n'est pas encore prête pour les objectifs par semaine. Réessaie un peu plus tard.",
+  },
 };
 
 export type Dict = typeof fr;
