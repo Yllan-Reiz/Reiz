@@ -124,8 +124,8 @@ sur la période, « Semaine 3 sur 12, 2 sur 4 cette semaine », un post = une s�
 objectif, parcours). Jours off : plus de moment Reiz, la série ne casse qu'un jour prévu sans post, le cercle du jour ne
 compte que ceux qui ont une séance prévue.
 - Base : phase31-rythme-echeance.sql APPLIQUÉ le 31/10 (colonnes per_week, starts_at, trigger adapté).
-- À faire ensemble : phase31b-conversion-rythmes.sql (convertit et rouvre les 14 rythmes) + mise à jour à distance +
-  `supabase functions deploy notify-moment`.
+- phase31b-conversion-rythmes.sql APPLIQUÉ le 31/10 (15 rythmes convertis et rouverts, échéance 23/01/2027) ; mise à jour
+  à distance et `supabase functions deploy notify-moment` lancés par Yllan dans la foulée.
 - Vérifié sur simulateur : création d'un rythme (3/semaine, 8 semaines = 24, jusqu'au 26 déc.), carte, publication
   « Séance 1 sur 24 ». Non vérifié : bilan à l'échéance, modification d'échéance, série sur vrai compte.
 

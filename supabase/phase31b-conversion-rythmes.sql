@@ -2,7 +2,7 @@
 -- l'app disait « bravo » au bout de N posts (7 d'entre eux ont plus de posts que leur cible). On les convertit :
 -- N par semaine, période de 12 semaines à partir d'aujourd'hui, cible = N x 12, séances faites = posts déjà publiés,
 -- et on les rouvre. Chacun pourra changer l'échéance dans « Modifier l'objectif ».
--- À appliquer EN MÊME TEMPS que la mise à jour à distance qui affiche les rythmes.
+-- APPLIQUÉ le 31/10/2026 à 19 h 50 (15 objectifs convertis), en même temps que la mise à jour à distance.
 
 update public.objectives o
 set per_week = target_value::int,
