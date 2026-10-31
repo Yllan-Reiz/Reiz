@@ -108,6 +108,13 @@ sans effet). Base Supabase : index en place, aucune requête lente. Corrigé dan
 Ces trois points sont en JavaScript seulement. Mise à jour à distance publiée le 31/10/2026 (canal production, version 1.2.0,
 groupe bd3cdfb2) : le build 18 la récupère à l'ouverture. Un build 19 reste nécessaire pour la soumission à Apple.
 
+## Clavier des commentaires (31/10/2026, retour de Yllan sur le build 18)
+
+Sur son iPhone, la barre de message restait sous le clavier. Le module natif v1 (build 18) lisait un repère qui ne bouge
+pas sur certains appareils. Version 2 du module : les notifications du clavier font foi (marchent partout), le repère ne
+sert plus qu'au glissement au doigt. Le JavaScript ignore la v1 et reprend le décalage classique (vérifié : barre visible).
+Donc : mise à jour à distance = clavier qui marche sur le build 18 ; build 19 = barre collée et glissement au doigt.
+
 ## Commandes d'envoi
 
 Déjà préparées, à lancer une fois d'accord :

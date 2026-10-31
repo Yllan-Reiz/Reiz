@@ -5,7 +5,10 @@ import { ComponentType, ReactNode } from 'react';
 // Absent (Android, ancien build) : l'écran garde son décalage calculé en JavaScript.
 type NativeProps = { hiddenBottom: number; children?: ReactNode };
 
-const available = !!requireOptionalNativeModule('ReizKeyboardDock');
+// Version 2 au moins : la version 1 (build 18) laissait la barre sous le clavier sur certains iPhone. Avec elle, l'écran
+// reprend son décalage calculé en JavaScript, moins fluide mais sûr.
+const native = requireOptionalNativeModule<{ version?: number }>('ReizKeyboardDock');
+const available = !!native && (native.version ?? 1) >= 2;
 const NativeDock: ComponentType<NativeProps> | null = available ? requireNativeView('ReizKeyboardDock') : null;
 
 export const keyboardDockAvailable = () => available;

@@ -1,11 +1,17 @@
 import ExpoModulesCore
 import UIKit
 
-// La barre de message des réseaux sociaux : elle reste collée au clavier à chaque image, à l'ouverture, à la fermeture
-// et quand on le fait descendre au doigt. Tout se passe ici, sans passer par JavaScript ni recalculer la mise en page.
+// La barre de message des réseaux sociaux : elle reste collée au clavier, à l'ouverture, à la fermeture et quand on le
+// fait descendre au doigt. Tout se passe ici, sans passer par JavaScript ni recalculer la mise en page.
+//
+// Version 2 (31/10/2026). La version 1 ne lisait que le repère `keyboardLayoutGuide` : sur l'iPhone de Yllan (build 18),
+// la barre restait sous le clavier, alors que le simulateur la suivait. Maintenant, les notifications du clavier
+// (UIKeyboardWillChangeFrame) font foi, animées avec la courbe même du clavier : elles marchent partout. Le repère ne
+// sert plus qu'au glissement au doigt, et seulement quand il donne une position plausible (entre le clavier et le bas).
 public class ReizKeyboardDockModule: Module {
   public func definition() -> ModuleDefinition {
     Name("ReizKeyboardDock")
+    Constants(["version": 2])
 
     View(ReizKeyboardDockView.self) {
       Prop("hiddenBottom") { (view: ReizKeyboardDockView, value: Double) in
@@ -19,15 +25,12 @@ final class ReizKeyboardDockView: ExpoView {
   /// Le bas de la barre qui peut passer sous le clavier (la marge du bas de l'écran, inutile quand le clavier est ouvert).
   var hiddenBottom: CGFloat = 0
 
-  // Une vue invisible accrochée au haut du clavier : UIKit la déplace exactement comme le clavier, on la lit à chaque image.
+  // Une vue invisible accrochée au haut du clavier : UIKit la déplace avec le doigt pendant un glissement.
   private let probe = UIView()
   private var link: CADisplayLink?
-  private var offset: CGFloat = 0
-  private var lastTop: CGFloat = 0
-  private var openTop: CGFloat = .greatestFiniteMagnitude
-  // Le doigt lâche le clavier en route : iOS le fait descendre depuis là, mais son repère saute (vers le haut ou tout en
-  // bas selon les cas). Dans ce cas seulement, on calcule nous-mêmes la descente, sinon la barre se décolle du clavier.
-  private var drop: (from: CGFloat, start: CFTimeInterval, duration: TimeInterval)?
+  /// Haut du clavier d'après la dernière notification (coordonnées de la fenêtre), nil = clavier fermé.
+  private var keyboardTop: CGFloat?
+  private var animating = false
 
   required init(appContext: AppContext? = nil) {
     super.init(appContext: appContext)
@@ -36,10 +39,13 @@ final class ReizKeyboardDockView: ExpoView {
     probe.isUserInteractionEnabled = false
     probe.translatesAutoresizingMaskIntoConstraints = false
     let center = NotificationCenter.default
-    center.addObserver(self, selector: #selector(keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
-    center.addObserver(self, selector: #selector(keyboardDidHide), name: UIResponder.keyboardDidHideNotification, object: nil)
-    center.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
-    center.addObserver(self, selector: #selector(keyboardDidShow), name: UIResponder.keyboardDidShowNotification, object: nil)
+    center.addObserver(self, selector: #selector(keyboardWillChange(_:)), name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
+    center.addObserver(self, selector: #selector(keyboardWillChange(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
+  }
+
+  deinit {
+    NotificationCenter.default.removeObserver(self)
+    link?.invalidate()
   }
 
   override func didMoveToWindow() {
@@ -65,29 +71,6 @@ final class ReizKeyboardDockView: ExpoView {
     link = displayLink
   }
 
-  deinit {
-    NotificationCenter.default.removeObserver(self)
-  }
-
-  @objc private func keyboardWillHide(_ note: Notification) {
-    // Plus bas que sa position ouverte : c'est le doigt qui l'a amené là.
-    guard lastTop > openTop + 1 else { return }
-    let duration = (note.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval) ?? 0
-    drop = (lastTop, CACurrentMediaTime(), max(duration, 0.2))
-  }
-
-  @objc private func keyboardDidHide() {
-    openTop = .greatestFiniteMagnitude
-  }
-
-  @objc private func keyboardWillShow() {
-    drop = nil
-  }
-
-  @objc private func keyboardDidShow() {
-    openTop = lastTop
-  }
-
   private func hostView() -> UIView? {
     var responder: UIResponder? = self
     while let current = responder {
@@ -97,28 +80,45 @@ final class ReizKeyboardDockView: ExpoView {
     return nil
   }
 
-  @objc private func follow() {
-    guard let window, let superview else { return }
-    // `presentation` : où le clavier est vraiment à cette image, animation comprise.
-    guard let host = probe.superview else { return }
-    let probeFrame = (probe.layer.presentation() ?? probe.layer).frame
-    guard probeFrame.maxY > 0 else { return }
-    var keyboardTop = host.convert(CGPoint(x: 0, y: probeFrame.maxY), to: window).y
-    if let drop {
-      let progress = min(1, (CACurrentMediaTime() - drop.start) / drop.duration)
-      let eased = 1 - pow(1 - progress, 3)
-      keyboardTop = drop.from + (window.bounds.height - drop.from) * eased
-      if progress >= 1 { self.drop = nil }
-    }
-    lastTop = keyboardTop
-    // La place de la barre sans décalage (center et bounds ne tiennent pas compte de notre transformation).
+  /// Décalage à appliquer pour que le bas de la barre (moins sa marge cachée) touche le haut du clavier.
+  private func offset(forKeyboardTop top: CGFloat) -> CGFloat {
+    guard let window, let superview else { return 0 }
+    // La place de la barre sans décalage : `center` et `bounds` ignorent la transformation (contrairement à `frame`).
+    // PIÈGE (31/10/2026) : retirer `transform.ty` ici fait fuir la barre hors de l'écran, image après image.
     let restingBottom = superview.convert(CGPoint(x: 0, y: center.y + bounds.height / 2), to: window).y
-    let next = -max(0, restingBottom - hiddenBottom - keyboardTop)
-    guard abs(next - offset) > 0.01 else { return }
-    offset = next
-    CATransaction.begin()
-    CATransaction.setDisableActions(true)
-    layer.transform = CATransform3DMakeTranslation(0, next, 0)
-    CATransaction.commit()
+    return -max(0, restingBottom - hiddenBottom - top)
+  }
+
+  @objc private func keyboardWillChange(_ note: Notification) {
+    guard let window else { return }
+    let end = (note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue ?? .zero
+    let duration = (note.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval) ?? 0.25
+    let curve = (note.userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt) ?? 7
+    let endInWindow = window.convert(end, from: nil)
+    let hidden = note.name == UIResponder.keyboardWillHideNotification || end.height == 0 || endInWindow.minY >= window.bounds.height - 1
+    let top = hidden ? window.bounds.height : endInWindow.minY
+    keyboardTop = hidden ? nil : top
+    let target = offset(forKeyboardTop: top)
+    animating = true
+    UIView.animate(withDuration: duration, delay: 0, options: [UIView.AnimationOptions(rawValue: curve << 16), .beginFromCurrentState, .allowUserInteraction], animations: {
+      self.transform = CGAffineTransform(translationX: 0, y: target)
+    }, completion: { _ in self.animating = false })
+  }
+
+  /// À chaque image, pendant un glissement au doigt seulement : le clavier est entre sa place connue et le bas.
+  @objc private func follow() {
+    guard !animating, let known = keyboardTop, let window, let host = probe.superview else { return }
+    let probeFrame = (probe.layer.presentation() ?? probe.layer).frame
+    let top = host.convert(CGPoint(x: 0, y: probeFrame.maxY), to: window).y
+    let next: CGFloat
+    if top > known + 0.5 && top < window.bounds.height - 0.5 {
+      next = offset(forKeyboardTop: top)
+    } else if top <= known + 0.5 {
+      next = offset(forKeyboardTop: known)
+    } else {
+      return
+    }
+    guard abs(next - transform.ty) > 0.01 else { return }
+    transform = CGAffineTransform(translationX: 0, y: next)
   }
 }
