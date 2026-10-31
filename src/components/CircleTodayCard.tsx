@@ -15,10 +15,14 @@ import { t, tp } from '../i18n';
 
 type Face = { id: string; name: string; avatar: string | null; posted: boolean; me?: boolean };
 const MAX = 7;
+const GAP = 8;
 
 export function CircleTodayCard({ reloadKey, onOpenProfile }: { reloadKey?: number; onOpenProfile?: (id: string) => void }) {
   const [faces, setFaces] = useState<Face[] | null>(null);
   const [fullDays, setFullDays] = useState(0);
+  // Largeur de la rangée : les visages se calibrent dessus pour tenir sur UNE ligne, quel que soit l'iPhone
+  // (31/10/2026 : à 40 points fixes, le 6e visage était coupé sur l'iPhone de Yllan).
+  const [rowW, setRowW] = useState(0);
 
   // `force` : à l'arrivée et après un post, on relit tout ; au simple retour dans l'app, la lecture d'il y a moins de
   // 5 minutes suffit (c'était 30 jours de posts du cercle rechargés à chaque changement d'application).
@@ -65,6 +69,9 @@ export function CircleTodayCard({ reloadKey, onOpenProfile }: { reloadKey?: numb
   const complete = done === faces.length;
   const missing = faces.filter(f => !f.posted && !f.me).map(f => f.name.split(' ')[0]);
   const meMissing = faces.some(f => f.me && !f.posted);
+  // 40 points au plus, réduits jusqu'à ce que toute la rangée tienne (8 points entre deux visages).
+  const size = Math.max(28, Math.min(40, Math.floor((rowW - GAP * (faces.length - 1)) / faces.length)));
+  const inner = size - 8;
 
   return (
     <GlassSurface radius={28} style={{ marginBottom: 14 }}>
@@ -81,14 +88,13 @@ export function CircleTodayCard({ reloadKey, onOpenProfile }: { reloadKey?: numb
             : !meMissing && missing.length === 1 ? t('circleToday.oneLeft', { name: missing[0] })
             : tp('circleToday.left', faces.length - done)}
         </Text>
-        {/* Les visages passent à la ligne s'il manque la place (31/10/2026 : sur l'iPhone de Yllan, le 6e était coupé). */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-          {faces.map(f => (
+        <View style={{ flexDirection: 'row', gap: GAP, marginTop: 14 }} onLayout={e => setRowW(e.nativeEvent.layout.width)}>
+          {rowW > 0 && faces.map(f => (
             <TouchableOpacity key={f.id} disabled={f.me || !onOpenProfile} onPress={() => onOpenProfile?.(f.id)} accessibilityLabel={f.name}
-              style={{ width: 40, height: 40, borderRadius: 20, padding: 2, borderWidth: 2, borderColor: f.posted ? '#fff' : 'rgba(255,255,255,0.14)', opacity: f.posted ? 1 : 0.45 }}>
+              style={{ width: size, height: size, borderRadius: size / 2, padding: 2, borderWidth: 2, borderColor: f.posted ? '#fff' : 'rgba(255,255,255,0.14)', opacity: f.posted ? 1 : 0.45 }}>
               {f.avatar
-                ? <Image source={{ uri: f.avatar }} style={{ width: 32, height: 32, borderRadius: 16 }} />
-                : <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontFamily: F.bold, fontSize: 13 }}>{(f.name || '?').charAt(0).toUpperCase()}</Text></View>}
+                ? <Image source={{ uri: f.avatar }} style={{ width: inner, height: inner, borderRadius: inner / 2 }} />
+                : <View style={{ width: inner, height: inner, borderRadius: inner / 2, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontFamily: F.bold, fontSize: Math.round(inner * 0.4) }}>{(f.name || '?').charAt(0).toUpperCase()}</Text></View>}
             </TouchableOpacity>
           ))}
         </View>
