@@ -330,6 +330,8 @@ Deno.serve(async (req) => {
       body = n.preview ? fill(t.tagEndorseBodyTag, { tag: clip(n.preview, 40) }) : t.tagEndorseBody;
       break;
     case 'friend_request':
+      // preview = 'remind' : relance envoyée depuis l'app par celui qui attend (friend_request_remind, phase 30).
+      if (n.preview === 'remind') { title = fill(t.friendWaitTitle, { name }); body = t.friendWaitBody; break; }
       title = fill(t.friendRequestTitle, { name });
       body = t.friendRequestBody;
       break;

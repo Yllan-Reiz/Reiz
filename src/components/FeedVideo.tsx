@@ -5,9 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { t } from '../i18n';
 
-// Vidéo courte d'une publication (15 s max), à la façon d'Instagram :
-// muette et en boucle, elle ne joue que si la carte est à l'écran (`active`),
-// sinon dix vidéos tourneraient en même temps. Un tap coupe ou remet le son.
+// Vidéo courte d'une publication (25 s max), à la façon d'Instagram :
+// muette et en boucle, elle joue tant qu'un bout de la carte est à l'écran (`active`), et s'arrête une fois
+// sortie, sinon dix vidéos tourneraient en même temps. Un tap coupe ou remet le son.
 // En préparation, on ne charge que le début : une vidéo jamais regardée ne doit pas coûter son poids entier.
 const PRELOAD_SEC = 4;
 const FULL_BUFFER_SEC = Platform.OS === 'ios' ? 0 : 20; // valeurs par défaut d'expo-video (0 = iOS décide)

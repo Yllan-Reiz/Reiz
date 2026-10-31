@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, Alert, ActivityIndicator, RefreshControl, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -326,15 +326,33 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     if (currentUserId) fetchFriends(currentUserId);
   };
 
-  // Relancer : un message de toi, par l'app de ton choix (WhatsApp, Messages...). Rien n'est envoyé sans ton geste.
+  // Relancer, dans l'app (31/10/2026, avant : la feuille de partage d'iOS, retirée à la demande de Yllan) : l'ami reçoit
+  // « X attend toujours ta réponse 👋 » (friend_request_remind, phase 30), au plus une fois tous les 2 jours par demande.
+  // Les demandes relancées restent marquées « Relancé » 2 jours, y compris après avoir fermé l'app.
+  const [nudgedAt, setNudgedAt] = useState<Record<string, number>>({});
+  const NUDGE_AGAIN_MS = 2 * 24 * 3600 * 1000;
+  useEffect(() => {
+    if (!currentUserId) return;
+    cacheGet<Record<string, number>>(`nudged.${currentUserId}`, NUDGE_AGAIN_MS).then(m => { if (m) setNudgedAt(m); });
+  }, [currentUserId]);
+  const nudgedIds = useMemo(() => new Set(Object.entries(nudgedAt).filter(([, at]) => Date.now() - at < NUDGE_AGAIN_MS).map(([id]) => id)), [nudgedAt]);
   const nudgeSent = async (r: SentRequest) => {
     Haptics.selectionAsync().catch(() => {});
     const first = r.full_name.split(' ')[0];
     const days = Math.floor((Date.now() - new Date(r.created_at).getTime()) / (24 * 3600 * 1000));
-    try {
-      const res = await Share.share({ message: `${myUsername ? t('requests.nudgeTextUser', { name: first, username: myUsername }) : t('requests.nudgeText', { name: first })}\n${APP_STORE_URL}` });
-      if (res.action === Share.sharedAction) track('friend_nudge', { days }, 'friends');
-    } catch {}
+    const { data, error } = await supabase.rpc('friend_request_remind', { p_friendship: r.friendship_id });
+    const remember = () => setNudgedAt(prev => {
+      const next = { ...prev, [r.friendship_id]: Date.now() };
+      if (currentUserId) cacheSet(`nudged.${currentUserId}`, next);
+      return next;
+    });
+    if (error || data === 'not_found') { Alert.alert(t('requests.nudge'), t('requests.nudgeFailed')); return; }
+    if (data === 'too_soon') { remember(); Alert.alert(t('requests.nudge'), t('requests.nudgeTooSoon', { name: first })); return; }
+    if (data === 'not_pending') { if (currentUserId) fetchFriends(currentUserId); return; }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    remember();
+    track('friend_nudge', { days }, 'friends');
+    Alert.alert(t('requests.nudge'), t('requests.nudgeSent', { name: first }));
   };
 
   const cancelSent = (r: SentRequest) => {
@@ -377,6 +395,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
           pending={pending}
           sent={sentReqs}
           onNudge={nudgeSent}
+          nudged={nudgedIds}
           onCancelSent={cancelSent}
           suggestions={suggestions}
           searchResults={searchResults}

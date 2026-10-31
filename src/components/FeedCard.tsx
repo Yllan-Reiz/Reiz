@@ -22,7 +22,7 @@ import { JourneyModal } from './JourneyModal';
 import { lateLabel, ON_TIME_MIN } from '../lib/moment';
 import { FloatingEmoji, nextFloatId } from './FloatingEmoji';
 import { t, tp, unitLabel, dirIcon } from '../i18n';
-import { CachedImage, ImageLoadInfo } from './CachedImage';
+import { CachedImage } from './CachedImage';
 
 // Ouverture/fermeture en fondu-montée. Le contenu reste monté le temps de la
 // sortie, sinon le panneau disparaît d'un coup sec.
@@ -92,8 +92,6 @@ const STACK_MAX = 4;
 
 // Les réactions et le compteur de commentaires arrivent pré-chargés via `meta`
 // (chargés en lot par le feed) : zéro requête au montage de la carte.
-// Proportions des photos déjà vues, pour ne pas faire sauter la carte au retour dans le fil.
-const photoRatios = new Map<string, number>();
 const EDIT_CAPTION_MS = 5 * 60 * 1000;
 
 export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, preloadVideo = false, onPinChanged, onDuoReply, onOpenProfile, duoDone, duoValidated, closeAuthor, duelBusyIds, onChallenge }: {
@@ -106,9 +104,9 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   onBlocked?: () => void;
   // Depuis le fil d'activité : un commentaire reçu ouvre directement la discussion.
   openCommentsOnMount?: boolean;
-  // Carte la plus visible à l'écran : seule sa vidéo joue.
+  // Un bout de la carte est à l'écran : sa vidéo joue.
   isActive?: boolean;
-  // Carte voisine de celle qu'on regarde : sa vidéo se tient prête, pour démarrer sans écran noir.
+  // Carte voisine d'une carte visible : sa vidéo se tient prête, pour démarrer sans écran noir.
   preloadVideo?: boolean;
   // Appelé après épinglage / désépinglage, pour que le profil se mette à jour.
   onPinChanged?: () => void;
@@ -247,16 +245,6 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
 
   const [storyData, setStoryData] = useState<StoryData | null>(null);
   const [journeyOpen, setJourneyOpen] = useState(false);
-  // La photo garde ses proportions : plus de cadre 2:3 qui zoome dedans (bornes : 9:16 à 16:9, le reste avec des bandes).
-  const photoKey = (u.photo_url || '').split('?')[0];
-  const [photoRatio, setPhotoRatio] = useState(photoRatios.get(photoKey) ?? 3 / 4);
-  // Lues sur la photo affichée. Avant le 30/10/2026, Image.getSize téléchargeait chaque photo une deuxième fois, juste pour ses dimensions.
-  const onPhotoLoaded = ({ width: w, height: h }: ImageLoadInfo) => {
-    if (!w || !h) return;
-    const r = Math.max(9 / 16, Math.min(16 / 9, w / h));
-    photoRatios.set(photoKey, r);
-    setPhotoRatio(r);
-  };
   // Légende modifiable 5 minutes après l'envoi.
   const [caption, setCaption] = useState(u.caption);
   useEffect(() => { setCaption(u.caption); }, [u.caption]);
@@ -501,7 +489,9 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
         <Pressable style={s.feedPhotoWrap} onPress={() => showQuick && setShowQuick(false)} disabled={!showQuick}>
           {isVid
             ? <FeedVideo uri={u.photo_url} active={isActive} preload={preloadVideo} style={s.feedPhoto} />
-            : <FadeInImage uri={u.photo_url} style={[s.feedPhoto, { aspectRatio: photoRatio }]} resizeMode="contain" onLoaded={onPhotoLoaded} />}
+            // Même cadre 2:3 pour toutes les photos, comme les vidéos : avec leurs proportions d'origine (30/10/2026), les
+            // photos horizontales sortaient toutes petites entre deux grandes. Le fichier entier reste visible dans le parcours.
+            : <FadeInImage uri={u.photo_url} style={s.feedPhoto} resizeMode="cover" />}
           {overlay}
         </Pressable>
       ) : (

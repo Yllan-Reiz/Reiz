@@ -162,15 +162,17 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   };
   // Offset réel en base (avant filtrage des posts privés) pour une pagination exacte
   const dbOffset = useRef(0);
-  // Carte la plus visible du fil : seule sa vidéo joue (les autres restent en pause).
-  const [activeId, setActiveId] = useState<string | null>(null);
+  // Cartes dont un bout au moins est à l'écran : leurs vidéos jouent. Avant le 31/10/2026, seule la carte la plus
+  // visible jouait (60 % au moins) : dès qu'on faisait défiler, la vidéo s'arrêtait et laissait un cadre gris.
+  const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
   // Toucher « Accueil » quand on est déjà sur le fil remonte tout en haut (comme Instagram).
   const feedRef = useRef<FlatList<Update>>(null);
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: { item: Update; isViewable: boolean }[] }) => {
-    const first = viewableItems.find(v => v.isViewable);
-    setActiveId(first ? first.item.id : null);
-  }).current;
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
+  const viewabilityConfigCallbackPairs = useRef([{
+    viewabilityConfig: { itemVisiblePercentThreshold: 1, minimumViewTime: 0 },
+    onViewableItemsChanged: ({ viewableItems }: { viewableItems: { item: Update; isViewable: boolean }[] }) => {
+      setVisibleIds(new Set(viewableItems.filter(v => v.isViewable).map(v => v.item.id)));
+    },
+  }]).current;
 
   const fetchPendingCount = async (uid?: string | null) => {
     const id = uid ?? userId;
@@ -567,8 +569,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1a1a1a" />}
             onEndReached={fetchMore}
-            onViewableItemsChanged={onViewableItemsChanged}
-            viewabilityConfig={viewabilityConfig}
+            viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs}
             onEndReachedThreshold={0.6}
             // Cartes photo lourdes : on limite ce qui est monté et gardé vivant,
             // sinon le scroll accroche au bout de quelques dizaines de posts.
@@ -610,9 +611,9 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 u={item}
                 meta={feedMeta[item.id]}
                 currentUserId={userId}
-                isActive={item.id === activeId}
+                isActive={visibleIds.has(item.id)}
                 // La vidéo d'à côté reste prête dans les deux sens : ni écran noir, ni nouveau téléchargement en remontant.
-                preloadVideo={(index > 0 && updates[index - 1].id === activeId) || updates[index + 1]?.id === activeId}
+                preloadVideo={(index > 0 && visibleIds.has(updates[index - 1].id)) || (!!updates[index + 1] && visibleIds.has(updates[index + 1].id))}
                 onDuoReply={(authorId) => onPost({ duoWith: authorId })}
                 onOpenProfile={openProfile}
                 duelBusyIds={duelBusyIds}

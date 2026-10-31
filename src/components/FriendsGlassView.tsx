@@ -78,6 +78,8 @@ export function FriendsGlassView(p: {
   /** Mes demandes sans réponse (1.2) : relancer par message ou annuler. */
   sent: SentRequest[];
   onNudge: (r: SentRequest) => void;
+  /** Demandes relancées il y a moins de 2 jours : le bouton devient « Relancé », éteint. */
+  nudged: Set<string>;
   onCancelSent: (r: SentRequest) => void;
   suggestions: any[];
   searchResults: any[];
@@ -254,9 +256,9 @@ export function FriendsGlassView(p: {
             return (
               <Row key={r.friendship_id} person={r} onPress={() => p.onViewProfile(r.id)} sub={days < 1 ? t('requests.sentToday') : tp('requests.sentDays', days)} right={
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <TouchableOpacity onPress={() => p.onNudge(r)} accessibilityRole="button" accessibilityLabel={t('requests.nudgeA11y', { name: r.full_name })} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-                    style={{ height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>{t('requests.nudge')}</Text>
+                  <TouchableOpacity onPress={() => p.onNudge(r)} disabled={p.nudged.has(r.friendship_id)} accessibilityRole="button" accessibilityLabel={t('requests.nudgeA11y', { name: r.full_name })} accessibilityState={{ disabled: p.nudged.has(r.friendship_id) }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                    style={{ height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: p.nudged.has(r.friendship_id) ? 'rgba(255,255,255,0.12)' : '#fff', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: p.nudged.has(r.friendship_id) ? 'rgba(255,255,255,0.6)' : '#000', fontSize: 14, fontFamily: F.extrabold }}>{p.nudged.has(r.friendship_id) ? t('requests.nudged') : t('requests.nudge')}</Text>
                   </TouchableOpacity>
                   <RoundBtn icon="close" label={t('requests.cancelA11y', { name: r.full_name })} onPress={() => p.onCancelSent(r)} />
                 </View>
