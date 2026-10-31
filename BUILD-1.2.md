@@ -53,7 +53,7 @@ Un bug ? Envoie une capture et dis ce que tu faisais.
 
 ## État avant envoi
 
-- Version : 1.2.0 dans `app.json`. Build 18 (EAS, commit 240ef4a) envoyé sur App Store Connect le 31/10/2026 vers 0 h 10, en traitement chez Apple.
+- Version : 1.2.0 dans `app.json`. Build 18 (commit 240ef4a) envoyé le 31/10/2026 vers 0 h 10. Build 19 (commit 9151c3e : module clavier v2, relance in-app, cadre photo, vidéos, glisser pour répondre) envoyé sur App Store Connect le 31/10 vers 2 h 15 : c'est lui qui sert pour TestFlight et la soumission.
 - Modules natifs du build : `reiz-emoji-keyboard`, `reiz-keyboard-dock`, `reiz-video-story`, `reiz-live-activity`.
 - Vérification des types : aucune erreur.
 - Serveur déjà en ligne : table `moments`, colonnes de `updates`, tâche planifiée de `notify-moment` (35 moments envoyés en 24 h), `send-push` v17, `notify-moment` v4, `notify-encouragement` v7. Rien à déployer pour ce build.
