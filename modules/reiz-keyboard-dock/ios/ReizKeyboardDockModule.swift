@@ -31,6 +31,11 @@ final class ReizKeyboardDockView: ExpoView {
   /// Haut du clavier d'après la dernière notification (coordonnées de la fenêtre), nil = clavier fermé.
   private var keyboardTop: CGFloat?
   private var animating = false
+  /// Le repère a rejoint la position ouverte du clavier : à partir de là, un mouvement progressif est un glissement au doigt.
+  /// Sur certains iPhone le repère est en retard sur le clavier (vidéo de Yllan, 31/10/2026) : tant qu'il n'est pas
+  /// synchronisé, et dès qu'il saute, on l'ignore.
+  private var probeSynced = false
+  private var lastProbeTop: CGFloat = 0
 
   required init(appContext: AppContext? = nil) {
     super.init(appContext: appContext)
@@ -98,6 +103,7 @@ final class ReizKeyboardDockView: ExpoView {
     let hidden = note.name == UIResponder.keyboardWillHideNotification || end.height == 0 || endInWindow.minY >= window.bounds.height - 1
     let top = hidden ? window.bounds.height : endInWindow.minY
     keyboardTop = hidden ? nil : top
+    probeSynced = false
     let target = offset(forKeyboardTop: top)
     animating = true
     UIView.animate(withDuration: duration, delay: 0, options: [UIView.AnimationOptions(rawValue: curve << 16), .beginFromCurrentState, .allowUserInteraction], animations: {
@@ -105,19 +111,22 @@ final class ReizKeyboardDockView: ExpoView {
     }, completion: { _ in self.animating = false })
   }
 
-  /// À chaque image, pendant un glissement au doigt seulement : le clavier est entre sa place connue et le bas.
+  /// À chaque image, pendant un glissement au doigt seulement : le repère part de la position ouverte et avance
+  /// progressivement vers le bas (ou revient). Un saut, dans un sens ou dans l'autre, n'est pas un geste : ignoré.
   @objc private func follow() {
     guard !animating, let known = keyboardTop, let window, let host = probe.superview else { return }
     let probeFrame = (probe.layer.presentation() ?? probe.layer).frame
     let top = host.convert(CGPoint(x: 0, y: probeFrame.maxY), to: window).y
-    let next: CGFloat
-    if top > known + 0.5 && top < window.bounds.height - 0.5 {
-      next = offset(forKeyboardTop: top)
-    } else if top <= known + 0.5 {
-      next = offset(forKeyboardTop: known)
-    } else {
+    defer { lastProbeTop = top }
+    let bottom = window.bounds.height
+    if !probeSynced {
+      if abs(top - known) < 2 { probeSynced = true }
       return
     }
+    let step = abs(top - lastProbeTop)
+    if step > 80 { probeSynced = false; return }
+    guard top >= known - 0.5, top < bottom - 0.5 else { return }
+    let next = offset(forKeyboardTop: max(top, known))
     guard abs(next - transform.ty) > 0.01 else { return }
     transform = CGAffineTransform(translationX: 0, y: next)
   }
