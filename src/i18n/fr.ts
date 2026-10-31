@@ -172,7 +172,8 @@ export const fr = {
     galleryDenied: 'Autorise Reiz à ajouter des photos dans Réglages, Reiz, Photos.',
     galleryFailed: "L'enregistrement n'a pas marché. Réessaie.",
     permDenied: 'Permission refusée',
-    permCamera: 'Active la caméra dans les réglages.',
+    permCamera: "Reiz n'a pas accès à l'appareil photo. Tu peux l'autoriser dans les Réglages.",
+    openSettings: 'Ouvrir les Réglages',
     permLibrary: 'Active la galerie dans les réglages.',
     mediaTitle: 'Photo ou vidéo',
     mediaSub: 'Vidéo : {n} secondes maximum',
@@ -1156,6 +1157,7 @@ export const fr = {
     fullDays: { one: "1 jour de cercle complet cette semaine", other: "{count} jours de cercle complet cette semaine" },
   },
   goal: {
+    perWeekValue: '{n} par semaine',
     perWeek: "COMBIEN PAR SEMAINE ?",
     perWeekHint: "Un post = une séance. La jauge monte sur toute la période.",
     deadline: "ÉCHÉANCE",

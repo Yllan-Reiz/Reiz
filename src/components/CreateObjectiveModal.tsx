@@ -13,13 +13,13 @@ import { WEEK_CHOICES, weeksLabel, addWeeks, localDay, deadlineLabel, rhythmTarg
 import { knowsGoalColumns } from '../lib/objectives';
 
 // Créer un objectif. Même DA que « Modifier l'objectif » : fond noir, sections en verre, choix actif en blanc.
-const VISIBILITY = [
+export const VISIBILITY = [
   { key: 'friends', label: t('objective.visFriends') },
   { key: 'close', label: t('objective.visClose') },
   { key: 'private', label: t('vis.private') },
   { key: 'public', label: t('vis.public') },
 ];
-const VIS_HINT: Record<string, string> = {
+export const VIS_HINT: Record<string, string> = {
   friends: t('objective.hintFriends'),
   close: t('objective.hintClose'),
   private: t('objective.hintPrivate'),
@@ -250,5 +250,5 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
 const label = { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5 } as const;
 const hint = { color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 18, fontFamily: F.regular, marginTop: 12 } as const;
 const field = { marginTop: 12, minHeight: 50, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', color: '#fff', fontSize: 16, fontFamily: F.semibold } as const;
-const chip = (on: boolean) => ({ height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center' as const, backgroundColor: on ? '#fff' : 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: on ? '#fff' : 'rgba(255,255,255,0.14)' });
-const chipText = (on: boolean) => ({ color: on ? '#000' : '#fff', fontSize: 14, fontFamily: F.bold });
+export const chip = (on: boolean) => ({ height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center' as const, backgroundColor: on ? '#fff' : 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: on ? '#fff' : 'rgba(255,255,255,0.14)' });
+export const chipText = (on: boolean) => ({ color: on ? '#000' : '#fff', fontSize: 14, fontFamily: F.bold });

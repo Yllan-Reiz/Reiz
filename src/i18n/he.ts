@@ -173,7 +173,8 @@ export const he: Dict = {
     galleryDenied: 'אפשרו ל-Reiz להוסיף תמונות בהגדרות, Reiz, תמונות.',
     galleryFailed: 'השמירה לא הצליחה. נסו שוב.',
     permDenied: 'ההרשאה נדחתה',
-    permCamera: 'הפעילו את המצלמה בהגדרות.',
+    permCamera: 'ל-Reiz אין גישה למצלמה. אפשר לאשר אותה בהגדרות.',
+    openSettings: 'פתיחת ההגדרות',
     permLibrary: 'הפעילו את הגישה לגלריה בהגדרות.',
     mediaTitle: 'תמונה או סרטון',
     mediaSub: 'סרטון: עד {n} שניות',
@@ -1157,6 +1158,7 @@ export const he: Dict = {
     fullDays: { one: "יום אחד של מעגל מלא השבוע", other: "{count} ימים של מעגל מלא השבוע" },
   },
   goal: {
+    perWeekValue: '{n} בשבוע',
     perWeek: "כמה בשבוע?",
     perWeekHint: "פוסט אחד = אימון אחד. המד עולה לאורך כל התקופה.",
     deadline: "תאריך יעד",

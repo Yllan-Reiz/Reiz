@@ -171,7 +171,8 @@ export const en: Dict = {
     galleryDenied: 'Allow Reiz to add photos in Settings, Reiz, Photos.',
     galleryFailed: "Couldn't save it. Try again.",
     permDenied: 'Permission denied',
-    permCamera: 'Turn on camera access in Settings.',
+    permCamera: "Reiz can't use the camera. You can allow it in Settings.",
+    openSettings: 'Open Settings',
     permLibrary: 'Turn on photo access in Settings.',
     mediaTitle: 'Photo or video',
     mediaSub: 'Video: {n} seconds max',
@@ -1155,6 +1156,7 @@ export const en: Dict = {
     fullDays: { one: "1 full-circle day this week", other: "{count} full-circle days this week" },
   },
   goal: {
+    perWeekValue: '{n} a week',
     perWeek: "HOW MANY PER WEEK?",
     perWeekHint: "One post = one session. The gauge grows over the whole period.",
     deadline: "DEADLINE",

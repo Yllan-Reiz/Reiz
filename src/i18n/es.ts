@@ -171,7 +171,8 @@ export const es: Dict = {
     galleryDenied: 'Permite que Reiz añada fotos en Ajustes, Reiz, Fotos.',
     galleryFailed: 'No se ha podido guardar. Vuelve a intentarlo.',
     permDenied: 'Permiso denegado',
-    permCamera: 'Activa la cámara en Ajustes.',
+    permCamera: 'Reiz no tiene acceso a la cámara. Puedes permitirlo en Ajustes.',
+    openSettings: 'Abrir Ajustes',
     permLibrary: 'Activa el acceso a la galería en Ajustes.',
     mediaTitle: 'Foto o vídeo',
     mediaSub: 'Vídeo: {n} segundos como máximo',
@@ -1155,6 +1156,7 @@ export const es: Dict = {
     fullDays: { one: "1 día de círculo completo esta semana", other: "{count} días de círculo completo esta semana" },
   },
   goal: {
+    perWeekValue: '{n} por semana',
     perWeek: "¿CUÁNTAS POR SEMANA?",
     perWeekHint: "Una publicación = una sesión. La barra sube durante todo el periodo.",
     deadline: "FECHA LÍMITE",

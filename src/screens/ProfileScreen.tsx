@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Animated, TextInput, Alert, A
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { askCamera } from '../lib/mediaPerms';
 import { supabase, currentUser, storedUserId } from '../lib/supabase';
 import { cacheGet, cacheSet } from '../lib/cache';
 import { frError, inUnit } from '../lib/helpers';
@@ -190,8 +191,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
       {
         text: t('common.takePhoto'),
         onPress: async () => {
-          const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permCamera')); return; }
+          if (!(await askCamera())) return;
           const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
           if (!result.canceled) uploadAvatar(result.assets[0].uri);
         }
@@ -199,8 +199,6 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
       {
         text: t('common.pickFromLibrary'),
         onPress: async () => {
-          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permLibrary')); return; }
           const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
           if (!result.canceled) uploadAvatar(result.assets[0].uri);
         }

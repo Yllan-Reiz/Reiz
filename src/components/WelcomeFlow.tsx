@@ -5,6 +5,7 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import { askCamera } from '../lib/mediaPerms';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +26,9 @@ import { TrainingDaysPicker } from './TrainingDays';
 import { GlassCard, GlassSurface } from './GlassSurface';
 import { F } from '../styles';
 import { t, unitLabel, dirIcon } from '../i18n';
+import { WEEK_CHOICES, weeksLabel, addWeeks, localDay, deadlineLabel, rhythmTarget } from '../lib/goal';
+import { knowsGoalColumns } from '../lib/objectives';
+import { VISIBILITY, VIS_HINT, chip, chipText } from './CreateObjectiveModal';
 
 // L'accueil d'un compte tout neuf : quelques écrans plein cadre, un seul geste par écran, comme les
 // applis sociales qu'on garde. Le but est d'arriver dans le fil avec un profil, un objectif et au moins
@@ -113,6 +117,7 @@ function Label({ children }: { children: ReactNode }) {
   return <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5, marginBottom: 8 }}>{children}</Text>;
 }
 
+const hintStyle = { color: 'rgba(255,255,255,0.5)', fontSize: 13, lineHeight: 19, fontFamily: F.regular, textAlign: 'center' as const, marginTop: 8, paddingHorizontal: 8 };
 const inputStyle = {
   backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
   paddingHorizontal: 16, paddingVertical: 15, color: '#fff', fontSize: 17, fontFamily: F.semibold,
@@ -205,6 +210,10 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
   const [target, setTarget] = useState(0);
   const [days, setDays] = useState<number[]>(ALL_DAYS);
   const [editDays, setEditDays] = useState(false);
+  // Même réglage que « Nouvel objectif » dans l'app (demande de Yllan, 01/11/2026) : un rythme par semaine avec une
+  // échéance pour les séances, un record (km) avec échéance facultative, et qui le voit.
+  const [weeks, setWeeks] = useState<number | null>(8);
+  const [visibility, setVisibility] = useState('friends');
 
   // À l'ouverture : qui je suis, ce qui est déjà fait, ce que le téléphone a déjà accepté. On ne montre
   // que les écrans utiles (pas de 2e objectif si un existe déjà, pas de demande de notifications refusée).
@@ -285,8 +294,7 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
       {
         text: t('common.takePhoto'),
         onPress: async () => {
-          const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permCamera')); return; }
+          if (!(await askCamera())) return;
           const r = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
           if (!r.canceled) done(r.assets[0].uri);
         },
@@ -294,8 +302,6 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
       {
         text: t('common.pickFromLibrary'),
         onPress: async () => {
-          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permLibrary')); return; }
           const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
           if (!r.canceled) done(r.assets[0].uri);
         },
@@ -347,7 +353,9 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
   // ---- Objectif ----
   const pickSport = (sp: Sport, i: number) => {
     setSportIdx(i); setStartIdx(i);
-    setTarget(sp.target); setDays(sp.days); setObjTitle(sp.title); setEditDays(false);
+    // Séances : « 3 par semaine » d'après les jours proposés (3 pour « Autre », qui propose tous les jours).
+    setTarget(sp.unit === 'séances' ? (sp.days.length === 7 ? 3 : sp.days.length) : sp.target);
+    setDays(sp.days); setObjTitle(sp.title); setEditDays(false); setWeeks(8); setVisibility('friends');
     setPhase('details');
     if (!preview && userId) {
       AsyncStorage.setItem(sportKey(userId), sp.id).catch(() => {});
@@ -366,7 +374,16 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
     if (preview) { objRef.current = label; setObjLabel(label); return true; }
     if (!userId) return false;
     const sp = SPORTS[sportIdx];
-    const row = { user_id: userId, title, emoji: sp.emoji, target_value: target, current_value: 0, unit: sp.unit, visibility: 'friends', duration_days: null };
+    const rhythm = knowsGoalColumns() && sp.unit === 'séances';
+    const today = localDay();
+    const deadline = weeks ? addWeeks(today, weeks) : null;
+    if (rhythm && !deadline) { Alert.alert(t('goal.deadline'), t('goal.deadlineNeeded')); return false; }
+    const row: Record<string, unknown> = {
+      user_id: userId, title, emoji: sp.emoji, unit: sp.unit, visibility, duration_days: null, current_value: 0,
+      // Rythme : la cible est le total de séances sur la période (comme dans « Nouvel objectif »).
+      target_value: rhythm && deadline ? rhythmTarget(target, today, deadline) : target,
+    };
+    if (knowsGoalColumns()) { row.starts_at = today; row.deadline = deadline; if (rhythm) row.per_week = target; }
     const trainingDays = days.length === 7 ? null : days;
     let { error } = await supabase.from('objectives').insert(trainingDays ? { ...row, training_days: trainingDays } : row);
     // Avant la phase 12, la colonne des jours n'existe pas : on crée l'objectif sans.
@@ -436,6 +453,9 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
   // ---- Rendu ----
   const total = steps?.length ?? 4;
   const sp = sportIdx != null ? SPORTS[sportIdx] : null;
+  const rhythm = !!sp && knowsGoalColumns() && sp.unit === 'séances';
+  const today = localDay();
+  const deadline = weeks ? addWeeks(today, weeks) : null;
   // Écrans bord à bord (photo jusqu'en haut, barre de progression par-dessus) : profil et carrousel des disciplines.
   const bleed = step === 'profile' || step === 'place' || (step === 'objective' && phase === 'pick');
   const showContacts = contactsAvailable();
@@ -567,18 +587,45 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
                       <Label>{t('welcome.objNameLabel')}</Label>
                       <TextInput style={inputStyle} value={objTitle} onChangeText={setObjTitle} placeholder={sp.id === 'autre' ? t('welcome.objOtherPlaceholder') : sp.title} placeholderTextColor="rgba(255,255,255,0.3)" autoCapitalize="sentences" maxLength={80} returnKeyType="done" />
                       <View style={{ height: 16 }} />
-                      <Label>{t('welcome.goalLabel')}</Label>
+                      <Label>{rhythm ? t('goal.perWeek') : t('welcome.goalLabel')}</Label>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', ...inputStyle, paddingVertical: 8 }}>
                         <Stepper icon="remove" label={t('common.less')} disabled={target <= sp.step} onPress={() => { Haptics.selectionAsync().catch(() => {}); setTarget(t => Math.max(sp.step, t - sp.step)); }} />
-                        <Text style={{ color: '#fff', fontSize: 20, fontFamily: F.extrabold }}>{target} {unitLabel(sp.unit)}</Text>
-                        <Stepper icon="add" label={t('common.more')} onPress={() => { Haptics.selectionAsync().catch(() => {}); setTarget(t => t + sp.step); }} />
+                        <Text style={{ color: '#fff', fontSize: 20, fontFamily: F.extrabold }}>{rhythm ? t('goal.perWeekValue', { n: target }) : `${target} ${unitLabel(sp.unit)}`}</Text>
+                        <Stepper icon="add" label={t('common.more')} disabled={rhythm && target >= 7} onPress={() => { Haptics.selectionAsync().catch(() => {}); setTarget(t => rhythm ? Math.min(7, t + 1) : t + sp.step); }} />
                       </View>
                       {/* Ce nombre est le BUT de l'objectif : la barre de progression va de 0 à ce nombre. */}
-                      <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, lineHeight: 19, fontFamily: F.regular, textAlign: 'center', marginTop: 8, paddingHorizontal: 8 }}>
-                        {sp.unit === 'séances'
+                      <Text style={hintStyle}>
+                        {rhythm && deadline
+                          ? t('goal.rhythmTotal', { per: target, weeks, total: rhythmTarget(target, today, deadline) })
+                          : sp.unit === 'séances'
                           ? t('welcome.goalSessions', { n: target })
                           : t('welcome.goalUnit', { n: target, unit: unitLabel(sp.unit) })}
                       </Text>
+                      {knowsGoalColumns() && (
+                        <>
+                          <View style={{ height: 16 }} />
+                          <Label>{t('goal.deadline')}</Label>
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+                            {WEEK_CHOICES.map(w => {
+                              const on = weeks === w;
+                              return (
+                                <TouchableOpacity key={w} onPress={() => { Haptics.selectionAsync().catch(() => {}); setWeeks(w); }} activeOpacity={0.85} accessibilityState={{ selected: on }} style={chip(on)}>
+                                  <Text style={chipText(on)} maxFontSizeMultiplier={1.3}>{weeksLabel(w)}</Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                            {!rhythm && (
+                              <TouchableOpacity onPress={() => { Haptics.selectionAsync().catch(() => {}); setWeeks(null); }} activeOpacity={0.85} accessibilityState={{ selected: weeks === null }} style={chip(weeks === null)}>
+                                <Text style={chipText(weeks === null)} maxFontSizeMultiplier={1.3}>{t('goal.noDeadline')}</Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                          <Text style={hintStyle}>
+                            {deadline ? `${t('goal.until', { date: deadlineLabel(deadline) })}\n` : ''}
+                            {rhythm ? t('goal.deadlineHint') : t('goal.deadlineRecordHint')}
+                          </Text>
+                        </>
+                      )}
                       <View style={{ height: 16 }} />
                       <Label>{t('welcome.daysLabel')}</Label>
                       <TouchableOpacity onPress={() => { Haptics.selectionAsync().catch(() => {}); setEditDays(v => !v); }} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={t('welcome.pickDays')}
@@ -590,6 +637,19 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
                         <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, fontFamily: F.semibold }}>{editDays ? t('common.ok') : t('common.edit')}</Text>
                       </TouchableOpacity>
                       {editDays && <View style={{ marginTop: 14 }}><TrainingDaysPicker value={days} onChange={setDays} /></View>}
+                      <View style={{ height: 16 }} />
+                      <Label>{t('objective.whoSees')}</Label>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+                        {VISIBILITY.map(v => {
+                          const on = visibility === v.key;
+                          return (
+                            <TouchableOpacity key={v.key} onPress={() => { Haptics.selectionAsync().catch(() => {}); setVisibility(v.key); }} activeOpacity={0.85} accessibilityState={{ selected: on }} style={chip(on)}>
+                              <Text style={chipText(on)} maxFontSizeMultiplier={1.3}>{v.label}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                      <Text style={hintStyle}>{VIS_HINT[visibility]}</Text>
                     </Rise>
                   </>
                 )}

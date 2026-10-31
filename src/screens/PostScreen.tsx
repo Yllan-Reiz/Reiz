@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import { askCamera } from '../lib/mediaPerms';
 import * as Haptics from 'expo-haptics';
 import { supabase, currentUser } from '../lib/supabase';
 import { frError, inUnit, num, andList } from '../lib/helpers';
@@ -314,11 +315,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
   };
 
   const handlePickPhoto = async () => {
-    const needCamera = async () => {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permCamera')); return false; }
-      return true;
-    };
+    const needCamera = askCamera;
     Alert.alert(t('post.mediaTitle'), t('post.mediaSub', { n: VIDEO_MAX_SEC }), [
       {
         text: t('common.takePhoto'),
@@ -345,8 +342,6 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
       {
         text: trimAvailable() ? t('post.importPhoto') : t('common.pickFromLibrary'),
         onPress: async () => {
-          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permLibrary')); return; }
           const trim = trimAvailable();
           const result = await ImagePicker.launchImageLibraryAsync({
             // Avec l'éditeur de rognage, photos et vidéos ont chacune leur bouton : le recadrage
@@ -365,8 +360,6 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
       ...(trimAvailable() ? [{
         text: t('post.importVideo'),
         onPress: async () => {
-          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert(t('post.permDenied'), t('post.permLibrary')); return; }
           const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['videos'],
             videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
