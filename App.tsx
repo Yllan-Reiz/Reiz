@@ -210,7 +210,7 @@ function AppInner() {
     <>
       <Main key={mainKey} onPost={openPost} navIntent={navIntent} onNavIntentHandled={() => setNavIntent(null)} />
       <WhatsNewModal />
-      {WELCOME_FLOW ? <WelcomeFlow onChanged={() => setMainKey(k => k + 1)} onPost={() => openPost({ from: 'welcome' })} /> : <FindFriendsPrompt />}
+      {WELCOME_FLOW ? <WelcomeFlow onChanged={() => setMainKey(k => k + 1)} /> : <FindFriendsPrompt />}
     </>
   );
   // Après un objectif atteint, « Nouvel objectif » ouvre la création d'objectif dans Main.

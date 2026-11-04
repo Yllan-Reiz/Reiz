@@ -61,5 +61,6 @@ export function rhythmLine(o: Objective, doneThisWeek?: number): string {
 }
 
 /** Choix d'échéance proposés à la création et à la modification, en semaines. */
-export const WEEK_CHOICES = [4, 8, 12, 16];
-export const weeksLabel = (n: number) => tp('goal.weeks', n);
+// Des objectifs courts aussi (1 ou 2 semaines) : une victoire chaque semaine, pour qui va à la salle sans grand plan.
+export const WEEK_CHOICES = [1, 2, 4, 8, 12, 16];
+export const weeksLabel = (n: number) => (n === 1 ? t('goal.oneWeek') : tp('goal.weeks', n));

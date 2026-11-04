@@ -66,6 +66,19 @@ const PHOTOS = {
   ],
 };
 
+// Trois profils de pratiquants (Yllan, 04/11/2026) : l'occasionnel qui « y va », le régulier, celui qui a un vrai but.
+// Chaque profil prérègle le rythme, l'échéance et les jours ; tout reste modifiable en dessous.
+const PACES: { key: 'easy' | 'regular' | 'hard'; per: number; weeks: number }[] = [
+  { key: 'easy', per: 2, weeks: 4 },
+  { key: 'regular', per: 3, weeks: 8 },
+  { key: 'hard', per: 5, weeks: 12 },
+];
+const paceDays = (pace: typeof PACES[number], sportDays: number[]) => {
+  if (pace.key === 'hard') return [1, 2, 3, 4, 5];
+  const base = sportDays.length === 7 ? [1, 3, 5] : sportDays;
+  return base.slice(0, pace.per);
+};
+
 // Discipline choisie, retenue par compte : elle préremplit l'objectif si l'accueil est rouvert.
 const sportKey = (userId: string) => `reiz.sport.${userId}`;
 
@@ -78,7 +91,7 @@ export async function welcomePending(user?: { id?: string; created_at?: string }
 
 /** Version automatique, montée une fois dans App.tsx. `onChanged` : quelque chose a été écrit, l'app doit se recharger.
  *  `onPost` : le dernier écran ouvre la publication pour le premier post. */
-export function WelcomeFlow({ onChanged, onPost }: { onChanged?: () => void; onPost?: () => void }) {
+export function WelcomeFlow({ onChanged }: { onChanged?: () => void }) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -91,7 +104,7 @@ export function WelcomeFlow({ onChanged, onPost }: { onChanged?: () => void; onP
     return () => { alive = false; };
   }, []);
 
-  return <WelcomeModal visible={show} onPost={onPost} onClose={(changed) => { setShow(false); if (changed) onChanged?.(); }} />;
+  return <WelcomeModal visible={show} onClose={(changed) => { setShow(false); if (changed) onChanged?.(); }} />;
 }
 
 /** Apparition douce : le contenu monte de quelques points en fondu. Une seule fois, à l'affichage. */
@@ -180,7 +193,7 @@ function MockNotif({ photo, title, body, when }: { photo: ImageSourcePropType; t
 /**
  * Le parcours lui-même. `preview` = aperçu : tous les écrans, rien n'est enregistré, aucune autorisation demandée.
  */
-export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: boolean; preview?: boolean; onClose: (changed: boolean) => void; onPost?: () => void }) {
+export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; preview?: boolean; onClose: (changed: boolean) => void }) {
   const insets = useSafeAreaInsets();
   const { width: winW, height: winH } = useWindowDimensions();
   // Écran profil : la photo occupe le haut de l'écran, bord à bord, comme l'onglet Profil.
@@ -214,6 +227,12 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
   // échéance pour les séances, un record (km) avec échéance facultative, et qui le voit.
   const [weeks, setWeeks] = useState<number | null>(8);
   const [visibility, setVisibility] = useState('friends');
+  // Premier post, publié depuis l'accueil (04/11/2026) : une photo, une légende facultative, rien d'autre.
+  const [postUri, setPostUri] = useState<string | null>(null);
+  const [postCaption, setPostCaption] = useState('');
+  const [posting, setPosting] = useState(false);
+  // L'objectif créé ici (ou le dernier existant) : le premier post lui est rattaché.
+  const objIdRef = useRef<{ id: string; title: string; rhythm: boolean; target: number } | null>(null);
 
   // À l'ouverture : qui je suis, ce qui est déjà fait, ce que le téléphone a déjà accepté. On ne montre
   // que les écrans utiles (pas de 2e objectif si un existe déjà, pas de demande de notifications refusée).
@@ -226,7 +245,7 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
       if (!user) return;
       const [row, objs, posts, perm, autoOn] = await Promise.all([
         supabase.from('users').select('full_name, username, bio, avatar_url').eq('id', user.id).maybeSingle(),
-        supabase.from('objectives').select('emoji, title', { count: 'exact' }).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
+        supabase.from('objectives').select(`id, emoji, title, target_value${knowsGoalColumns() ? ', per_week' : ''}`, { count: 'exact' }).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
         supabase.from('updates').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         Notifications.getPermissionsAsync().catch(() => null),
         AUTO_SUPPORTED ? isAutoEnabled().catch(() => false) : Promise.resolve(true),
@@ -235,6 +254,7 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
       const p: any = row.data || {};
       const lastObj: any = objs.data?.[0];
       objRef.current = lastObj ? `${lastObj.emoji || ''} ${lastObj.title}`.trim() : '';
+      objIdRef.current = lastObj ? { id: lastObj.id, title: lastObj.title, rhythm: !!lastObj.per_week, target: lastObj.target_value || 0 } : null;
       setObjLabel(objRef.current);
       initial.current = { name: p.full_name || '', bio: p.bio || '' };
       // « Athlète » = nom de secours d'un compte Apple ou Google sans prénom (voir ensureProfile) : on laisse le champ vide.
@@ -385,12 +405,13 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
     };
     if (knowsGoalColumns()) { row.starts_at = today; row.deadline = deadline; if (rhythm) row.per_week = target; }
     const trainingDays = days.length === 7 ? null : days;
-    let { error } = await supabase.from('objectives').insert(trainingDays ? { ...row, training_days: trainingDays } : row);
+    let { data, error } = await supabase.from('objectives').insert(trainingDays ? { ...row, training_days: trainingDays } : row).select('id').single();
     // Avant la phase 12, la colonne des jours n'existe pas : on crée l'objectif sans.
-    if (error && trainingDays && /training_days/i.test(error.message || '')) ({ error } = await supabase.from('objectives').insert(row));
+    if (error && trainingDays && /training_days/i.test(error.message || '')) ({ data, error } = await supabase.from('objectives').insert(row).select('id').single());
     if (error) { Alert.alert(t('common.error'), frError(error)); return false; }
     wrote.current = true;
     objRef.current = label;
+    objIdRef.current = data ? { id: data.id, title, rhythm, target: Number(row.target_value) } : null;
     setObjLabel(label);
     return true;
   };
@@ -450,6 +471,55 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
     try { await Share.share({ message: inviteText(username) }); } catch {}
   };
 
+  // ---- Premier post ----
+  const pickPostPhoto = () => {
+    Alert.alert(t('welcome.postAddPhoto'), t('welcome.chooseOption'), [
+      {
+        text: t('common.takePhoto'),
+        onPress: async () => {
+          if (!(await askCamera())) return;
+          const r = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
+          if (!r.canceled) setPostUri(r.assets[0].uri);
+        },
+      },
+      {
+        text: t('common.pickFromLibrary'),
+        onPress: async () => {
+          const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
+          if (!r.canceled) setPostUri(r.assets[0].uri);
+        },
+      },
+      { text: t('common.cancel'), style: 'cancel' },
+    ]);
+  };
+
+  // Publie le premier post sur l'objectif qui vient d'être créé. Un rythme : ce post compte comme la 1re séance
+  // (jauge à 1 sur N, le sentiment d'avoir commencé). Un record (km) : point de départ, la valeur ne bouge pas.
+  const publishFirst = async () => {
+    if (!postUri) { pickPostPhoto(); return; }
+    Haptics.selectionAsync().catch(() => {});
+    if (preview) { await finish('post'); return; }
+    const obj = objIdRef.current;
+    if (!userId || !obj) { await finish('post'); return; }
+    setPosting(true);
+    const { path, error: upErr } = await uploadImage(`${userId}/${Date.now()}.jpg`, postUri);
+    if (upErr || !path) { setPosting(false); Alert.alert(t('post.uploadFailed'), frError(upErr)); return; }
+    const first = obj.rhythm && obj.target > 0;
+    const { error } = await supabase.from('updates').insert({
+      user_id: userId, objective_id: obj.id,
+      caption: postCaption.trim() || obj.title,
+      progress_value: first ? Math.min(100, Math.round((1 / obj.target) * 1000000) / 10000) : 0,
+      photo_url: path, with_user_ids: [],
+    });
+    if (!error && first) await supabase.from('objectives').update({ current_value: 1 }).eq('id', obj.id);
+    setPosting(false);
+    if (error) { Alert.alert(t('common.error'), frError(error)); return; }
+    wrote.current = true;
+    track('post_published', { first: true, from: 'welcome' });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    await finish('post');
+  };
+
   // ---- Rendu ----
   const total = steps?.length ?? 4;
   const sp = sportIdx != null ? SPORTS[sportIdx] : null;
@@ -496,11 +566,12 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
     );
     foot = showContacts ? t('welcome.footContacts') : t('welcome.footShare');
   } else if (step === 'post') {
-    // La publication s'ouvre par-dessus le fil, l'accueil est terminé. En aperçu (Réglages), on ferme seulement.
-    primary = <Primary label={t('welcome.postCta')} icon="camera" onPress={() => { Haptics.selectionAsync().catch(() => {}); finish('post').then(() => { if (!preview) onPost?.(); }); }} />;
-    below = <Secondary quiet label={t('welcome.enterReiz')} onPress={() => go(idx + 1, 'skip')} />;
+    // Le post part d'ici, sans passer par l'écran de publication complet. Sans photo, le bouton ouvre le choix.
+    primary = <Primary label={postUri ? t('welcome.postCta') : t('welcome.postAddPhoto')} icon={postUri ? 'paper-plane' : 'camera'} onPress={publishFirst} busy={posting} />;
+    below = <Secondary quiet label={t('common.later')} onPress={() => { Haptics.selectionAsync().catch(() => {}); finish(); }} />;
     foot = t('welcome.footPost');
   }
+
 
   return (
     <Modal visible={visible} animationType="fade" presentationStyle="fullScreen" onRequestClose={() => (idx > 0 || phase === 'details' ? back() : undefined)}>
@@ -587,6 +658,23 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
                       <Label>{t('welcome.objNameLabel')}</Label>
                       <TextInput style={inputStyle} value={objTitle} onChangeText={setObjTitle} placeholder={sp.id === 'autre' ? t('welcome.objOtherPlaceholder') : sp.title} placeholderTextColor="rgba(255,255,255,0.3)" autoCapitalize="sentences" maxLength={80} returnKeyType="done" />
                       <View style={{ height: 16 }} />
+                      {rhythm && (
+                        <>
+                          <Label>{t('welcome.paceLabel')}</Label>
+                          <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                            {PACES.map(pc => {
+                              const on = target === pc.per && weeks === pc.weeks;
+                              return (
+                                <TouchableOpacity key={pc.key} onPress={() => { Haptics.selectionAsync().catch(() => {}); setTarget(pc.per); setWeeks(pc.weeks); setDays(paceDays(pc, sp.days)); setEditDays(false); }} activeOpacity={0.85} accessibilityState={{ selected: on }} style={[chip(on), { flex: 1, alignItems: 'center', paddingHorizontal: 6 }]}>
+                                  <Text style={chipText(on)} numberOfLines={1} maxFontSizeMultiplier={1.2}>{t(`welcome.pace_${pc.key}`)}</Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                          <Text style={hintStyle}>{(() => { const pc = PACES.find(x => x.per === target && x.weeks === weeks); return pc ? t(`welcome.paceHint_${pc.key}`) : t('welcome.paceHintCustom'); })()}</Text>
+                          <View style={{ height: 16 }} />
+                        </>
+                      )}
                       <Label>{rhythm ? t('goal.perWeek') : t('welcome.goalLabel')}</Label>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', ...inputStyle, paddingVertical: 8 }}>
                         <Stepper icon="remove" label={t('common.less')} disabled={target <= sp.step} onPress={() => { Haptics.selectionAsync().catch(() => {}); setTarget(t => Math.max(sp.step, t - sp.step)); }} />
@@ -720,12 +808,33 @@ export function WelcomeModal({ visible, preview, onClose, onPost }: { visible: b
 
                 {step === 'post' && (
                   <>
-                    <Rise style={{ alignItems: 'center' }}>
-                      <FirstPostPreview photo={(sp ?? SPORTS[startIdx])?.photo ?? PHOTOS.groupe} avatar={avatar} name={name.trim()} objective={objLabel || t('welcome.postMockObj')} />
-                    </Rise>
-                    <Rise delay={80} style={{ marginTop: 34 }}>
+                    <Rise>
                       <Title>{t('welcome.postTitle')}</Title>
                       <Sub>{t('welcome.postSub')}</Sub>
+                    </Rise>
+                    <Rise delay={80} style={{ marginTop: 22 }}>
+                      <TouchableOpacity onPress={pickPostPhoto} activeOpacity={0.9} accessibilityRole="button" accessibilityLabel={postUri ? t('welcome.postChangePhoto') : t('welcome.postAddPhoto')}
+                        style={{ width: '100%', aspectRatio: 4 / 3, maxHeight: 260, borderRadius: 24, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+                        {postUri ? (
+                          <>
+                            <Image source={{ uri: postUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                            <View style={{ position: 'absolute', right: 12, bottom: 12, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.55)' }}>
+                              <Ionicons name="camera-outline" size={15} color="#fff" />
+                              <Text style={{ color: '#fff', fontSize: 13, fontFamily: F.semibold }}>{t('welcome.postChangePhoto')}</Text>
+                            </View>
+                          </>
+                        ) : (
+                          <>
+                            <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                              <Ionicons name="camera" size={26} color="#fff" />
+                            </View>
+                            <Text style={{ color: '#fff', fontSize: 16, fontFamily: F.bold, marginTop: 10 }}>{t('welcome.postAddPhoto')}</Text>
+                            <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontFamily: F.regular, marginTop: 4, textAlign: 'center', paddingHorizontal: 24 }}>{t('welcome.postPhotoIdeas')}</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                      <TextInput style={[inputStyle, { marginTop: 14 }]} value={postCaption} onChangeText={setPostCaption} placeholder={t('welcome.postCaptionPlaceholder')} placeholderTextColor="rgba(255,255,255,0.3)" autoCapitalize="sentences" maxLength={200} returnKeyType="done" />
+                      <Text style={hintStyle}>{objIdRef.current?.rhythm || (preview && rhythm) ? t('welcome.postCountsSession') : t('welcome.postCountsStart')}</Text>
                     </Rise>
                   </>
                 )}
@@ -756,45 +865,6 @@ function Stepper({ icon, label, onPress, disabled }: { icon: any; label: string;
 
 /** L'écran du premier post : à quoi ressemblera le sien dans le fil (photo de sa discipline en attendant la sienne,
  *  son nom, son objectif), avec un ami qui réagit. */
-function FirstPostPreview({ photo, avatar, name, objective }: { photo: ImageSourcePropType; avatar: string | null; name: string; objective: string }) {
-  const w = 236;
-  const h = 295;
-  return (
-    <View style={{ width: w + 44, paddingBottom: 16, alignItems: 'center' }}>
-      <View style={{ width: w, height: h, borderRadius: 26, overflow: 'hidden', backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
-        <Image source={photo} style={StyleSheet.absoluteFill} resizeMode="cover" />
-        <LinearGradient pointerEvents="none" colors={['rgba(10,10,10,0.6)', 'rgba(10,10,10,0)', 'rgba(10,10,10,0)', 'rgba(10,10,10,0.85)']} locations={[0, 0.3, 0.5, 1]} style={StyleSheet.absoluteFill} />
-        <View style={{ position: 'absolute', top: 12, left: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {avatar
-            ? <CachedImage uri={avatar} style={{ width: 30, height: 30, borderRadius: 15 }} />
-            : <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="person" size={16} color="#fff" /></View>}
-          <Text numberOfLines={1} style={{ color: '#fff', fontSize: 14, fontFamily: F.bold, flexShrink: 1 }}>{name || t('welcome.postMockYou')}</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular }}>{t('welcome.mockNow')}</Text>
-        </View>
-        {/* L'appareil photo au centre : c'est SA photo qui ira ici. */}
-        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-          <GlassSurface radius={30} variant="clear" style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="camera" size={26} color="#fff" />
-          </GlassSurface>
-        </View>
-        <View style={{ position: 'absolute', left: 14, right: 14, bottom: 14 }}>
-          <Text numberOfLines={2} style={{ color: '#fff', fontSize: 17, fontFamily: F.extrabold, letterSpacing: -0.3 }}>{objective}</Text>
-          <View style={{ height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.2)', marginTop: 8, overflow: 'hidden' }}>
-            <View style={{ width: '12%', height: 4, borderRadius: 2, backgroundColor: '#fff' }} />
-          </View>
-        </View>
-      </View>
-      <Rise delay={420} y={8} style={{ position: 'absolute', right: 0, bottom: 0 }}>
-        <GlassCard radius={20}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 5, paddingRight: 12, paddingVertical: 5, backgroundColor: 'rgba(255,255,255,0.06)' }}>
-            <Image source={PHOTOS.lea} style={{ width: 28, height: 28, borderRadius: 14 }} />
-            <Text style={{ color: '#fff', fontSize: 13.5, fontFamily: F.bold }}>{t('welcome.postMockReaction')}</Text>
-          </View>
-        </GlassCard>
-      </Rise>
-    </View>
-  );
-}
 
 /** La photo de la discipline, floutée et assombrie, derrière le réglage de l'objectif. Apparaît en fondu. */
 function SportBackdrop({ photo }: { photo: ImageSourcePropType }) {
