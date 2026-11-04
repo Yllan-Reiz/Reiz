@@ -19,6 +19,8 @@ import { FeedCardInFeed } from '../components/FeedCard';
 import { NavTab } from '../components/NavTab';
 import { GlassSurface, LIQUID_GLASS } from '../components/GlassSurface';
 import { CreateObjectiveModal } from '../components/CreateObjectiveModal';
+import { WelcomeModal, welcomePending } from '../components/WelcomeFlow';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ObjectiveDoneModal, DoneObjective } from '../components/ObjectiveDoneModal';
 import { JourneyModal } from '../components/JourneyModal';
 import { isRhythm, deadlinePassed, addWeeks, localDay, rhythmTarget, deadlineLabel } from '../lib/goal';
@@ -124,6 +126,24 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  // Premier objectif d'un compte qui n'en a pas : le parcours de l'accueil (sport, trois profils, premier post),
+  // pas le formulaire complet. Ouvert une fois tout seul, puis depuis la carte du fil et l'onglet Objectifs.
+  const [firstObj, setFirstObj] = useState(false);
+  const openCreate = () => (objectives.length === 0 ? setFirstObj(true) : setShowCreateModal(true));
+  useEffect(() => {
+    if (loadingObj || objectives.length > 0 || !userId) return;
+    let alive = true;
+    (async () => {
+      const key = `reiz.firstobj.${userId}`;
+      if (await AsyncStorage.getItem(key).catch(() => '1')) return;
+      // Un compte tout neuf a l'accueil complet (App.tsx) : on ne double pas.
+      if (await welcomePending(await currentUser())) return;
+      await AsyncStorage.setItem(key, '1').catch(() => {});
+      if (alive) setTimeout(() => { if (alive) setFirstObj(true); }, 800);
+    })().catch(() => {});
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingObj, objectives.length === 0, userId]);
   // Objectif en cours de modification (visibilité, jours d'entraînement, suppression).
   const [editing, setEditing] = useState<Objective | null>(null);
   const [streak, setStreak] = useState(0);
@@ -521,7 +541,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 friendCount={friendCount}
                 onPost={() => onPost({ from: 'setup_card' })}
                 onAddPhoto={() => setTab('profile')}
-                onAddObjective={() => setShowCreateModal(true)}
+                onAddObjective={openCreate}
                 onFindFriends={() => setTab('friends')}
               />
               </>
@@ -554,6 +574,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         onDelete={o => handleDeleteObjective(o.id, o.title)}
       />
       <CreateObjectiveModal visible={showCreateModal} onClose={() => setShowCreateModal(false)} onCreated={() => { setShowCreateModal(false); fetchObjectives(true); }} />
+      <WelcomeModal visible={firstObj} only="objective" onClose={changed => { setFirstObj(false); if (changed) onRefresh(); }} />
       <ObjectiveDoneModal
         objective={bilan}
         onExtend={extendBilan}
@@ -678,7 +699,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         ) : objectives.length === 0 ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingBottom: bottomPad }}>
             <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold, marginBottom: 20 }}>{t('main.noObjective')}</Text>
-            <TouchableOpacity style={s.emptyStateBtn} onPress={() => setShowCreateModal(true)}>
+            <TouchableOpacity style={s.emptyStateBtn} onPress={openCreate}>
               <Text style={s.emptyStateBtnText}>{t('main.addObjective')}</Text>
             </TouchableOpacity>
           </View>
@@ -689,7 +710,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             streak={streak}
             refreshing={refreshing}
             onRefresh={onRefresh}
-            onAdd={() => setShowCreateModal(true)}
+            onAdd={openCreate}
             onUpdate={() => onPost()}
             onEdit={o => setEditing(o)}
             onDelete={o => handleDeleteObjective(o.id, o.title)}
@@ -710,7 +731,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               <Text style={s.statLbl}>{t('main.statAvg')}</Text>
             </View>
           </View>
-          <TouchableOpacity style={s.addObjBtn} onPress={() => setShowCreateModal(true)}>
+          <TouchableOpacity style={s.addObjBtn} onPress={openCreate}>
             <Text style={s.addObjBtnText}>{t('main.addObjective')}</Text>
           </TouchableOpacity>
           {objectives.map((o) => {

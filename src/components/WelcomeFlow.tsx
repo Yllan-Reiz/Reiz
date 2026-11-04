@@ -202,7 +202,10 @@ function MockNotif({ photo, title, body, when }: { photo: ImageSourcePropType; t
 /**
  * Le parcours lui-même. `preview` = aperçu : tous les écrans, rien n'est enregistré, aucune autorisation demandée.
  */
-export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; preview?: boolean; onClose: (changed: boolean) => void }) {
+/** `only: 'objective'` : seulement le sport, les trois profils et le premier post. Pour un compte déjà ancien qui n'a
+ *  pas encore d'objectif (17 sur 56 le 04/11/2026) : la carte du fil, l'onglet Objectifs et une ouverture automatique
+ *  l'amènent ici au lieu du formulaire complet. */
+export function WelcomeModal({ visible, preview, only, onClose }: { visible: boolean; preview?: boolean; only?: 'objective'; onClose: (changed: boolean) => void }) {
   const insets = useSafeAreaInsets();
   const { width: winW, height: winH } = useWindowDimensions();
   // Écran profil : la photo occupe le haut de l'écran, bord à bord, comme l'onglet Profil.
@@ -274,26 +277,28 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
       // Photo d'origine (déjà allégée à l'envoi) : la version agrandie par Supabase est refusée quand son quota est
       // épuisé, et l'écran restait noir (25/10/2026).
       setAvatar(p.avatar_url ? await signOne(p.avatar_url).catch(() => null) : null);
-      const list: StepId[] = ['profile'];
-      if (preview || !objs.count) list.push('objective');
-      // Pas d'écran « lieu » si la détection est déjà active ou impossible sur ce téléphone (Android, build 1.0.0).
-      if (preview || (AUTO_SUPPORTED && !autoOn)) list.push('place');
-      if (preview || perm?.status === 'undetermined') list.push('notifs');
-      list.push('friends');
+      const list: StepId[] = only ? [] : ['profile'];
+      if (preview || only || !objs.count) list.push('objective');
+      if (!only) {
+        // Pas d'écran « lieu » si la détection est déjà active ou impossible sur ce téléphone (Android, build 1.0.0).
+        if (preview || (AUTO_SUPPORTED && !autoOn)) list.push('place');
+        if (preview || perm?.status === 'undetermined') list.push('notifs');
+        list.push('friends');
+      }
       // Le premier post, seulement pour qui n'a encore rien posté (l'écran est sauté sans objectif, voir go()).
       if (preview || !posts.count) list.push('post');
       if (alive) setSteps(list);
     })().catch(() => { if (alive) setSteps(['profile', 'friends']); });
     return () => { alive = false; };
-  }, [visible, preview]);
+  }, [visible, preview, only]);
 
   const step: StepId | null = steps ? steps[idx] : null;
 
   const finish = useCallback(async (via: 'end' | 'skip_all' | 'post' = 'end') => {
     if (!preview) track('welcome_end', { step, via }, 'welcome');
-    if (!preview && userId) await AsyncStorage.setItem(seenKey(userId), '1').catch(() => {});
+    if (!preview && userId && !only) await AsyncStorage.setItem(seenKey(userId), '1').catch(() => {});
     onClose(wrote.current);
-  }, [preview, onClose, userId, step]);
+  }, [preview, onClose, userId, step, only]);
 
   // Chaque écran vu, pour le back-office (pas en aperçu depuis les Réglages).
   useEffect(() => {
