@@ -25,7 +25,7 @@ import { LocationScene } from './LocationScene';
 import { TrainingDaysPicker } from './TrainingDays';
 import { GlassCard, GlassSurface } from './GlassSurface';
 import { F } from '../styles';
-import { t, unitLabel, dirIcon } from '../i18n';
+import { t, unitLabel, dirIcon, TKey } from '../i18n';
 import { WEEK_CHOICES, weeksLabel, addWeeks, localDay, deadlineLabel, rhythmTarget } from '../lib/goal';
 import { knowsGoalColumns } from '../lib/objectives';
 import { VISIBILITY, VIS_HINT, chip, chipText } from './CreateObjectiveModal';
@@ -68,15 +68,24 @@ const PHOTOS = {
 
 // Trois profils de pratiquants (Yllan, 04/11/2026) : l'occasionnel qui « y va », le régulier, celui qui a un vrai but.
 // Chaque profil prérègle le rythme, l'échéance et les jours ; tout reste modifiable en dessous.
-const PACES: { key: 'easy' | 'regular' | 'hard'; per: number; weeks: number }[] = [
-  { key: 'easy', per: 2, weeks: 4 },
-  { key: 'regular', per: 3, weeks: 8 },
-  { key: 'hard', per: 5, weeks: 12 },
-];
-const paceDays = (pace: typeof PACES[number], sportDays: number[]) => {
-  if (pace.key === 'hard') return [1, 2, 3, 4, 5];
+// Les chiffres (séances par semaine, durée) et le nom de l'objectif sont propres à chaque sport (SportCarousel, i18n).
+type PaceKey = 'easy' | 'regular' | 'hard';
+const PACE_KEYS: PaceKey[] = ['easy', 'regular', 'hard'];
+const paceDays = (per: number, sportDays: number[]) => {
   const base = sportDays.length === 7 ? [1, 3, 5] : sportDays;
-  return base.slice(0, pace.per);
+  if (per <= base.length) return base.slice(0, per);
+  // Plus de séances que de jours proposés : on complète avec les jours ouvrés, puis le week-end.
+  const out = [...base];
+  for (const d of [1, 2, 3, 4, 5, 6, 7]) { if (out.length >= per) break; if (!out.includes(d)) out.push(d); }
+  return out.sort((a, b) => a - b);
+};
+// Nom proposé pour un profil : « Nager 2 fois par semaine »... « Autre » n'a pas de nom tout fait.
+const paceTitle = (sp: Sport, key: PaceKey) => (sp.id === 'autre' ? '' : t(`sports.${sp.id}.pace_${key}` as TKey));
+const applyPace = (sp: Sport, key: PaceKey, set: { target: (n: number) => void; weeks: (n: number) => void; days: (d: number[]) => void; title: (s: string) => void }) => {
+  const pc = sp.paces[key];
+  set.target(pc.per); set.weeks(pc.weeks); set.days(paceDays(pc.per, sp.days));
+  const title = paceTitle(sp, key);
+  if (title) set.title(title);
 };
 
 // Discipline choisie, retenue par compte : elle préremplit l'objectif si l'accueil est rouvert.
@@ -373,9 +382,10 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
   // ---- Objectif ----
   const pickSport = (sp: Sport, i: number) => {
     setSportIdx(i); setStartIdx(i);
-    // Séances : « 3 par semaine » d'après les jours proposés (3 pour « Autre », qui propose tous les jours).
-    setTarget(sp.unit === 'séances' ? (sp.days.length === 7 ? 3 : sp.days.length) : sp.target);
-    setDays(sp.days); setObjTitle(sp.title); setEditDays(false); setWeeks(8); setVisibility('friends');
+    // Le profil « Régulier » du sport prérègle tout (nom, séances par semaine, durée, jours).
+    setObjTitle(sp.title); setEditDays(false); setVisibility('friends');
+    if (sp.unit === 'séances') applyPace(sp, 'regular', { target: setTarget, weeks: setWeeks, days: setDays, title: setObjTitle });
+    else { setTarget(sp.target); setDays(sp.days); setWeeks(8); }
     setPhase('details');
     if (!preview && userId) {
       AsyncStorage.setItem(sportKey(userId), sp.id).catch(() => {});
@@ -662,16 +672,17 @@ export function WelcomeModal({ visible, preview, onClose }: { visible: boolean; 
                         <>
                           <Label>{t('welcome.paceLabel')}</Label>
                           <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-                            {PACES.map(pc => {
+                            {PACE_KEYS.map(key => {
+                              const pc = sp.paces[key];
                               const on = target === pc.per && weeks === pc.weeks;
                               return (
-                                <TouchableOpacity key={pc.key} onPress={() => { Haptics.selectionAsync().catch(() => {}); setTarget(pc.per); setWeeks(pc.weeks); setDays(paceDays(pc, sp.days)); setEditDays(false); }} activeOpacity={0.85} accessibilityState={{ selected: on }} style={[chip(on), { flex: 1, alignItems: 'center', paddingHorizontal: 6 }]}>
-                                  <Text style={chipText(on)} numberOfLines={1} maxFontSizeMultiplier={1.2}>{t(`welcome.pace_${pc.key}`)}</Text>
+                                <TouchableOpacity key={key} onPress={() => { Haptics.selectionAsync().catch(() => {}); applyPace(sp, key, { target: setTarget, weeks: setWeeks, days: setDays, title: setObjTitle }); setEditDays(false); }} activeOpacity={0.85} accessibilityState={{ selected: on }} style={[chip(on), { flex: 1, alignItems: 'center', paddingHorizontal: 6 }]}>
+                                  <Text style={chipText(on)} numberOfLines={1} maxFontSizeMultiplier={1.2}>{t(`welcome.pace_${key}`)}</Text>
                                 </TouchableOpacity>
                               );
                             })}
                           </View>
-                          <Text style={hintStyle}>{(() => { const pc = PACES.find(x => x.per === target && x.weeks === weeks); return pc ? t(`welcome.paceHint_${pc.key}`) : t('welcome.paceHintCustom'); })()}</Text>
+                          <Text style={hintStyle}>{(() => { const key = PACE_KEYS.find(k => sp.paces[k].per === target && sp.paces[k].weeks === weeks); return key ? t(`welcome.paceHint_${key}`) : t('welcome.paceHintCustom'); })()}</Text>
                           <View style={{ height: 16 }} />
                         </>
                       )}

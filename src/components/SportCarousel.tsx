@@ -24,17 +24,22 @@ export type Sport = {
   target: number;
   step: number;
   days: number[];
+  /** Les trois profils de l'accueil (Tranquille, Régulier, À fond) : séances par semaine et durée, propres au sport.
+   *  Le nom de l'objectif vient de i18n : sports.<id>.pace_<profil>. */
+  paces: Record<'easy' | 'regular' | 'hard', { per: number; weeks: number }>;
 };
 
+const P = (e: [number, number], r: [number, number], h: [number, number]) => ({ easy: { per: e[0], weeks: e[1] }, regular: { per: r[0], weeks: r[1] }, hard: { per: h[0], weeks: h[1] } });
+
 export const SPORTS: Sport[] = [
-  { id: 'musculation', name: t('sports.musculation.name'), description: t('sports.musculation.description'), photo: require('../../assets/sports/musculation.jpg'), emoji: '🏋️', title: t('sports.musculation.title'), unit: 'séances', target: 12, step: 1, days: [1, 3, 5] },
-  { id: 'street-workout', name: t('sports.street-workout.name'), description: t('sports.street-workout.description'), photo: require('../../assets/sports/street-workout.jpg'), emoji: '🤸', title: t('sports.street-workout.title'), unit: 'séances', target: 12, step: 1, days: [2, 4, 6] },
-  { id: 'hyrox', name: t('sports.hyrox.name'), description: t('sports.hyrox.description'), photo: require('../../assets/sports/hyrox.jpg'), emoji: '🛷', title: t('sports.hyrox.title'), unit: 'séances', target: 16, step: 1, days: [1, 3, 5, 6] },
-  { id: 'running', name: t('sports.running.name'), description: t('sports.running.description'), photo: require('../../assets/sports/running.jpg'), emoji: '🏃', title: t('sports.running.title'), unit: 'km', target: 50, step: 5, days: [2, 4, 6] },
-  { id: 'cyclisme', name: t('sports.cyclisme.name'), description: t('sports.cyclisme.description'), photo: require('../../assets/sports/cyclisme.jpg'), emoji: '🚴', title: t('sports.cyclisme.title'), unit: 'km', target: 100, step: 10, days: [6, 7] },
-  { id: 'combat', name: t('sports.combat.name'), description: t('sports.combat.description'), photo: require('../../assets/sports/combat.jpg'), emoji: '🥋', title: t('sports.combat.title'), unit: 'séances', target: 12, step: 1, days: [1, 3, 5] },
-  { id: 'natation', name: t('sports.natation.name'), description: t('sports.natation.description'), photo: require('../../assets/sports/natation.jpg'), emoji: '🏊', title: t('sports.natation.title'), unit: 'séances', target: 8, step: 1, days: [2, 5] },
-  { id: 'autre', name: t('sports.autre.name'), description: t('sports.autre.description'), photo: require('../../assets/sports/autre.jpg'), emoji: '🎯', title: '', unit: 'séances', target: 12, step: 1, days: ALL_DAYS },
+  { id: 'musculation', name: t('sports.musculation.name'), description: t('sports.musculation.description'), photo: require('../../assets/sports/musculation.jpg'), emoji: '🏋️', title: t('sports.musculation.title'), unit: 'séances', target: 12, step: 1, days: [1, 3, 5] , paces: P([2, 4], [3, 8], [5, 12]) },
+  { id: 'street-workout', name: t('sports.street-workout.name'), description: t('sports.street-workout.description'), photo: require('../../assets/sports/street-workout.jpg'), emoji: '🤸', title: t('sports.street-workout.title'), unit: 'séances', target: 12, step: 1, days: [2, 4, 6] , paces: P([2, 4], [3, 8], [5, 12]) },
+  { id: 'hyrox', name: t('sports.hyrox.name'), description: t('sports.hyrox.description'), photo: require('../../assets/sports/hyrox.jpg'), emoji: '🛷', title: t('sports.hyrox.title'), unit: 'séances', target: 16, step: 1, days: [1, 3, 5, 6] , paces: P([2, 4], [4, 8], [5, 12]) },
+  { id: 'running', name: t('sports.running.name'), description: t('sports.running.description'), photo: require('../../assets/sports/running.jpg'), emoji: '🏃', title: t('sports.running.title'), unit: 'séances', target: 12, step: 1, days: [2, 4, 6] , paces: P([2, 4], [3, 8], [4, 12]) },
+  { id: 'cyclisme', name: t('sports.cyclisme.name'), description: t('sports.cyclisme.description'), photo: require('../../assets/sports/cyclisme.jpg'), emoji: '🚴', title: t('sports.cyclisme.title'), unit: 'séances', target: 8, step: 1, days: [6, 7] , paces: P([1, 4], [2, 8], [4, 12]) },
+  { id: 'combat', name: t('sports.combat.name'), description: t('sports.combat.description'), photo: require('../../assets/sports/combat.jpg'), emoji: '🥋', title: t('sports.combat.title'), unit: 'séances', target: 12, step: 1, days: [1, 3, 5] , paces: P([2, 4], [3, 8], [5, 12]) },
+  { id: 'natation', name: t('sports.natation.name'), description: t('sports.natation.description'), photo: require('../../assets/sports/natation.jpg'), emoji: '🏊', title: t('sports.natation.title'), unit: 'séances', target: 8, step: 1, days: [2, 5] , paces: P([1, 4], [2, 8], [4, 12]) },
+  { id: 'autre', name: t('sports.autre.name'), description: t('sports.autre.description'), photo: require('../../assets/sports/autre.jpg'), emoji: '🎯', title: '', unit: 'séances', target: 12, step: 1, days: ALL_DAYS , paces: P([2, 4], [3, 8], [5, 12]) },
 ];
 
 // Hauteur réservée en bas aux commandes fixes (Continuer, Plus tard), hors encoche.
