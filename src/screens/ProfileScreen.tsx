@@ -17,6 +17,7 @@ import { JourneyModal } from '../components/JourneyModal';
 import { ProfileHero, ProfileBackdrop, GlassIconButton, StatBubble, AboutBubble, BadgesSection, GoalCards, HistoryCarousel, AchievedList, SectionHeader, computeBadges, isCompleted } from '../components/ProfileSections';
 import { PostViewer } from '../components/PostViewer';
 import { ProfileTags } from '../components/ProfileTags';
+import { PresenceBubble } from '../components/PresenceBubble';
 import { PeopleListModal } from '../components/PeopleListModal';
 import { MyFriendsBubble } from '../components/MyFriendsBubble';
 import { SportBadge } from '../components/SportBadge';
@@ -64,6 +65,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
   // Fenêtre « Amis » (liste cliquable) ou « Cercle proche » (étoiles).
   const [peopleMode, setPeopleMode] = useState<'friends' | 'close' | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsView, setSettingsView] = useState<'root' | 'presence'>('root');
   // Objectif en cours de modification (feuille).
   const [daysFor, setDaysFor] = useState<Objective | null>(null);
 
@@ -253,7 +255,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
     );
   };
 
-  const openSettings = () => setShowSettings(true);
+  const openSettings = () => { setSettingsView('root'); setShowSettings(true); };
+  const openPresence = () => { setSettingsView('presence'); setShowSettings(true); };
 
   const handleSignOut = async () => {
     Alert.alert(t('profile.signOutTitle'), t('profile.signOutText'), [
@@ -384,6 +387,8 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
           {/* Tes amis et ton cercle proche vivent ici (l'onglet Amis sert à en découvrir de nouveaux). */}
           {userId && <MyFriendsBubble userId={userId} onOpen={() => setPeopleMode('friends')} reloadKey={peopleMode} />}
           <CloseCircleBubble onManage={() => setPeopleMode('close')} reloadKey={peopleMode} />
+          {/* La détection de la salle, à portée de main (avant : seulement dans les Réglages). */}
+          <PresenceBubble onOpen={openPresence} reloadKey={showSettings} />
 
           {/* === Badges, puis objectifs en cours, puis historique des posts === */}
           <BadgesSection badges={badges} own />
@@ -424,6 +429,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
       />
       <SettingsScreen
         visible={showSettings}
+        initialView={settingsView}
         onClose={() => setShowSettings(false)}
         onEditName={() => setEditingName(true)}
         onEditBio={() => setEditingBio(true)}

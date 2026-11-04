@@ -737,6 +737,12 @@ export const fr = {
     languageHint: 'Les notifications arrivent aussi dans cette langue.',
   },
   profile: {
+    locationLabel: 'LOCALISATION',
+    locationOn: 'Détection de ta salle activée',
+    locationOff: 'Ta salle n\'est pas enregistrée',
+    locationOffSub: 'Quand tu y arrives, ton cercle proche est prévenu, même appli fermée.',
+    locationPlaces: { one: '{count} lieu enregistré', other: '{count} lieux enregistrés' },
+    locationSetup: 'Enregistrer ma salle',
     sportFailed: "Impossible d'enregistrer ton sport pour le moment.",
     deleteObjTitle: 'Supprimer « {title} » ?',
     deleteObjText: 'Cet objectif et toutes les publications qui y sont rattachées seront effacés. Cette action est irréversible.',

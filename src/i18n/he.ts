@@ -738,6 +738,12 @@ export const he: Dict = {
     languageHint: 'גם ההתראות יגיעו בשפה הזו.',
   },
   profile: {
+    locationLabel: 'מיקום',
+    locationOn: 'זיהוי חדר הכושר פעיל',
+    locationOff: 'חדר הכושר עוד לא נשמר',
+    locationOffSub: 'כשמגיעים, המעגל הקרוב מקבל התראה, גם כשהאפליקציה סגורה.',
+    locationPlaces: { one: 'מקום אחד שמור', other: '{count} מקומות שמורים' },
+    locationSetup: 'לשמור את חדר הכושר',
     sportFailed: 'לא הצלחנו לשמור את הענף כרגע.',
     deleteObjTitle: 'למחוק את "{title}"?',
     deleteObjText: 'היעד הזה וכל הפוסטים שמקושרים אליו יימחקו. אי אפשר לבטל את הפעולה.',

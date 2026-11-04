@@ -112,8 +112,11 @@ export const s = StyleSheet.create({
   brStackMoreText: { color: '#fff', fontFamily: F.bold, fontSize: 12 },
   brReactBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.45)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
   brReactBtnMine: { backgroundColor: 'rgba(255,255,255,0.92)', borderColor: '#fff' },
-  brQuickBar: { position: 'absolute', left: 10, right: 10, bottom: 12, height: 58, borderRadius: 29, backgroundColor: 'rgba(12,12,12,0.88)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: 6 },
-  brQuickItem: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  // Sept cases de même largeur (6 emojis + le plus) : avant, « space-around » et un plus sans fond le faisaient
+  // paraître décalé (retour de Yllan, 04/11/2026).
+  brQuickBar: { position: 'absolute', left: 10, right: 10, bottom: 12, height: 58, borderRadius: 29, backgroundColor: 'rgba(12,12,12,0.88)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8 },
+  brQuickItem: { flex: 1, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  brQuickPlus: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   brQuickItemOn: { backgroundColor: 'rgba(255,255,255,0.18)' },
   brQuickEmoji: { fontSize: 26 },
   feedOverlayTop: { position: 'absolute', top: 0, left: 0, right: 0, paddingBottom: 40 },

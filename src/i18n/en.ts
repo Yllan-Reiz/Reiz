@@ -736,6 +736,12 @@ export const en: Dict = {
     languageHint: 'Notifications will also arrive in this language.',
   },
   profile: {
+    locationLabel: 'LOCATION',
+    locationOn: 'Gym detection is on',
+    locationOff: 'Your gym isn\'t saved yet',
+    locationOffSub: 'When you get there, your close circle is notified, even with the app closed.',
+    locationPlaces: { one: '{count} place saved', other: '{count} places saved' },
+    locationSetup: 'Save my gym',
     sportFailed: "Couldn't save your sport right now.",
     deleteObjTitle: 'Delete "{title}"?',
     deleteObjText: 'This goal and all posts linked to it will be erased. This cannot be undone.',

@@ -736,6 +736,12 @@ export const es: Dict = {
     languageHint: 'Las notificaciones también llegarán en este idioma.',
   },
   profile: {
+    locationLabel: 'UBICACIÓN',
+    locationOn: 'Detección de tu gimnasio activada',
+    locationOff: 'Tu gimnasio aún no está guardado',
+    locationOffSub: 'Cuando llegas, tu círculo cercano recibe el aviso, incluso con la app cerrada.',
+    locationPlaces: { one: '{count} lugar guardado', other: '{count} lugares guardados' },
+    locationSetup: 'Guardar mi gimnasio',
     sportFailed: 'No se ha podido guardar tu deporte por ahora.',
     deleteObjTitle: '¿Eliminar «{title}»?',
     deleteObjText: 'Este objetivo y todas las publicaciones vinculadas se borrarán. Esta acción es irreversible.',

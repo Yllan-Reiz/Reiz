@@ -21,8 +21,10 @@ type View_ = 'root' | 'password' | 'blocked' | 'legal' | 'presence' | 'language'
 
 // Page Réglages, organisée comme sur Instagram : Compte, Confidentialité, Notifications,
 // Légal, Aide, puis les actions sensibles tout en bas.
-export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onCloseFriends, onSignOut, onDeleteAccount }: {
+export function SettingsScreen({ visible, initialView = 'root', onClose, onEditName, onEditBio, onCloseFriends, onSignOut, onDeleteAccount }: {
   visible: boolean;
+  /** Écran ouvert directement (ex. « Salle et lieux » depuis la bulle Localisation du profil). */
+  initialView?: View_;
   onClose: () => void;
   onEditName: () => void;
   onEditBio: () => void;
@@ -54,11 +56,12 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
   const ready = loaded.user && loaded.enc && loaded.disc;
   useEffect(() => {
     if (!visible) return;
+    setView(initialView);
     setLoaded({ user: false, enc: false, disc: !contactsAvailable() });
     // Réseau lent ou requête en échec : la liste s'affiche quand même au bout d'une seconde et demie.
     const timer = setTimeout(() => setLoaded({ user: true, enc: true, disc: true }), 1500);
     return () => clearTimeout(timer);
-  }, [visible]);
+  }, [visible, initialView]);
 
   useEffect(() => {
     if (!visible) return;
@@ -102,7 +105,6 @@ export function SettingsScreen({ visible, onClose, onEditName, onEditBio, onClos
 
   useEffect(() => {
     if (!visible) return;
-    setView('root');
     supabase.auth.getUser().then(({ data: { user } }) => {
       setEmail(user?.email || '');
       const providers: string[] = (user?.app_metadata as any)?.providers || [(user?.app_metadata as any)?.provider || 'email'];

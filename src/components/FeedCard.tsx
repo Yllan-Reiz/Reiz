@@ -419,7 +419,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
             </TouchableOpacity>
           ))}
           <TouchableOpacity onPress={() => { setShowQuick(false); setShowEmojiPicker(true); }} style={s.brQuickItem} accessibilityLabel={t('feed.moreEmojis')}>
-            <Ionicons name="add" size={22} color="#fff" />
+            <View style={s.brQuickPlus}><Ionicons name="add" size={22} color="#fff" /></View>
           </TouchableOpacity>
         </View>
       ) : (
