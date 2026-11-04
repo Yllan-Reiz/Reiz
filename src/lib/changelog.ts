@@ -15,17 +15,15 @@ export const CHANGELOG: {
   video: string | null;
   videoRatio?: number;
 } = {
-  id: 'maj-1.2-rythme',
+  id: 'maj-1.2-accueil',
   title: t('changelog.title'),
   subtitle: t('changelog.subtitle'),
   video: null,
   items: [
-    { emoji: '🎯', title: t('changelog.goalsTitle'), text: t('changelog.goalsText') },
-    { emoji: '🛋️', title: t('changelog.offTitle'), text: t('changelog.offText') },
-    { emoji: '✅', title: t('changelog.multiTitle'), text: t('changelog.multiText') },
-    { emoji: '💬', title: t('changelog.commentsTitle'), text: t('changelog.commentsText') },
-    { emoji: '📸', title: t('changelog.mediaTitle'), text: t('changelog.mediaText') },
-    { emoji: '👋', title: t('changelog.nudgeTitle'), text: t('changelog.nudgeText') },
+    { emoji: '🎯', title: t('changelog.paceTitle'), text: t('changelog.paceText') },
+    { emoji: '📅', title: t('changelog.shortTitle'), text: t('changelog.shortText') },
+    { emoji: '📍', title: t('changelog.locTitle'), text: t('changelog.locText') },
+    { emoji: '😄', title: t('changelog.emojiTitle'), text: t('changelog.emojiText') },
   ],
 };
 

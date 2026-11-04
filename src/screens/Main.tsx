@@ -518,7 +518,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     // Les nouveaux push envoient « activity » : on ouvre directement le fil d'activité.
     setShowActivity(navIntent === 'activity');
     // Objectif atteint puis « Nouvel objectif » : l'onglet des objectifs, création ouverte.
-    if (navIntent === 'new_objective') { setTab('objectives'); setShowCreateModal(true); onNavIntentHandled?.(); return; }
+    // Notification « fixe ton premier objectif » : sans objectif, c'est le parcours de l'accueil qui s'ouvre.
+    if (navIntent === 'new_objective') { setTab('objectives'); openCreate(); onNavIntentHandled?.(); return; }
     setTab(navIntent === 'friend_request' ? 'friends' : 'feed');
     onNavIntentHandled?.();
   }, [navIntent]);
