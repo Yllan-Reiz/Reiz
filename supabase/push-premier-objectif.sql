@@ -1,7 +1,7 @@
 -- Notification unique (04/11/2026) aux comptes SANS objectif qui ont un jeton push : « fixe ton premier objectif ».
 -- Envoi direct à Expo depuis la base (pg_net), les jetons ne sortent pas de la base. Texte dans la langue du compte.
 -- Le tap ouvre l'onglet Objectifs : sans objectif, l'app lance le parcours sport, profils, premier post.
--- À lancer UNE fois, après l'accord de Yllan. Vérifier d'abord la cible :
+-- ENVOYÉE le 04/11/2026 à 5 comptes (Expo : 5 × status ok). Ne pas relancer. Vérifier la cible avant tout nouvel envoi :
 --   select count(*) from users u where push_token is not null and not exists (select 1 from objectives where user_id = u.id);
 select net.http_post(
   url := 'https://exp.host/--/api/v2/push/send',
