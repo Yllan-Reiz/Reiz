@@ -24,6 +24,7 @@ import { lateLabel, ON_TIME_MIN } from '../lib/moment';
 import { FloatingEmoji, nextFloatId } from './FloatingEmoji';
 import { t, tp, unitLabel, dirIcon } from '../i18n';
 import { CachedImage } from './CachedImage';
+import { FEATURES } from '../lib/features';
 
 // Ouverture/fermeture en fondu-montée. Le contenu reste monté le temps de la
 // sortie, sinon le panneau disparaît d'un coup sec.
@@ -315,7 +316,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       Alert.alert(t('feed.yourPost'), undefined, [
         ...(Date.now() - new Date(u.created_at).getTime() < EDIT_CAPTION_MS ? [{ text: t('feed.editCaption'), onPress: () => setEditingCaption(caption || '') }] : []),
         { text: t('feed.shareStory'), onPress: shareStory },
-        { text: pinned ? t('feed.unpin') : t('feed.pin'), onPress: pinPost },
+        ...(FEATURES.pinPosts ? [{ text: pinned ? t('feed.unpin') : t('feed.pin'), onPress: pinPost }] : []),
         { text: t('feed.deletePost'), style: 'destructive', onPress: deletePost },
         { text: t('common.cancel'), style: 'cancel' },
       ]);
@@ -508,12 +509,12 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       <View style={s.brBelow}>
         <Gauge pct={pctValue} label={rhythmInfo ? `${progressLabel}, ${rhythmInfo.toLowerCase()}` : progressLabel} />
         {isWin && (
-          <TouchableOpacity onPress={() => setJourneyOpen(true)} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('journey.seeJourney')}
+          <TouchableOpacity onPress={() => setJourneyOpen(true)} disabled={!FEATURES.journeyEverywhere} activeOpacity={0.85} accessibilityRole={FEATURES.journeyEverywhere ? 'button' : undefined} accessibilityLabel={FEATURES.journeyEverywhere ? t('journey.seeJourney') : t('journey.feedWin')}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', marginTop: 10, paddingLeft: 10, paddingRight: 12, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }}>
             <Text style={{ fontSize: 15 }}>🏆</Text>
             <Text style={{ color: '#fff', fontSize: 13.5, fontFamily: F.bold }}>{t('journey.feedWin')}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13.5, fontFamily: F.semibold }}>{t('journey.seeJourney')}</Text>
-            <Ionicons name={dirIcon('chevron-forward')} size={14} color="rgba(255,255,255,0.6)" />
+            {FEATURES.journeyEverywhere && <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13.5, fontFamily: F.semibold }}>{t('journey.seeJourney')}</Text>}
+            {FEATURES.journeyEverywhere && <Ionicons name={dirIcon('chevron-forward')} size={14} color="rgba(255,255,255,0.6)" />}
           </TouchableOpacity>
         )}
         {duoPartner && (

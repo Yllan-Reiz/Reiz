@@ -8,6 +8,7 @@ import { GUTTER } from '../constants';
 import { F } from '../styles';
 import { t, tp, dirIcon } from '../i18n';
 import { CachedImage } from './CachedImage';
+import { FEATURES } from '../lib/features';
 
 // L'onglet Amis = découvrir et ajouter des gens (comme sur les réseaux sociaux) : recherche par nom, tag ou sport,
 // invitation, demandes reçues, amis recommandés, nouveaux sur Reiz. Tes amis et ton cercle proche sont sur ton
@@ -256,10 +257,10 @@ export function FriendsGlassView(p: {
             return (
               <Row key={r.friendship_id} person={r} onPress={() => p.onViewProfile(r.id)} sub={days < 1 ? t('requests.sentToday') : tp('requests.sentDays', days)} right={
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <TouchableOpacity onPress={() => p.onNudge(r)} disabled={p.nudged.has(r.friendship_id)} accessibilityRole="button" accessibilityLabel={t('requests.nudgeA11y', { name: r.full_name })} accessibilityState={{ disabled: p.nudged.has(r.friendship_id) }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                  {FEATURES.manualNudges && <TouchableOpacity onPress={() => p.onNudge(r)} disabled={p.nudged.has(r.friendship_id)} accessibilityRole="button" accessibilityLabel={t('requests.nudgeA11y', { name: r.full_name })} accessibilityState={{ disabled: p.nudged.has(r.friendship_id) }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                     style={{ height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: p.nudged.has(r.friendship_id) ? 'rgba(255,255,255,0.12)' : '#fff', alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ color: p.nudged.has(r.friendship_id) ? 'rgba(255,255,255,0.6)' : '#000', fontSize: 14, fontFamily: F.extrabold }}>{p.nudged.has(r.friendship_id) ? t('requests.nudged') : t('requests.nudge')}</Text>
-                  </TouchableOpacity>
+                  </TouchableOpacity>}
                   <RoundBtn icon="close" label={t('requests.cancelA11y', { name: r.full_name })} onPress={() => p.onCancelSent(r)} />
                 </View>
               } />

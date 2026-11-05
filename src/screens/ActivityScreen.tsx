@@ -23,6 +23,7 @@ import { gifIdOf } from '../lib/giphy';
 import { placeLabel, localizeDuelResult } from '../lib/helpers';
 import { t, tp, dirIcon } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
+import { FEATURES } from '../lib/features';
 
 type Row = ActivityItem & {
   updates?: { photo_url?: string | null; objectives?: { emoji?: string; title?: string } | null } | null;
@@ -254,7 +255,7 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
         supabase.from('friendships')
           .select('requester:users!friendships_requester_id_fkey(id, full_name, avatar_url)')
           .eq('receiver_id', currentUserId).eq('status', 'pending'),
-        loadDuels(),
+        FEATURES.duels ? loadDuels() : Promise.resolve(null),
       ]);
       const reqs = ((pend.data || []) as any[]).map(f => f.requester).filter(Boolean);
       const signed = await signAvatars(reqs.map((r: any) => r.avatar_url));
@@ -358,8 +359,8 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
       {/* Ce qui était en haut du fil : le cercle, la salle, les duels. Compact, avant les notifications. */}
       <CircleRhythmCard onOpenProfile={onViewProfile} reloadKey={rhythmKey} />
       <PresenceCard compact />
-      <DuelBanner onOpenProfile={onViewProfile} reloadKey={rhythmKey} />
-      <ChallengeFriendButton onSent={() => setRhythmKey(k => k + 1)} />
+      {FEATURES.duels && <DuelBanner onOpenProfile={onViewProfile} reloadKey={rhythmKey} />}
+      {FEATURES.duels && <ChallengeFriendButton onSent={() => setRhythmKey(k => k + 1)} />}
       <CloseCircleCard onOpenProfile={onViewProfile} />
     </View>
   );

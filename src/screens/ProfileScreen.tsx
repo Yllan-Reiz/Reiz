@@ -30,6 +30,7 @@ import { resetCloseCircle } from '../lib/closeCircle';
 import { forgetLiveActivityToken } from '../lib/liveActivity';
 import { t, tp, formatDate } from '../i18n';
 import { mark } from '../lib/perf';
+import { FEATURES } from '../lib/features';
 
 type ProfileSnapshot = {
   profile: any;
@@ -381,7 +382,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
                   : <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', fontFamily: F.regular }}>{t('profile.addBio')}</Text>}
               </TouchableOpacity>
             )}
-            {userId && <View style={{ alignSelf: 'stretch' }}><ProfileTags userId={userId} currentUserId={userId} own /></View>}
+            {FEATURES.profileTags && userId && <View style={{ alignSelf: 'stretch' }}><ProfileTags userId={userId} currentUserId={userId} own /></View>}
           </AboutBubble>
 
           {/* Tes amis et ton cercle proche vivent ici (l'onglet Amis sert à en découvrir de nouveaux). */}
@@ -407,7 +408,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
               <>
                 {ongoing.length > 0 && <SectionHeader title={t('profile.ongoing')} count={ongoing.length} style={{ paddingHorizontal: GUTTER }} />}
                 <GoalCards items={ongoing} activity={activityByObj} onPress={openObjectiveMenu} />
-                <AchievedList items={achieved} onOpen={o => setJourneyId(o.id)} />
+                <AchievedList items={achieved} onOpen={FEATURES.journeyEverywhere ? o => setJourneyId(o.id) : undefined} />
                 {journeyId && <JourneyModal objectiveId={journeyId} own={true} ownerName={undefined} from="profile" onClose={() => setJourneyId(null)} />}
               </>
             )}

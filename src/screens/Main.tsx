@@ -41,6 +41,9 @@ import { ObjectiveEditSheet } from '../components/ObjectiveEditSheet';
 import { ObjectivesTab } from '../components/ObjectivesTab';
 import { useCloseCircle } from '../lib/closeCircle';
 import { t, unitLabel, dirIcon, isRTL } from '../i18n';
+import { FEATURES } from '../lib/features';
+import { InviteCircleCard } from '../components/InviteCircleCard';
+import { maybeAskForUpdate } from '../lib/updatePrompt';
 
 const PAGE_SIZE = 20;
 const FEED_WINDOW_HOURS = 24;
@@ -163,10 +166,13 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   // Nb d'amis acceptés — sert à savoir si le nouvel utilisateur a déjà lancé son cercle.
   // null = pas encore chargé (évite d'afficher la carte d'activation par erreur).
   const [friendCount, setFriendCount] = useState<number | null>(null);
+  // 1.3 : rappel de mise à jour quand l'App Store a plus récent (une fois par version, voir updatePrompt.ts).
+  useEffect(() => { const id = setTimeout(() => { maybeAskForUpdate(); }, 4000); return () => clearTimeout(id); }, []);
   // Chantier 6 : amis avec qui un défi est déjà ouvert (le bouton « Lancer un défi » des posts en duo les évite).
   const [duelBusyIds, setDuelBusyIds] = useState<Set<string> | undefined>(undefined);
   const [duelKey, setDuelKey] = useState(0);
   useEffect(() => {
+    if (!FEATURES.duels) return;
     loadDuels().then(list => {
       if (list) setDuelBusyIds(new Set(list.filter(d => d.status === 'active' || d.status === 'pending').map(d => d.otherId)));
     }).catch(() => {});
@@ -532,10 +538,12 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               <>
               {/* 1.2 : les demandes d'ami reçues passent avant le reste, une réponse suffit à avoir un cercle. */}
               <PendingRequestsCard userId={userId} from="feed" onChanged={() => { fetchPendingCount(); fetchFriendCount(); }} onSeeAll={() => setTab('friends')} />
+              {/* 1.3 : moins de 3 amis, l'invitation passe devant (elle disparaît à 3). */}
+              <InviteCircleCard userId={userId} friendCount={friendCount} />
               {/* Moment Reiz (phase 29) : qui de ton cercle a posté aujourd'hui. */}
               <CircleTodayCard onOpenProfile={openProfile} />
               {/* Défis en cours et invitations reçues : de retour dans le fil (ils restent aussi dans l'Activité). */}
-              <DuelBanner onOpenProfile={openProfile} reloadKey={duelKey} />
+              {FEATURES.duels && <DuelBanner onOpenProfile={openProfile} reloadKey={duelKey} />}
               <SetupCard
                 userId={userId}
                 hasObjective={loadingObj ? null : objectives.length > 0}
@@ -675,7 +683,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 onDuoReply={(authorId) => onPost({ duoWith: authorId })}
                 onOpenProfile={openProfile}
                 duelBusyIds={duelBusyIds}
-                onChallenge={challengeFromFeed}
+                onChallenge={FEATURES.duels ? challengeFromFeed : undefined}
                 duoDone={duoDone.has(item.id)}
                 duoValidated={duoPairs.has(item.id)}
                 closeAuthor={!!item.user_id && closeIds.has(item.user_id)}

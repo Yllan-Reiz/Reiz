@@ -5,6 +5,7 @@ import * as TaskManager from 'expo-task-manager';
 import { supabase } from './supabase';
 import { AUTO_DETECTION } from '../constants';
 import { t } from '../i18n';
+import { FEATURES } from './features';
 
 // « Je suis à la salle » : prévenir le cercle proche quand on arrive à un lieu d'entraînement.
 //
@@ -24,7 +25,7 @@ export const MAX_PLACES = 5;
 export const COOLDOWN_HOURS = 3;
 // La détection automatique (position en arrière-plan) n'existe que sur iPhone, à partir du build corrigé (voir
 // AUTO_DETECTION dans constants.ts) : sur Android et sur les builds 1.0.0, seul le bouton manuel « Je suis à la salle » reste.
-export const AUTO_SUPPORTED = Platform.OS === 'ios' && AUTO_DETECTION;
+export const AUTO_SUPPORTED = Platform.OS === 'ios' && AUTO_DETECTION && FEATURES.autoPresence;
 
 // Tâche système appelée à l'arrivée dans un lieu, même appli fermée. Elle doit être
 // définie à l'échelle du module (importé au démarrage dans App.tsx), pas dans un composant.
@@ -151,6 +152,14 @@ export async function addPlaceHere(label: string): Promise<Place> {
 export async function removePlace(id: string): Promise<void> {
   await savePlaces((await loadPlaces()).filter(p => p.id !== id));
   await syncGeofencing();
+}
+
+/** Détection rangée (FEATURES.autoPresence) : on arrête la surveillance déjà lancée, sans effacer les lieux. */
+export async function pauseAutoPresence(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(AUTO_KEY, '0');
+    if (await Location.hasStartedGeofencingAsync(PRESENCE_TASK)) await Location.stopGeofencingAsync(PRESENCE_TASK);
+  } catch {}
 }
 
 /** À la déconnexion : on arrête tout, pour qu'un autre compte sur ce téléphone ne soit pas prévenu à la place. */

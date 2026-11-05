@@ -28,6 +28,7 @@ import { loadTodayMoment, lateMinutes, ON_TIME_MIN, TodayMoment, MomentKind } fr
 import { s, F } from '../styles';
 import { t, tp, unitLabel, isRTL } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
+import { FEATURES } from '../lib/features';
 
 // Vidéo de progression : 25 s max (15 s jusqu'à la 1.1). Au-delà, le fichier pèse
 // trop lourd pour la 4G et le fil devient une plateforme vidéo.
@@ -503,7 +504,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
       }
       // Séance à deux, sans défi en cours avec cet ami : le bon moment pour le proposer (chantier 6 : 14 paires
       // postent en duo, aucune ne s'était lancé de défi).
-      const duels = tagged.length > 0 ? await loadDuels().catch(() => null) : null;
+      const duels = FEATURES.duels && tagged.length > 0 ? await loadDuels().catch(() => null) : null;
       const rival = duels ? tagged.find(f => !duels.some(d => d.otherId === f.id && (d.status === 'active' || d.status === 'pending'))) : undefined;
       Alert.alert(title, alsoNote ? `${alsoNote}\n\n${message}` : message, [
         ...(rival ? [{ text: t('duelCard.challengeThisWeek', { name: rival.full_name.split(' ')[0] }), onPress: async () => {
@@ -538,15 +539,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
               {momentLate < ON_TIME_MIN ? t('moment.left', { n: ON_TIME_MIN - momentLate }) : t('moment.lateOk')}
             </Text>
           </View>
-          {/* Séance ou récup : proposé d'après le jour, modifiable. */}
-          <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, padding: 3 }}>
-            {(['session', 'recovery'] as const).map(k => (
-              <TouchableOpacity key={k} onPress={() => { Haptics.selectionAsync().catch(() => {}); setMomentKind(k); }} accessibilityRole="button" accessibilityState={{ selected: momentKind === k }}
-                style={{ paddingHorizontal: 12, height: 30, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: momentKind === k ? '#fff' : 'transparent' }}>
-                <Text style={{ color: momentKind === k ? '#000' : 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: F.bold }}>{t(k === 'session' ? 'moment.session' : 'moment.recovery')}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {/* 1.3 : plus de choix Séance / Récup (la récup n'existe plus depuis la phase 31). Le type vient du moment du jour. */}
         </View>
       )}
 

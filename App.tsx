@@ -11,7 +11,7 @@ import { cacheClearAll } from './src/lib/cache';
 import { resetSignedCache } from './src/lib/storage';
 import { resetUserCards } from './src/lib/posts';
 import { resetCloseCircle } from './src/lib/closeCircle';
-import { stopAllPresence } from './src/lib/presence'; // importe aussi la tâche de détection d'arrivée
+import { stopAllPresence, pauseAutoPresence } from './src/lib/presence'; // importe aussi la tâche de détection d'arrivée
 import { captureInviteFromUrl, consumePendingInvite } from './src/lib/invites';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { Splash } from './src/screens/Splash';
@@ -23,7 +23,8 @@ import { WelcomeFlow, welcomePending } from './src/components/WelcomeFlow';
 import { WELCOME_FLOW } from './src/constants';
 import { PostScreen } from './src/screens/PostScreen';
 import { track } from './src/lib/track';
-import { registerLiveActivityToken, endExpiredLiveActivities } from './src/lib/liveActivity';
+import { registerLiveActivityToken, endExpiredLiveActivities, forgetLiveActivityToken } from './src/lib/liveActivity';
+import { FEATURES } from './src/lib/features';
 import { saveLanguage } from './src/lib/language';
 import { mark } from './src/lib/perf';
 
@@ -75,7 +76,9 @@ function AppInner() {
     if (registeredUserId.current === user.id) return;
     registeredUserId.current = user.id;
     // Jeton de l'Activité en direct du duo : il ne demande aucune autorisation, on le range tout de suite.
-    registerLiveActivityToken();
+    // Cartes rangées (FEATURES) : on retire le jeton du serveur pour qu'aucune carte ne soit plus lancée.
+    if (FEATURES.duoLockScreenCards) registerLiveActivityToken(); else forgetLiveActivityToken().catch(() => {});
+    if (!FEATURES.autoPresence) pauseAutoPresence();
     saveLanguage(user.id);
     if (await welcomePending(user)) return;
     registerForPushNotifications(user.id);

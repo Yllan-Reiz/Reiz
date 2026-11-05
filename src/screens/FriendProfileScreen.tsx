@@ -19,6 +19,7 @@ import { Duel, loadDuels, proposeDuel, answerDuel, withdrawDuel } from '../lib/d
 import { DuelCard } from '../components/DuelCard';
 import { s, F } from '../styles';
 import { t, tp, formatDate } from '../i18n';
+import { FEATURES } from '../lib/features';
 
 export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: { userId: string; onClose: () => void; onOpenProfile?: (id: string) => void; onDuo?: (friendId: string) => void }) {
   const insets = useSafeAreaInsets();
@@ -86,7 +87,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
       else if (friendsRes.data) setFriendCount(friendsRes.data.length);
       // Binôme d'entraînement : duos validés avec cet ami (réservé aux amis).
       if (isFriend && user) loadDuoStats(user.id, userId).then(setDuo).catch(() => setDuo(null)); else setDuo(null);
-      if (isFriend) refreshDuel(); else { setDuel(null); setDuelReady(false); }
+      if (isFriend && FEATURES.duels) refreshDuel(); else { setDuel(null); setDuelReady(false); }
       const streakVal = await calculateStreak(userId);
       setStreak(streakVal);
       // Jours postés par objectif (les 7 pastilles de chaque carte). Même règle d'accès
@@ -260,12 +261,12 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
             <Text style={{ fontSize: 15, color: profile?.bio ? '#fff' : 'rgba(255,255,255,0.45)', lineHeight: 22, fontFamily: F.regular }}>
               {profile?.bio || t('friendProfile.noBio', { name: firstName })}
             </Text>
-            <View style={{ alignSelf: 'stretch' }}><ProfileTags userId={userId} currentUserId={currentUserId} own={false} /></View>
+            {FEATURES.profileTags && <View style={{ alignSelf: 'stretch' }}><ProfileTags userId={userId} currentUserId={currentUserId} own={false} /></View>}
           </AboutBubble>
 
           {relation.kind === 'friends' && onDuo && <DuoBubble name={firstName} stats={duo} onInvite={() => onDuo(userId)} />}
 
-          {relation.kind === 'friends' && duelReady && (
+          {FEATURES.duels && relation.kind === 'friends' && duelReady && (
             <DuelCard
               name={firstName}
               duel={duel}
@@ -285,7 +286,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
               <>
                 {ongoing.length > 0 && <SectionHeader title={t('profile.ongoing')} count={ongoing.length} style={{ paddingHorizontal: GUTTER }} />}
                 <GoalCards items={ongoing} activity={activityByObj} />
-                <AchievedList items={achieved} onOpen={o => setJourneyId(o.id)} />
+                <AchievedList items={achieved} onOpen={FEATURES.journeyEverywhere ? o => setJourneyId(o.id) : undefined} />
                 {journeyId && <JourneyModal objectiveId={journeyId} own={false} ownerName={profile?.full_name} from="profile" onClose={() => setJourneyId(null)} />}
               </>
             )}

@@ -17,6 +17,7 @@ import { AUTO_SUPPORTED, isAutoEnabled, setAutoEnabled, addPlaceHere } from '../
 import { contactsAvailable, inviteText } from '../lib/contacts';
 import { track } from '../lib/track';
 import { PendingRequestsCard } from './PendingRequestsCard';
+import { WelcomeSuggestions } from './WelcomeSuggestions';
 import { APP_STORE_URL, daysLabel, ALL_DAYS, WELCOME_FLOW } from '../constants';
 import { CachedImage } from './CachedImage';
 import { ContactsScreen } from './ContactsScreen';
@@ -280,10 +281,11 @@ export function WelcomeModal({ visible, preview, only, onClose }: { visible: boo
       const list: StepId[] = only ? [] : ['profile'];
       if (preview || only || !objs.count) list.push('objective');
       if (!only) {
-        // Pas d'écran « lieu » si la détection est déjà active ou impossible sur ce téléphone (Android, build 1.0.0).
-        if (preview || (AUTO_SUPPORTED && !autoOn)) list.push('place');
-        if (preview || perm?.status === 'undetermined') list.push('notifs');
+        // 1.3 : les amis juste après l'objectif (c'est ce qui fait rester), puis les notifications.
+        // Pas d'écran « lieu » si la détection est rangée (FEATURES.autoPresence), déjà active ou impossible.
         list.push('friends');
+        if (AUTO_SUPPORTED && (preview || !autoOn)) list.push('place');
+        if (preview || perm?.status === 'undetermined') list.push('notifs');
       }
       // Le premier post, seulement pour qui n'a encore rien posté (l'écran est sauté sans objectif, voir go()).
       if (preview || !posts.count) list.push('post');
@@ -576,7 +578,7 @@ export function WelcomeModal({ visible, preview, only, onClose }: { visible: boo
       <>
         {showContacts && <Secondary label={t('welcome.shareLink')} icon="share-outline" onPress={share} />}
         {/* Écran suivant = le premier post : « Continuer » ; sinon on entre dans l'app. */}
-        <Secondary quiet label={steps?.[idx + 1] === 'post' && (preview || objLabel) ? t('common.continue') : t('welcome.enterReiz')} onPress={() => go(idx + 1, 'next')} />
+        <Secondary quiet label={(steps?.[idx + 1] === 'post' && (preview || objLabel)) || steps?.[idx + 1] === 'notifs' || steps?.[idx + 1] === 'place' ? t('common.continue') : t('welcome.enterReiz')} onPress={() => go(idx + 1, 'next')} />
       </>
     );
     foot = showContacts ? t('welcome.footContacts') : t('welcome.footShare');
@@ -809,6 +811,8 @@ export function WelcomeModal({ visible, preview, only, onClose }: { visible: boo
                     </Rise>
                     {/* Quelqu'un t'a déjà ajouté pendant l'inscription : accepter ici (1.2). Pas en aperçu. */}
                     {!preview && <Rise delay={120} style={{ marginTop: 20 }}><PendingRequestsCard userId={userId} from="welcome" onChanged={() => { wrote.current = true; }} style={{ marginBottom: 0 }} /></Rise>}
+                    {/* 1.3 : des gens à ajouter en un geste (amis d'amis, même sport, nouveaux). En aperçu, rien n'est envoyé. */}
+                    <Rise delay={140} style={{ marginTop: 14 }}><WelcomeSuggestions userId={userId} dryRun={preview} onAdded={() => { wrote.current = true; }} /></Rise>
                     <Rise delay={160} style={{ marginTop: 24 }}>
                       <GlassCard radius={16}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14 }}>

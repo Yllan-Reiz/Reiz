@@ -9,6 +9,7 @@ import { DAY_LETTERS } from '../constants';
 import { F } from '../styles';
 import { t } from '../i18n';
 import { CachedImage } from './CachedImage';
+import { FEATURES } from '../lib/features';
 
 // « Ton cercle cette semaine » : la régularité de tes amis d'un coup d'œil. Combien ont posté, qui est à relancer,
 // et en touchant la carte, le détail jour par jour (L M M J V S D) de chacun.
@@ -82,7 +83,7 @@ export function CircleRhythmCard({ onOpenProfile, reloadKey }: { onOpenProfile: 
           <View style={{ width: `${pct}%`, height: '100%', backgroundColor: '#fff', borderRadius: 4 }} />
         </View>
 
-        {nudge.length > 0 ? (
+        {FEATURES.manualNudges && nudge.length > 0 ? (
           <View style={{ marginTop: 12 }}>
             <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontFamily: F.semibold }}>{t('rhythm.toNudge')}</Text>
             {nudge.map(f => {
