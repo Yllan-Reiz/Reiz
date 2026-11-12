@@ -29,6 +29,12 @@
         "value": "#000",
         "createdAt": "2026-10-30T12:52:03.167Z",
         "reason": "Claude: black text on the white primary button, same as Primary in WelcomeFlow.tsx and emptyStateBtnText in styles.ts"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#2a0c16",
+        "createdAt": "2026-11-07T15:32:38.786Z",
+        "reason": "Claude: fond des bulles à mots de l'essai d'accueil à bulles (palette chaude de la vidéo demandée par Yllan), derrière l'interrupteur BUBBLE_SPLASH"
       }
     ]
   }

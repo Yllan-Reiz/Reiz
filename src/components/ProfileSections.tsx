@@ -476,21 +476,25 @@ function FloatyCarousel({ cardW, overlap, paddingTop, paddingBottom, children }:
  * en haut à droite, titre en grand en bas.
  */
 /**
- * La semaine d'un objectif qui a un planning : 7 pastilles L M M J V S D.
+ * La semaine d'un objectif : 7 pastilles L M M J V S D.
  * Plein = tu t'es entraîné ce jour-là. Contour = jour prévu (en attente ou manqué). Estompé = repos.
+ * `perWeek` (rythme, 1.4) : tous les jours se valent, seul le total compte. Plein = séance faite, contour =
+ * aujourd'hui, et la ligne du bas dit ce qu'il reste à faire cette semaine.
  */
-export function WeekTracker({ days, done, everyDay }: { days: number[]; done: Set<string>; everyDay?: boolean }) {
+export function WeekTracker({ days, done, everyDay, perWeek }: { days: number[]; done: Set<string>; everyDay?: boolean; perWeek?: number | null }) {
   const keys = currentWeekKeys();
   const todayKey = new Date().toDateString();
   const planned = days.length;
-  const doneCount = days.filter(d => done.has(keys[d - 1])).length;
+  const free = !!perWeek && perWeek > 0;
+  const doneCount = (free ? [1, 2, 3, 4, 5, 6, 7] : days).filter(d => done.has(keys[d - 1])).length;
+  const left = free ? Math.max(0, perWeek! - doneCount) : 0;
   return (
     <View style={{ marginTop: 14 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         {keys.map((k, i) => {
-          const scheduled = days.includes(i + 1);
           const hit = done.has(k);
           const isToday = k === todayKey;
+          const scheduled = free ? isToday : days.includes(i + 1);
           return (
             <View
               key={k}
@@ -501,12 +505,12 @@ export function WeekTracker({ days, done, everyDay }: { days: number[]; done: Se
                 borderColor: isToday ? '#fff' : 'rgba(255,255,255,0.4)',
               }}
             >
-              <Text style={{ color: hit ? '#000' : scheduled ? '#fff' : 'rgba(255,255,255,0.28)', fontSize: 10, fontFamily: F.extrabold }}>{DAY_LETTERS[i]}</Text>
+              <Text style={{ color: hit ? '#000' : scheduled ? '#fff' : free ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.28)', fontSize: 10, fontFamily: F.extrabold }}>{DAY_LETTERS[i]}</Text>
             </View>
           );
         })}
       </View>
-      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.semibold, marginTop: 10 }} numberOfLines={1}>{everyDay ? tp('profileSec.daysThisWeek', doneCount) : tp('profileSec.sessionsThisWeek', planned, { done: doneCount })}</Text>
+      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.semibold, marginTop: 10 }} numberOfLines={1}>{free ? (left === 0 ? t('profileSec.weekDone') : tp('profileSec.weekLeft', left)) : everyDay ? tp('profileSec.daysThisWeek', doneCount) : tp('profileSec.sessionsThisWeek', planned, { done: doneCount })}</Text>
     </View>
   );
 }
@@ -538,13 +542,12 @@ export function GoalCards({ items, activity, onPress }: {
                     <Text style={{ color: '#fff', fontSize: 24, fontFamily: F.black, letterSpacing: -0.5 }}>{inPct ? `${pct}%` : fmtNum(o.current_value)}{!inPct && <Text style={{ fontSize: 14, fontFamily: F.semibold, color: 'rgba(255,255,255,0.65)' }}>{` / ${fmtNum(o.target_value)}`}</Text>}</Text>
                     <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontFamily: F.semibold, marginTop: 1 }}>{inPct ? t('profileSec.ofGoal') : unitLabel(o.unit)}</Text>
                   </View>
-                  <GlassSurface radius={26} variant="clear" style={{ width: 52, height: 52, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ fontSize: 24 }}>{o.emoji}</Text>
-                  </GlassSurface>
                 </View>
                 <View>
                   <Text style={{ color: '#fff', fontSize: 25, fontFamily: F.black, letterSpacing: -0.6, lineHeight: 29 }} numberOfLines={2}>{o.title}</Text>
-                  {hasSchedule(o.training_days)
+                  {isRhythm(o) && !isCompleted(o)
+                    ? <WeekTracker days={[1, 2, 3, 4, 5, 6, 7]} done={set} perWeek={o.per_week} />
+                    : hasSchedule(o.training_days)
                     ? <WeekTracker days={o.training_days!} done={set} />
                     : (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
@@ -596,7 +599,7 @@ export function HistoryCarousel({ posts, onOpen, emptyText }: { posts: Update[];
                     </>
                   )
                   : <LinearGradient colors={['#2c2c2c', '#141414']} style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-                      <Text style={{ fontSize: 46 }}>{p.objectives?.emoji || '🎯'}</Text>
+                      <Ionicons name="flag-outline" size={40} color="rgba(255,255,255,0.45)" />
                     </LinearGradient>}
               <LinearGradient colors={['rgba(0,0,0,0.35)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.78)']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} pointerEvents="none" />
               <View style={{ position: 'absolute', top: 12, left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -611,7 +614,7 @@ export function HistoryCarousel({ posts, onOpen, emptyText }: { posts: Update[];
               </View>
               <View style={{ position: 'absolute', left: 14, right: 14, bottom: 14 }}>
                 <Text style={{ color: '#fff', fontSize: 18, fontFamily: F.black, letterSpacing: -0.4, lineHeight: 21 }} numberOfLines={2}>{p.caption || p.objectives?.title}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontFamily: F.semibold, marginTop: 2 }} numberOfLines={1}>{p.objectives?.emoji} {p.objectives?.title}</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontFamily: F.semibold, marginTop: 2 }} numberOfLines={1}>{p.objectives?.title}</Text>
               </View>
             </GlassSurface>
           </TouchableOpacity>
@@ -632,7 +635,6 @@ export function AchievedList({ items, onOpen }: { items: Objective[]; onOpen?: (
           {/* 1.2 : toucher ouvre le parcours de l'objectif (JourneyModal). */}
           <TouchableOpacity disabled={!onOpen} onPress={() => onOpen?.(o)} activeOpacity={0.8} accessibilityRole={onOpen ? 'button' : undefined}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
-            <Text style={{ fontSize: 24 }}>{o.emoji}</Text>
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>{o.title}</Text>
               <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: F.regular }}>{t('profileSec.reached', { n: o.target_value, unit: unitLabel(o.unit) })}</Text>
@@ -678,9 +680,6 @@ export function ObjectiveCard({ o, postedDays, daysCount, onMenu }: {
     <GlassSurface radius={26} style={{ marginBottom: 12 }}>
     <View style={{ padding: 18 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: 20 }}>{o.emoji}</Text>
-        </View>
         <View style={{ flex: 1 }}>
           <Text style={{ color: '#fff', fontSize: 16, fontFamily: F.bold }} numberOfLines={1}>{o.title}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
@@ -743,17 +742,18 @@ const shortDate = (iso: string) => formatDate(iso, { day: 'numeric', month: 'sho
 
 function PostTile({ p, width, height, onPress, showPin }: { p: Update; width: number; height: number; onPress: () => void; showPin?: boolean }) {
   const video = isVideo(p.photo_url);
-  const emoji = p.objectives?.emoji || '🎯';
+  // Pas de photo : un pictogramme sobre (plus d'émoji d'objectif, 12/11/2026).
+  const mark = <Ionicons name="flag-outline" size={22} color="rgba(255,255,255,0.45)" />;
   return (
     <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={{ width, height, borderRadius: 10, overflow: 'hidden', backgroundColor: '#141414' }}>
       {p.photo_url && !video ? (
         <CachedImage uri={p.photo_url} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
       ) : video && p.photo_url ? (
-        <VideoPoster uri={p.photo_url} style={{ width: '100%', height: '100%' }} fallback={<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 26 }}>{emoji}</Text></View>} />
+        <VideoPoster uri={p.photo_url} style={{ width: '100%', height: '100%' }} fallback={<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>{mark}</View>} />
       ) : (
-        // Vidéo ou post sans média : tuile sombre avec l'emoji de l'objectif.
+        // Vidéo ou post sans média : tuile sombre avec un pictogramme.
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 6 }}>
-          <Text style={{ fontSize: 26 }}>{emoji}</Text>
+          {mark}
           {!video && (
             <Text numberOfLines={2} style={{ color: '#999', fontSize: 10, textAlign: 'center', marginTop: 4 }}>{p.caption}</Text>
           )}

@@ -280,7 +280,7 @@ function PlaceSheet({ visible, circle, onClose }: { visible: boolean; circle: nu
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 16, paddingBottom: 0 }}>
           <GlassIconButton icon="close" label={t('common.close')} onPress={onClose} />
         </View>
-        <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }} showsVerticalScrollIndicator={false}>
+        <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }} showsVerticalScrollIndicator={false}>
           {done === null ? (
             <>
               <Text style={{ color: '#fff', fontSize: 30, fontFamily: F.black, letterSpacing: -0.9 }}>{t('presenceCard.addGym')}</Text>
@@ -372,7 +372,7 @@ function ManageSheet({ visible, onClose }: { visible: boolean; onClose: () => vo
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 16, paddingBottom: 0 }}>
           <GlassIconButton icon="close" label={t('common.close')} onPress={onClose} />
         </View>
-        <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={{ paddingBottom: insets.bottom }} showsVerticalScrollIndicator={false}>
+        <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets contentContainerStyle={{ paddingBottom: insets.bottom }} showsVerticalScrollIndicator={false}>
           <PresencePanel />
         </ScrollView>
       </View>

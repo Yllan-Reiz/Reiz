@@ -58,16 +58,13 @@ function ObjectiveGlassCard({ o, done, activity, onUpdate, onEdit, onDelete }: {
                 {!inPct && <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 17, fontFamily: F.semibold, letterSpacing: 0 }}>{` / ${fmtNum(o.target_value)} ${unitLabel(o.unit)}`}</Text>}
               </Text>
             </View>
-            <Glass radius={28} variant="clear" style={{ width: 56, height: 56, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: 26 }}>{o.emoji}</Text>
-            </Glass>
           </View>
 
           <Text style={{ color: '#fff', fontSize: 25, fontFamily: F.black, letterSpacing: -0.6, lineHeight: 29, marginTop: 8 }} numberOfLines={2}>{o.title}</Text>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
             <Chip icon={vis.icon} label={vis.label} />
-            {scheduled && <Chip icon="calendar-outline" label={daysLabel(o.training_days)} />}
+            {scheduled && <Chip icon={isRhythm(o) ? 'notifications-outline' : 'calendar-outline'} label={daysLabel(o.training_days)} />}
             {!!o.deadline && <Chip icon="flag-outline" label={deadlinePassed(o) && !done ? t('goal.ended') : deadlineLabel(o.deadline)} />}
           </View>
           {!!rhythmText && <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontFamily: F.semibold, marginTop: 12 }}>{rhythmText}</Text>}
@@ -79,7 +76,10 @@ function ObjectiveGlassCard({ o, done, activity, onUpdate, onEdit, onDelete }: {
             <Text style={{ color: '#fff', fontSize: 14, fontFamily: F.bold, width: 44, textAlign: 'right' }}>{pct}%</Text>
           </View>
 
-          {!done && <WeekTracker days={scheduled ? o.training_days! : ALL_DAYS} done={activity} everyDay={!scheduled} />}
+          {/* Rythme : les jours sont libres, les jours choisis ne servent qu'aux rappels (cloche ci-dessus). */}
+          {!done && (isRhythm(o)
+            ? <WeekTracker days={ALL_DAYS} done={activity} perWeek={o.per_week} />
+            : <WeekTracker days={scheduled ? o.training_days! : ALL_DAYS} done={activity} everyDay={!scheduled} />)}
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18 }}>
             {done ? (
@@ -133,7 +133,7 @@ export function ObjectivesTab({ objectives, activity, streak, refreshing, onRefr
 
       <StatBubble tinted items={[
         { value: String(objectives.length), label: t('main.statActive') },
-        { value: t('days.durationDays', { n: streak }), label: t('main.statStreak') },
+        { value: t('days.streakWeeks', { n: streak }), label: t('main.statStreak') },
         { value: `${avg}%`, label: t('main.statAvg') },
       ]} />
 

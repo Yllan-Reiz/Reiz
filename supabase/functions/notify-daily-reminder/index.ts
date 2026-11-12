@@ -132,7 +132,9 @@ Deno.serve(async (req) => {
         body = posted.length > 0 ? fill(posted.length > 1 ? t.dailyFirstBodyPosted : t.dailyFirstBodyPostedOne, { names: who }) : t.dailyFirstBody;
       }
 
-      const streak = streakEndingYesterday(u.id);
+      // 1.4 : la série se compte en semaines et son message vit dans notify-moment (ce rappel de 19 h est à l'arrêt
+      // depuis le moment Reiz). L'ancien message « série de N jours » est coupé pour ne pas contredire l'app.
+      const streak: number = 0;
       if (streak >= 3) {
         title = fill(t.dailyStreakTitle, { n: streak });
         body = posted.length > 0 ? fill(posted.length > 1 ? t.dailyStreakBodyPosted : t.dailyStreakBodyPostedOne, { names: who }) : t.dailyStreakBody;

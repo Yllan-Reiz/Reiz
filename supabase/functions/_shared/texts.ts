@@ -55,6 +55,7 @@ type Texts = {
   tagEndorseTitle: string; tagEndorseBodyTag: string; tagEndorseBody: string;
   friendRequestTitle: string; friendRequestBody: string;
   friendAcceptTitle: string; friendAcceptBody: string;
+  inviteJoinedTitle: string; inviteJoinedBody: string;
   challengeInviteTitle: string; challengeInviteBody: string;
   challengeAcceptTitle: string; challengeAcceptBody: string;
   challengeResultTitle: string; challengeResultBody: string;
@@ -100,6 +101,7 @@ export const T: Record<Lang, Texts> = {
     atGymTitlePlace: '{name} est à {place} 💪', atGymTitle: '{name} est à la salle 💪', atGymBody: "Viens t'entraîner avec {first}.", defaultPlace: 'la salle',
     tagEndorseTitle: '{name} a validé ton tag', tagEndorseBodyTag: '« {tag} » sur ton profil', tagEndorseBody: 'Va voir ton profil.',
     friendRequestTitle: '{name} veut rejoindre ton cercle', friendRequestBody: 'Accepte pour suivre ses progrès, et lui les tiens.',
+    inviteJoinedTitle: '{name} a rejoint Reiz avec ton lien', inviteJoinedBody: 'Vous êtes amis. Va voir son objectif.',
     friendAcceptTitle: '{name} a accepté ta demande', friendAcceptBody: 'Vous êtes dans le même cercle. Va voir ses objectifs.',
     challengeInviteTitle: '{name} te défie 🔥', challengeInviteBody: "Un duel d'une semaine : qui s'entraîne sur le plus de jours ? Réponds dans l'appli.",
     challengeAcceptTitle: '{name} relève ton défi 💪', challengeAcceptBody: "C'est parti pour 7 jours. Chaque jour où tu postes une séance compte.",
@@ -114,8 +116,8 @@ export const T: Record<Lang, Texts> = {
     duoRemind2Title: '⏳ Dernière ligne droite pour ton duo avec {who}', duoRemind2Body: 'Il reste {left} : poste ta séance maintenant pour valider le duo.',
     dailyTitle: "⏰ Pas encore posté aujourd'hui", dailyBodyPosted: "{names} ont déjà posté aujourd'hui. Et toi ?", dailyBodyPostedOne: "{names} a déjà posté aujourd'hui. Et toi ?",
     dailyBodyNobody: "Personne n'a encore posté dans ton cercle. Montre l'exemple.",
-    dailyStreakTitle: '🔥 Ta série de {n} jours est en jeu', dailyStreakBodyPosted: 'Une séance et elle continue. {names} ont déjà posté.',
-    dailyStreakBodyPostedOne: 'Une séance et elle continue. {names} a déjà posté.', dailyStreakBody: "Une séance aujourd'hui et elle continue.",
+    dailyStreakTitle: '🔥 Ta série de {n} semaines est en jeu', dailyStreakBodyPosted: "Une séance aujourd'hui et tu restes dans le rythme. {names} ont déjà posté.",
+    dailyStreakBodyPostedOne: "Une séance aujourd'hui et tu restes dans le rythme. {names} a déjà posté.", dailyStreakBody: "Ta semaine se joue maintenant : une séance aujourd'hui et tu restes dans le rythme.",
     dailyDuelTitle: '⚔️ Ton duel contre {who}', dailyDuelBehind: "Il mène {theirs} à {mine}. Poste aujourd'hui pour revenir.",
     dailyDuelAhead: "Tu mènes {mine} à {theirs}. Poste aujourd'hui pour creuser l'écart.", dailyDuelTie: 'Égalité {mine} à {theirs}. Ta séance du jour fait la différence.',
     dailyFirstTitle: '📸 Ton premier post', dailyFirstBodyPosted: "{names} ont posté aujourd'hui. Ton cercle attend ta première photo.",
@@ -172,6 +174,7 @@ export const T: Record<Lang, Texts> = {
     atGymTitlePlace: '{name} is at {place} 💪', atGymTitle: '{name} is at the gym 💪', atGymBody: 'Go train with {first}.', defaultPlace: 'the gym',
     tagEndorseTitle: '{name} endorsed your tag', tagEndorseBodyTag: '"{tag}" on your profile', tagEndorseBody: 'Go check your profile.',
     friendRequestTitle: '{name} wants to join your circle', friendRequestBody: 'Accept to follow their progress, and they follow yours.',
+    inviteJoinedTitle: '{name} joined Reiz with your link', inviteJoinedBody: "You're friends. Go see their goal.",
     friendAcceptTitle: '{name} accepted your request', friendAcceptBody: "You're in the same circle. Go see their goals.",
     challengeInviteTitle: '{name} challenges you 🔥', challengeInviteBody: 'A one-week duel: who trains on the most days? Reply in the app.',
     challengeAcceptTitle: '{name} accepted your challenge 💪', challengeAcceptBody: '7 days, here we go. Every day you post a session counts.',
@@ -186,8 +189,8 @@ export const T: Record<Lang, Texts> = {
     duoRemind2Title: '⏳ Final stretch for your duo with {who}', duoRemind2Body: '{left} left: post your session now to confirm the duo.',
     dailyTitle: "⏰ You haven't posted today", dailyBodyPosted: '{names} already posted today. What about you?', dailyBodyPostedOne: '{names} already posted today. What about you?',
     dailyBodyNobody: 'Nobody in your circle has posted yet. Lead the way.',
-    dailyStreakTitle: '🔥 Your {n}-day streak is on the line', dailyStreakBodyPosted: 'One session and it keeps going. {names} already posted.',
-    dailyStreakBodyPostedOne: 'One session and it keeps going. {names} already posted.', dailyStreakBody: 'One session today and it keeps going.',
+    dailyStreakTitle: '🔥 Your {n}-week streak is on the line', dailyStreakBodyPosted: 'One session today keeps you on pace. {names} already posted.',
+    dailyStreakBodyPostedOne: 'One session today keeps you on pace. {names} already posted.', dailyStreakBody: 'Your week is decided now: one session today keeps you on pace.',
     dailyDuelTitle: '⚔️ Your duel against {who}', dailyDuelBehind: "They're leading {theirs} to {mine}. Post today to catch up.",
     dailyDuelAhead: "You're leading {mine} to {theirs}. Post today to pull ahead.", dailyDuelTie: "Tied {mine} to {theirs}. Today's session makes the difference.",
     dailyFirstTitle: '📸 Your first post', dailyFirstBodyPosted: '{names} posted today. Your circle is waiting for your first photo.',
@@ -244,6 +247,7 @@ export const T: Record<Lang, Texts> = {
     atGymTitlePlace: '{name} está en {place} 💪', atGymTitle: '{name} está en el gimnasio 💪', atGymBody: 'Ve a entrenar con {first}.', defaultPlace: 'el gimnasio',
     tagEndorseTitle: '{name} ha validado tu etiqueta', tagEndorseBodyTag: '«{tag}» en tu perfil', tagEndorseBody: 'Ve a ver tu perfil.',
     friendRequestTitle: '{name} quiere unirse a tu círculo', friendRequestBody: 'Acepta para seguir su progreso, y que siga el tuyo.',
+    inviteJoinedTitle: '{name} se ha unido a Reiz con tu enlace', inviteJoinedBody: 'Ya sois amigos. Ve a ver su objetivo.',
     friendAcceptTitle: '{name} ha aceptado tu solicitud', friendAcceptBody: 'Estáis en el mismo círculo. Ve a ver sus objetivos.',
     challengeInviteTitle: '{name} te reta 🔥', challengeInviteBody: 'Un duelo de una semana: ¿quién entrena más días? Responde en la app.',
     challengeAcceptTitle: '{name} acepta tu reto 💪', challengeAcceptBody: 'Arrancan 7 días. Cuenta cada día en que publicas una sesión.',
@@ -258,8 +262,8 @@ export const T: Record<Lang, Texts> = {
     duoRemind2Title: '⏳ Recta final para tu dúo con {who}', duoRemind2Body: 'Quedan {left}: publica tu sesión ahora para confirmar el dúo.',
     dailyTitle: '⏰ Aún no has publicado hoy', dailyBodyPosted: '{names} ya han publicado hoy. ¿Y tú?', dailyBodyPostedOne: '{names} ya ha publicado hoy. ¿Y tú?',
     dailyBodyNobody: 'Nadie de tu círculo ha publicado todavía. Da ejemplo.',
-    dailyStreakTitle: '🔥 Tu racha de {n} días está en juego', dailyStreakBodyPosted: 'Una sesión y sigue. {names} ya han publicado.',
-    dailyStreakBodyPostedOne: 'Una sesión y sigue. {names} ya ha publicado.', dailyStreakBody: 'Una sesión hoy y sigue.',
+    dailyStreakTitle: '🔥 Tu racha de {n} semanas está en juego', dailyStreakBodyPosted: 'Una sesión hoy y mantienes el ritmo. {names} ya han publicado.',
+    dailyStreakBodyPostedOne: 'Una sesión hoy y mantienes el ritmo. {names} ya ha publicado.', dailyStreakBody: 'Tu semana se decide ahora: una sesión hoy y mantienes el ritmo.',
     dailyDuelTitle: '⚔️ Tu duelo contra {who}', dailyDuelBehind: 'Va ganando {theirs} a {mine}. Publica hoy para remontar.',
     dailyDuelAhead: 'Vas ganando {mine} a {theirs}. Publica hoy para ampliar la ventaja.', dailyDuelTie: 'Empate {mine} a {theirs}. Tu sesión de hoy marca la diferencia.',
     dailyFirstTitle: '📸 Tu primera publicación', dailyFirstBodyPosted: '{names} han publicado hoy. Tu círculo espera tu primera foto.',
@@ -316,6 +320,7 @@ export const T: Record<Lang, Texts> = {
     atGymTitlePlace: '{name} נמצא/ת ב{place} 💪', atGymTitle: '{name} בחדר הכושר 💪', atGymBody: 'בואו להתאמן עם {first}.', defaultPlace: 'חדר הכושר',
     tagEndorseTitle: '{name} אישר/ה את התג שלך', tagEndorseBodyTag: '"{tag}" בפרופיל שלך', tagEndorseBody: 'לכו לראות את הפרופיל.',
     friendRequestTitle: '{name} רוצה להצטרף למעגל שלך', friendRequestBody: 'אשרו כדי לעקוב אחרי ההתקדמות אחד של השני.',
+    inviteJoinedTitle: '{name} הצטרף/ה ל-Reiz עם הקישור שלך', inviteJoinedBody: 'אתם חברים. לכו לראות את היעד.',
     friendAcceptTitle: '{name} אישר/ה את הבקשה שלך', friendAcceptBody: 'אתם באותו מעגל. לכו לראות את היעדים.',
     challengeInviteTitle: '{name} מאתגר/ת אותך 🔥', challengeInviteBody: 'דו־קרב של שבוע: מי יתאמן ביותר ימים? ענו באפליקציה.',
     challengeAcceptTitle: '{name} קיבל/ה את האתגר שלך 💪', challengeAcceptBody: 'יוצאים ל-7 ימים. כל יום שבו מפרסמים אימון נחשב.',
@@ -330,8 +335,8 @@ export const T: Record<Lang, Texts> = {
     duoRemind2Title: '⏳ ישורת אחרונה לזוג עם {who}', duoRemind2Body: 'נותרו {left}: פרסמו את האימון עכשיו כדי לאשר את הזוג.',
     dailyTitle: '⏰ עוד לא פרסמתם היום', dailyBodyPosted: '{names} כבר פרסמו היום. ואתם?', dailyBodyPostedOne: '{names} כבר פרסם/ה היום. ואתם?',
     dailyBodyNobody: 'אף אחד במעגל עוד לא פרסם. תנו דוגמה.',
-    dailyStreakTitle: '🔥 רצף של {n} ימים על הכף', dailyStreakBodyPosted: 'אימון אחד והוא ממשיך. {names} כבר פרסמו.',
-    dailyStreakBodyPostedOne: 'אימון אחד והוא ממשיך. {names} כבר פרסם/ה.', dailyStreakBody: 'אימון אחד היום והוא ממשיך.',
+    dailyStreakTitle: '🔥 רצף של {n} שבועות על הכף', dailyStreakBodyPosted: 'אימון אחד היום ואתם בקצב. {names} כבר פרסמו.',
+    dailyStreakBodyPostedOne: 'אימון אחד היום ואתם בקצב. {names} כבר פרסם/ה.', dailyStreakBody: 'השבוע מוכרע עכשיו: אימון אחד היום ואתם בקצב.',
     dailyDuelTitle: '⚔️ הדו־קרב שלך מול {who}', dailyDuelBehind: '{theirs} מול {mine} לטובתם. פרסמו היום כדי לחזור.',
     dailyDuelAhead: 'אתם מובילים {mine} מול {theirs}. פרסמו היום כדי להגדיל את הפער.', dailyDuelTie: 'תיקו {mine} מול {theirs}. האימון של היום יכריע.',
     dailyFirstTitle: '📸 הפוסט הראשון שלכם', dailyFirstBodyPosted: '{names} פרסמו היום. המעגל מחכה לתמונה הראשונה שלכם.',

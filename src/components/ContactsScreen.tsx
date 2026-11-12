@@ -138,6 +138,7 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
             data={rows}
             keyExtractor={r => r.key}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
             contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
             ListHeaderComponent={
               <View style={{ marginBottom: 10 }}>

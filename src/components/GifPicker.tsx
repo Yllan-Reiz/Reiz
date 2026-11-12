@@ -85,7 +85,7 @@ export function GifPicker({ visible, onClose, onPick }: { visible: boolean; onCl
             keyExtractor={g => g.id}
             numColumns={2}
             keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
+            keyboardDismissMode="interactive"
             columnWrapperStyle={{ gap: GAP }}
             contentContainerStyle={{ paddingHorizontal: 16, gap: GAP, paddingBottom: insets.bottom + 48 }}
             ListEmptyComponent={loading ? <ActivityIndicator color="#fff" style={{ marginTop: 40 }} /> : (

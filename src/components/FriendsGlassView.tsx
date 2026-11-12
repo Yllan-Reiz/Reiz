@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, TextInput, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from './GlassSurface';
+import { FlameBadge } from './FlameBadge';
 import { SectionHeader } from './ProfileSections';
 import { Friend, PendingRequest, SentRequest } from '../lib/types';
 import { GUTTER } from '../constants';
@@ -18,7 +19,12 @@ import { FEATURES } from '../lib/features';
 
 type Person = { id: string; full_name: string; username: string; avatar_url?: string | null };
 
-function Avatar({ url, name, size = 52, ring }: { url?: string | null; name: string; size?: number; ring?: boolean }) {
+function Avatar({ id, ...p }: { id?: string | null; url?: string | null; name: string; size?: number; ring?: boolean }) {
+  // La flamme de ceux qui ont validé leur semaine, sur le coin de la photo.
+  return <View><AvatarPhoto {...p} /><FlameBadge userId={id} size={p.size ?? 52} /></View>;
+}
+
+function AvatarPhoto({ url, name, size = 52, ring }: { url?: string | null; name: string; size?: number; ring?: boolean }) {
   const border = ring ? { borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)' } : { borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' };
   return url
     ? <CachedImage uri={url} style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#222' }, border]} />
@@ -49,7 +55,7 @@ function Row({ person, onPress, onLongPress, ring, right, sub }: { person: Perso
     <TouchableOpacity onPress={onPress} onLongPress={onLongPress} activeOpacity={0.8} style={{ marginBottom: 10 }}>
       <GlassCard radius={26}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12, paddingRight: 14 }}>
-          <Avatar url={person.avatar_url} name={person.full_name} ring={ring} />
+          <Avatar id={person.id} url={person.avatar_url} name={person.full_name} ring={ring} />
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#fff', fontSize: 17, fontFamily: F.bold }} numberOfLines={1}>{person.full_name}</Text>
             <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, fontFamily: F.regular, marginTop: 1 }} numberOfLines={1}>{sub ?? `@${person.username}`}</Text>
@@ -131,6 +137,7 @@ export function FriendsGlassView(p: {
       style={{ flex: 1 }}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
       contentContainerStyle={{ paddingBottom: p.bottomPad + 24 }}
       refreshControl={<RefreshControl refreshing={p.refreshing} onRefresh={p.onRefresh} tintColor="#fff" colors={['#fff']} progressBackgroundColor="#1a1a1a" />}
     >
@@ -214,7 +221,7 @@ export function FriendsGlassView(p: {
           <Text style={label}>{t('friendsGlass.yourFriends')}</Text>
           {p.matchingFriends.map(f => (
             <TouchableOpacity key={f.id} onPress={() => p.onViewProfile(f.id)} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 8 }}>
-              <Avatar url={f.avatar_url} name={f.full_name} size={44} />
+              <Avatar id={f.id} url={f.avatar_url} name={f.full_name} size={44} />
               <View style={{ flex: 1 }}>
                 <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }} numberOfLines={1}>{f.full_name}</Text>
                 <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, fontFamily: F.regular }} numberOfLines={1}>@{f.username}</Text>
@@ -296,7 +303,7 @@ export function FriendsGlassView(p: {
                 <TouchableOpacity key={u.id} onPress={() => p.onViewProfile(u.id)} activeOpacity={0.85} style={{ width: 140 }}>
                   <GlassCard radius={24}>
                     <View style={{ padding: 14, alignItems: 'center' }}>
-                      <Avatar url={u.avatar_url} name={u.full_name} size={60} />
+                      <Avatar id={u.id} url={u.avatar_url} name={u.full_name} size={60} />
                       <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold, marginTop: 8 }} numberOfLines={1}>{u.full_name}</Text>
                       <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }} numberOfLines={1}>
                         {u.mutual > 0 ? tp('friends.mutual', u.mutual) : t('friendsGlass.new')}
@@ -336,7 +343,7 @@ function DiscoverRow({ u, sent, onOpen, onAdd, onHide }: { u: any; sent: boolean
   const icon = u.kind === 'sport' ? 'barbell-outline' : u.kind === 'contact' ? 'person-circle-outline' : u.kind === 'mutual' ? 'people-outline' : u.kind === 'tag' ? 'pricetag-outline' : u.kind === 'objective' ? 'flag-outline' : 'at-outline';
   return (
     <TouchableOpacity onPress={onOpen} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10 }}>
-      <Avatar url={u.avatar_url} name={u.full_name} size={56} />
+      <Avatar id={u.id} url={u.avatar_url} name={u.full_name} size={56} />
       <View style={{ flex: 1 }}>
         <Text style={{ color: '#fff', fontSize: 16, fontFamily: F.bold }} numberOfLines={1}>{u.full_name}</Text>
         <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, fontFamily: F.regular, marginTop: 1 }} numberOfLines={1}>@{u.username}</Text>

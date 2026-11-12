@@ -6,7 +6,7 @@ import { loadCloseCircle } from '../lib/closeCircle';
 import { GlassSurface } from './GlassSurface';
 import { F } from '../styles';
 import { t, tp } from '../i18n';
-import { trainsToday } from '../constants';
+import { quotaFor, mondayOf, WEEKLY_COLUMNS, type WeeklyGoal } from '../lib/weekly';
 
 // Le cercle du jour (moment Reiz, phase 29, 30/10/2026) : à la place du flou de BeReal, on montre qui de ton cercle
 // a posté aujourd'hui. Chaque post allume un visage ; quand tout le monde a posté, « 🔥 Cercle complet ».
@@ -53,12 +53,13 @@ export function CircleTodayCard({ reloadKey, onOpenProfile }: { reloadKey?: numb
     const monday = new Date(); monday.setHours(0, 0, 0, 0); monday.setDate(monday.getDate() - today);
     const [{ data: mine }, { data: myObjs }] = await Promise.all([
       supabase.from('updates').select('created_at').eq('user_id', user.id).gte('created_at', monday.toISOString()),
-      supabase.from('objectives').select('training_days, is_completed').eq('user_id', user.id),
+      supabase.from('objectives').select(WEEKLY_COLUMNS).eq('user_id', user.id),
     ]);
-    const open = ((myObjs || []) as { training_days: number[] | null; is_completed: boolean | null }[]).filter(o => !o.is_completed);
-    setMeScheduled(open.length === 0 || open.some(o => trainsToday(o.training_days)));
     const myDays = Array.from({ length: 7 }, () => false);
     (mine || []).forEach((u: any) => { myDays[(new Date(u.created_at).getDay() + 6) % 7] = true; });
+    // 1.4 : on m'attend aujourd'hui tant que ma semaine n'est pas validée (les jours prévus ne comptent plus).
+    const myQuota = quotaFor((myObjs || []) as WeeklyGoal[], mondayOf());
+    setMeScheduled(myDays[today] || myDays.filter(Boolean).length < myQuota);
     let full = 0;
     for (let d = 0; d <= today; d++) if (myDays[d] && members.every(m => !m.scheduled[d] || m.posted[d])) full++;
 

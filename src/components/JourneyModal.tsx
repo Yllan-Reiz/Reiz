@@ -255,7 +255,7 @@ function JourneyVideo({ uri, style }: { uri: string; style: any }) {
   return <VideoView player={player} style={style} contentFit="cover" nativeControls={false} />;
 }
 
-const label = (j: Journey) => `${j.objective.emoji} ${j.objective.title}`.trim();
+const label = (j: Journey) => j.objective.title.trim();
 const summary = (j: Journey) => tp('journey.summary', j.days, { progress: j.steps[j.steps.length - 1]?.progress ?? '' });
 
 /** La carte récap 9:16 : avant, après, et les étapes entre les deux. Dessinée à 360 de large, `k` l'agrandit. */

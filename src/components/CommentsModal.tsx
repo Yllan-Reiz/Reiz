@@ -15,6 +15,7 @@ import { CachedImage } from './CachedImage';
 import { BlurView } from 'expo-blur';
 import { GlassSurface } from './GlassSurface';
 import { KeyboardDock, keyboardDockAvailable } from '../../modules/reiz-keyboard-dock';
+import { FlameBadge } from './FlameBadge';
 
 type Likes = Record<string, { count: number; mine: boolean }>;
 
@@ -77,7 +78,11 @@ function CommentGif({ id }: { id: string }) {
   );
 }
 
-function CommentAvatar({ name, url, small }: { name?: string; url?: string | null; small?: boolean }) {
+function CommentAvatar({ id, small, ...p }: { id?: string | null; name?: string; url?: string | null; small?: boolean }) {
+  return <View><CommentPhoto small={small} {...p} /><FlameBadge userId={id} size={small ? 26 : 34} /></View>;
+}
+
+function CommentPhoto({ name, url, small }: { name?: string; url?: string | null; small?: boolean }) {
   const size = small ? 26 : 34;
   const box = { width: size, height: size, borderRadius: size / 2 };
   if (url) return <CachedImage uri={url} style={[box, { backgroundColor: '#2a2a2a' }]} />;
@@ -309,7 +314,7 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, f
       <SwipeToReply key={c.id} onReply={() => startReply(c)}>
       <Pressable onLongPress={() => onLongPress(c)} delayLongPress={350} style={[s.commentRow, isReply && { marginLeft: 44, marginBottom: 12 }]}>
         <TouchableOpacity onPress={() => goProfile(c.user_id)} disabled={!onOpenProfile} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-          <CommentAvatar name={c.users?.full_name} url={c.users?.avatar_url} small={isReply} />
+          <CommentAvatar id={c.user_id} name={c.users?.full_name} url={c.users?.avatar_url} small={isReply} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <View style={[s.commentContent, { backgroundColor: GLASS_FILL }]}>

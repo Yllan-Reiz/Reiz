@@ -1,33 +1,26 @@
-import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Share } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { supabase } from '../lib/supabase';
-import { inviteText } from '../lib/contacts';
+import { shareInvite } from '../lib/invites';
 import { track } from '../lib/track';
 import { GlassSurface } from './GlassSurface';
 import { F } from '../styles';
 import { t, tp } from '../i18n';
 
 // L'invitation mise en avant (1.3, 05/11/2026) : en haut du fil tant que le cercle compte moins de 3 amis.
-// Le lien porte ton pseudo : la personne qui s'inscrit avec t'envoie une demande toute seule (voir invites.ts).
+// Le lien est personnel (1.4) : la personne qui s'inscrit avec devient ton amie tout de suite (voir invites.ts).
 // La carte disparaît d'elle-même à partir de 3 amis.
 const ENOUGH = 3;
 
 export function InviteCircleCard({ userId, friendCount }: { userId: string | null; friendCount: number | null }) {
-  const [username, setUsername] = useState<string | null>(null);
-  useEffect(() => {
-    if (!userId) return;
-    supabase.from('users').select('username').eq('id', userId).maybeSingle()
-      .then(({ data }) => setUsername(data?.username ?? null), () => {});
-  }, [userId]);
-
-  if (!userId || friendCount === null || friendCount >= ENOUGH) return null;
+  // Aucun ami : la carte « Ta semaine » (SoloCard) porte déjà l'invitation.
+  if (!userId || friendCount === null || friendCount === 0 || friendCount >= ENOUGH) return null;
 
   const invite = async () => {
     Haptics.selectionAsync().catch(() => {});
     track('invite_share', { from: 'feed', friends: friendCount }, 'feed');
-    try { await Share.share({ message: inviteText(username) }); } catch {}
+    // 1.4 : le lien personnel (ami d'office à l'inscription), plus le lien de l'App Store.
+    await shareInvite(userId, 'share', 'feed').catch(() => {});
   };
 
   return (

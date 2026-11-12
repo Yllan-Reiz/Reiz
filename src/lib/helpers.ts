@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { t, formatNumber, type TKey } from '../i18n';
+import { weekState, WEEKLY_COLUMNS, type WeeklyGoal, type WeekState } from './weekly';
 
 // Traduit les erreurs techniques (Supabase, réseau) en messages lisibles, dans la langue de l'app.
 export function frError(error: { message?: string } | null | undefined): string {
@@ -66,33 +67,23 @@ export function andList(names: string[]): string {
   return t('common.andJoin', { list: names.slice(0, -1).join(', '), last: names[names.length - 1] });
 }
 
-export async function calculateStreak(userId: string): Promise<number> {
-  // 120 derniers jours seulement : relire tout l'historique à chaque ouverture ralentissait l'app pour rien.
-  const since = new Date(Date.now() - 120 * 24 * 3600 * 1000).toISOString();
+// La série se compte en semaines réussies (voir weekly.ts) : les jours prévus ne la cassent plus, seule une
+// semaine finie sous son quota l'arrête.
+export async function loadWeekState(userId: string): Promise<WeekState> {
+  // Un an de séances, les dates seulement.
+  const since = new Date(Date.now() - 370 * 24 * 3600 * 1000).toISOString();
   const [{ data, error }, objRes] = await Promise.all([
-    supabase.from('updates').select('created_at').eq('user_id', userId).gte('created_at', since).order('created_at', { ascending: false }).limit(400),
-    // Les jours prévus (phase 31, 31/10/2026) : un jour de repos ne casse pas la série et n'a pas besoin d'un post.
-    // Un objectif sans planning (ou aucun objectif) : tous les jours comptent, comme avant.
-    supabase.from('objectives').select('training_days, is_completed').eq('user_id', userId),
+    supabase.from('updates').select('created_at').eq('user_id', userId).gte('created_at', since).order('created_at', { ascending: false }).limit(1000),
+    supabase.from('objectives').select(WEEKLY_COLUMNS).eq('user_id', userId),
   ]);
-  if (error || !data || data.length === 0) return 0;
-  const open = ((objRes.data || []) as { training_days: number[] | null; is_completed: boolean | null }[]).filter(o => !o.is_completed);
-  const everyDay = open.length === 0 || open.some(o => !o.training_days || o.training_days.length === 0 || o.training_days.length >= 7);
-  const planned = new Set<number>(open.flatMap(o => o.training_days || []));
-  const scheduled = (d: Date) => everyDay || planned.has(((d.getDay() + 6) % 7) + 1);
-  const days = new Set(data.map(u => new Date(u.created_at).toDateString()));
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  let streak = 0;
-  for (let i = 0; i < 120; i++) {
-    const d = new Date(today); d.setDate(today.getDate() - i);
-    // Une séance compte toujours, jour prévu ou non (bonus). Seul un jour prévu sans post casse la série.
-    if (days.has(d.toDateString())) { streak++; continue; }
-    if (!scheduled(d)) continue;
-    // Aujourd'hui pas encore posté : il reste la journée, la série tient jusqu'à minuit.
-    if (i === 0) continue;
-    break;
-  }
-  return streak;
+  // Base d'avant la phase 31 (colonnes absentes) : aucun rythme connu, une séance par semaine suffit.
+  const goals = (objRes.error ? [] : objRes.data || []) as WeeklyGoal[];
+  return weekState(error || !data ? [] : data.map(u => u.created_at as string), goals);
+}
+
+/** Semaines réussies d'affilée. */
+export async function calculateStreak(userId: string): Promise<number> {
+  return (await loadWeekState(userId)).weeks;
 }
 
 // Lit le chiffre et l'unité dans le nom d'un objectif : « 170kg au bench » donne

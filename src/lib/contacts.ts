@@ -4,6 +4,7 @@ import { supabase } from './supabase';
 import { signAvatars } from './storage';
 import { sha256Hex } from './sha256';
 import { APP_STORE_URL } from '../constants';
+import { currentInviteLink } from './invites';
 import { t } from '../i18n';
 
 // Tes contacts : retrouver ceux qui sont déjà sur Reiz, et inviter les autres.
@@ -84,7 +85,7 @@ export async function matchContacts(contacts: DeviceContact[]): Promise<Matched[
 }
 
 export const inviteText = (username?: string | null) =>
-  `${t('invite.text')}${username ? t('invite.addMe', { username }) : ''}\n${APP_STORE_URL}`;
+  `${t('invite.text')}${username ? t('invite.addMe', { username }) : ''}\n${currentInviteLink() ?? APP_STORE_URL}`;
 
 /** Ouvre Messages avec le numéro et le texte d'invitation déjà remplis (rien n'est envoyé sans ton tap sur « Envoyer »). */
 export function inviteBySms(phone: string, username?: string | null) {

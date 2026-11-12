@@ -9,10 +9,11 @@ import { LEGAL_DOCS, LegalDoc, SUPPORT_EMAIL } from '../lib/legal';
 import { PresencePanel } from '../components/PresencePanel';
 import { QuickReactionsEditor } from '../components/QuickReactionsEditor';
 import { WelcomeModal } from '../components/WelcomeFlow';
+import { QuickStartModal } from '../components/QuickStart';
 import { ObjectiveDoneModal } from '../components/ObjectiveDoneModal';
 import { JourneyModal } from '../components/JourneyModal';
 import { contactsAvailable } from '../lib/contacts';
-import { APP_VERSION, WELCOME_FLOW } from '../constants';
+import { APP_VERSION, WELCOME_FLOW, QUICK_START } from '../constants';
 import { F } from '../styles';
 import { LANGS, lang, chosenLang, deviceLang, setLanguage, type Lang, t, dirIcon, isRTL } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
@@ -200,13 +201,15 @@ export function SettingsScreen({ visible, initialView = 'root', onClose, onEditN
         )}
 
         {view === 'password' && <PasswordForm onDone={() => setView('root')} />}
-        {view === 'presence' && <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}><PresencePanel /></ScrollView>}
+        {view === 'presence' && <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}><PresencePanel /></ScrollView>}
         {view === 'blocked' && <BlockedList />}
         {view === 'language' && <LanguagePicker />}
         {view === 'reactions' && <QuickReactionsEditor />}
         {view === 'legal' && doc && <LegalReader doc={doc} bottom={insets.bottom} />}
         {/* Aperçu de l'accueil des nouveaux comptes : rien n'est enregistré. */}
-        <WelcomeModal visible={welcome} preview onClose={() => setWelcome(false)} />
+        {QUICK_START
+          ? <QuickStartModal visible={welcome} preview onClose={() => setWelcome(false)} />
+          : <WelcomeModal visible={welcome} preview onClose={() => setWelcome(false)} />}
         {__DEV__ && (
           <ObjectiveDoneModal preview objective={donePreview ? { id: 'apercu', emoji: '🏃', title: 'Courir 10 km', unit: 'séances', target_value: 4 } : null}
             onJourney={openJourneyPreview} onNewObjective={() => setDonePreview(false)} onClose={() => setDonePreview(false)} />
@@ -268,7 +271,7 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+    <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets>
       <Text style={st.inputLabel}>{t('settings.newPwd')}</Text>
       <TextInput style={st.input} value={pwd} onChangeText={setPwd} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" placeholder={t('settings.pwdMin')} placeholderTextColor="#666" />
       {tooShort && <Text style={st.error}>{t('settings.pwdMinDot')}</Text>}

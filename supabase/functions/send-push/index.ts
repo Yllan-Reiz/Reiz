@@ -335,6 +335,11 @@ Deno.serve(async (req) => {
       title = fill(t.friendRequestTitle, { name });
       body = t.friendRequestBody;
       break;
+    // 1.4 : quelqu'un s'est inscrit avec mon lien d'invitation, nous voilà amis.
+    case 'invite_joined':
+      title = fill(t.inviteJoinedTitle, { name });
+      body = t.inviteJoinedBody;
+      break;
     case 'friend_accept':
       title = fill(t.friendAcceptTitle, { name });
       body = t.friendAcceptBody;

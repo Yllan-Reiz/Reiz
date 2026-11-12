@@ -30,9 +30,9 @@ export const s = StyleSheet.create({
   splashLogo: { width: 340, height: 118, marginBottom: -16, alignSelf: 'center' },
   splashLoginContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 80, paddingBottom: 32, justifyContent: 'center' },
   splashLogoLogin: { width: 220, height: 76, marginBottom: -10 },
-  splashTagline: { fontSize: 10, color: '#888', letterSpacing: 3 },
+  splashTagline: { fontSize: 11, color: '#888', letterSpacing: 3.2 },
   splashBottom: { width: '100%' },
-  splashLogin: { fontSize: 12, color: '#888', textAlign: 'center' },
+  splashLogin: { fontSize: 14, color: '#999', textAlign: 'center' },
   splashLoginLink: { color: '#fff', fontFamily: F.bold },
   obContainer: { flex: 1, backgroundColor: '#0a0a0a', paddingTop: 60, paddingHorizontal: 24 },
   // Les zones de tap s'arrêtent à 180px du bas : les boutons et liens du bas restent cliquables.
@@ -55,7 +55,10 @@ export const s = StyleSheet.create({
   inputField: { backgroundColor: '#1a1a1a', borderWidth: 1.5, borderColor: '#2a2a2a', borderRadius: 14, padding: 14, fontSize: 14, color: '#fff', fontFamily: F.regular },
   obBackBtn: { paddingVertical: 14, alignItems: 'center' },
   obBackText: { fontSize: 13, color: '#888' },
-  legal: { fontSize: 11, color: '#777', textAlign: 'center', marginTop: 16, lineHeight: 16 },
+  // Écrans de connexion : champs plus grands et plus ronds, à l'échelle des boutons en pilule.
+  authLabel: { fontSize: 11 },
+  authField: { fontSize: 16, borderRadius: 20, paddingVertical: 15, paddingHorizontal: 18 },
+  legal: { fontSize: 12, color: '#8a8a8a', textAlign: 'center', marginTop: 16, lineHeight: 17 },
   legalLink: { color: '#888', fontFamily: F.bold },
   // paddingTop vient de l'encoche (useSafeAreaInsets), jamais d'une valeur en dur :
   // 58px était juste sur un iPhone à Dynamic Island et faux partout ailleurs.

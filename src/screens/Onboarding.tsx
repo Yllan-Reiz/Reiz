@@ -1,15 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, Linking } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { frError } from '../lib/helpers';
-import { CGU_URL, PRIVACY_URL } from '../constants';
+import { CGU_URL, PRIVACY_URL, QUICK_START } from '../constants';
+import { Ionicons } from '@expo/vector-icons';
+import { setPendingName } from '../lib/googleAuth';
+import { trackAnon } from '../lib/track';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SocialAuthButtons } from '../components/SocialAuthButtons';
-import { s } from '../styles';
-import { t, lang } from '../i18n';
+import { AUTH_BTN } from '../components/GoogleButton';
+import { KeyboardFrame, KeyboardScroll } from '../components/KeyboardFrame';
+import { s, F } from '../styles';
+import { t, lang, dirIcon } from '../i18n';
 
-export function Onboarding({ onNext }: { onNext: () => void }) {
+export function Onboarding({ onNext, onBack }: { onNext: () => void; onBack?: () => void }) {
   const [step, setStep] = useState(0);
+  // 1.4 : l'e-mail et le mot de passe ne s'affichent que si on choisit « avec un e-mail ».
+  const [withEmail, setWithEmail] = useState(false);
+  // Début de l'onboarding, avant tout compte (pour mesurer qui s'arrête ici).
+  useEffect(() => { if (QUICK_START) trackAnon('onboarding_start'); }, []);
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -75,7 +84,7 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
     }
 
     // Session active : onAuthStateChange va naviguer vers Main, l'alert reste informatif
-    Alert.alert(t('auth.welcomeTitle'), '', [{ text: t('auth.letsGo') }]);
+    if (!QUICK_START) Alert.alert(t('auth.welcomeTitle'), '', [{ text: t('auth.letsGo') }]);
   };
 
   const handleLogin = async () => {
@@ -89,25 +98,97 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
   if (showLogin) {
     return (
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <KeyboardAvoidingView style={[s.obContainer, { paddingTop: insets.top + 16 }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardFrame style={[s.obContainer, { paddingTop: insets.top + 16 }]}>
         <Text style={s.headline}>{t('auth.welcomeBack')}</Text>
         <Text style={s.subtext}>{t('auth.welcomeBackSub')}</Text>
         <View style={s.inputBlock}>
-          <Text style={s.inputLabel}>{t('auth.emailLabel')}</Text>
-          <TextInput style={s.inputField} placeholder={t('auth.emailPlaceholder')} placeholderTextColor="#666" value={loginEmail} onChangeText={setLoginEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
+          <Text style={[s.inputLabel, s.authLabel]}>{t('auth.emailLabel')}</Text>
+          <TextInput style={[s.inputField, s.authField]} placeholder={t('auth.emailPlaceholder')} placeholderTextColor="#666" value={loginEmail} onChangeText={setLoginEmail} keyboardType="email-address" autoCapitalize="none" keyboardAppearance="dark" maxLength={254} />
         </View>
         <View style={s.inputBlock}>
-          <Text style={s.inputLabel}>{t('auth.passwordLabel')}</Text>
-          <TextInput style={s.inputField} placeholder="••••••••" placeholderTextColor="#666" value={loginPassword} onChangeText={setLoginPassword} secureTextEntry maxLength={72} />
+          <Text style={[s.inputLabel, s.authLabel]}>{t('auth.passwordLabel')}</Text>
+          <TextInput style={[s.inputField, s.authField]} placeholder="••••••••" placeholderTextColor="#666" value={loginPassword} onChangeText={setLoginPassword} secureTextEntry keyboardAppearance="dark" maxLength={72} />
         </View>
-        <TouchableOpacity style={[s.btn, { marginTop: 8 }, loginLoading && s.btnDisabled]} onPress={loginLoading ? undefined : handleLogin}>
-          {loginLoading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>{t('auth.signInArrow')}</Text>}
+        <TouchableOpacity style={[s.btn, { marginTop: 8, minHeight: AUTH_BTN.height, borderRadius: AUTH_BTN.radius }, loginLoading && s.btnDisabled]} onPress={loginLoading ? undefined : handleLogin}>
+          {loginLoading ? <ActivityIndicator color="#000" /> : <Text style={[s.btnText, { fontSize: AUTH_BTN.text }]}>{t('auth.signInArrow')}</Text>}
         </TouchableOpacity>
         <TouchableOpacity style={s.obBackBtn} onPress={() => setShowLogin(false)}>
           <Text style={s.obBackText}>{t('common.backArrow')}</Text>
         </TouchableOpacity>
-      </KeyboardAvoidingView>
+      </KeyboardFrame>
       </TouchableWithoutFeedback>
+    );
+  }
+
+  // 1.4, onboarding express : un seul écran avant le compte. Le prénom, puis Apple, Google ou un e-mail.
+  // Les 4 écrans de présentation ne sont plus montrés (l'ancien parcours reste plus bas, QUICK_START = false).
+  if (QUICK_START) {
+    const first = name.trim();
+    // Apple et Google ne donnent pas toujours le prénom : celui tapé ici est repris à la création du profil.
+    const onName = (v: string) => { setName(v); setPendingName(v.trim() || null); };
+    return (
+      <KeyboardFrame style={{ backgroundColor: '#0a0a0a' }}>
+        <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 12, height: insets.top + 48 }}>
+          <TouchableOpacity onPress={onBack} disabled={!onBack} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('common.back')} style={{ width: 28, opacity: onBack ? 1 : 0 }}>
+            <Ionicons name={dirIcon('chevron-back')} size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={{ flex: 1, flexDirection: 'row', gap: 6 }} accessibilityLabel={t('quick.progress', { n: 1, total: 3 })}>
+            {[0, 1, 2].map(i => <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i === 0 ? '#fff' : 'rgba(255,255,255,0.18)' }} />)}
+          </View>
+          <View style={{ width: 28 }} />
+        </View>
+        <KeyboardScroll contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: insets.bottom + 24 }}>
+          <Text style={{ color: '#fff', fontSize: 34, lineHeight: 38, fontFamily: F.black, letterSpacing: -1.1 }} maxFontSizeMultiplier={1.2}>{t('quick.nameTitle')}</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16, lineHeight: 23, fontFamily: F.regular, marginTop: 10 }}>{t('quick.nameSub')}</Text>
+          <TextInput
+            style={{ marginTop: 20, minHeight: 58, borderRadius: 24, paddingHorizontal: 20, color: '#fff', fontSize: 20, fontFamily: F.bold, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: first ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.14)' }}
+            placeholder={t('onboarding.firstNamePlaceholder')}
+            placeholderTextColor="rgba(255,255,255,0.4)"
+            value={name}
+            onChangeText={onName}
+            autoFocus
+            autoCapitalize="words"
+            autoCorrect={false}
+            keyboardAppearance="dark"
+            textContentType="givenName"
+            autoComplete="given-name"
+            returnKeyType="done"
+            maxLength={40}
+            accessibilityLabel={t('onboarding.firstNameLabel')}
+          />
+
+          {/* Les trois boutons doivent tenir au-dessus du clavier : pas de marge en plus de celle des boutons. */}
+          <View style={{ marginTop: 4 }}>
+            <SocialAuthButtons mode="continue" />
+          </View>
+
+          {!withEmail ? (
+            <TouchableOpacity onPress={() => setWithEmail(true)} activeOpacity={0.85} accessibilityRole="button"
+              style={{ marginTop: AUTH_BTN.gap, minHeight: AUTH_BTN.height, borderRadius: AUTH_BTN.radius, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }}>
+              <Ionicons name="mail-outline" size={18} color="#fff" />
+              <Text style={{ color: '#fff', fontSize: AUTH_BTN.text, fontFamily: F.bold }}>{t('quick.withEmail')}</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ marginTop: 18 }}>
+              <TextInput style={quickField} placeholder={t('auth.emailPlaceholder')} placeholderTextColor="rgba(255,255,255,0.4)" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoFocus keyboardAppearance="dark" textContentType="emailAddress" autoComplete="email" maxLength={254} accessibilityLabel={t('auth.emailLabel')} />
+              <TextInput style={[quickField, { marginTop: 10 }]} placeholder={t('quick.passwordPlaceholder')} placeholderTextColor="rgba(255,255,255,0.4)" value={password} onChangeText={setPassword} secureTextEntry keyboardAppearance="dark" textContentType="newPassword" autoComplete="new-password" maxLength={72} accessibilityLabel={t('auth.passwordLabel')} />
+              <TouchableOpacity style={[s.btn, { marginTop: AUTH_BTN.gap, minHeight: AUTH_BTN.height, borderRadius: AUTH_BTN.radius }, loading && s.btnDisabled]} onPress={loading ? undefined : handleSignUp} accessibilityRole="button">
+                {loading ? <ActivityIndicator color="#000" /> : <Text style={[s.btnText, { fontSize: AUTH_BTN.text }]}>{t('quick.continue')}</Text>}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <Text style={s.legal}>
+            {t('onboarding.legalBefore')}{' '}
+            <Text style={s.legalLink} onPress={() => Linking.openURL(CGU_URL).catch(() => {})}>{t('onboarding.legalTerms')}</Text>
+            {' '}{t('onboarding.legalAnd')}{' '}
+            <Text style={s.legalLink} onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}>{t('onboarding.legalPrivacy')}</Text>
+          </Text>
+          <TouchableOpacity onPress={() => setShowLogin(true)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center', alignItems: 'center', marginTop: 8 }}>
+            <Text style={s.splashLogin}>{t('auth.haveAccount')} <Text style={s.splashLoginLink}>{t('auth.signIn')}</Text></Text>
+          </TouchableOpacity>
+        </KeyboardScroll>
+      </KeyboardFrame>
     );
   }
 
@@ -228,3 +309,5 @@ export function Onboarding({ onNext }: { onNext: () => void }) {
     </KeyboardAvoidingView>
   );
 }
+
+const quickField = { minHeight: 52, borderRadius: 16, paddingHorizontal: 16, color: '#fff', fontSize: 16, fontFamily: F.semibold, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' } as const;

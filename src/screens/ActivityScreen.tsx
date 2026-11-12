@@ -23,6 +23,7 @@ import { gifIdOf } from '../lib/giphy';
 import { placeLabel, localizeDuelResult } from '../lib/helpers';
 import { t, tp, dirIcon } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
+import { FlameBadge } from '../components/FlameBadge';
 import { FEATURES } from '../lib/features';
 
 type Row = ActivityItem & {
@@ -62,7 +63,7 @@ function copyOf(e: Entry): { who: string; action: string; context?: string } {
   const n = e.rows[0];
   const { text: who, many } = whoLabel(e.rows);
   const post = n.updates?.objectives;
-  const postLabel = post?.title ? `${post.emoji || ''} ${post.title}`.trim() : undefined;
+  const postLabel = post?.title ? post.title.trim() : undefined;
   // Un commentaire GIF est enregistré comme un lien : on écrit « GIF » à la place.
   const quote = n.preview ? (gifIdOf(n.preview) ? 'GIF' : t('activity.quote', { text: clip(n.preview) })) : undefined;
   // Le verbe s'accorde : « Eden a réagi », « Eden et Axel ont réagi ».
@@ -84,12 +85,13 @@ function copyOf(e: Entry): { who: string; action: string; context?: string } {
     case 'tag_endorse': return { who, action: t('activity.endorsed'), context: n.preview || undefined };
     case 'at_gym': return { who, action: t('activity.atGym', { place: placeLabel(n.preview) }), context: t('activity.atGymSub') };
     case 'duo_tag': return { who, action: t('activity.duoTag'), context: postLabel };
+    case 'invite_joined': return { who, action: t('activity.inviteJoined'), context: t('activity.inviteJoinedSub') };
     case 'friend_accept': return { who, action: t('activity.accepted'), context: t('activity.acceptedSub') };
     case 'challenge_accept': return { who, action: t('activity.challengeAccepted'), context: t('activity.challengeAcceptedSub') };
     case 'challenge_result': return { who, action: t('activity.challengeDone'), context: localizeDuelResult(n.preview) || undefined };
     case 'new_objective': {
       const days = hasSchedule(n.objectives?.training_days) ? t('activity.trains', { days: daysLabel(n.objectives?.training_days, true) }) : undefined;
-      return { who, action: t('activity.newObjective'), context: [n.objectives?.title ? `${n.objectives.emoji || ''} ${n.objectives.title}`.trim() : '', days].filter(Boolean).join('  ') || undefined };
+      return { who, action: t('activity.newObjective'), context: [n.objectives?.title ? n.objectives.title.trim() : '', days].filter(Boolean).join('  ') || undefined };
     }
     default: return { who, action: '' };
   }
@@ -98,7 +100,7 @@ function copyOf(e: Entry): { who: string; action: string; context?: string } {
 // Petite pastille d'icône posée sur la photo : on repère le type d'un coup d'œil.
 const ICON: Record<string, any> = {
   nudge: 'flash', reaction: 'heart', comment_like: 'heart', comment: 'chatbubble', reply: 'chatbubble', friend_post: 'camera', tag_endorse: 'ribbon',
-  at_gym: 'location', duo_tag: 'people', friend_accept: 'checkmark', challenge_accept: 'flash', challenge_result: 'trophy', new_objective: 'flag',
+  at_gym: 'location', duo_tag: 'people', friend_accept: 'checkmark', invite_joined: 'person-add', challenge_accept: 'flash', challenge_result: 'trophy', new_objective: 'flag',
 };
 
 /** « à l'instant », « 12 min », « 3 h », « 2 j » : court, pour ne pas encombrer la ligne. */
@@ -118,7 +120,12 @@ function sectionOf(iso: string) {
   return t('activity.earlier');
 }
 
-function Avatar({ url, name, size }: { url?: string | null; name: string; size: number }) {
+function Avatar({ id, ...p }: { id?: string | null; url?: string | null; name: string; size: number }) {
+  // En haut à droite : le bas de la photo porte déjà la pastille du type d'activité.
+  return <View><AvatarPhoto {...p} /><FlameBadge userId={id} size={p.size} corner="top" /></View>;
+}
+
+function AvatarPhoto({ url, name, size }: { url?: string | null; name: string; size: number }) {
   return url
     ? <CachedImage uri={url} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#222' }} />
     : <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontSize: size * 0.4, fontFamily: F.bold }}>{name.charAt(0).toUpperCase()}</Text></View>;
@@ -138,14 +145,14 @@ function ActivityRow({ e, onPress, onAvatar }: { e: Entry; onPress: () => void; 
         <View style={{ width: 44, height: 44 }}>
           {faces.slice(0, 2).map((r, i) => (
             <View key={r.id} style={{ position: 'absolute', left: i * 12, top: i * 12, borderRadius: 17, borderWidth: 2, borderColor: '#111' }}>
-              <Avatar url={r.actor?.avatar_url} name={r.actor?.full_name || '?'} size={30} />
+              <Avatar id={r.actor_id} url={r.actor?.avatar_url} name={r.actor?.full_name || '?'} size={30} />
             </View>
           ))}
         </View>
       ) : (
         <TouchableOpacity onPress={onAvatar} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
           <View>
-            <Avatar url={n.actor?.avatar_url} name={n.actor?.full_name || '?'} size={44} />
+            <Avatar id={n.actor_id} url={n.actor?.avatar_url} name={n.actor?.full_name || '?'} size={44} />
             {!!ICON[n.type] && (
               <View style={{ position: 'absolute', right: -3, bottom: -3, width: 19, height: 19, borderRadius: 10, backgroundColor: '#fff', borderWidth: 2, borderColor: '#111', alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name={ICON[n.type]} size={9} color="#000" />

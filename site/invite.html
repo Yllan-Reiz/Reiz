@@ -70,7 +70,23 @@
 
       var params = new URLSearchParams(window.location.search);
       var ref = (params.get('ref') || '').replace(/^@/, '').trim();
-      var deepLink = ref ? 'reiz://invite?ref=' + encodeURIComponent(ref) : 'reiz://';
+      // Lien personnel (1.4) : ?c=CODE. La personne qui s'inscrit avec devient amie tout de suite avec celle qui invite.
+      var code = (params.get('c') || '').trim().toLowerCase();
+      if (!/^[a-z0-9]{6,16}$/.test(code)) code = '';
+      var deepLink = code ? 'reiz://invite?c=' + code : ref ? 'reiz://invite?ref=' + encodeURIComponent(ref) : 'reiz://';
+
+      // On note que ce lien a été ouvert : si l'app est installée juste après, elle retrouve l'invitation à
+      // l'inscription. Seule une empreinte du réseau est gardée, 48 h au plus (voir la politique de confidentialité).
+      if (code) {
+        try {
+          fetch('https://vpaizbtetwsnvbpmeuab.supabase.co/rest/v1/rpc/invite_click', {
+            method: 'POST',
+            keepalive: true,
+            headers: { 'Content-Type': 'application/json', apikey: 'sb_publishable_dAHRrHfSQvNwm1LEpNw5Ww_EOTyejXT', Authorization: 'Bearer sb_publishable_dAHRrHfSQvNwm1LEpNw5Ww_EOTyejXT' },
+            body: JSON.stringify({ p_code: code })
+          }).catch(function () {});
+        } catch (e) {}
+      }
 
       var openApp = document.getElementById('openApp');
       var download = document.getElementById('download');
@@ -79,7 +95,9 @@
       var note = document.getElementById('inAppNote');
 
       openApp.setAttribute('href', deepLink);
-      if (ref) {
+      if (code) {
+        searchHint.textContent = 'inscris-toi : tu seras directement ami avec la personne qui t\'a invité';
+      } else if (ref) {
         byName.textContent = ' par @' + ref;
         // Le pseudo vient de l'adresse : on l'écrit comme du texte, jamais comme du HTML.
         var tag = document.createElement('span');

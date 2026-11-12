@@ -19,7 +19,7 @@ import { T, asLang, fill, names, num as fmt, unit as unitIn, type Lang } from '.
 // Journal : encouragement_log. Le tap ouvre la publication sur l'objectif concerné (data.objective_id).
 //
 // Ordre des textes (chantier 6) : duel en cours (y compris un jour de repos), puis l'encouragement, puis la série
-// en jeu à partir de 3 jours, puis le texte taquin. Duel et série viennent de l'ancien rappel de 19 h.
+// en jeu (en semaines, quand le quota de la semaine est en danger), puis le texte taquin. Duel et série viennent de l'ancien rappel de 19 h.
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SERVICE_KEY')!);
 
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
 
   const [usersRes, objRes, updRes, momRes, friendsRes, unreadRes, logRes, duelRes] = await Promise.all([
     supabase.from('users').select('id, full_name, push_token, language, timezone, notif_encouragement, created_at'),
-    supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed, training_days, per_week').order('created_at'),
+    supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed, training_days, per_week, starts_at, deadline, completed_at').order('created_at'),
     supabase.from('updates').select('user_id, created_at, moment, objectives(visibility)').gte('created_at', since60),
     supabase.from('moments').select('user_id, day, kind, at, sent_at').gte('day', new Date(now.getTime() - 2 * DAY).toISOString().slice(0, 10)),
     supabase.from('friendships').select('requester_id, receiver_id').eq('status', 'accepted'),
@@ -114,19 +114,43 @@ Deno.serve(async (req) => {
     .map((r: any) => new Date(r.created_at))
     .filter((d: Date) => d.getTime() >= from && d.getTime() < to)
     .map((d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }))).size;
-  // Série jusqu'à hier : un jour de repos ne la casse pas, un jour prévu sans post l'arrête.
-  const streakOf = (u: any) => {
-    const plan = plans.get(u.id);
-    const days = new Set((postsOf.get(u.id) || []).map(d => local(u.timezone, d).day));
-    let n = 0;
-    let d = new Date(now.getTime() - DAY);
-    for (let i = 0; i < 60; i++) {
-      const L = local(u.timezone, d);
-      if (days.has(L.day)) n++;
-      else if (plan?.every || plan?.days.has(L.dow)) break;
-      d = new Date(d.getTime() - DAY);
+  // Série en SEMAINES (1.4, même règle que l'app : src/lib/weekly.ts). Une semaine est réussie quand le nombre de
+  // jours avec une séance atteint le quota : le plus petit « par semaine » des rythmes en cours, 1 sans rythme, au
+  // prorata la semaine où un rythme commence ou finit. Les jours prévus ne cassent plus rien : ils ne servent qu'à
+  // choisir les jours de rappel.
+  const addDay = (day: string, n: number) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const quotaOf = (goals: any[], monday: string) => {
+    const sunday = addDay(monday, 6);
+    let quota = Infinity;
+    for (const g of goals) {
+      if (!(g.per_week > 0)) continue;
+      const start = g.starts_at ? String(g.starts_at).slice(0, 10) : null;
+      const end = g.deadline ? String(g.deadline).slice(0, 10) : null;
+      if (start && start > sunday) continue;
+      if (end && end < monday) continue;
+      if (g.completed_at ? String(g.completed_at).slice(0, 10) < monday : g.is_completed) continue;
+      let need = Math.min(g.per_week, 7);
+      const from = start && start > monday ? start : monday;
+      const to = end && end < sunday ? end : sunday;
+      const span = clamp(daysBetween(from, to) + 1, 1, 7);
+      if (span < 7) need = Math.max(1, Math.min(need, Math.round((need * span) / 7)));
+      quota = Math.min(quota, need);
     }
-    return n;
+    return quota === Infinity ? 1 : quota;
+  };
+  /** Semaines réussies d'affilée jusqu'à dimanche dernier, et où en est la semaine en cours. */
+  const weekOf = (u: any) => {
+    const L = local(u.timezone, now);
+    const days = new Set((postsOf.get(u.id) || []).map(d => local(u.timezone, d).day));
+    const goals = objectivesOf.get(u.id) || [];
+    const count = (monday: string) => { let n = 0; for (let i = 0; i < 7; i++) if (days.has(addDay(monday, i))) n++; return n; };
+    const monday = addDay(L.day, 1 - L.dow);
+    const quota = quotaOf(goals, monday);
+    const left = Math.max(0, quota - count(monday));
+    let weeks = 0;
+    // 60 jours de posts en mémoire : 7 semaines pleines au plus.
+    for (let i = 1; i <= 7; i++) { const m = addDay(monday, -7 * i); if (count(m) < quotaOf(goals, m)) break; weeks++; }
+    return { weeks, left, daysLeft: 8 - L.dow };
   };
 
   /** L'encouragement du jour, s'il y en a un : le texte remplace le taquin, l'objectif est ouvert au tap. */
@@ -250,8 +274,10 @@ Deno.serve(async (req) => {
     }
     const enc = !duelText && session ? encouragementFor(u, L.day) : null;
     if (enc) logs.push({ user_id: u.id, kind: enc.kind, ref: enc.ref });
-    const streak = !duelText && !enc && session ? streakOf(u) : 0;
-    const special = duelText || enc || (streak >= 3 ? { title: fill(t.dailyStreakTitle, { n: streak }), body: t.dailyStreakBody } : null);
+    // Série en jeu : au moins 2 semaines réussies, et il reste autant de séances à faire que de jours dans la semaine.
+    const wk = !duelText && !enc && session ? weekOf(u) : null;
+    const atStake = !!wk && wk.weeks >= 2 && wk.left > 0 && wk.left >= wk.daysLeft;
+    const special = duelText || enc || (atStake ? { title: fill(t.dailyStreakTitle, { n: wk!.weeks }), body: t.dailyStreakBody } : null);
     pushes.push({
       to: u.push_token,
       title: special ? special.title : session ? t.momentSessionTitle : t.momentRecoveryTitle,
@@ -261,7 +287,7 @@ Deno.serve(async (req) => {
       // Taper la notification ouvre directement la publication, en mode moment.
       data: { type: 'moment', kind: m.kind, ...(enc ? { objective_id: enc.objectiveId } : {}) },
       _who: u.full_name,
-      _kind: duelText ? 'duel' : enc?.kind ?? (streak >= 3 ? 'streak' : m.kind),
+      _kind: duelText ? 'duel' : enc?.kind ?? (atStake ? 'streak' : m.kind),
     });
     done.push({ user_id: u.id, day: m.day, skipped: null });
   }

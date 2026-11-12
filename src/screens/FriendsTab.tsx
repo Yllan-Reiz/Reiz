@@ -15,6 +15,7 @@ import { GlassSurface } from '../components/GlassSurface';
 import * as Haptics from 'expo-haptics';
 import { Friend, PendingRequest, SentRequest } from '../lib/types';
 import { track } from '../lib/track';
+import { myInviteLink, currentInviteLink } from '../lib/invites';
 import { APP_STORE_URL, GUTTER, navClearance, GLASS_FRIENDS } from '../constants';
 import { FriendsGlassView } from '../components/FriendsGlassView';
 import { s, F } from '../styles';
@@ -52,6 +53,14 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   const blockedReady = useRef<Promise<Set<string>>>(Promise.resolve(new Set()));
   const [myUsername, setMyUsername] = useState<string | null>(null);
   const [myName, setMyName] = useState('');
+  // Mon lien d'invitation personnel (le même qu'à l'accueil et que le QR code), affiché sur la carte d'invitation.
+  const [myLink, setMyLink] = useState<string>(() => currentInviteLink() ?? APP_STORE_URL);
+  useEffect(() => {
+    if (!currentUserId) return;
+    let alive = true;
+    myInviteLink(currentUserId).then(l => { if (alive) setMyLink(l.link); }).catch(() => {});
+    return () => { alive = false; };
+  }, [currentUserId]);
   const [myAvatar, setMyAvatar] = useState<string | null>(null);
   // La carte de partage façon BeReal (QR code, copier, WhatsApp, Messages).
   const [shareOpen, setShareOpen] = useState(false);
@@ -88,7 +97,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       `${hook}\n\n` +
       `${t('friends.shareBody')}\n\n` +
       `${myUsername ? t('friends.shareJoinUser', { username: myUsername }) : t('friends.shareJoin')}\n` +
-      `${APP_STORE_URL}\n\n` +
+      `${myLink}\n\n` +
       `${closer}`;
     try {
       await Share.share({ message, title: t('friends.shareTitle') });
@@ -419,7 +428,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
           onViewProfile={onViewProfile}
           onToggleClose={toggleClose}
           onInvite={inviteFriends}
-          inviteLink={APP_STORE_URL.replace('https://', '')}
+          inviteLink={myLink.replace('https://', '')}
           myAvatar={myAvatar}
           myName={myName}
           onHideSuggestion={hideSuggestion}

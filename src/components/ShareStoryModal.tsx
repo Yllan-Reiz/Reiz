@@ -134,7 +134,7 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
 
             <View style={{ position: 'absolute', left: 22 * k, right: 22 * k, bottom: 40 * k }}>
               <View style={{ backgroundColor: 'rgba(15,15,15,0.72)', borderRadius: 24 * k, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', padding: 18 * k }}>
-                <Text style={{ color: '#fff', fontSize: 14 * k, fontFamily: F.semibold }} numberOfLines={2}>{data.emoji ? `${data.emoji} ` : ''}{data.title}</Text>
+                <Text style={{ color: '#fff', fontSize: 14 * k, fontFamily: F.semibold }} numberOfLines={2}>{data.title}</Text>
                 <Text style={{ color: '#fff', fontSize: 34 * k, fontFamily: F.black, letterSpacing: -1 * k, marginTop: 6 * k }} numberOfLines={1} adjustsFontSizeToFit>{data.progressLabel}</Text>
                 <View style={{ height: 8 * k, borderRadius: 4 * k, backgroundColor: 'rgba(255,255,255,0.18)', marginTop: 10 * k, overflow: 'hidden' }}>
                   <View style={{ width: `${pct}%`, height: '100%', backgroundColor: '#fff', borderRadius: 4 * k }} />

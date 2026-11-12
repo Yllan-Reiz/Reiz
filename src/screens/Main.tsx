@@ -5,16 +5,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { supabase, currentUser, storedUserId } from '../lib/supabase';
-import { calculateStreak, frError, inUnit } from '../lib/helpers';
+import { loadWeekState, frError, inUnit } from '../lib/helpers';
+import type { WeekState } from '../lib/weekly';
 import { signMany, signAvatars, signOne } from '../lib/storage';
 import { cacheGet, cacheSet } from '../lib/cache';
 import { mark } from '../lib/perf';
 import { setAppBadge } from '../lib/badge';
 import { selectObjectives } from '../lib/objectives';
-import { NAV_BOTTOM_MIN, navClearance, hasSchedule, daysLabel, GLASS_OBJECTIVES, GLASS_FRIENDS } from '../constants';
+import { NAV_BOTTOM_MIN, navClearance, hasSchedule, daysLabel, GLASS_OBJECTIVES, GLASS_FRIENDS, QUICK_START } from '../constants';
 import { Update, Objective, FeedMeta } from '../lib/types';
 import { s, F } from '../styles';
-import { FlameStreak } from '../components/FlameStreak';
+import { loadFlames, setFlame } from '../lib/flames';
+import { setMe } from '../lib/me';
 import { FeedCardInFeed } from '../components/FeedCard';
 import { NavTab } from '../components/NavTab';
 import { GlassSurface, LIQUID_GLASS } from '../components/GlassSurface';
@@ -43,6 +45,8 @@ import { useCloseCircle } from '../lib/closeCircle';
 import { t, unitLabel, dirIcon, isRTL } from '../i18n';
 import { FEATURES } from '../lib/features';
 import { InviteCircleCard } from '../components/InviteCircleCard';
+import { SoloCard } from '../components/SoloCard';
+import { myInviteLink } from '../lib/invites';
 import { maybeAskForUpdate } from '../lib/updatePrompt';
 
 const PAGE_SIZE = 20;
@@ -132,7 +136,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   // Premier objectif d'un compte qui n'en a pas : le parcours de l'accueil (sport, trois profils, premier post),
   // pas le formulaire complet. Ouvert une fois tout seul, puis depuis la carte du fil et l'onglet Objectifs.
   const [firstObj, setFirstObj] = useState(false);
-  const openCreate = () => (objectives.length === 0 ? setFirstObj(true) : setShowCreateModal(true));
+  // 1.4 : un compte sans objectif ouvre aussi la création en une phrase (plus le carrousel de sports de l'accueil).
+  const openCreate = () => (objectives.length === 0 && !QUICK_START ? setFirstObj(true) : setShowCreateModal(true));
   useEffect(() => {
     if (loadingObj || objectives.length > 0 || !userId) return;
     let alive = true;
@@ -142,14 +147,16 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       // Un compte tout neuf a l'accueil complet (App.tsx) : on ne double pas.
       if (await welcomePending(await currentUser())) return;
       await AsyncStorage.setItem(key, '1').catch(() => {});
-      if (alive) setTimeout(() => { if (alive) setFirstObj(true); }, 800);
+      if (alive) setTimeout(() => { if (alive) (QUICK_START ? setShowCreateModal(true) : setFirstObj(true)); }, 800);
     })().catch(() => {});
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingObj, objectives.length === 0, userId]);
   // Objectif en cours de modification (visibilité, jours d'entraînement, suppression).
   const [editing, setEditing] = useState<Objective | null>(null);
-  const [streak, setStreak] = useState(0);
+  // 1.4 : la série se compte en semaines réussies ; `week` porte aussi la semaine en cours (2 sur 3).
+  const [week, setWeek] = useState<WeekState | null>(null);
+  const streak = week?.weeks ?? 0;
   // Pile de profils ouverts : depuis le profil d'un ami, on peut ouvrir celui
   // d'un de ses amis, et « retour » revient au précédent.
   const [profileStack, setProfileStack] = useState<string[]>([]);
@@ -395,7 +402,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   const onRefresh = async () => {
     if (!userId) return;
     setRefreshing(true);
-    calculateStreak(userId).then(setStreak);
+    loadWeekState(userId).then(w => { setWeek(w); cacheSet(`week.${userId}`, w); setFlame(userId, w.weeks >= 1); });
+    loadFlames(true).catch(() => {});
     fetchPendingCount();
     fetchFriendCount();
     fetchUnread();
@@ -480,7 +488,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       const [cached, cachedObj, cachedStreak, cachedCounts] = await Promise.all([
         cacheGet<{ updates: Update[]; meta: Record<string, FeedMeta> }>(`feed.${uid}`, 12 * 3600 * 1000),
         cacheGet<{ objectives: Objective[]; activity: Record<string, string[]> }>(`objectives.${uid}`, 7 * 24 * 3600 * 1000),
-        cacheGet<number>(`streak.${uid}`, 24 * 3600 * 1000),
+        cacheGet<WeekState>(`week.${uid}`, 24 * 3600 * 1000),
         cacheGet<{ pending?: number; unread?: number; friends?: number }>(`counts.${uid}`, 7 * 24 * 3600 * 1000),
       ]);
       // Dernier fil connu : affiché tout de suite, avant même la réponse du serveur.
@@ -497,7 +505,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         objectivesPainted.current = true;
         setLoadingObj(false);
       }
-      if (cachedStreak != null) setStreak(cachedStreak);
+      if (cachedStreak != null) { setWeek(cachedStreak); setFlame(uid, cachedStreak.weeks >= 1); }
       if (cachedCounts) {
         countsRef.current = cachedCounts;
         if (cachedCounts.pending != null) setPendingCount(cachedCounts.pending);
@@ -506,11 +514,15 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       }
       lastCounts.current = Date.now();
       // Ta photo : celle d'origine (déjà allégée à l'envoi), sans attendre une version réduite par le serveur.
-      supabase.from('users').select('avatar_url').eq('id', uid).single().then(async ({ data: me }) => {
-        if (me?.avatar_url) setMyAvatar(await signOne(me.avatar_url));
+      supabase.from('users').select('avatar_url, full_name').eq('id', uid).single().then(async ({ data: me }) => {
+        setMe({ name: me?.full_name ?? null });
+        if (me?.avatar_url) { const url = await signOne(me.avatar_url); setMyAvatar(url); setMe({ avatar: url }); }
       });
       loadFeedPage(0, uid); // remplit aussi le nombre d'amis (liste du cercle)
-      calculateStreak(uid).then(n => { setStreak(n); cacheSet(`streak.${uid}`, n); });
+      myInviteLink(uid).catch(() => {}); // lien d'invitation prêt avant le premier partage
+      loadWeekState(uid).then(w => { setWeek(w); cacheSet(`week.${uid}`, w); setFlame(uid, w.weeks >= 1); });
+      // Les flammes de tout le cercle, à côté des photos de profil (elle remplace la série du haut du fil).
+      loadFlames().catch(() => {});
       fetchPendingCount(uid);
       fetchUnread(uid);
       fetchObjectives();
@@ -532,6 +544,12 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
 
   const progressPct = (obj: Objective) => obj.target_value > 0 ? Math.min(Math.round((obj.current_value / obj.target_value) * 100), 100) : 0;
 
+  // L'objectif montré à quelqu'un qui n'a pas encore d'ami : son premier rythme en cours, sinon son premier objectif.
+  const soloObjective = useMemo(() => {
+    const open = objectives.filter(o => !o.is_completed);
+    return open.find(o => isRhythm(o)) ?? open[0] ?? null;
+  }, [objectives]);
+
   // L'en-tête du fil (demandes, cercle du jour, défis, mise en route) ne se redessine que si ce qu'il montre change :
   // chaque arrêt du défilement redessine Main (carte active), il ne faut pas que ces quatre cartes suivent.
   const feedHeader = useMemo(() => (
@@ -539,6 +557,17 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               {/* 1.2 : les demandes d'ami reçues passent avant le reste, une réponse suffit à avoir un cercle. */}
               <PendingRequestsCard userId={userId} from="feed" onChanged={() => { fetchPendingCount(); fetchFriendCount(); }} onSeeAll={() => setTab('friends')} />
               {/* 1.3 : moins de 3 amis, l'invitation passe devant (elle disparaît à 3). */}
+              {/* 1.4 : aucun ami, le fil n'est jamais vide : ta semaine et l'invitation en un geste. */}
+              {friendCount === 0 && (
+                <SoloCard
+                  userId={userId}
+                  week={week}
+                  objective={soloObjective}
+                  hasObjective={loadingObj ? null : objectives.length > 0}
+                  onPost={() => onPost({ from: 'feed_empty' })}
+                  onCreate={openCreate}
+                />
+              )}
               <InviteCircleCard userId={userId} friendCount={friendCount} />
               {/* Moment Reiz (phase 29) : qui de ton cercle a posté aujourd'hui. */}
               <CircleTodayCard onOpenProfile={openProfile} />
@@ -555,7 +584,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               />
               </>
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [userId, duelKey, loadingObj, objectives.length, friendCount, onPost]);
+  ), [userId, duelKey, loadingObj, objectives.length, friendCount, onPost, week, soloObjective]);
 
   if (viewingFriendId) return <FriendProfileScreen key={viewingFriendId} userId={viewingFriendId} onClose={() => setProfileStack(st => st.slice(0, -1))} onOpenProfile={openProfile} onDuo={(id) => onPost({ duoWith: id })} />;
   // L'activité s'ouvre PAR-DESSUS la page où tu es (le fil, les objectifs, les amis...) : le verre floute cette
@@ -612,7 +641,6 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               <View style={s.headerBadge}><Text style={s.navBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text></View>
             )}
           </TouchableOpacity>
-          <FlameStreak streak={streak} />
         </View>
       </View>
 
@@ -652,6 +680,9 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               loadingFeed ? (
                 <FeedSkeleton />
               ) : (
+                friendCount === 0 ? (
+                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, lineHeight: 18, fontFamily: F.regular, textAlign: 'center', paddingTop: 8, paddingHorizontal: 24 }}>{t('soloCard.feedHint')}</Text>
+                ) : (
                 <View style={{ paddingTop: 40, alignItems: 'center' }}>
                   <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>{t('main.feedEmpty')}</Text>
                   <Text style={{ color: '#777', marginTop: 4, fontSize: 12 }}>{t('main.feedEmptySub')}</Text>
@@ -660,6 +691,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                     <Text style={s.emptyStateBtnText}>{t('main.feedEmptyCta')}</Text>
                   </TouchableOpacity>
                 </View>
+                )
               )
             }
             ListFooterComponent={
@@ -734,7 +766,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
         >
           <View style={s.statsRow}>
             <View style={s.statPill}><Text style={s.statVal}>{objectives.length}</Text><Text style={s.statLbl}>{t('main.statActive')}</Text></View>
-            <View style={s.statPill}><Text style={s.statVal}>{t('days.durationDays', { n: streak })}</Text><Text style={s.statLbl}>{t('main.statStreak')}</Text></View>
+            <View style={s.statPill}><Text style={s.statVal}>{t('days.streakWeeks', { n: streak })}</Text><Text style={s.statLbl}>{t('main.statStreak')}</Text></View>
             <View style={s.statPill}>
               <Text style={s.statVal}>{Math.round(objectives.reduce((acc, o) => acc + progressPct(o), 0) / objectives.length)}%</Text>
               <Text style={s.statLbl}>{t('main.statAvg')}</Text>
@@ -753,7 +785,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                   onLongPress={() => handleDeleteObjective(o.id, o.title)}
                 >
                   <View style={s.objCardTop}>
-                    <Text style={s.objCardName} numberOfLines={1}>{o.emoji} {o.title}</Text>
+                    <Text style={s.objCardName} numberOfLines={1}>{o.title}</Text>
                     <TouchableOpacity onPress={() => setEditing(o)} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityLabel={t('main.editObj', { title: o.title })} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <View style={[s.visBadge, o.visibility === 'public' && s.visBadgePublic]}>
                         <Text style={[s.visText, o.visibility === 'public' && s.visTextPublic]}>
@@ -766,7 +798,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                     </TouchableOpacity>
                   </View>
                   <Text style={s.objCardSub}>{o.unit === '%' ? `${pct} %` : t('main.valueOf', { cur: o.current_value, target: o.target_value, unit: unitLabel(o.unit) })}</Text>
-                  {hasSchedule(o.training_days) && <Text style={[s.objCardSub, { marginTop: 2 }]}>📅 {daysLabel(o.training_days, true)}</Text>}
+                  {hasSchedule(o.training_days) && <Text style={[s.objCardSub, { marginTop: 2 }]}>{o.per_week ? '🔔' : '📅'} {daysLabel(o.training_days, true)}</Text>}
                   <View style={s.objProgressRow}>
                     <View style={s.objProgressBg}>
                       <View style={[s.objProgressFill, { width: `${pct}%` as any }]} />

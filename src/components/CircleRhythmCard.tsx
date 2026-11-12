@@ -9,6 +9,7 @@ import { DAY_LETTERS } from '../constants';
 import { F } from '../styles';
 import { t } from '../i18n';
 import { CachedImage } from './CachedImage';
+import { FlameBadge } from './FlameBadge';
 import { FEATURES } from '../lib/features';
 
 // « Ton cercle cette semaine » : la régularité de tes amis d'un coup d'œil. Combien ont posté, qui est à relancer,
@@ -16,7 +17,11 @@ import { FEATURES } from '../lib/features';
 
 const label = { color: 'rgba(255,255,255,0.55)', fontSize: 10, fontFamily: F.bold, letterSpacing: 1.5 } as const;
 
-function Face({ f, size }: { f: FriendRhythm; size: number }) {
+function Face(p: { f: FriendRhythm; size: number }) {
+  return <View><FacePhoto {...p} /><FlameBadge userId={p.f.id} size={p.size} /></View>;
+}
+
+function FacePhoto({ f, size }: { f: FriendRhythm; size: number }) {
   return f.avatar_url
     ? <CachedImage uri={f.avatar_url} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#222' }} />
     : <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontSize: size * 0.4, fontFamily: F.bold }}>{f.full_name.charAt(0).toUpperCase()}</Text></View>;
@@ -41,11 +46,10 @@ function Week({ f }: { f: FriendRhythm }) {
     <View style={{ flexDirection: 'row', gap: 5 }}>
       {DAY_LETTERS.map((l, i) => {
         const hit = f.posted[i];
-        const missed = !hit && f.scheduled[i] && i < todayIdx;
         const today = i === todayIdx && !hit;
         return (
-          <View key={i} style={{ width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: hit ? '#fff' : 'transparent', borderWidth: missed || today ? 1.5 : 0, borderColor: today ? '#fff' : 'rgba(255,255,255,0.35)' }}>
-            <Text style={{ color: hit ? '#000' : f.scheduled[i] ? '#fff' : 'rgba(255,255,255,0.25)', fontSize: 9, fontFamily: F.extrabold }}>{l}</Text>
+          <View key={i} style={{ width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: hit ? '#fff' : 'transparent', borderWidth: today ? 1.5 : 0, borderColor: '#fff' }}>
+            <Text style={{ color: hit ? '#000' : i < todayIdx ? 'rgba(255,255,255,0.3)' : '#fff', fontSize: 9, fontFamily: F.extrabold }}>{l}</Text>
           </View>
         );
       })}
@@ -121,7 +125,7 @@ export function CircleRhythmCard({ onOpenProfile, reloadKey }: { onOpenProfile: 
               <Face f={f} size={36} />
               <View style={{ flex: 1 }}>
                 <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }} numberOfLines={1}>{f.full_name}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontFamily: F.regular }}>{lastLabel(f)}</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontFamily: F.regular }}>{f.quota > 1 ? t('goal.thisWeek', { done: f.done, per: f.quota }) : lastLabel(f)}</Text>
               </View>
               <Week f={f} />
             </TouchableOpacity>

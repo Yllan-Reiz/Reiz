@@ -149,7 +149,7 @@ export function SetupCard({ userId, hasObjective, friendCount, onPost, onAddPhot
             <Text style={s.modalTitle}>{t('presencePanel.title')}</Text>
             <View style={{ width: 46 }} />
           </View>
-          <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}>
+          <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}>
             <PresencePanel />
           </ScrollView>
         </View>

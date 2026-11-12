@@ -18,6 +18,7 @@ import { loadDuoStats, DuoStats } from '../lib/duo';
 import { Duel, loadDuels, proposeDuel, answerDuel, withdrawDuel } from '../lib/duel';
 import { DuelCard } from '../components/DuelCard';
 import { s, F } from '../styles';
+import { FlameInline } from '../components/FlameBadge';
 import { t, tp, formatDate } from '../i18n';
 import { FEATURES } from '../lib/features';
 
@@ -222,7 +223,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
             <GlassIconButton icon="chevron-back" label={t('common.back')} onPress={onClose} style={{ position: 'absolute', top: topBtn, left: GUTTER }} />
             <GlassIconButton icon="ellipsis-horizontal" label={t('friendProfile.options')} onPress={openMenu} style={{ position: 'absolute', top: topBtn, right: GUTTER }} />
 
-            <Text style={{ fontSize: 40, fontFamily: F.black, color: '#fff', textAlign: 'center', letterSpacing: -1.5, paddingHorizontal: GUTTER }} numberOfLines={2}>{profile?.full_name || t('common.user')}</Text>
+            <Text style={{ fontSize: 40, fontFamily: F.black, color: '#fff', textAlign: 'center', letterSpacing: -1.5, paddingHorizontal: GUTTER }} numberOfLines={2}>{profile?.full_name || t('common.user')} <FlameInline userId={userId} size={30} /></Text>
             <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.78)', fontFamily: F.semibold, marginTop: 4 }}>@{profile?.username}</Text>
             <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontFamily: F.regular, marginTop: 2 }}>{t('profile.memberSince', { date: memberSince })}</Text>
             <SportBadge sport={profile?.sport} />
@@ -242,7 +243,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
             )}
 
             <StatBubble items={[
-              { value: t('days.durationDays', { n: streak }), label: t('main.statStreak') },
+              { value: t('days.streakWeeks', { n: streak }), label: t('main.statStreak') },
               { value: String(recentUpdates.length), label: t('profile.posts') },
               // La liste des amis n'est montrée qu'aux amis (règle du serveur, friends_of).
               { value: String(friendCount), label: tp('profile.friends', friendCount), onPress: relation.kind === 'friends' ? () => setShowFriends(true) : undefined },

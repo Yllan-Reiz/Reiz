@@ -22,6 +22,8 @@ import { ShareStoryModal, StoryData } from './ShareStoryModal';
 import { JourneyModal } from './JourneyModal';
 import { lateLabel, ON_TIME_MIN } from '../lib/moment';
 import { FloatingEmoji, nextFloatId } from './FloatingEmoji';
+import { FlameBadge } from './FlameBadge';
+import { getMe } from '../lib/me';
 import { t, tp, unitLabel, dirIcon } from '../i18n';
 import { CachedImage } from './CachedImage';
 import { FEATURES } from '../lib/features';
@@ -74,8 +76,8 @@ function Gauge({ pct, label }: { pct: number; label: string }) {
   );
 }
 
-// Emoji qui flotte doucement (monte et redescend de 3 px), décalé d'un visage à
-// l'autre pour que la pile ne bouge pas d'un bloc.
+// Le visage et sa réaction flottent ensemble (montent et redescendent de 3 px), décalés d'un visage à l'autre pour
+// que la pile ne bouge pas d'un bloc. Avant le 12/11/2026, seul l'émoji bougeait.
 function Floaty({ children, index = 0, style }: { children: ReactNode; index?: number; style?: any }) {
   const y = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -86,7 +88,7 @@ function Floaty({ children, index = 0, style }: { children: ReactNode; index?: n
     const t = setTimeout(() => loop.start(), index * 280);
     return () => { clearTimeout(t); loop.stop(); };
   }, []);
-  return <Animated.Text style={[style, { transform: [{ translateY: y }] }]}>{children}</Animated.Text>;
+  return <Animated.View style={[style, { transform: [{ translateY: y }] }]}>{children}</Animated.View>;
 }
 
 // Réactions en un tap, comme sur BeReal : la barre s'ouvre sur la photo.
@@ -144,7 +146,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showComments, setShowComments] = useState(!!openCommentsOnMount);
   const [commentsFocus, setCommentsFocus] = useState(false);
-  const [floatingEmojis, setFloatingEmojis] = useState<{ id: number; emoji: string }[]>([]);
+  const [floatingEmojis, setFloatingEmojis] = useState<{ id: number; emoji: string; avatar: string | null; initial: string }[]>([]);
   const [reactors, setReactors] = useState<Reactor[]>(meta?.reactors || []);
   const [showQuick, setShowQuick] = useState(false);
   const quickReactions = useQuickReactions();
@@ -184,7 +186,9 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       setReactions(prev => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
       setReactors(prev => [{ user_id: currentUserId, emoji, name: t('common.you'), avatar_url: prev.find(r => r.user_id === currentUserId)?.avatar_url ?? null }, ...prev]);
       const id = nextFloatId();
-      setFloatingEmojis(prev => [...prev, { id, emoji }]);
+      // Ce qui s'envole : ma photo avec la réaction posée dessus, pas l'émoji seul.
+      const mine = reactors.find(r => r.user_id === currentUserId);
+      setFloatingEmojis(prev => [...prev, { id, emoji, avatar: mine?.avatar_url ?? getMe().avatar, initial: (getMe().name || t('common.you')).charAt(0).toUpperCase() }]);
       const { error } = await supabase.from('reactions').insert({ update_id: u.id, user_id: currentUserId, type: emoji });
       if (error) { setMyReactions(prevMy); setReactions(prevCounts); setReactors(prevReactors); }
     }
@@ -339,6 +343,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       {avatarUrl
         ? <CachedImage uri={avatarUrl} style={s.avImg} />
         : <View style={s.av}><Text style={s.avText}>{initial}</Text></View>}
+      <FlameBadge userId={u.user_id} size={44} />
     </TouchableOpacity>
   );
   // Séance en duo : une vraie ligne cliquable (petits visages + « avec Eden et
@@ -385,12 +390,12 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   const stack = faces.length === 0 ? null : (
     <TouchableOpacity style={s.brStack} onPress={() => setShowReactors(true)} activeOpacity={0.8} accessibilityLabel={t('feed.seeReactions')}>
       {faces.slice(0, STACK_MAX).map((r, i) => (
-        <View key={r.user_id} style={[s.brStackItem, i > 0 && { marginLeft: -12 }, { zIndex: STACK_MAX - i }]}>
+        <Floaty key={r.user_id} index={i} style={[s.brStackItem, i > 0 && { marginLeft: -12 }, { zIndex: STACK_MAX - i }]}>
           {r.avatar_url
             ? <CachedImage uri={r.avatar_url} style={s.brStackAv} />
             : <View style={[s.brStackAv, s.brStackAvEmpty]}><Text style={s.brStackInitial}>{r.name.charAt(0).toUpperCase()}</Text></View>}
-          <Floaty index={i} style={s.brStackEmoji}>{r.emoji}</Floaty>
-        </View>
+          <Text style={s.brStackEmoji}>{r.emoji}</Text>
+        </Floaty>
       ))}
       {faces.length > STACK_MAX && (
         <View style={[s.brStackItem, { marginLeft: -12 }]}>
@@ -438,7 +443,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
           </TouchableOpacity>
           <TouchableOpacity style={[s.brReactBtn, !!myLast && s.brReactBtnMine]} onPress={() => { Haptics.selectionAsync().catch(() => {}); setShowEmojiPicker(false); setShowQuick(true); }} activeOpacity={0.8} accessibilityLabel={t('feed.react')}>
             {myLast
-              ? <Floaty index={2} style={{ fontSize: 22 }}>{myLast}</Floaty>
+              ? <Text style={{ fontSize: 22 }}>{myLast}</Text>
               : <Ionicons name="happy-outline" size={24} color="#fff" />}
           </TouchableOpacity>
         </View>
@@ -464,6 +469,8 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
         <FloatingEmoji
           key={fe.id}
           emoji={fe.emoji}
+          avatar={fe.avatar}
+          initial={fe.initial}
           onDone={() => setFloatingEmojis(prev => prev.filter(x => x.id !== fe.id))}
         />
       ))}
@@ -474,7 +481,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
         <View style={s.cardMeta}>
           <Text style={s.cardName} onPress={openAuthor} suppressHighlighting numberOfLines={1}>{uname}{closeAuthor ? ' ★' : ''}</Text>
           <Text style={s.brSub} numberOfLines={1}>
-            {u.objectives?.title && caption?.trim().toLowerCase() !== u.objectives.title.trim().toLowerCase() ? `${u.objectives.emoji || ''} ${u.objectives.title}`.trim() + ' · ' : ''}{timeAgo(u.created_at, true)}
+            {u.objectives?.title && caption?.trim().toLowerCase() !== u.objectives.title.trim().toLowerCase() ? `${u.objectives.title.trim()} · ` : ''}{timeAgo(u.created_at, true)}
             {u.objectives?.visibility === 'close' ? `  ★ ${t('vis.close')}` : ''}
           </Text>
           {duo}

@@ -20,7 +20,8 @@ import { Main } from './src/screens/Main';
 import { WhatsNewModal } from './src/components/WhatsNewModal';
 import { FindFriendsPrompt } from './src/components/FindFriendsPrompt';
 import { WelcomeFlow, welcomePending } from './src/components/WelcomeFlow';
-import { WELCOME_FLOW } from './src/constants';
+import { WELCOME_FLOW, QUICK_START } from './src/constants';
+import { QuickStart } from './src/components/QuickStart';
 import { PostScreen } from './src/screens/PostScreen';
 import { track } from './src/lib/track';
 import { registerLiveActivityToken, endExpiredLiveActivities, forgetLiveActivityToken } from './src/lib/liveActivity';
@@ -103,7 +104,7 @@ function AppInner() {
     Linking.getInitialURL().then((url) => { handleAuthUrl(url); captureInviteFromUrl(url, registeredUserId.current); openDuo(url); });
     const linkSub = Linking.addEventListener('url', ({ url }) => {
       handleAuthUrl(url);
-      captureInviteFromUrl(url, registeredUserId.current);
+      captureInviteFromUrl(url, registeredUserId.current).then(r => { if (r?.status === 'friends') setMainKey(k => k + 1); }).catch(() => {});
       openDuo(url);
     });
     // Une carte du duo dont l'heure est passée ne reste pas affichée.
@@ -134,7 +135,8 @@ function AppInner() {
       const viaEmail = (user?.app_metadata?.providers || [user?.app_metadata?.provider]).includes('email');
       if (!viaEmail) await ensureProfile(user).catch(() => {});
       maybeRegisterPush(user);
-      consumePendingInvite(user.id);
+      // Invitation : lien reçu, ou lien ouvert juste avant l'installation. Amis d'office : le fil se recharge.
+      consumePendingInvite(user.id, user.created_at).then(r => { if (r.status === 'friends') setMainKey(k => k + 1); }).catch(() => {});
       setScreen(s => (s === 'post' ? s : pendingDuo.current ? 'post' : 'main'));
       pendingDuo.current = null;
     };
@@ -208,12 +210,13 @@ function AppInner() {
   };
 
   if (screen === 'splash') return <Splash onNext={() => setScreen('onboarding')} />;
-  if (screen === 'onboarding') return <Onboarding onNext={() => setScreen('main')} />;
+  if (screen === 'onboarding') return <Onboarding onNext={() => setScreen('main')} onBack={() => setScreen('splash')} />;
   if (screen === 'main') return (
     <>
       <Main key={mainKey} onPost={openPost} navIntent={navIntent} onNavIntentHandled={() => setNavIntent(null)} />
       <WhatsNewModal />
-      {WELCOME_FLOW ? <WelcomeFlow onChanged={() => setMainKey(k => k + 1)} /> : <FindFriendsPrompt />}
+      {/* 1.4 : onboarding express (objectif en une phrase, invitation). L'ancien accueil reste derrière QUICK_START. */}
+      {!WELCOME_FLOW ? <FindFriendsPrompt /> : QUICK_START ? <QuickStart onChanged={() => setMainKey(k => k + 1)} /> : <WelcomeFlow onChanged={() => setMainKey(k => k + 1)} />}
     </>
   );
   // Après un objectif atteint, « Nouvel objectif » ouvre la création d'objectif dans Main.

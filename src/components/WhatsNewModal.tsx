@@ -47,9 +47,8 @@ export function WhatsNewModal() {
           <View style={{ marginTop: 28, gap: 22 }}>
             {CHANGELOG.items.map(it => (
               <View key={it.title} style={{ flexDirection: 'row', gap: 14 }}>
-                <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: '#161616', borderWidth: 1, borderColor: '#242424', alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 22 }}>{it.emoji}</Text>
-                </View>
+                {/* Un simple repère blanc à la place de l'émoji (12/11/2026). */}
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff', marginTop: 9 }} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: '#fff', fontSize: 17, fontFamily: F.bold, letterSpacing: -0.2 }}>{it.title}</Text>
                   <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, lineHeight: 21, fontFamily: F.regular, marginTop: 3 }}>{it.text}</Text>

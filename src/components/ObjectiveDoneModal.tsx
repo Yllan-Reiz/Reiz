@@ -61,7 +61,7 @@ export function ObjectiveDoneModal({ objective, preview, onJourney, onNewObjecti
   const pct = summary ? Math.round((summary.done / Math.max(1, summary.total)) * 100) : 0;
   // Un objectif en % n'a pas de cible chiffrée à relever : seulement « Nouvel objectif ».
   const canRaise = !summary && objective.unit !== '%' && objective.target_value > 0;
-  const label = `${objective.emoji || ''} ${objective.title}`.trim();
+  const label = objective.title.trim();
   const step = stepOf(objective);
 
   const saveRaise = async () => {

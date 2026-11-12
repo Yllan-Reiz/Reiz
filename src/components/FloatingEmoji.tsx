@@ -1,10 +1,15 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing } from 'react-native';
+import { Animated, Easing, Image, Text, View } from 'react-native';
+import { F } from '../styles';
 
 export let floatId = 0;
 export function nextFloatId() { return ++floatId; }
 
-export function FloatingEmoji({ emoji, onDone }: { emoji: string; onDone: () => void }) {
+// La réaction qui s'envole quand on réagit : la photo de profil de celui qui réagit, avec son émoji posé dessus
+// (12/11/2026 : avant, l'émoji montait seul).
+const SIZE = 44;
+
+export function FloatingEmoji({ emoji, avatar, initial, onDone }: { emoji: string; avatar?: string | null; initial?: string; onDone: () => void }) {
   const translateY = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
@@ -21,7 +26,7 @@ export function FloatingEmoji({ emoji, onDone }: { emoji: string; onDone: () => 
         Animated.timing(translateX, { toValue: drift * 0.7, duration: 800, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ]),
       Animated.sequence([
-        Animated.timing(scale, { toValue: 1.3, duration: 250, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1.15, duration: 250, easing: Easing.out(Easing.back(2)), useNativeDriver: true }),
         Animated.timing(scale, { toValue: 1.0, duration: 200, useNativeDriver: true }),
         Animated.delay(1100),
         Animated.timing(scale, { toValue: 0.7, duration: 650, useNativeDriver: true }),
@@ -31,22 +36,31 @@ export function FloatingEmoji({ emoji, onDone }: { emoji: string; onDone: () => 
         Animated.timing(opacity, { toValue: 0, duration: 1100, useNativeDriver: true }),
       ]),
     ]).start(() => onDone());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <Animated.Text
+    <Animated.View
+      pointerEvents="none"
       style={{
         position: 'absolute',
         bottom: 50,
-        left: '50%' as any,
-        marginLeft: startX - 14,
-        fontSize: 28,
+        left: '50%',
+        marginLeft: startX - SIZE / 2,
+        width: SIZE,
+        height: SIZE,
         transform: [{ translateY }, { translateX }, { scale }],
         opacity,
         zIndex: 50,
-        pointerEvents: 'none' as any,
       }}>
-      {emoji}
-    </Animated.Text>
+      {avatar
+        ? <Image source={{ uri: avatar }} style={{ width: SIZE, height: SIZE, borderRadius: SIZE / 2, borderWidth: 2, borderColor: '#0a0a0a', backgroundColor: '#2a2a2a' }} />
+        : (
+          <View style={{ width: SIZE, height: SIZE, borderRadius: SIZE / 2, borderWidth: 2, borderColor: '#0a0a0a', backgroundColor: '#2a2a2a', alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: '#fff', fontSize: 16, fontFamily: F.bold }}>{initial || ''}</Text>
+          </View>
+        )}
+      <Text style={{ position: 'absolute', right: -6, bottom: -6, fontSize: 20 }}>{emoji}</Text>
+    </Animated.View>
   );
 }

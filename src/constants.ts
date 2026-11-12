@@ -111,8 +111,19 @@ export const trainsToday = (days?: number[] | null) => !hasSchedule(days) || day
 export const GLASS_OBJECTIVES = true;
 export const GLASS_FRIENDS = true;
 
+// Accueil : le logo Reiz blanc sur fond noir, et rien d'autre (choix de Yllan, 12/11/2026 : les deux essais du
+// dessous faisaient trop chargé pour une première image). Le JSX est dans Splash.tsx.
+// Essai « la semaine du cercle » (12/11/2026, WeekSplash) : la carte du cercle qui se remplit. Écarté, trop chargé.
+export const WEEK_SPLASH: boolean = false;
+// Essai d'accueil à bulles (07/11/2026, BubbleSplash) : fond orange, bulles à pousser. Écarté, hors de la DA.
+export const BUBBLE_SPLASH: boolean = false;
+
 // Accueil d'un compte tout neuf (profil, objectif, notifications, amis). false = l'ancienne fenêtre « Retrouve tes amis » seule.
 export const WELCOME_FLOW = true;
+// Onboarding express (1.4, 12/11/2026) : prénom, premier objectif en une phrase, invitation. Moins de 30 secondes.
+// false = l'ancien parcours (4 écrans de présentation, puis photo, sport, amis, notifications, premier post), gardé
+// intact dans Onboarding.tsx et WelcomeFlow.tsx.
+export const QUICK_START = true;
 
 // Détection automatique de l'arrivée à la salle (iPhone). Le module de localisation d'origine exige le droit
 // d'arrière-plan « location » (refusé par Apple, guideline 2.5.4) et fait fermer l'app sans lui : sur les builds

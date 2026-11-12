@@ -1,32 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, Image, Modal, TouchableOpacity, Animated, Linking, Share, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, Image, Modal, TouchableOpacity, Animated, Share, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { requireOptionalNativeModule } from 'expo';
-import * as Sharing from 'expo-sharing';
-import { captureRef } from 'react-native-view-shot';
 import { GlassSurface } from './GlassSurface';
-import { QrCode } from './QrCode';
+import { InviteCard, shareInviteCard, clipboard } from './InviteCard';
 import { APP_STORE_URL } from '../constants';
+import { currentUser } from '../lib/supabase';
+import { currentInviteLink, myInviteLink, shareInvite, type InviteChannel } from '../lib/invites';
 import { F } from '../styles';
 import { t } from '../i18n';
 
-// La carte de partage de ton profil (inspirée de BeReal) : ta photo, ton nom, ton @pseudo et un QR code qui ouvre
-// Reiz sur l'App Store. En dessous, les raccourcis de partage : Instagram, WhatsApp, Messages, copier, et la feuille de partage.
-
-// Le presse-papiers (expo-clipboard) est un module natif arrivé avec la 1.0.1 : on vérifie qu'il existe avant de le charger.
-let clip: any | null | undefined;
-function clipboard(): any | null {
-  if (clip !== undefined) return clip;
-  try { clip = requireOptionalNativeModule('ExpoClipboard') ? require('expo-clipboard') : null; } catch { clip = null; }
-  return clip;
-}
+// La carte de partage de ton profil (InviteCard) : ta photo, ton nom, ton @pseudo et le QR code de ton lien personnel.
+// En dessous, les raccourcis de partage : Instagram, WhatsApp, Messages, copier, et la feuille de partage.
+// Même lien, même message et mêmes canaux qu'à l'accueil (« Qui te suit ? ») : tout passe par shareInvite et
+// shareInviteCard. Celui qui scanne le QR code ou ouvre le lien et s'inscrit devient ton ami tout de suite.
 
 export const inviteMessage = (username?: string | null) =>
-  `${t('shareSheet.message')}${username ? `\n${t('shareSheet.addMe', { username })}` : ''}\n${APP_STORE_URL}`;
+  `${t('shareSheet.message')}${username ? `\n${t('shareSheet.addMe', { username })}` : ''}\n${currentInviteLink() ?? APP_STORE_URL}`;
 
 export function ShareProfileSheet({ visible, onClose, name, username, avatar }: {
   visible: boolean;
@@ -42,9 +35,26 @@ export function ShareProfileSheet({ visible, onClose, name, username, avatar }: 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardRef = useRef<View>(null);
   const [toastText, setToastText] = useState('');
-  const message = inviteMessage(username);
   const cardW = Math.min(width - 72, 340);
-  const qrSize = cardW - 96;
+  const [uid, setUid] = useState<string | null>(null);
+  // Le lien personnel est en général déjà chargé (Main le prépare) ; sinon il arrive un instant après l'ouverture.
+  const [mine, setMine] = useState<{ link: string; personal: boolean }>(() => {
+    const l = currentInviteLink();
+    return { link: l ?? APP_STORE_URL, personal: !!l };
+  });
+  useEffect(() => {
+    if (!visible) return;
+    let alive = true;
+    currentUser().then(async u => {
+      if (!u || !alive) return;
+      setUid(u.id);
+      const l = await myInviteLink(u.id);
+      if (alive) setMine(l);
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [visible]);
+  // Lien personnel : le même message qu'à l'accueil. Sinon l'ancien, qui donne le @pseudo à ajouter.
+  const message = mine.personal ? t('invite.linkText', { link: mine.link }) : inviteMessage(username);
 
   useEffect(() => { if (!visible) { setCopied(false); toast.setValue(0); } }, [visible, toast]);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
@@ -63,31 +73,25 @@ export function ShareProfileSheet({ visible, onClose, name, username, avatar }: 
     if (c) { await c.setStringAsync(message).catch(() => {}); showCopied(); return; }
     Share.share({ message }).catch(() => {}); // build sans le module : la feuille de partage propose « Copier »
   };
-  const openApp = async (url: string) => {
+  const send = (channel: InviteChannel) => {
     Haptics.selectionAsync().catch(() => {});
-    try { await Linking.openURL(url); } catch { Share.share({ message }).catch(() => {}); }
+    if (uid) shareInvite(uid, channel, 'friends').catch(() => {});
+    else Share.share({ message }).catch(() => {});
   };
   // Instagram : la carte (photo, nom, QR code) devient une image à poster en story, en post ou en message.
-  // Le lien App Store est copié en même temps, pour le coller en sticker « Lien » sur la story.
-  const shareInstagram = async () => {
+  // Le lien personnel est copié en même temps, pour le coller en sticker « Lien » sur la story.
+  const shareInstagram = () => {
     Haptics.selectionAsync().catch(() => {});
-    const c = clipboard();
-    if (c) { await c.setStringAsync(APP_STORE_URL).catch(() => {}); showCopied(t('shareSheet.linkCopied')); }
-    try {
-      const uri = await captureRef(cardRef, { format: 'png', quality: 1, result: 'tmpfile' });
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: t('shareSheet.shareInstagram') });
-    } catch {
-      Share.share({ message }).catch(() => {});
-    }
+    if (uid) shareInviteCard(cardRef, uid, 'friends', () => showCopied(t('shareSheet.linkCopied'))).catch(() => {});
+    else Share.share({ message }).catch(() => {});
   };
-  const more = () => { Haptics.selectionAsync().catch(() => {}); Share.share({ message }).catch(() => {}); };
 
   const actions: { label: string; icon: any; bg: string; gradient?: readonly [string, string, string]; onPress: () => void }[] = [
     { label: 'Instagram', icon: 'logo-instagram', bg: '#d62976', gradient: ['#feda75', '#d62976', '#4f5bd5'], onPress: shareInstagram },
-    { label: 'WhatsApp', icon: 'logo-whatsapp', bg: '#25D366', onPress: () => openApp(`whatsapp://send?text=${encodeURIComponent(message)}`) },
-    { label: 'Messages', icon: 'chatbubble', bg: '#34C759', onPress: () => openApp(`sms:${Platform.OS === 'ios' ? '&' : '?'}body=${encodeURIComponent(message)}`) },
+    { label: 'WhatsApp', icon: 'logo-whatsapp', bg: '#25D366', onPress: () => send('whatsapp') },
+    { label: 'Messages', icon: 'chatbubble', bg: '#34C759', onPress: () => send('sms') },
     { label: t('story.copy'), icon: 'link', bg: 'rgba(255,255,255,0.14)', onPress: () => copy() },
-    { label: t('common.more'), icon: 'share-outline', bg: 'rgba(255,255,255,0.14)', onPress: more },
+    { label: t('common.more'), icon: 'share-outline', bg: 'rgba(255,255,255,0.14)', onPress: () => send('share') },
   ];
 
   return (
@@ -107,22 +111,7 @@ export function ShareProfileSheet({ visible, onClose, name, username, avatar }: 
         </View>
 
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <View ref={cardRef} collapsable={false} style={{ width: cardW, alignItems: 'center' }}>
-            <View style={{ width: cardW, marginTop: 60, borderRadius: 32, backgroundColor: '#fafafa', alignItems: 'center', paddingTop: 72, paddingBottom: 28 }}>
-              <Text style={{ color: '#0a0a0a', fontSize: 24, fontFamily: F.black, letterSpacing: -0.6 }} numberOfLines={1}>{name}</Text>
-              {!!username && <Text style={{ color: '#8a8a8a', fontSize: 16, fontFamily: F.semibold, marginTop: 2 }}>@{username}</Text>}
-              <View style={{ marginTop: 20 }}>
-                <QrCode value={APP_STORE_URL} size={qrSize} logo={require('../../assets/ecriture-reiz-blanc.png')} />
-              </View>
-              <Text style={{ color: '#8a8a8a', fontSize: 12, fontFamily: F.semibold, marginTop: 16, textAlign: 'center', paddingHorizontal: 20 }}>
-                {t('shareSheet.scan', { who: username ? `@${username}` : t('shareSheet.me') })}
-              </Text>
-            </View>
-            {/* La photo dépasse du haut de la carte. */}
-            <View style={{ position: 'absolute', top: 0, width: 120, height: 120, borderRadius: 60, borderWidth: 4, borderColor: '#fafafa', backgroundColor: '#2a2a2a', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
-              {avatar ? <Image source={{ uri: avatar }} style={{ width: 120, height: 120 }} /> : <Text style={{ color: '#fff', fontSize: 44, fontFamily: F.black }}>{name.charAt(0).toUpperCase()}</Text>}
-            </View>
-          </View>
+          <InviteCard ref={cardRef} width={cardW} name={name} username={username} avatar={avatar} link={mine.link} personal={mine.personal} />
 
           <Animated.View pointerEvents="none" style={{ marginTop: 22, opacity: toast, transform: [{ scale: toast.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }] }}>
             <GlassSurface radius={26} variant="regular" tintColor="rgba(255,255,255,0.08)" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 22, height: 52, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }}>

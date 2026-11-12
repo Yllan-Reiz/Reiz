@@ -12,6 +12,7 @@ import { uploadImage, signOne, resetSignedCache } from '../lib/storage';
 import { Objective, Update, FeedMeta } from '../lib/types';
 import { HEATMAP_MAX_DAYS, GUTTER, navClearance } from '../constants';
 import { s, F } from '../styles';
+import { FlameInline } from '../components/FlameBadge';
 import { ProfileSkeleton } from '../components/Skeleton';
 import { JourneyModal } from '../components/JourneyModal';
 import { ProfileHero, ProfileBackdrop, GlassIconButton, StatBubble, AboutBubble, BadgesSection, GoalCards, HistoryCarousel, AchievedList, SectionHeader, computeBadges, isCompleted } from '../components/ProfileSections';
@@ -336,7 +337,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
               </View>
             ) : (
               <TouchableOpacity onPress={() => setEditingName(true)} activeOpacity={0.8}>
-                <Text style={{ fontSize: 40, fontFamily: F.black, color: '#fff', textAlign: 'center', letterSpacing: -1.5, paddingHorizontal: GUTTER }} numberOfLines={2}>{profile?.full_name || t('common.user')}</Text>
+                <Text style={{ fontSize: 40, fontFamily: F.black, color: '#fff', textAlign: 'center', letterSpacing: -1.5, paddingHorizontal: GUTTER }} numberOfLines={2}>{profile?.full_name || t('common.user')} <FlameInline userId={userId} size={30} /></Text>
               </TouchableOpacity>
             )}
             <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.78)', fontFamily: F.semibold, marginTop: 4 }}>@{profile?.username}</Text>
@@ -344,7 +345,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
             <SportBadge sport={profile?.sport} editable onChange={changeSport} />
 
             <StatBubble items={[
-              { value: t('days.durationDays', { n: streak }), label: t('main.statStreak') },
+              { value: t('days.streakWeeks', { n: streak }), label: t('main.statStreak') },
               { value: String(posts.length), label: t('profile.posts') },
               { value: String(friendCount), label: tp('profile.friends', friendCount), onPress: () => setPeopleMode('friends') },
             ]} />

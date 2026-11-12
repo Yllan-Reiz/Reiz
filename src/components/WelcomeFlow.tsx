@@ -47,14 +47,14 @@ import { VISIBILITY, VIS_HINT, chip, chipText } from './CreateObjectiveModal';
 
 // « Déjà vu » est retenu PAR COMPTE : un 2e compte créé sur le même téléphone a lui aussi son accueil.
 const KEY = 'reiz.welcome.done';
-const seenKey = (userId: string) => `${KEY}.${userId}`;
+export const seenKey = (userId: string) => `${KEY}.${userId}`;
 const EASE = Easing.bezier(0.23, 1, 0.32, 1);
 const DAY_MS = 24 * 3600 * 1000;
 
 type StepId = 'profile' | 'objective' | 'place' | 'notifs' | 'friends' | 'post';
 
 // Photos de sportifs (Unsplash, licence libre, voir assets/onboarding/CREDITS.md) pour les écrans d'exemple.
-const PHOTOS = {
+export const PHOTOS = {
   lea: require('../../assets/onboarding/lea.jpg'),
   tom: require('../../assets/onboarding/tom.jpg'),
   sam: require('../../assets/onboarding/sam.jpg'),
@@ -118,7 +118,7 @@ export function WelcomeFlow({ onChanged }: { onChanged?: () => void }) {
 }
 
 /** Apparition douce : le contenu monte de quelques points en fondu. Une seule fois, à l'affichage. */
-function Rise({ delay = 0, y = 16, duration = 380, style, children }: { delay?: number; y?: number; duration?: number; style?: any; children: ReactNode }) {
+export function Rise({ delay = 0, y = 16, duration = 380, style, children }: { delay?: number; y?: number; duration?: number; style?: any; children: ReactNode }) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(v, { toValue: 1, duration, delay, easing: EASE, useNativeDriver: true }).start();
@@ -127,6 +127,21 @@ function Rise({ delay = 0, y = 16, duration = 380, style, children }: { delay?: 
     <Animated.View style={[{ opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [y, 0] }) }] }, style]}>
       {children}
     </Animated.View>
+  );
+}
+
+/** Le cercle : toi au centre (ou un groupe si tu n'as pas encore de photo), autour ton futur cercle. */
+export function CircleFaces({ avatar }: { avatar?: string | null }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+      {[56, 68, 94, 68, 56].map((size, i) => (
+        <View key={i} style={{ width: size, height: size, borderRadius: size / 2, marginHorizontal: -7, zIndex: 3 - Math.abs(i - 2), backgroundColor: ['#1d1d1d', '#262626', '#1d1d1d', '#262626', '#1d1d1d'][i], borderWidth: 3, borderColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          {i === 2 && avatar
+            ? <CachedImage uri={avatar} style={{ width: size, height: size }} />
+            : <Image source={i === 2 ? PHOTOS.groupe : PHOTOS.cercle[i < 2 ? i : i - 1]} style={{ width: size, height: size }} />}
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -533,6 +548,7 @@ export function WelcomeModal({ visible, preview, only, onClose }: { visible: boo
     if (error) { Alert.alert(t('common.error'), frError(error)); return; }
     wrote.current = true;
     track('post_published', { first: true, from: 'welcome' });
+    track('first_session', { from: 'welcome' }, 'onboarding');
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     await finish('post');
   };
@@ -794,16 +810,7 @@ export function WelcomeModal({ visible, preview, only, onClose }: { visible: boo
                 {step === 'friends' && (
                   <>
                     <Rise style={{ alignItems: 'center' }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                        {[56, 68, 94, 68, 56].map((size, i) => (
-                          <View key={i} style={{ width: size, height: size, borderRadius: size / 2, marginHorizontal: -7, zIndex: 3 - Math.abs(i - 2), backgroundColor: ['#1d1d1d', '#262626', '#1d1d1d', '#262626', '#1d1d1d'][i], borderWidth: 3, borderColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                            {/* Au centre : toi (ou un groupe si tu n'as pas encore de photo), autour : ton futur cercle. */}
-                            {i === 2 && avatar
-                              ? <CachedImage uri={avatar} style={{ width: size, height: size }} />
-                              : <Image source={i === 2 ? PHOTOS.groupe : PHOTOS.cercle[i < 2 ? i : i - 1]} style={{ width: size, height: size }} />}
-                          </View>
-                        ))}
-                      </View>
+                      <CircleFaces avatar={avatar} />
                     </Rise>
                     <Rise delay={80} style={{ marginTop: 28 }}>
                       <Title>{t('welcome.friendsTitle')}</Title>
