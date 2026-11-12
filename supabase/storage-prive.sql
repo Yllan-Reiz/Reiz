@@ -1,3 +1,6 @@
+-- NE PLUS EXÉCUTER (audit du 07/11/2026) : la règle de lecture ci-dessous ouvre TOUT le bucket
+-- à tout compte connecté. La règle en service est celle de phase9-final.sql, durcie par phase33.
+
 -- ============================================================
 -- REIZ — Passage du bucket "updates" en privé
 -- ============================================================

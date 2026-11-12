@@ -1,9 +1,13 @@
+> **Secret changé le 07/11/2026 (audit de sécurité).** L'ancienne valeur était publique et ne marche plus.
+> Le secret vit désormais dans Vault (`reiz_cron_secret`) et les tâches le lisent elles-mêmes : voir `supabase/phase32-rotation-secret-cron.sql`.
+> Ne jamais réécrire de secret en clair dans ce fichier : le dépôt est public.
+
 # Allumer les rappels push quotidiens (Supabase)
 
 Objectif : faire partir automatiquement le rappel « tu n'as pas encore posté aujourd'hui »
 chaque soir. Les fonctions existent déjà, il faut juste les **déclencher** via un cron.
 
-Ton secret cron (déjà généré) : `reiz_55fae710cabf945ff4745619`
+Ton secret cron (déjà généré) : `<CRON_SECRET : dans Vault, secret reiz_cron_secret>`
 Ta clé service_role : Dashboard → **Project Settings → API Keys** → copie la clé `service_role` (secret).
 
 ---
@@ -20,7 +24,7 @@ create extension if not exists pg_net;
 ## Étape 2 — Enregistrer le secret cron
 Dashboard → **Edge Functions → Secrets** → ajoute :
 - Nom : `CRON_SECRET`
-- Valeur : `reiz_55fae710cabf945ff4745619`
+- Valeur : `<CRON_SECRET : dans Vault, secret reiz_cron_secret>`
 
 ## Étape 3 — Planifier le rappel quotidien (SQL Editor)
 Remplace `<TA_CLÉ_SERVICE_ROLE>` par ta clé de l'étape du haut, puis exécute :
@@ -35,7 +39,7 @@ select cron.schedule(
     headers := jsonb_build_object(
       'Content-Type',  'application/json',
       'Authorization', 'Bearer <TA_CLÉ_SERVICE_ROLE>',
-      'x-cron-secret', 'reiz_55fae710cabf945ff4745619'
+      'x-cron-secret', '<CRON_SECRET : dans Vault, secret reiz_cron_secret>'
     ),
     body    := '{}'::jsonb
   );
@@ -56,7 +60,7 @@ select cron.schedule(
     headers := jsonb_build_object(
       'Content-Type',  'application/json',
       'Authorization', 'Bearer <TA_CLÉ_SERVICE_ROLE>',
-      'x-cron-secret', 'reiz_55fae710cabf945ff4745619'
+      'x-cron-secret', '<CRON_SECRET : dans Vault, secret reiz_cron_secret>'
     ),
     body    := '{}'::jsonb
   );
@@ -77,7 +81,7 @@ select net.http_post(
   headers := jsonb_build_object(
     'Content-Type',  'application/json',
     'Authorization', 'Bearer <TA_CLÉ_SERVICE_ROLE>',
-    'x-cron-secret', 'reiz_55fae710cabf945ff4745619'
+    'x-cron-secret', '<CRON_SECRET : dans Vault, secret reiz_cron_secret>'
   ),
   body    := '{}'::jsonb
 );
