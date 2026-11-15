@@ -15,15 +15,15 @@ export const CHANGELOG: {
   video: string | null;
   videoRatio?: number;
 } = {
-  id: 'maj-1.4-frequence',
+  id: 'maj-1.5-carte-du-jour',
   title: t('changelog.title'),
   subtitle: t('changelog.subtitle'),
   video: null,
   items: [
-    { emoji: '💬', title: t('changelog.sentenceTitle'), text: t('changelog.sentenceText') },
-    { emoji: '📅', title: t('changelog.freeDaysTitle'), text: t('changelog.freeDaysText') },
-    { emoji: '🔥', title: t('changelog.weeksTitle'), text: t('changelog.weeksText') },
-    { emoji: '📨', title: t('changelog.linkTitle'), text: t('changelog.linkText') },
+    { emoji: '⏳', title: t('changelog.v15cardTitle'), text: t('changelog.v15cardText') },
+    { emoji: '👀', title: t('changelog.v15blurTitle'), text: t('changelog.v15blurText') },
+    { emoji: '🏆', title: t('changelog.v15doneTitle'), text: t('changelog.v15doneText') },
+    { emoji: '✏️', title: t('changelog.v15simpleTitle'), text: t('changelog.v15simpleText') },
   ],
 };
 

@@ -81,6 +81,7 @@ type Texts = {
   // Rappel au hasard
   random: string[];
   // Moment Reiz (phase 29)
+  weekRiskTitle: string; weekRiskBodyOne: string; weekRiskBody: string; weekCardTitleOne: string; weekCardTitle: string; weekCardSubtitle: string; dayCardTitle: string;
   momentSessionTitle: string; momentRecoveryTitle: string; momentSession: string[]; momentRecovery: string[];
   momentFriendsOne: string; momentFriends: string;
 };
@@ -143,13 +144,16 @@ export const T: Record<Lang, Texts> = {
       'Chaque jour compte. Poste ta progression.',
       'Ton cercle progresse. Tu ne veux pas rester en arrière ?',
     ],
+    weekRiskTitle: "Ta semaine se joue aujourd'hui", weekRiskBodyOne: "Il te reste 1 séance à poster avant minuit pour tenir ta semaine.", weekRiskBody: "Encore {n} séances à poster cette semaine, et plus un jour de marge. Poste celle d'aujourd'hui.", weekCardTitleOne: "Encore 1 séance cette semaine", weekCardTitle: "Encore {n} séances cette semaine", weekCardSubtitle: "Poste avant minuit pour tenir ta semaine",
+    dayCardTitle: "Ta séance du jour",
     momentSessionTitle: "⚡ Ta séance du jour", momentRecoveryTitle: "🛌 Ta récup du jour",
     momentSession: [
       "C'est l'heure. Ta séance ne va pas se poster toute seule.",
-      "10 minutes pour prouver que tu n'es pas sur le canapé.",
+      "Tu as jusqu'à minuit pour prouver que tu n'es pas sur le canapé.",
       "Ton objectif t'attend. Et il n'est pas très patient.",
-      "La salle ou le canapé ? Tu as 10 minutes pour nous montrer.",
-      "Ton cercle regarde. Montre-lui ta séance dans les 10 minutes.",
+      "La salle ou le canapé ? Tu as jusqu'à minuit pour nous montrer.",
+      "Ton cercle regarde. Montre-lui ta séance avant minuit.",
+      "Tu as dû t'entraîner aujourd'hui. N'oublie pas de poster ta séance.",
     ],
     momentRecovery: [
       "Étirements, sieste ou pizza ? Montre-nous, aujourd'hui c'est autorisé.",
@@ -216,13 +220,16 @@ export const T: Record<Lang, Texts> = {
       'Every day counts. Post your progress.',
       "Your circle is moving forward. Don't fall behind.",
     ],
+    weekRiskTitle: "Your week is decided today", weekRiskBodyOne: "You have 1 session left to post before midnight to keep your week.", weekRiskBody: "{n} sessions left to post this week, and no spare day. Post today's.", weekCardTitleOne: "1 session left this week", weekCardTitle: "{n} sessions left this week", weekCardSubtitle: "Post before midnight to keep your week",
+    dayCardTitle: "Your session of the day",
     momentSessionTitle: "⚡ Your session of the day", momentRecoveryTitle: "🛌 Your recovery of the day",
     momentSession: [
       "It's time. Your session won't post itself.",
-      "10 minutes to prove you're not on the couch.",
+      "You have until midnight to prove you're not on the couch.",
       "Your goal is waiting. And it's not very patient.",
-      "Gym or couch? You've got 10 minutes to show us.",
-      "Your circle is watching. Show them your session within 10 minutes.",
+      "Gym or couch? You have until midnight to show us.",
+      "Your circle is watching. Show them your session before midnight.",
+      "You must have trained today. Don't forget to post your session.",
     ],
     momentRecovery: [
       "Stretching, nap or pizza? Show us, today it's allowed.",
@@ -289,13 +296,16 @@ export const T: Record<Lang, Texts> = {
       'Cada día cuenta. Publica tu progreso.',
       'Tu círculo avanza. ¿No querrás quedarte atrás?',
     ],
+    weekRiskTitle: "Tu semana se decide hoy", weekRiskBodyOne: "Te queda 1 sesión por publicar antes de medianoche para cumplir tu semana.", weekRiskBody: "Te quedan {n} sesiones por publicar esta semana y ningún día de margen. Publica la de hoy.", weekCardTitleOne: "Te queda 1 sesión esta semana", weekCardTitle: "Te quedan {n} sesiones esta semana", weekCardSubtitle: "Publica antes de medianoche para cumplir tu semana",
+    dayCardTitle: "Tu sesión del día",
     momentSessionTitle: "⚡ Tu sesión del día", momentRecoveryTitle: "🛌 Tu recuperación del día",
     momentSession: [
       "Es la hora. Tu sesión no se va a publicar sola.",
-      "10 minutos para demostrar que no estás en el sofá.",
+      "Tienes hasta medianoche para demostrar que no estás en el sofá.",
       "Tu objetivo te espera. Y no es muy paciente.",
-      "¿Gimnasio o sofá? Tienes 10 minutos para enseñárnoslo.",
-      "Tu círculo está mirando. Enséñale tu sesión en 10 minutos.",
+      "¿Gimnasio o sofá? Tienes hasta medianoche para enseñárnoslo.",
+      "Tu círculo está mirando. Enséñale tu sesión antes de medianoche.",
+      "Seguro que hoy has entrenado. No olvides publicar tu sesión.",
     ],
     momentRecovery: [
       "¿Estiramientos, siesta o pizza? Enséñanoslo, hoy está permitido.",
@@ -362,13 +372,16 @@ export const T: Record<Lang, Texts> = {
       'כל יום נחשב. פרסמו את ההתקדמות.',
       'המעגל שלך מתקדם. לא רוצים להישאר מאחור?',
     ],
+    weekRiskTitle: "השבוע שלכם מוכרע היום", weekRiskBodyOne: "נשאר לכם אימון אחד לפרסם לפני חצות כדי לעמוד בשבוע.", weekRiskBody: "נשארו {n} אימונים לפרסם השבוע, ואין יום מרווח. פרסמו את של היום.", weekCardTitleOne: "נשאר אימון אחד השבוע", weekCardTitle: "נשארו {n} אימונים השבוע", weekCardSubtitle: "פרסמו לפני חצות כדי לעמוד בשבוע",
+    dayCardTitle: "האימון של היום",
     momentSessionTitle: "⚡ האימון של היום", momentRecoveryTitle: "🛌 ההתאוששות של היום",
     momentSession: [
       "הגיע הזמן. האימון לא יפורסם לבד.",
-      "10 דקות להוכיח שאתם לא על הספה.",
+      "יש לכם עד חצות להוכיח שאתם לא על הספה.",
       "היעד מחכה לכם. והוא לא סבלני במיוחד.",
-      "חדר כושר או ספה? יש לכם 10 דקות להראות לנו.",
-      "המעגל צופה. הראו לו את האימון תוך 10 דקות.",
+      "חדר כושר או ספה? יש לכם עד חצות להראות לנו.",
+      "המעגל צופה. הראו לו את האימון לפני חצות.",
+      "בטח התאמנתם היום. אל תשכחו לפרסם את האימון.",
     ],
     momentRecovery: [
       "מתיחות, שנ\"צ או פיצה? הראו לנו, היום מותר.",

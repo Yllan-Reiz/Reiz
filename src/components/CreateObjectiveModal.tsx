@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, Alert, Keyboard } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { frError } from '../lib/helpers';
@@ -7,11 +7,13 @@ import { ALL_DAYS, GUTTER } from '../constants';
 import { F } from '../styles';
 import { GlassSurface, GlassCard } from './GlassSurface';
 import { TrainingDaysPicker } from './TrainingDays';
-import { t } from '../i18n';
+import { t, dirIcon } from '../i18n';
 import { WEEK_CHOICES, weeksLabel, addWeeks, localDay, deadlineLabel } from '../lib/goal';
-import { createGoal, DEFAULT_WEEKS } from '../lib/createGoal';
+import { createGoal, goalTitle, goalSummary, DEFAULT_WEEKS } from '../lib/createGoal';
 import { SentenceGoal, type SentenceResult } from './SentenceGoal';
 import { knowsGoalColumns } from '../lib/objectives';
+import { TalkGoal } from './TalkGoal';
+import { FEATURES } from '../lib/features';
 
 // Créer un objectif. Même DA que « Modifier l'objectif » : fond noir, sections en verre, choix actif en blanc.
 export const VISIBILITY = [
@@ -37,6 +39,12 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
   // Échéance en semaines, `undefined` tant qu'on n'y a pas touché : 4 semaines pour un rythme, sans date pour un record.
   const [weeksPick, setWeeksPick] = useState<number | null | undefined>(undefined);
   const [more, setMore] = useState(false);
+  // Nouvelle feuille (15/11/2026) en deux temps : la phrase, puis ce qu'elle ne dit pas (durée, jours de rappel, qui le
+  // voit). Avant, ces réglages étaient mis d'office et cachés derrière « Plus d'options » : on les découvrait après coup.
+  const [step, setStep] = useState<'say' | 'details'>('say');
+  const talk = FEATURES.talkGoal;
+  const details = talk && step === 'details';
+  const showOpts = talk ? details : more;
   const [saving, setSaving] = useState(false);
   // Une feuille neuve à chaque ouverture (le champ de la phrase garde son propre état).
   const [formKey, setFormKey] = useState(0);
@@ -49,7 +57,7 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
   const deadline = weeks ? addWeeks(localDay(), weeks) : null;
   const onResult = useCallback((r: SentenceResult) => setResult(r), []);
 
-  const reset = () => { setVisibility('friends'); setDays(ALL_DAYS); setWeeksPick(undefined); setMore(false); setFormKey(k => k + 1); };
+  const reset = () => { setVisibility('friends'); setDays(ALL_DAYS); setWeeksPick(undefined); setMore(false); setStep('say'); setFormKey(k => k + 1); };
 
   const handleCreate = async () => {
     if (!goal) { Alert.alert(t('objective.newTitle'), t('sentence.need')); return; }
@@ -72,15 +80,18 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
           Sur iOS, la ScrollView gère le clavier elle-même. */}
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#0a0a0a' }} behavior="height" enabled={Platform.OS === 'android'}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: GUTTER, paddingTop: 16, paddingBottom: 8 }}>
-          <TouchableOpacity onPress={() => { reset(); onClose(); }} accessibilityLabel={t('common.cancel')} hitSlop={8}>
+          <TouchableOpacity onPress={() => { if (details) { setStep('say'); return; } reset(); onClose(); }} accessibilityLabel={details ? t('common.back') : t('common.cancel')} hitSlop={8}>
             <GlassSurface radius={20} variant="clear" style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="close" size={20} color="#fff" />
+              <Ionicons name={details ? dirIcon('chevron-back') : 'close'} size={20} color="#fff" />
             </GlassSurface>
           </TouchableOpacity>
+          {FEATURES.talkGoal ? <Text style={label}>{t('objective.newLabel')}</Text> : (
           <TouchableOpacity onPress={saving ? undefined : handleCreate} activeOpacity={0.85} accessibilityRole="button" accessibilityState={{ disabled: !goal }}
             style={{ height: 40, borderRadius: 20, paddingHorizontal: 18, backgroundColor: goal ? '#fff' : 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center', minWidth: 84 }}>
             {saving ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }} maxFontSizeMultiplier={1.3}>{t('objective.create')}</Text>}
           </TouchableOpacity>
+          )}
+          {FEATURES.talkGoal && <View style={{ width: 40 }} />}
         </View>
 
         <ScrollView
@@ -90,29 +101,55 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
           automaticallyAdjustKeyboardInsets
           contentContainerStyle={{ paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: 60 }}
         >
-          <Text style={label}>{t('objective.newLabel')}</Text>
-          <Text style={{ color: '#fff', fontSize: 30, lineHeight: 34, fontFamily: F.black, letterSpacing: -0.9, marginTop: 6, marginBottom: 20 }} maxFontSizeMultiplier={1.2}>{t('sentence.title')}</Text>
+          {FEATURES.talkGoal ? (
+            // La phrase reste montée pendant la seconde étape : revenir en arrière la retrouve telle quelle.
+            <View style={{ marginTop: 8, display: details ? 'none' : 'flex' }}>
+              <TalkGoal key={formKey} onChange={onResult} autoFocus={visible} />
+            </View>
+          ) : (
+            <>
+              <Text style={label}>{t('objective.newLabel')}</Text>
+              <Text style={{ color: '#fff', fontSize: 30, lineHeight: 34, fontFamily: F.black, letterSpacing: -0.9, marginTop: 6, marginBottom: 20 }} maxFontSizeMultiplier={1.2}>{t('sentence.title')}</Text>
 
-          <SentenceGoal key={formKey} onChange={onResult} autoFocus={visible} />
+              <SentenceGoal key={formKey} onChange={onResult} autoFocus={visible} />
+            </>
+          )}
 
           {/* Sous l'objectif compris : ce qui est réglé d'office, en une ligne. */}
-          {!!goal && (
+          {!talk && !!goal && (
             <Text style={hint}>
-              {deadline ? t('goal.until', { date: deadlineLabel(deadline) }) : t('goal.noDeadline')}
+              {/* « 13 déc. » finit déjà par un point : pas de second point derrière. */}
+              {(deadline ? t('goal.until', { date: deadlineLabel(deadline) }) : t('goal.noDeadline')).replace(/\.$/, '')}
               {'. '}{VIS_HINT[visibility]}
             </Text>
           )}
 
-          <TouchableOpacity onPress={() => pick(() => setMore(m => !m))} activeOpacity={0.8} accessibilityRole="button" accessibilityState={{ expanded: more }}
+          {/* Nouvelle feuille : un seul bouton, sous ce qui a été compris. Il n'apparaît qu'une fois l'objectif compris. */}
+          {talk && !!goal && !details && (
+            <TouchableOpacity onPress={() => { Haptics.selectionAsync().catch(() => {}); Keyboard.dismiss(); setStep('details'); }} activeOpacity={0.85} accessibilityRole="button"
+              style={{ height: 56, borderRadius: 18, marginTop: 36, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: '#000', fontSize: 16, fontFamily: F.extrabold }} maxFontSizeMultiplier={1.3}>{t('common.continue')}</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Seconde étape : l'objectif compris en titre, puis les trois questions que la phrase ne tranche pas. */}
+          {details && !!goal && (
+            <View style={{ marginTop: 8, marginBottom: 10 }}>
+              <Text style={{ color: '#fff', fontSize: 30, lineHeight: 35, fontFamily: F.black, letterSpacing: -0.9 }} numberOfLines={3} maxFontSizeMultiplier={1.2}>{goalTitle(goal)}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 17, fontFamily: F.semibold, marginTop: 6 }}>{goalSummary(goal)}</Text>
+            </View>
+          )}
+
+          {!talk && <TouchableOpacity onPress={() => pick(() => setMore(m => !m))} activeOpacity={0.8} accessibilityRole="button" accessibilityState={{ expanded: more }}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 44, marginTop: 10 }}>
             <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14, fontFamily: F.bold }}>{more ? t('sentence.optionsHide') : t('sentence.options')}</Text>
             <Ionicons name={more ? 'chevron-up' : 'chevron-down'} size={16} color="rgba(255,255,255,0.75)" />
-          </TouchableOpacity>
+          </TouchableOpacity>}
 
-          {more && knowsGoalColumns() && (
-            <GlassCard radius={28} style={{ marginTop: 6 }}>
+          {showOpts && knowsGoalColumns() && (
+            <GlassCard radius={28} style={{ marginTop: talk ? 16 : 6 }}>
               <View style={{ padding: 18 }}>
-                <Text style={label}>{t('goal.deadline')}</Text>
+                <Text style={label}>{talk ? t('sentence.howLong') : t('goal.deadline')}</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
                   {WEEK_CHOICES.map(w => {
                     const on = weeks === w;
@@ -136,16 +173,16 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
             </GlassCard>
           )}
 
-          {more && (
+          {showOpts && (
             <GlassCard radius={28} style={{ marginTop: 14 }}>
               <View style={{ padding: 18 }}>
-                <Text style={[label, { marginBottom: 12 }]}>{t('welcome.daysLabel')}</Text>
+                <Text style={[label, { marginBottom: 12 }]}>{talk ? t('sentence.whichDays') : t('welcome.daysLabel')}</Text>
                 <TrainingDaysPicker value={days} onChange={setDays} />
               </View>
             </GlassCard>
           )}
 
-          {more && (
+          {showOpts && (
             <GlassCard radius={28} style={{ marginTop: 14 }}>
               <View style={{ padding: 18 }}>
                 <Text style={label}>{t('objective.whoSees')}</Text>
@@ -162,6 +199,13 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
                 <Text style={hint}>{VIS_HINT[visibility]}</Text>
               </View>
             </GlassCard>
+          )}
+
+          {details && (
+            <TouchableOpacity onPress={saving ? undefined : handleCreate} activeOpacity={0.85} accessibilityRole="button"
+              style={{ height: 56, borderRadius: 18, marginTop: 24, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+              {saving ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontSize: 16, fontFamily: F.extrabold }} maxFontSizeMultiplier={1.3}>{t('sentence.createThis')}</Text>}
+            </TouchableOpacity>
           )}
         </ScrollView>
       </KeyboardAvoidingView>

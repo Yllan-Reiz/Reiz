@@ -12,6 +12,7 @@ import { QuickReactionsEditor } from './QuickReactionsEditor';
 import { EmojiKeyboardInput, emojiKeyboardAvailable } from '../../modules/reiz-emoji-keyboard';
 import { CommentsModal } from './CommentsModal';
 import { FadeInImage } from './FadeInImage';
+import { BlurView } from 'expo-blur';
 import { FeedVideo } from './FeedVideo';
 import { isVideo } from '../lib/storage';
 import { isRhythm, weekLabel } from '../lib/goal';
@@ -98,7 +99,7 @@ const STACK_MAX = 4;
 // (chargés en lot par le feed) : zéro requête au montage de la carte.
 const EDIT_CAPTION_MS = 5 * 60 * 1000;
 
-export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, preloadVideo = false, onPinChanged, onDuoReply, onOpenProfile, duoDone, duoValidated, closeAuthor, duelBusyIds, onChallenge }: {
+export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, preloadVideo = false, onPinChanged, onDuoReply, onOpenProfile, duoDone, duoValidated, closeAuthor, duelBusyIds, onChallenge, locked, onUnlock }: {
   // L'auteur est dans ton cercle proche : une étoile à côté de son prénom.
   closeAuthor?: boolean;
   u: Update;
@@ -124,6 +125,9 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
   /** Amis avec qui un défi est déjà ouvert ; sans cette liste (hors du fil), pas de bouton « Lancer un défi ». */
   duelBusyIds?: Set<string>;
   onChallenge?: (id: string, name: string) => void;
+  /** Flou du fil : rien posté depuis 7 jours. Le média est caché derrière un flou et une invitation à poster. */
+  locked?: boolean;
+  onUnlock?: () => void;
 }) {
   // Le fil parle la même langue que le reste de l'app : un objectif chiffré
   // s'affiche en séances (ou en km, en reps...), le pourcentage ne reste que
@@ -486,7 +490,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
           </Text>
           {duo}
           {/* Moment Reiz (phase 29) : récup ou séance, à l'heure ou en retard. */}
-          {u.moment && (
+          {FEATURES.momentReiz && u.moment && (
             <Text style={{ color: (u.moment_late_min ?? 99) < ON_TIME_MIN ? '#fff' : 'rgba(255,255,255,0.55)', fontSize: 12.5, fontFamily: F.bold, marginTop: 3 }} numberOfLines={1}>
               {[u.moment === 'recovery' ? t('moment.recoveryBadge') : null, lateLabel(u.moment_late_min ?? 0)].filter(Boolean).join('  ')}
             </Text>
@@ -503,7 +507,20 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
             // Même cadre 2:3 pour toutes les photos, comme les vidéos : avec leurs proportions d'origine (30/10/2026), les
             // photos horizontales sortaient toutes petites entre deux grandes. Le fichier entier reste visible dans le parcours.
             : <FadeInImage uri={u.photo_url} style={s.feedPhoto} resizeMode="cover" />}
-          {overlay}
+          {!locked && overlay}
+          {locked && (
+            <BlurView intensity={55} tint="dark" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+              <Pressable onPress={onUnlock} accessibilityRole="button" accessibilityLabel={`${t('blur.title')}. ${t('blur.cta')}`}
+                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, backgroundColor: 'rgba(10,10,10,0.2)' }}>
+                <Ionicons name="eye-off-outline" size={30} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 22, lineHeight: 27, fontFamily: F.black, letterSpacing: -0.5, textAlign: 'center', marginTop: 14 }} maxFontSizeMultiplier={1.3}>{t('blur.title')}</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14.5, lineHeight: 21, fontFamily: F.regular, textAlign: 'center', marginTop: 8 }}>{t('blur.text')}</Text>
+                <View style={{ height: 48, borderRadius: 16, paddingHorizontal: 22, marginTop: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }} maxFontSizeMultiplier={1.3}>{t('blur.cta')}</Text>
+                </View>
+              </Pressable>
+            </BlurView>
+          )}
         </Pressable>
       ) : (
         <Pressable style={s.feedNoPhoto} onPress={() => showQuick && setShowQuick(false)} disabled={!showQuick}>
@@ -645,4 +662,4 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
 export const FeedCardInFeed = memo(FeedCard, (a, b) =>
   a.u === b.u && a.meta === b.meta && a.currentUserId === b.currentUserId
   && a.isActive === b.isActive && a.preloadVideo === b.preloadVideo && a.duelBusyIds === b.duelBusyIds
-  && a.duoDone === b.duoDone && a.duoValidated === b.duoValidated && a.closeAuthor === b.closeAuthor);
+  && a.duoDone === b.duoDone && a.duoValidated === b.duoValidated && a.closeAuthor === b.closeAuthor && a.locked === b.locked);

@@ -42,7 +42,7 @@ const ACTIVITIES: Activity[] = [
   { key: 'boxe', category: 'combat', emoji: '🥊', re: /box|אגרוף/i },
   { key: 'combat', category: 'combat', emoji: '🥋', re: /\bmma\b|\bjjb\b|\bbjj\b|jiu|judo|karat|krav|lutte|lucha|grappl|muay|kick|taekwondo|combat|martial|ג'ודו|קרב|קראטה/i },
   { key: 'natation', category: 'natation', emoji: '🏊', re: /nag|natation|nataci|nadar|nado|piscin|swim|longueur|שחי|לשחות|בריכה/i },
-  { key: 'cyclisme', category: 'cyclisme', emoji: '🚴', re: /v[ée]lo|cycl|ciclis|bici|bike|biking|gravel|spinning|rpm\b|אופניים|ספינינג/i },
+  { key: 'cyclisme', category: 'cyclisme', emoji: '🚴', re: /(?<![a-zà-ÿ])v[ée]lo|cycl|ciclis|bici|bike|biking|gravel|spinning|rpm\b|אופניים|ספינינג/i },
   { key: 'running', category: 'running', emoji: '🏃', re: /courir|\bje cours\b|\bcours \d|course|footing|jogg|\brun|marathon|marat[oó]n|\bsemi\b|trail|sprint|correr|corro|carrera|ריצ|לרוץ|\bרץ\b/i },
   { key: 'street', category: 'street-workout', emoji: '🤸', re: /street|calisth|calisten|traction|dominad|pull.?up|push.?up|pompes|flexion|\bdips\b|muscle.?up|מתח|שכיבות/i },
   { key: 'escalade', category: 'escalade', emoji: '🧗', re: /escalad|grimp|climb|\bbloc\b|boulder|טיפוס/i },

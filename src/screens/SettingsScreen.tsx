@@ -39,6 +39,7 @@ export function SettingsScreen({ visible, initialView = 'root', onClose, onEditN
   const [welcome, setWelcome] = useState(false);
   // Aperçu de l'écran « Objectif atteint », dans les builds de développement seulement.
   const [donePreview, setDonePreview] = useState(false);
+  const [bilanPreview, setBilanPreview] = useState(false);
   // … et « Mon parcours » ouvre le parcours de ton dernier objectif qui a une vidéo (pour tester le montage).
   const [journeyPreview, setJourneyPreview] = useState<string | null>(null);
   const openJourneyPreview = async () => {
@@ -188,6 +189,7 @@ export function SettingsScreen({ visible, initialView = 'root', onClose, onEditN
             <Section title={t('settings.secHelp')}>
               {WELCOME_FLOW && <Row icon="sparkles-outline" label={t('settings.replayWelcome')} value={t('settings.preview')} onPress={() => setWelcome(true)} />}
               {__DEV__ && <Row icon="trophy-outline" label={t('done.eyebrow')} value={t('settings.preview')} onPress={() => setDonePreview(true)} />}
+              {__DEV__ && <Row icon="flag-outline" label={t('goal.summaryTitle')} value={t('settings.preview')} onPress={() => setBilanPreview(true)} />}
               <Row icon="chatbubble-ellipses-outline" label={t('settings.support')} value={SUPPORT_EMAIL} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Reiz`).catch(() => {})} last />
             </Section>
 
@@ -213,6 +215,11 @@ export function SettingsScreen({ visible, initialView = 'root', onClose, onEditN
         {__DEV__ && (
           <ObjectiveDoneModal preview objective={donePreview ? { id: 'apercu', emoji: '🏃', title: 'Courir 10 km', unit: 'séances', target_value: 4 } : null}
             onJourney={openJourneyPreview} onNewObjective={() => setDonePreview(false)} onClose={() => setDonePreview(false)} />
+        )}
+        {/* Bilan d'un rythme tenu (15/11/2026) : « Passer à 3 par semaine », « Recommencer le même ». Rien n'est enregistré. */}
+        {__DEV__ && (
+          <ObjectiveDoneModal preview objective={bilanPreview ? { id: 'apercu', emoji: '🏋️', title: 'Séance musculation', unit: 'séances', target_value: 8, per_week: 2, summary: { done: 7, total: 8 } } : null}
+            onNext={() => setBilanPreview(false)} onJourney={() => setBilanPreview(false)} onNewObjective={() => setBilanPreview(false)} onClose={() => setBilanPreview(false)} />
         )}
         {__DEV__ && journeyPreview && <JourneyModal objectiveId={journeyPreview} own from="dev" onClose={() => setJourneyPreview(null)} />}
       </View>

@@ -16,12 +16,20 @@ import { t, unitLabel } from '../i18n';
 //   Monter la barre  même objectif, cible plus haute (l'historique reste ; la base le remet « en cours »)
 //   Nouvel objectif  ferme et ouvre la création d'objectif
 //   Mon parcours     toutes les étapes en image ou en vidéo, à partager ou enregistrer (JourneyModal)
+// Bilan d'un rythme (15/11/2026) : l'objectif fini reste dans « Atteints » et un nouveau repart sur la même base.
+//   Passer à 3 par semaine  proposé en premier si le rythme a été tenu (80 % et plus) et qu'il n'est pas déjà à 7
+//   Recommencer le même     même rythme, même durée
 // Le cercle est prévenu par send-push (« 🏆 Léa a atteint son objectif »), pas par l'app.
 // `preview` (Réglages, builds de développement) : rien n'est enregistré ni mesuré.
 
 export type DoneObjective = { id: string; emoji?: string | null; title: string; unit: string; target_value: number;
-  /** Rythme arrivé à échéance (phase 31) : le bilan remplace « Monter la barre » par « Prolonger ». */
-  summary?: { done: number; total: number } };
+  /** Rythme arrivé à échéance (phase 31) : le bilan remplace « Monter la barre » par la suite du rythme. */
+  summary?: { done: number; total: number };
+  /** Séances par semaine du rythme fini : sert à proposer le cran au-dessus. */
+  per_week?: number | null };
+
+/** Part du rythme tenue à partir de laquelle on propose de monter d'un cran. */
+const STEP_UP_FROM = 80;
 
 const EASE = Easing.bezier(0.23, 1, 0.32, 1);
 
@@ -32,13 +40,15 @@ function nextTarget(o: DoneObjective) {
 }
 const stepOf = (o: DoneObjective) => (o.unit === 'kg' ? 2.5 : o.unit === 'min' ? 5 : Math.max(1, Math.round(o.target_value / 10)));
 
-export function ObjectiveDoneModal({ objective, preview, onJourney, onNewObjective, onExtend, onClose }: {
+export function ObjectiveDoneModal({ objective, preview, onJourney, onNewObjective, onExtend, onNext, onClose }: {
   objective: DoneObjective | null;
   preview?: boolean;
   onJourney: () => void;
   onNewObjective: () => void;
   /** Bilan d'un rythme : repousse l'échéance de 4 semaines. */
   onExtend?: () => Promise<void> | void;
+  /** Bilan d'un rythme : repart sur un nouvel objectif identique, avec `step` séances de plus par semaine (0 ou 1). */
+  onNext?: (step: 0 | 1) => Promise<void> | void;
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
@@ -62,6 +72,10 @@ export function ObjectiveDoneModal({ objective, preview, onJourney, onNewObjecti
   // Un objectif en % n'a pas de cible chiffrée à relever : seulement « Nouvel objectif ».
   const canRaise = !summary && objective.unit !== '%' && objective.target_value > 0;
   const label = objective.title.trim();
+  const nextPer = (objective.per_week || 0) + 1;
+  const canStepUp = !!summary && !!onNext && !!objective.per_week && nextPer <= 7 && pct >= STEP_UP_FROM;
+  const next = async (n: 0 | 1) => { if (saving || !onNext) return; setSaving(true); try { await onNext(n); } finally { setSaving(false); } };
+  const newObjective = () => { if (!preview) track('objective_next', {}, 'post'); onNewObjective(); };
   const step = stepOf(objective);
 
   const saveRaise = async () => {
@@ -116,12 +130,17 @@ export function ObjectiveDoneModal({ objective, preview, onJourney, onNewObjecti
           </>
         ) : (
           <>
-            {summary && onExtend
+            {summary && onNext
+              ? <>
+                  <Primary label={canStepUp ? t('done.stepUp', { n: nextPer }) : t('done.restart')} icon={canStepUp ? 'trending-up' : 'refresh'} busy={saving} onPress={() => next(canStepUp ? 1 : 0)} />
+                  {canStepUp && <Secondary label={t('done.restart')} icon="refresh" onPress={() => next(0)} />}
+                </>
+              : summary && onExtend
               ? <Primary label={t('goal.extend')} icon="calendar-outline" busy={saving} onPress={async () => { if (saving) return; setSaving(true); try { await onExtend(); } finally { setSaving(false); } }} />
               : canRaise
               ? <Primary label={t('done.raise')} icon="trending-up" onPress={() => { Haptics.selectionAsync().catch(() => {}); setRaising(true); }} />
-              : <Primary label={t('done.newObjective')} icon="flag" onPress={() => { if (!preview) track('objective_next', {}, 'post'); onNewObjective(); }} />}
-            {(canRaise || (summary && onExtend)) && <Secondary label={t('done.newObjective')} icon="flag-outline" onPress={() => { if (!preview) track('objective_next', {}, 'post'); onNewObjective(); }} />}
+              : <Primary label={t('done.newObjective')} icon="flag" onPress={newObjective} />}
+            {(canRaise || (summary && (onExtend || onNext))) && <Secondary label={t('done.newObjective')} icon="flag-outline" onPress={newObjective} />}
             <Secondary label={t('journey.myJourney')} icon="images-outline" onPress={onJourney} />
             <Quiet label={t('common.later')} onPress={onClose} />
           </>

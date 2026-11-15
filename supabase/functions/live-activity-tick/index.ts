@@ -7,11 +7,16 @@ import { T, asLang, fill } from './texts.ts';
 // classiques du duo. Quand l'heure est passée, on la ferme. Il faut le jeton de mise à jour que l'iPhone a donné
 // pour cette carte (live_activity_runs.update_token) : sans lui, rien à faire ici (les rappels classiques s'en chargent).
 //
+// Cartes « semaine » (jauge de fin de semaine, lancées par notify-moment, author_name = '#semaine') : elles vont
+// jusqu'à minuit, donc aucune alerte sonore au passage à l'orange ou au rouge (heures calmes), et elles se ferment
+// dès que la personne a posté.
+//
 // Test sans rien envoyer : ?dry=1.
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SERVICE_KEY')!);
 const BUNDLE_ID = 'com.yllan.reiz';
 const MIN = 60 * 1000;
+const WEEK_CARD = '#semaine';
 let apnsJwt: { token: string; at: number } | null = null;
 
 const b64url = (bytes: Uint8Array | string) =>
@@ -70,10 +75,20 @@ Deno.serve(async (req) => {
   const jwt = dry ? 'dry' : await apnsToken();
   if (!jwt) return new Response('Clé APNs absente');
 
+  // Cartes « semaine » : qui a posté depuis le lancement de sa carte ?
+  const weekRuns = runs.filter((r: any) => r.author_name === WEEK_CARD);
+  const postedSince = new Set<string>();
+  if (weekRuns.length > 0) {
+    const oldest = weekRuns.map((r: any) => r.created_at).sort()[0];
+    const { data: posts } = await supabase.from('updates').select('user_id, created_at').in('user_id', weekRuns.map((r: any) => r.user_id)).gte('created_at', oldest);
+    (posts || []).forEach((p: any) => { if (weekRuns.some((r: any) => r.user_id === p.user_id && p.created_at >= r.created_at)) postedSince.add(p.user_id); });
+  }
+
   const report: unknown[] = [];
   for (const r of runs) {
     const deadline = new Date(r.deadline).getTime();
-    const phase = phaseAt(deadline, now);
+    const week = r.author_name === WEEK_CARD;
+    const phase = week && postedSince.has(r.user_id) ? 'fin' : phaseAt(deadline, now);
     if (phase !== 'fin' && phase === r.phase) continue;
     const t = T[asLang(r.lang)];
     const who = (r.author_name || '').split(' ')[0] || t.yourFriend;
@@ -83,8 +98,8 @@ Deno.serve(async (req) => {
       'content-state': r.content,
     };
     if (phase === 'fin') aps['dismissal-date'] = Math.floor(now / 1000);
-    if (phase === 'orange') aps.alert = { title: fill(t.cardOrangeTitle, { who }), body: t.cardOrangeBody, sound: 'default' };
-    if (phase === 'rouge') aps.alert = { title: fill(t.cardRedTitle, { who }), body: t.cardRedBody, sound: 'default' };
+    if (!week && phase === 'orange') aps.alert = { title: fill(t.cardOrangeTitle, { who }), body: t.cardOrangeBody, sound: 'default' };
+    if (!week && phase === 'rouge') aps.alert = { title: fill(t.cardRedTitle, { who }), body: t.cardRedBody, sound: 'default' };
     report.push({ update: r.update_id, phase });
     if (dry) continue;
 

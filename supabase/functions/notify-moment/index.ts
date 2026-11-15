@@ -20,6 +20,16 @@ import { T, asLang, fill, names, num as fmt, unit as unitIn, type Lang } from '.
 //
 // Ordre des textes (chantier 6) : duel en cours (y compris un jour de repos), puis l'encouragement, puis la série
 // en jeu (en semaines, quand le quota de la semaine est en danger), puis le texte taquin. Duel et série viennent de l'ancien rappel de 19 h.
+//
+// La carte du jour (15/11/2026, demande de Yllan : UNE notification signature, qui revient et fait poster). Le rappel
+// du jour part en carte sur l'écran verrouillé, avec une jauge qui se vide jusqu'à minuit :
+//   chaque jour où une séance est encore due cette semaine ; semaine tenue : plus rien jusqu'au lundi (skipped 'week_done')
+//   titre « Ta séance du jour », sous-titre « Encore 2 séances cette semaine »
+//   plus de marge (autant de séances à faire que de jours restants) : « Ta semaine se joue aujourd'hui », qui passe
+//   devant l'encouragement ; avec une série d'au moins 2 semaines, l'alerte dit que la série est en jeu
+// Il faut le jeton de l'iPhone (live_activity_tokens). Apple affiche l'alerte de la carte, donc pas de notification
+// classique en double. Sans jeton, ou si Apple refuse : la notification classique, avec le même texte.
+// live-activity-tick ferme la carte dès qu'un post arrive, et à minuit.
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SERVICE_KEY')!);
 
@@ -28,6 +38,71 @@ const WINDOW_FROM = 9 * 60;
 const WINDOW_TO = 21 * 60;
 const DEFAULT_SESSION = 18 * 60;
 const JITTER = 30;
+const BUNDLE_ID = 'com.yllan.reiz';
+/** Marque d'une carte « semaine » dans live_activity_runs.author_name (les cartes du duo y mettent le prénom de l'ami). */
+const WEEK_CARD = '#semaine';
+let apnsJwt: { token: string; at: number } | null = null;
+const b64url = (bytes: Uint8Array | string) =>
+  btoa(typeof bytes === 'string' ? bytes : String.fromCharCode(...bytes)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+
+// Même signature que dans send-push : la clé APNs du compte développeur, renouvelée toutes les 50 minutes.
+async function apnsToken(): Promise<string | null> {
+  const pem = Deno.env.get('APNS_KEY'), kid = Deno.env.get('APNS_KEY_ID'), iss = Deno.env.get('APNS_TEAM_ID');
+  if (!pem || !kid || !iss) return null;
+  if (apnsJwt && Date.now() - apnsJwt.at < 50 * 60 * 1000) return apnsJwt.token;
+  const der = Uint8Array.from(atob(pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '')), c => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey('pkcs8', der, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  const head = b64url(JSON.stringify({ alg: 'ES256', kid }));
+  const claims = b64url(JSON.stringify({ iss, iat: Math.floor(Date.now() / 1000) }));
+  const sig = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, new TextEncoder().encode(`${head}.${claims}`)));
+  apnsJwt = { token: `${head}.${claims}.${b64url(sig)}`, at: Date.now() };
+  return apnsJwt.token;
+}
+
+/** Lance la carte « semaine » sur l'écran verrouillé. true = Apple l'a acceptée (l'alerte part avec la carte). */
+async function startWeekCard(o: { userId: string; token: string; lang: Lang; deadline: number; title: string; subtitle: string; alertTitle: string; alertBody: string; remaining: string }): Promise<boolean> {
+  try {
+    const jwt = await apnsToken();
+    if (!jwt) return false;
+    const contentState = { title: o.title, subtitle: o.subtitle, timerEndDateInMilliseconds: o.deadline, imageName: 'reiz_logo', dynamicIslandImageName: 'reiz_logo' };
+    const res = await fetch(`https://api.push.apple.com/3/device/${o.token}`, {
+      method: 'POST',
+      headers: { authorization: `bearer ${jwt}`, 'apns-topic': `${BUNDLE_ID}.push-type.liveactivity`, 'apns-push-type': 'liveactivity', 'apns-priority': '10', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        aps: {
+          timestamp: Math.floor(Date.now() / 1000),
+          event: 'start',
+          'stale-date': Math.floor(o.deadline / 1000),
+          'content-state': contentState,
+          'attributes-type': 'LiveActivityAttributes',
+          attributes: {
+            name: 'semaine', backgroundColor: '0A0A0A', titleColor: 'FFFFFF', subtitleColor: 'FFFFFFB3', progressViewTint: 'FFFFFF', progressViewLabelColor: 'FFFFFF',
+            // Toucher la carte ouvre la publication (App.tsx : reiz://post).
+            deepLinkUrl: 'post', timerType: 'digital', imagePosition: 'right',
+            // La jauge part de maintenant et se vide jusqu'à minuit.
+            startDateInMilliseconds: Date.now(), remainingLabel: o.remaining,
+          },
+          alert: { title: o.alertTitle, body: o.alertBody, sound: 'default' },
+        },
+      }),
+    });
+    if (res.ok) {
+      await supabase.from('live_activity_runs').insert({
+        update_id: crypto.randomUUID(), user_id: o.userId, deadline: new Date(o.deadline).toISOString(),
+        content: contentState, author_name: WEEK_CARD, phase: 'vert', update_token: null, lang: o.lang,
+      });
+      return true;
+    }
+    const reason = (await res.json().catch(() => ({})))?.reason || res.status;
+    console.error('carte semaine refusée', reason);
+    if (res.status === 410 || reason === 'BadDeviceToken' || reason === 'Unregistered') await supabase.from('live_activity_tokens').delete().eq('user_id', o.userId);
+    return false;
+  } catch (e) {
+    console.error('carte semaine', e);
+    return false;
+  }
+}
+
 const first = (name?: string | null) => (name || '').split(' ')[0] || '';
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const daysBetween = (a: string, b: string) => Math.round((new Date(`${b}T12:00:00Z`).getTime() - new Date(`${a}T12:00:00Z`).getTime()) / DAY);
@@ -68,7 +143,7 @@ Deno.serve(async (req) => {
   const since60 = new Date(now.getTime() - 60 * DAY).toISOString();
   const since14 = new Date(now.getTime() - 14 * DAY).toISOString();
 
-  const [usersRes, objRes, updRes, momRes, friendsRes, unreadRes, logRes, duelRes] = await Promise.all([
+  const [usersRes, objRes, updRes, momRes, friendsRes, unreadRes, logRes, duelRes, cardRes] = await Promise.all([
     supabase.from('users').select('id, full_name, push_token, language, timezone, notif_encouragement, created_at'),
     supabase.from('objectives').select('id, user_id, emoji, title, current_value, target_value, unit, is_completed, training_days, per_week, starts_at, deadline, completed_at').order('created_at'),
     supabase.from('updates').select('user_id, created_at, moment, objectives(visibility)').gte('created_at', since60),
@@ -77,11 +152,14 @@ Deno.serve(async (req) => {
     supabase.from('notifications').select('recipient_id').is('read_at', null),
     supabase.from('encouragement_log').select('user_id, ref').gte('sent_at', since14),
     supabase.from('duo_challenges').select('challenger_id, opponent_id, starts_at, ends_at').eq('status', 'active'),
+    supabase.from('live_activity_tokens').select('user_id, token'),
   ]);
   if (momRes.error) return new Response(`moments: ${momRes.error.message}`, { status: 500 });
 
   const users = usersRes.data || [];
   const nameOf = new Map<string, string>(users.map((u: any) => [u.id, u.full_name]));
+  // Jeton de la carte sur l'écran verrouillé, pour la jauge de fin de semaine (absent : notification classique).
+  const cardTokenOf = new Map<string, string>((cardRes.data || []).map((c: any) => [c.user_id, c.token]));
   const tzOf = new Map<string, string | null>(users.map((u: any) => [u.id, u.timezone]));
   const plans = new Map<string, { every: boolean; days: Set<number> }>();
   (objRes.data || []).forEach((o: any) => {
@@ -252,7 +330,8 @@ Deno.serve(async (req) => {
   const done: { user_id: string; day: string; skipped: string | null }[] = [];
   for (const { m, u, L } of due) {
     if (postedToday(u.id, L.day)) { done.push({ user_id: u.id, day: m.day, skipped: 'posted' }); continue; }
-    if (!u.push_token) { done.push({ user_id: u.id, day: m.day, skipped: 'no_push' }); continue; }
+    const cardToken = cardTokenOf.get(u.id) || null;
+    if (!u.push_token && !cardToken) { done.push({ user_id: u.id, day: m.day, skipped: 'no_push' }); continue; }
     const lang = asLang(u.language);
     const t = T[lang];
     const session = m.kind === 'session';
@@ -272,24 +351,48 @@ Deno.serve(async (req) => {
         body: fill(mine < theirs ? t.dailyDuelBehind : mine > theirs ? t.dailyDuelAhead : t.dailyDuelTie, { mine, theirs }),
       };
     }
-    const enc = !duelText && session ? encouragementFor(u, L.day) : null;
+    // Semaine en jeu : il reste autant de séances à faire que de jours dans la semaine. Passe devant l'encouragement.
+    const wk = weekOf(u);
+    // Semaine tenue : plus de rappel jusqu'au lundi (un duel en cours garde le sien).
+    if (wk.left <= 0 && !duelText) { done.push({ user_id: u.id, day: m.day, skipped: 'week_done' }); continue; }
+    const atRisk = !duelText && session && wk.left > 0 && wk.left >= wk.daysLeft;
+    const atStake = atRisk && wk.weeks >= 2;
+    const enc = !duelText && !atRisk && session ? encouragementFor(u, L.day) : null;
     if (enc) logs.push({ user_id: u.id, kind: enc.kind, ref: enc.ref });
-    // Série en jeu : au moins 2 semaines réussies, et il reste autant de séances à faire que de jours dans la semaine.
-    const wk = !duelText && !enc && session ? weekOf(u) : null;
-    const atStake = !!wk && wk.weeks >= 2 && wk.left > 0 && wk.left >= wk.daysLeft;
-    const special = duelText || enc || (atStake ? { title: fill(t.dailyStreakTitle, { n: wk!.weeks }), body: t.dailyStreakBody } : null);
-    pushes.push({
+    const riskText = atRisk ? {
+      // Une série d'au moins 2 semaines : c'est elle qu'on annonce en jeu.
+      title: atStake ? fill(t.dailyStreakTitle, { n: wk.weeks }) : t.weekRiskTitle,
+      body: wk.left === 1 ? t.weekRiskBodyOne : fill(t.weekRiskBody, { n: wk.left }),
+    } : null;
+    const special = duelText || enc || riskText;
+    const title = special ? special.title : session ? t.momentSessionTitle : t.momentRecoveryTitle;
+    const body = special ? special.body : [line, social].filter(Boolean).join(' ');
+    // La carte du jour : sur l'écran verrouillé jusqu'à minuit, si l'iPhone a donné son jeton, qu'une séance est due et
+    // qu'il reste au moins 30 minutes.
+    const deadline = L.midnight + DAY;
+    const wantsCard = session && wk.left > 0 && !!cardToken && deadline - now.getTime() > 30 * 60 * 1000;
+    const carded = wantsCard && !dry && await startWeekCard({
+      userId: u.id, token: cardToken!, lang, deadline,
+      title: atRisk ? t.weekRiskTitle : t.dayCardTitle,
+      subtitle: wk.left === 1 ? t.weekCardTitleOne : fill(t.weekCardTitle, { n: wk.left }),
+      alertTitle: title, alertBody: body, remaining: t.cardRemaining,
+    });
+    const kind = duelText ? 'duel' : enc?.kind ?? (atRisk ? 'semaine en jeu' : m.kind);
+    if (dry) pushes.push({ _who: u.full_name, _kind: `${kind}, ${wantsCard ? 'carte' : u.push_token ? 'notification' : 'rien'}, reste ${wk.left}`, title, body });
+    // Carte acceptée par Apple : son alerte suffit. Sans jeton classique et sans carte : rien à envoyer.
+    else if (carded || !u.push_token) { /* rien de plus */ }
+    else pushes.push({
       to: u.push_token,
-      title: special ? special.title : session ? t.momentSessionTitle : t.momentRecoveryTitle,
-      body: special ? special.body : [line, social].filter(Boolean).join(' '),
+      title,
+      body,
       sound: 'default',
       badge: (unread.get(u.id) || 0) + 1,
       // Taper la notification ouvre directement la publication, en mode moment.
       data: { type: 'moment', kind: m.kind, ...(enc ? { objective_id: enc.objectiveId } : {}) },
       _who: u.full_name,
-      _kind: duelText ? 'duel' : enc?.kind ?? (atStake ? 'streak' : m.kind),
+      _kind: kind,
     });
-    done.push({ user_id: u.id, day: m.day, skipped: null });
+    done.push({ user_id: u.id, day: m.day, skipped: !carded && !u.push_token ? 'no_push' : null });
   }
 
   if (dry) {

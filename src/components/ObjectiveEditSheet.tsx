@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Modal, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassSurface, GlassCard } from './GlassSurface';
 import { supabase } from '../lib/supabase';
-import { frError } from '../lib/helpers';
+import { frError, num } from '../lib/helpers';
 import { Objective } from '../lib/types';
 import { ALL_DAYS, hasSchedule, GUTTER } from '../constants';
 import { TrainingDaysPicker } from './TrainingDays';
 import { F } from '../styles';
-import { t } from '../i18n';
+import { t, tp, unitLabel } from '../i18n';
 import { isRhythm, WEEK_CHOICES, weeksLabel, addWeeks, localDay, deadlineLabel, rhythmTarget } from '../lib/goal';
 import { knowsGoalColumns } from '../lib/objectives';
 
-// Modifier un objectif déjà créé : qui le voit, les jours où tu t'entraînes, ou le supprimer.
+// Modifier un objectif déjà créé : son nom, son rythme ou sa cible (15/11/2026), qui le voit, les jours où tu
+// t'entraînes, ou le supprimer.
 // Même feuille depuis l'onglet des objectifs et depuis le profil.
 const VISIBILITY = [
   { key: 'friends', label: t('objective.visFriends') },
@@ -42,9 +43,15 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
   // Nouvelle échéance, en semaines à partir d'aujourd'hui (phase 31). undefined = on garde l'actuelle.
   const [weeks, setWeeks] = useState<number | null | undefined>(undefined);
   const [saving, setSaving] = useState(false);
+  const [title, setTitle] = useState('');
+  const [perWeek, setPerWeek] = useState(3);
+  const [targetText, setTargetText] = useState('');
 
   useEffect(() => {
     if (!objective) return;
+    setTitle(objective.title || '');
+    setPerWeek(objective.per_week || 3);
+    setTargetText(String(objective.target_value ?? ''));
     setVisibility(objective.visibility || 'friends');
     setDays(hasSchedule(objective.training_days) ? objective.training_days! : ALL_DAYS);
     setWeeks(undefined);
@@ -57,17 +64,35 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
     // On n'envoie que ce qui change : modifier la visibilité ne dépend pas de la colonne des jours.
     const newDays = days.length === 7 ? null : [...days].sort((a, b) => a - b);
     const patch: Partial<Objective> = {};
+    const rhythm = isRhythm(objective);
+    const name = title.trim().slice(0, 80);
+    if (!name) { Alert.alert(t('objective.editLabel'), t('objective.nameNeeded')); return; }
+    if (name !== objective.title) patch.title = name;
+    // Record : la cible se corrige à la main (« 100 kg » devenu « 110 kg »). Un objectif en % n'a pas de cible.
+    if (!rhythm && objective.unit !== '%') {
+      const target = Number(targetText.replace(',', '.'));
+      if (!Number.isFinite(target) || target <= 0) { Alert.alert(t('objective.editLabel'), t('objective.targetNeeded')); return; }
+      if (target !== objective.target_value) patch.target_value = target;
+    }
+    let finalDeadline = objective.deadline ?? null;
     if (visibility !== objective.visibility) patch.visibility = visibility;
     if (JSON.stringify(newDays) !== JSON.stringify(sortedOrNull(objective.training_days))) patch.training_days = newDays;
     if (weeks !== undefined) {
       const deadline = weeks ? addWeeks(localDay(), weeks) : null;
       if (deadline !== (objective.deadline ?? null)) {
         patch.deadline = deadline;
-        // Rythme : la cible suit la période (4 par semaine sur 12 semaines = 48), les séances faites restent.
-        if (isRhythm(objective) && deadline) patch.target_value = rhythmTarget(objective.per_week!, objective.starts_at || localDay(), deadline);
+        finalDeadline = deadline;
         // Une échéance repoussée rouvre un objectif clos par le bilan.
         if (isRhythm(objective) && deadline && objective.is_completed) { patch.is_completed = false; patch.completed_at = null; }
       }
+    }
+    // Rythme : la cible suit le rythme et la période (4 par semaine sur 12 semaines = 48), les séances faites restent.
+    // Elle reste au-dessus de ce qui est déjà fait : baisser le rythme ne doit pas clore l'objectif d'un coup.
+    if (rhythm && (perWeek !== objective.per_week || 'deadline' in patch)) {
+      if (perWeek !== objective.per_week) patch.per_week = perWeek;
+      const total = finalDeadline ? rhythmTarget(perWeek, objective.starts_at || localDay(), finalDeadline) : perWeek * 4;
+      const target = Math.max(total, (objective.current_value || 0) + 1);
+      if (target !== objective.target_value) patch.target_value = target;
     }
     if (Object.keys(patch).length === 0) { onClose(); return; }
     setSaving(true);
@@ -104,13 +129,63 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
             {saving ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontSize: 14, fontFamily: F.extrabold }}>{t('common.save')}</Text>}
           </TouchableOpacity>
         </View>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: 60 }}>
+        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets contentContainerStyle={{ paddingHorizontal: GUTTER, paddingTop: 12, paddingBottom: 60 }}>
           <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5 }}>{t('objective.editLabel')}</Text>
           {!!objective && (
-            <Text style={{ color: '#fff', fontSize: 30, lineHeight: 34, fontFamily: F.black, letterSpacing: -0.9, marginTop: 6 }} numberOfLines={2}>{objective.title}</Text>
+            <Text style={{ color: '#fff', fontSize: 30, lineHeight: 34, fontFamily: F.black, letterSpacing: -0.9, marginTop: 6 }} numberOfLines={2}>{title.trim() || objective.title}</Text>
           )}
 
-          <GlassCard radius={28} style={{ marginTop: 22 }}>
+          {!!objective && (
+            <GlassCard radius={28} style={{ marginTop: 22 }}>
+              <View style={{ padding: 18 }}>
+                <Text style={label}>{t('objective.nameLabel')}</Text>
+                <TextInput
+                  value={title}
+                  onChangeText={setTitle}
+                  maxLength={80}
+                  autoCorrect={false}
+                  keyboardAppearance="dark"
+                  returnKeyType="done"
+                  accessibilityLabel={t('objective.nameLabel')}
+                  style={field}
+                />
+
+                {isRhythm(objective) ? (
+                  <>
+                    <Text style={[label, { marginTop: 20 }]}>{t('objective.rhythmLabel')}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+                      <Round icon="remove" label={t('sentence.less')} off={perWeek <= 1} onPress={() => { Haptics.selectionAsync().catch(() => {}); setPerWeek(v => Math.max(1, v - 1)); }} />
+                      <Text style={{ flex: 1, textAlign: 'center', color: '#fff', fontSize: 17, fontFamily: F.extrabold }} maxFontSizeMultiplier={1.3}>
+                        {perWeek >= 7 ? t('sentence.everyDay') : tp('sentence.perWeek', perWeek)}
+                      </Text>
+                      <Round icon="add" label={t('sentence.more')} off={perWeek >= 7} onPress={() => { Haptics.selectionAsync().catch(() => {}); setPerWeek(v => Math.min(7, v + 1)); }} />
+                    </View>
+                  </>
+                ) : objective.unit !== '%' ? (
+                  <>
+                    <Text style={[label, { marginTop: 20 }]}>{t('objective.targetLabel')}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <TextInput
+                        value={targetText}
+                        onChangeText={setTargetText}
+                        keyboardType="decimal-pad"
+                        keyboardAppearance="dark"
+                        maxLength={7}
+                        accessibilityLabel={t('objective.targetLabel')}
+                        style={[field, { flex: 1 }]}
+                      />
+                      <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16, fontFamily: F.bold, marginTop: 12 }}>{unitLabel(objective.unit)}</Text>
+                    </View>
+                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 18, fontFamily: F.regular, marginTop: 10 }}>
+                      {`${num(objective.current_value || 0)} / ${num(objective.target_value)} ${unitLabel(objective.unit)}`}
+                    </Text>
+                  </>
+                ) : null}
+              </View>
+            </GlassCard>
+          )}
+
+          <GlassCard radius={28} style={{ marginTop: 14 }}>
             <View style={{ padding: 18 }}>
               <Text style={label}>{t('objective.whoSees')}</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
@@ -179,3 +254,14 @@ export function ObjectiveEditSheet({ objective, onClose, onChanged, onDelete }: 
 }
 
 const label = { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: F.bold, letterSpacing: 1.5 } as const;
+const field = { minHeight: 50, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, marginTop: 12, color: '#fff', fontSize: 17, fontFamily: F.semibold,
+  backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' } as const;
+
+function Round({ icon, label, onPress, off }: { icon: any; label: string; onPress: () => void; off?: boolean }) {
+  return (
+    <TouchableOpacity onPress={onPress} disabled={off} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={label}
+      style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', opacity: off ? 0.35 : 1 }}>
+      <Ionicons name={icon} size={22} color="#fff" />
+    </TouchableOpacity>
+  );
+}

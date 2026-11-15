@@ -114,12 +114,13 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
   const [momentKind, setMomentKind] = useState<MomentKind>('session');
   const [, setTick] = useState(0);
   useEffect(() => {
+    if (!FEATURES.momentReiz) return;
     loadTodayMoment().then(m => { setMoment(m); if (m) setMomentKind(m.kind); }, () => {});
     const id = setInterval(() => setTick(x => x + 1), 15000);
     return () => clearInterval(id);
   }, []);
   // Un moment ne compte qu'une fois par jour, et seulement une fois son heure arrivée.
-  const momentOn = !!moment && !moment.posted && Date.now() >= new Date(moment.at).getTime();
+  const momentOn = FEATURES.momentReiz && !!moment && !moment.posted && Date.now() >= new Date(moment.at).getTime();
   const momentLate = moment ? lateMinutes(moment.at) : 0;
   const [publishing, setPublishing] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);

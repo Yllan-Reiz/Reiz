@@ -25,10 +25,11 @@ import { WelcomeModal, welcomePending } from '../components/WelcomeFlow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ObjectiveDoneModal, DoneObjective } from '../components/ObjectiveDoneModal';
 import { JourneyModal } from '../components/JourneyModal';
-import { isRhythm, deadlinePassed, addWeeks, localDay, rhythmTarget, deadlineLabel } from '../lib/goal';
+import { isRhythm, deadlinePassed, addWeeks, localDay, rhythmTarget, deadlineLabel, weeksBetween } from '../lib/goal';
 import { SetupCard } from '../components/SetupCard';
 import { PendingRequestsCard } from '../components/PendingRequestsCard';
 import { CircleTodayCard } from '../components/CircleTodayCard';
+import { CircleWinsCard } from '../components/CircleWinsCard';
 import { DuelBanner } from '../components/DuelCard';
 import { loadDuels, proposeDuel } from '../lib/duel';
 import { track } from '../lib/track';
@@ -178,6 +179,22 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   // Chantier 6 : amis avec qui un défi est déjà ouvert (le bouton « Lancer un défi » des posts en duo les évite).
   const [duelBusyIds, setDuelBusyIds] = useState<Set<string> | undefined>(undefined);
   const [duelKey, setDuelKey] = useState(0);
+  // Relit les rythmes finis du cercle (carte du fil) : au rafraîchissement et quand un bilan vient de clore le mien.
+  const [winsKey, setWinsKey] = useState(0);
+  // Flou du fil (15/11/2026) : rien posté depuis 7 jours, compte de plus de 3 jours. Relu à chaque chargement du fil.
+  const [feedLocked, setFeedLocked] = useState(false);
+  const checkFeedLock = async (uid: string) => {
+    if (!FEATURES.weeklyBlur) return;
+    const [{ data: last, error }, { data: me }] = await Promise.all([
+      supabase.from('updates').select('created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
+      supabase.from('users').select('created_at').eq('id', uid).maybeSingle(),
+    ]);
+    // Dans le doute (lecture ratée, date d'inscription inconnue), le fil reste net.
+    if (error || !me?.created_at) return;
+    const DAY = 24 * 3600 * 1000;
+    const lastAt = last?.[0]?.created_at ? new Date(last[0].created_at).getTime() : 0;
+    setFeedLocked(Date.now() - lastAt > 7 * DAY && Date.now() - new Date(me.created_at).getTime() > 3 * DAY);
+  };
   useEffect(() => {
     if (!FEATURES.duels) return;
     loadDuels().then(list => {
@@ -280,6 +297,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     }
     if (!circleIds) circleIds = [uid];
     circleRef.current = circleIds;
+    if (offset === 0) checkFeedLock(uid).catch(() => {});
 
     // Le fil repart de zéro toutes les 24 h (fenêtre glissante) : on ne voit que
     // ce que le cercle a fait depuis hier à la même heure. L'historique complet
@@ -385,6 +403,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     const { error } = await supabase.from('objectives').update({ is_completed: true, completed_at: new Date().toISOString() }).eq('id', ended.id);
     if (error) return;
     setObjectives(prev => prev.map(o => (o.id === ended.id ? { ...o, is_completed: true } : o)));
+    setWinsKey(k => k + 1);
     setBilan({ id: ended.id, emoji: ended.emoji, title: ended.title, unit: ended.unit, target_value: ended.target_value, per_week: ended.per_week!, starts_at: ended.starts_at ?? null, deadline: ended.deadline!,
       summary: { done: ended.current_value || 0, total: ended.target_value } });
   };
@@ -399,9 +418,34 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     fetchObjectives(true);
   };
 
+  // La suite d'un rythme fini (15/11/2026) : l'ancien reste dans « Atteints », un nouveau repart aujourd'hui sur la
+  // même base (nom, durée, jours, visibilité), au même rythme ou une séance de plus par semaine.
+  const nextBilan = async (step: 0 | 1) => {
+    if (!bilan || !userId) return;
+    const { data: old, error: readError } = await supabase.from('objectives').select('*').eq('id', bilan.id).single();
+    if (readError || !old) { Alert.alert(t('common.error'), frError(readError)); return; }
+    const today = localDay();
+    const weeks = Math.min(16, weeksBetween(old.starts_at || bilan.starts_at || addWeeks(bilan.deadline, -4), bilan.deadline));
+    const deadline = addWeeks(today, weeks);
+    const perWeek = Math.max(1, Math.min(7, bilan.per_week + step));
+    const row: Record<string, unknown> = {
+      user_id: userId, title: old.title, emoji: old.emoji, unit: old.unit, visibility: old.visibility, duration_days: null,
+      current_value: 0, target_value: rhythmTarget(perWeek, today, deadline), per_week: perWeek, starts_at: today, deadline,
+    };
+    if (old.training_days) row.training_days = old.training_days;
+    if (old.category) row.category = old.category;
+    const { error } = await supabase.from('objectives').insert(row);
+    if (error) { Alert.alert(t('common.error'), frError(error)); return; }
+    track('objective_next', { mode: step ? 'step_up' : 'restart', per_week: perWeek, weeks }, 'bilan');
+    setBilan(null);
+    Alert.alert(old.title, t('done.restarted', { date: deadlineLabel(deadline) }));
+    fetchObjectives(true);
+  };
+
   const onRefresh = async () => {
     if (!userId) return;
     setRefreshing(true);
+    setWinsKey(k => k + 1);
     loadWeekState(userId).then(w => { setWeek(w); cacheSet(`week.${userId}`, w); setFlame(userId, w.weeks >= 1); });
     loadFlames(true).catch(() => {});
     fetchPendingCount();
@@ -571,6 +615,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               <InviteCircleCard userId={userId} friendCount={friendCount} />
               {/* Moment Reiz (phase 29) : qui de ton cercle a posté aujourd'hui. */}
               <CircleTodayCard onOpenProfile={openProfile} />
+              {/* Un rythme fini dans le cercle (15/11/2026) : la carte et le parcours en images. */}
+              {FEATURES.circleWins && !!userId && <CircleWinsCard userId={userId} reloadKey={winsKey} onOpenProfile={openProfile} />}
               {/* Défis en cours et invitations reçues : de retour dans le fil (ils restent aussi dans l'Activité). */}
               {FEATURES.duels && <DuelBanner onOpenProfile={openProfile} reloadKey={duelKey} />}
               <SetupCard
@@ -584,7 +630,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               />
               </>
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [userId, duelKey, loadingObj, objectives.length, friendCount, onPost, week, soloObjective]);
+  ), [userId, duelKey, winsKey, loadingObj, objectives.length, friendCount, onPost, week, soloObjective]);
 
   if (viewingFriendId) return <FriendProfileScreen key={viewingFriendId} userId={viewingFriendId} onClose={() => setProfileStack(st => st.slice(0, -1))} onOpenProfile={openProfile} onDuo={(id) => onPost({ duoWith: id })} />;
   // L'activité s'ouvre PAR-DESSUS la page où tu es (le fil, les objectifs, les amis...) : le verre floute cette
@@ -598,6 +644,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       onViewProfile={openProfile}
       onOpenFriends={() => { setShowActivity(false); setUnreadCount(0); setTab('friends'); }}
       onDuoReply={(authorId) => onPost({ duoWith: authorId })}
+      onPost={() => { setShowActivity(false); setUnreadCount(0); onPost({ from: 'activity_tip' }); }}
     />
   ) : null;
 
@@ -616,6 +663,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       <ObjectiveDoneModal
         objective={bilan}
         onExtend={extendBilan}
+        onNext={nextBilan}
         onJourney={() => { const id = bilan?.id ?? null; setBilan(null); setJourneyId(id); }}
         onNewObjective={() => { setBilan(null); setShowCreateModal(true); }}
         onClose={() => setBilan(null)}
@@ -719,6 +767,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 duoDone={duoDone.has(item.id)}
                 duoValidated={duoPairs.has(item.id)}
                 closeAuthor={!!item.user_id && closeIds.has(item.user_id)}
+                locked={feedLocked && item.user_id !== userId}
+                onUnlock={() => onPost({ from: 'feed_blur' })}
                 onDeleted={() => { setUpdates(prev => prev.filter(x => x.id !== item.id)); fetchObjectives(true); }}
                 onBlocked={() => userId && loadFeedPage(0, userId, true)}
               />

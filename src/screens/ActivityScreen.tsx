@@ -16,6 +16,7 @@ import { PresenceCard } from '../components/PresenceCard';
 import { DuelBanner, ChallengeFriendButton } from '../components/DuelCard';
 import { VideoPoster } from '../components/VideoPoster';
 import { CircleRhythmCard } from '../components/CircleRhythmCard';
+import { ActivityTip, tipOfTheDay } from '../components/ActivityTip';
 import { loadPost } from '../lib/posts';
 import { loadDuels, Duel } from '../lib/duel';
 import { setAppBadge } from '../lib/badge';
@@ -201,7 +202,7 @@ function ActionCard({ icon, title, sub, button, faces, onPress }: { icon: any; t
   );
 }
 
-export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, onViewProfile, onOpenFriends, onDuoReply }: {
+export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, onViewProfile, onOpenFriends, onDuoReply, onPost }: {
   /** true : s'affiche par-dessus la page en cours (floutée) au lieu d'un fond à part. */
   overlay?: boolean;
   currentUserId: string | null;
@@ -211,7 +212,10 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
   onViewProfile: (id: string) => void;
   onOpenFriends: () => void;
   onDuoReply?: (authorId: string) => void;
+  /** Astuce du jour : ouvre la publication (« Poster à deux »). */
+  onPost?: () => void;
 }) {
+  const tip = FEATURES.activityTips ? tipOfTheDay() : null;
   const insets = useSafeAreaInsets();
   // Apparition en fondu (le flou de la page dessous monte doucement).
   const appear = useRef(new Animated.Value(overlay ? 0 : 1)).current;
@@ -364,7 +368,9 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
         />
       ))}
       {/* Ce qui était en haut du fil : le cercle, la salle, les duels. Compact, avant les notifications. */}
-      <CircleRhythmCard onOpenProfile={onViewProfile} reloadKey={rhythmKey} />
+      {tip
+        ? <ActivityTip tip={tip} onAction={a => (a === 'friends' ? onOpenFriends() : onPost?.())} />
+        : <CircleRhythmCard onOpenProfile={onViewProfile} reloadKey={rhythmKey} />}
       <PresenceCard compact />
       {FEATURES.duels && <DuelBanner onOpenProfile={onViewProfile} reloadKey={rhythmKey} />}
       {FEATURES.duels && <ChallengeFriendButton onSent={() => setRhythmKey(k => k + 1)} />}

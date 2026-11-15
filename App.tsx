@@ -78,7 +78,7 @@ function AppInner() {
     registeredUserId.current = user.id;
     // Jeton de l'Activité en direct du duo : il ne demande aucune autorisation, on le range tout de suite.
     // Cartes rangées (FEATURES) : on retire le jeton du serveur pour qu'aucune carte ne soit plus lancée.
-    if (FEATURES.duoLockScreenCards) registerLiveActivityToken(); else forgetLiveActivityToken().catch(() => {});
+    if (FEATURES.duoLockScreenCards || FEATURES.weekGauge) registerLiveActivityToken(); else forgetLiveActivityToken().catch(() => {});
     if (!FEATURES.autoPresence) pauseAutoPresence();
     saveLanguage(user.id);
     if (await welcomePending(user)) return;
@@ -90,6 +90,12 @@ function AppInner() {
     // app ouverte. Le ref est consommé après connexion (cf. onAuthStateChange ci-dessous).
     // Carte du duo (Activité en direct) touchée : reiz://duo/<id de l'ami> ouvre la publication avec lui identifié.
     const openDuo = (url: string | null) => {
+      // Carte « semaine » (jauge de fin de semaine) touchée : reiz://post ouvre la publication.
+      if (/^reiz:\/\/post\b/i.test(url || '')) {
+        track('post_open', { from: 'week_card' });
+        setScreen(s => (s === 'main' ? 'post' : s));
+        return;
+      }
       const id = url?.match(/^reiz:\/\/duo\/([0-9a-f-]{36})/i)?.[1];
       if (!id) return;
       setPostDuoWith(id);
