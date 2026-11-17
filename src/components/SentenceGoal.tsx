@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -57,9 +57,23 @@ export function SentenceGoal({ onChange, autoFocus, tone = 'glass' }: {
   // La phrase dit un nouveau chiffre : la correction à la main ne tient plus.
   useEffect(() => { setPerWeek(null); }, [parsed?.perWeek, parsed?.kind]);
 
-  const onText = (v: string) => { setText(v); if (picked) setPicked(null); };
+  // Le dernier objectif tout prêt choisi. Retoucher le texte ne le fait plus perdre (17/11/2026 : « Préparer un Hyrox »,
+  // 4 fois sur 8 semaines, devenait « Entraînement Hyrox », 3 fois, à la moindre lettre effacée puis retapée).
+  const lastPicked = useRef<ParsedGoal | null>(null);
+  const onText = (v: string) => {
+    setText(v);
+    const ready = lastPicked.current;
+    if (!ready) return;
+    // Il reste choisi (nom, rythme, durée) tant que la phrase parle de la même activité sans donner de chiffre.
+    // Un chiffre écrit (« 5 fois par semaine »), une autre activité ou un champ vidé : c'est la phrase qui décide.
+    const p = parseSentence(v);
+    const same = !!p && p.kind === 'rhythm' && !!p.guessed && p.activity === ready.activity;
+    if (same) { if (picked !== ready) setPicked(ready); } else if (picked) setPicked(null);
+    if (!v.trim()) lastPicked.current = null;
+  };
   const pick = (g: ParsedGoal) => {
     HAPTIC();
+    lastPicked.current = g;
     setPicked(g);
     setPerWeek(null);
     // Le champ ne reprend que le nom : le rythme se lit et se corrige dans la carte du dessous.

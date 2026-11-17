@@ -2,7 +2,7 @@
   "expo": {
     "name": "Reiz",
     "slug": "reiz",
-    "version": "1.2.0",
+    "version": "1.5.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -103,9 +103,7 @@
       "buildTag": "sortie"
     },
     "owner": "yllan",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.2.0",
     "updates": {
       "url": "https://u.expo.dev/69071c24-329f-4426-b10b-8b5fbe280564",
       "fallbackToCacheTimeout": 0

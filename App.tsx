@@ -71,6 +71,17 @@ function AppInner() {
   updateReady.current = isUpdatePending;
   const screenRef = useRef(screen);
   screenRef.current = screen;
+  // Nouvel inscrit : la mise à jour téléchargée pendant le premier lancement s'applique tout de suite, tant qu'il n'a pas
+  // de compte. Constaté le 17/11/2026 : le seul compte créé après la 1.4 avait fait toute son inscription avec
+  // l'ancien accueil, celui embarqué dans le build, parce que la mise à jour n'arrivait qu'au retour suivant dans le fil.
+  // Sur l'écran du prénom, seulement dans les 20 premières secondes : après, il est en train d'écrire.
+  const startedAt = useRef(Date.now());
+  useEffect(() => {
+    if (!isUpdatePending || checkingAuth) return;
+    if (screen === 'splash' || (screen === 'onboarding' && Date.now() - startedAt.current < 20 * 1000)) {
+      Updates.reloadAsync().catch(() => {});
+    }
+  }, [isUpdatePending, screen, checkingAuth]);
 
   // Compte tout neuf : la demande d'autorisation du système attend l'écran d'accueil qui explique pourquoi (sinon elle tombe sans contexte).
   const maybeRegisterPush = async (user: { id: string; created_at?: string }) => {
