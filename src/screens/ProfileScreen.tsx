@@ -13,6 +13,7 @@ import { Objective, Update, FeedMeta } from '../lib/types';
 import { HEATMAP_MAX_DAYS, GUTTER, navClearance } from '../constants';
 import { s, F } from '../styles';
 import { FlameInline } from '../components/FlameBadge';
+import { MonthCalendar } from '../components/MonthCalendar';
 import { ProfileSkeleton } from '../components/Skeleton';
 import { JourneyModal } from '../components/JourneyModal';
 import { ProfileHero, ProfileBackdrop, GlassIconButton, StatBubble, AboutBubble, BadgesSection, GoalCards, HistoryCarousel, AchievedList, SectionHeader, computeBadges, isCompleted } from '../components/ProfileSections';
@@ -416,6 +417,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
           </View>
 
           <SectionHeader title={t('profile.history')} count={posts.length} style={{ paddingHorizontal: GUTTER, marginTop: 26 }} />
+          <MonthCalendar userId={userId} posts={posts} onOpen={openPost} />
           <HistoryCarousel posts={posts} onOpen={openPost} emptyText={t('profile.historyEmpty')} />
 
           {deleting && <ActivityIndicator color="#ff3b30" size="small" style={{ marginTop: 16 }} />}

@@ -62,11 +62,13 @@ export const s = StyleSheet.create({
   legalLink: { color: '#888', fontFamily: F.bold },
   // paddingTop vient de l'encoche (useSafeAreaInsets), jamais d'une valeur en dur :
   // 58px était juste sur un iPhone à Dynamic Island et faux partout ailleurs.
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: GUTTER, paddingBottom: 12 },
+  // Logo et cloche plus grands et rentrés vers le centre (17/11/2026) : ils étaient petits et collés aux bords.
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: GUTTER + 10, paddingBottom: 12 },
   // Largeur = hauteur x 3508/2481 (proportions du PNG) : le texte touche le bord gauche et s'aligne sur les cartes.
-  headerLogo: { width: 37, height: 26 },
-  headerIconBtn: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
-  headerBadge: { position: 'absolute', top: 0, right: -2, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#ff3b30', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1.5, borderColor: '#0a0a0a' },
+  // L'image du logo a de la marge transparente autour des lettres : le cadre est plus large que ce qu'on voit.
+  headerLogo: { width: 88, height: 36, marginLeft: -8 },
+  headerIconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  headerBadge: { position: 'absolute', top: 0, right: -3, minWidth: 19, height: 19, borderRadius: 9.5, backgroundColor: '#ff3b30', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1.5, borderColor: '#0a0a0a' },
   headerTitle: { fontSize: 17, fontFamily: F.extrabold, color: '#fff' },
   streakBadge: { backgroundColor: '#1e1e1e', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: '#2a2a2a', flexDirection: 'row', alignItems: 'center', gap: 3 },
   streakFlame: { fontFamily: F.bold },

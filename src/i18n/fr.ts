@@ -996,6 +996,12 @@ export const fr = {
     a11y: { one: 'Voir mon ami', other: 'Voir mes {count} amis' },
   },
   changelog: {
+    v16calTitle: "Ton calendrier",
+    v16calText: "Sur ton profil, un mois d'un coup d'œil : chaque jour avec une séance, et une flamme au bout des semaines tenues. Touche un jour pour revoir la séance.",
+    v16nudgeTitle: "Relance un ami qui décroche",
+    v16nudgeText: "Quand quelqu'un de ton cercle ne poste plus, il apparaît dans la cloche. Un bouton, et il reçoit ta relance.",
+    v16storyTitle: "Une story qui montre ta séance",
+    v16storyText: "L'habillage Reiz est plus discret : on voit ta photo ou ta vidéo en entier.",
     v15cardTitle: "La carte du jour",
     v15cardText: "Les jours où une séance t'attend, une carte apparaît sur ton écran verrouillé. Sa jauge se vide jusqu'à minuit, et elle part dès que tu postes.",
     v15blurTitle: "Poste pour voir",
@@ -1267,6 +1273,13 @@ export const fr = {
     oneLeft: "Il ne manque plus que {name}",
     left: { one: "Il en manque 1", other: "Il en manque {count}" },
     fullDays: { one: "1 jour de cercle complet cette semaine", other: "{count} jours de cercle complet cette semaine" },
+  },
+  calendar: {
+    sessions: { one: "{count} séance ce mois-ci", other: "{count} séances ce mois-ci" },
+    none: "Aucune séance ce mois-ci",
+    prev: "Mois précédent",
+    next: "Mois suivant",
+    dayA11y: "Séance du {date}",
   },
   soloCard: {
     label: "TA SEMAINE",

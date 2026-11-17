@@ -464,6 +464,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
         }, () => {});
       // Séance postée : la carte du duo (Activité en direct) n'a plus lieu d'être.
       endAllLiveActivities();
+      const me = (await supabase.from('users').select('username, full_name').eq('id', user.id).maybeSingle()).data;
       const storyData: StoryData = {
         // Vidéo : la story en tire une image (voir ShareStoryModal).
         photoUri,
@@ -472,7 +473,8 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
         progressLabel: isPercent ? `${pct}%` : `${num(value)} / ${num(obj.target_value)} ${unitLabel(obj.unit)}`,
         pct,
         caption,
-        username: (await supabase.from('users').select('username').eq('id', user.id).maybeSingle()).data?.username,
+        username: me?.username,
+        firstName: me?.full_name?.trim().split(' ')[0] || undefined,
       };
       // Séance en duo : prénoms identifiés, et si c'est une réponse à un duo, le décompte
       // du binôme (« 3e duo avec Eden, 2 semaines d'affilée ») avec la photo de l'autre.

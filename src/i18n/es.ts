@@ -995,6 +995,12 @@ export const es: Dict = {
     a11y: { one: 'Ver a mi amigo', other: 'Ver a mis {count} amigos' },
   },
   changelog: {
+    v16calTitle: "Tu calendario",
+    v16calText: "En tu perfil, un mes de un vistazo: cada día con una sesión y una llama al final de las semanas cumplidas. Toca un día para volver a ver la sesión.",
+    v16nudgeTitle: "Dale un empujón a un amigo",
+    v16nudgeText: "Cuando alguien de tu círculo deja de publicar, aparece en la campana. Un botón y recibe tu empujón.",
+    v16storyTitle: "Una story que muestra tu sesión",
+    v16storyText: "El diseño de Reiz es más discreto: tu foto o tu vídeo se ven enteros.",
     v15cardTitle: "La tarjeta del día",
     v15cardText: "Los días en que te toca sesión, aparece una tarjeta en tu pantalla de bloqueo. Su barra se vacía hasta medianoche y desaparece en cuanto publicas.",
     v15blurTitle: "Publica para ver",
@@ -1266,6 +1272,13 @@ export const es: Dict = {
     oneLeft: "Solo falta {name}",
     left: { one: "Falta 1", other: "Faltan {count}" },
     fullDays: { one: "1 día de círculo completo esta semana", other: "{count} días de círculo completo esta semana" },
+  },
+  calendar: {
+    sessions: { one: "{count} sesión este mes", other: "{count} sesiones este mes" },
+    none: "Ninguna sesión este mes",
+    prev: "Mes anterior",
+    next: "Mes siguiente",
+    dayA11y: "Sesión del {date}",
   },
   soloCard: {
     label: "TU SEMANA",

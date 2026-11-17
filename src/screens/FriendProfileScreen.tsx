@@ -19,6 +19,7 @@ import { Duel, loadDuels, proposeDuel, answerDuel, withdrawDuel } from '../lib/d
 import { DuelCard } from '../components/DuelCard';
 import { s, F } from '../styles';
 import { FlameInline } from '../components/FlameBadge';
+import { MonthCalendar } from '../components/MonthCalendar';
 import { t, tp, formatDate } from '../i18n';
 import { FEATURES } from '../lib/features';
 
@@ -294,6 +295,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
           </View>
 
           <SectionHeader title={t('profile.history')} count={recentUpdates.length} style={{ paddingHorizontal: GUTTER, marginTop: 26 }} />
+          <MonthCalendar userId={userId} posts={recentUpdates} onOpen={openPost} />
           <HistoryCarousel posts={recentUpdates} onOpen={openPost} emptyText={t('friendProfile.noPosts')} />
 
           <View style={{ height: 40 + insets.bottom }} />

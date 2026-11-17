@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, FlatList, Image, Alert, Activ
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { HeaderBell } from '../components/HeaderBell';
 import * as Haptics from 'expo-haptics';
 import { supabase, currentUser, storedUserId } from '../lib/supabase';
 import { loadWeekState, frError, inUnit } from '../lib/helpers';
@@ -684,9 +685,11 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityLabel={unreadCount > 0 ? t('main.activityUnread', { n: unreadCount }) : t('main.activity')}
           >
-            <Ionicons name={unreadCount > 0 ? 'heart' : 'heart-outline'} size={22} color="#fff" />
+            {/* Une cloche, plus un cœur (17/11/2026) : c'est l'endroit des notifications, pas des « j'aime ».
+                En contour quand il n'y a rien ; pleine, animée et avec la pastille du nombre quand il y a du non lu. */}
+            <HeaderBell count={unreadCount} />
             {unreadCount > 0 && (
-              <View style={s.headerBadge}><Text style={s.navBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text></View>
+              <View style={s.headerBadge}><Text style={[s.navBadgeText, { fontSize: 11 }]} maxFontSizeMultiplier={1}>{unreadCount > 99 ? '99+' : unreadCount}</Text></View>
             )}
           </TouchableOpacity>
         </View>

@@ -16,6 +16,7 @@ import { PresenceCard } from '../components/PresenceCard';
 import { DuelBanner, ChallengeFriendButton } from '../components/DuelCard';
 import { VideoPoster } from '../components/VideoPoster';
 import { CircleRhythmCard } from '../components/CircleRhythmCard';
+import { loadCircleRhythm } from '../lib/rhythm';
 import { ActivityTip, tipOfTheDay } from '../components/ActivityTip';
 import { loadPost } from '../lib/posts';
 import { loadDuels, Duel } from '../lib/duel';
@@ -216,6 +217,14 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
   onPost?: () => void;
 }) {
   const tip = FEATURES.activityTips ? tipOfTheDay() : null;
+  // Quelqu'un du cercle décroche : la carte du cercle (et son bouton « Relancer ») passe devant l'astuce du jour.
+  const [someoneToNudge, setSomeoneToNudge] = useState(false);
+  useEffect(() => {
+    if (!FEATURES.manualNudges) return;
+    let alive = true;
+    loadCircleRhythm().then(r => { if (alive) setSomeoneToNudge(!!r && r.toNudge.length > 0); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
   const insets = useSafeAreaInsets();
   // Apparition en fondu (le flou de la page dessous monte doucement).
   const appear = useRef(new Animated.Value(overlay ? 0 : 1)).current;
@@ -368,7 +377,7 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
         />
       ))}
       {/* Ce qui était en haut du fil : le cercle, la salle, les duels. Compact, avant les notifications. */}
-      {tip
+      {tip && !someoneToNudge
         ? <ActivityTip tip={tip} onAction={a => (a === 'friends' ? onOpenFriends() : onPost?.())} />
         : <CircleRhythmCard onOpenProfile={onViewProfile} reloadKey={rhythmKey} />}
       <PresenceCard compact />

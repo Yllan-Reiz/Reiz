@@ -6,8 +6,10 @@ export const FEATURES = {
   profileTags: false,
   /** Épingler un post sur son profil (menu « ... » d'un post). */
   pinPosts: false,
-  /** Boutons « Relancer » : coup de coude à un ami à l'arrêt, relance d'une demande d'ami envoyée. */
-  manualNudges: false,
+  /** Boutons « Relancer » : coup de coude à un ami à l'arrêt, relance d'une demande d'ami envoyée.
+   *  Rangé le 05/11, rallumé le 17/11/2026 : le serveur prévient déjà deux amis quand quelqu'un décroche (« X n'a pas
+   *  posté depuis 7 jours »), mais sans ce bouton ils ne pouvaient rien faire (1 relance en 12 jours, 13 avant). */
+  manualNudges: true,
   /** Défis duo (duel de la semaine) : bandeau du fil, carte du profil d'un ami, invitations dans l'Activité. */
   duels: false,
   /** Cartes du duo sur l'écran verrouillé (Activité en direct iOS). */

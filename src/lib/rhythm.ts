@@ -115,11 +115,15 @@ async function computeCircleRhythm(force: boolean): Promise<CircleRhythm | null>
     };
   });
 
+  // À relancer : la semaine est en danger (2 jours sans séance), ou plus rien depuis 3 jours quel que soit le jour de la
+  // semaine (avant le 17/11/2026, quelqu'un d'arrêté depuis 10 jours n'apparaissait pas du lundi au jeudi). Ceux qui n'ont
+  // rien posté depuis 30 jours ne sont pas listés : ce ne sont plus des relances, ce sont des comptes éteints.
   // Actifs d'abord, puis par nom.
   friends.sort((a, b) => Number(b.activeThisWeek) - Number(a.activeThisWeek) || a.full_name.localeCompare(b.full_name, 'fr'));
   const toNudge = friends
-    .filter(f => f.behind && !f.posted[todayIdx] && (f.daysAgo === null || f.daysAgo >= 2))
-    .sort((a, b) => (b.daysAgo ?? 99) - (a.daysAgo ?? 99));
+    .filter(f => !f.posted[todayIdx] && ((f.behind && (f.daysAgo === null || f.daysAgo >= 2)) || (f.daysAgo !== null && f.daysAgo >= 3)))
+    // Ceux qui viennent de décrocher d'abord : une relance à 4 jours a plus de chances qu'à 27.
+    .sort((a, b) => (a.daysAgo ?? 99) - (b.daysAgo ?? 99));
   const data: CircleRhythm = { friends, active: friends.filter(f => f.activeThisWeek).length, total: friends.length, toNudge };
   memo = { uid: user.id, at: Date.now(), data };
   return data;

@@ -10,6 +10,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { videoStoryAvailable, composeVideoStory } from '../../modules/reiz-video-story';
 import { APP_STORE_URL } from '../constants';
 import { isVideo } from '../lib/storage';
+import { currentInviteLink } from '../lib/invites';
 import { videoStill } from '../lib/videoTools';
 import { F } from '../styles';
 import { t, tp } from '../i18n';
@@ -22,6 +23,7 @@ export type StoryData = {
   pct: number;                // 0-100
   caption?: string;
   username?: string;
+  firstName?: string;            // le prénom, écrit sous le logo en haut de la story
   streak?: number;
   duoNames?: string;                // « Eden » ou « Eden et Logan » : séance en duo
   partnerPhotoUri?: string | null;  // photo de l'autre : les deux séances côte à côte
@@ -88,8 +90,8 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
   };
 
   const pct = Math.max(0, Math.min(100, data.pct || 0));
-  // Le lien à coller dans le sticker : la fiche Reiz sur l'App Store.
-  const link = APP_STORE_URL;
+  // Le lien à coller dans le sticker : ton lien d'invitation (ami d'office à l'inscription), sinon la fiche App Store.
+  const link = currentInviteLink() ?? APP_STORE_URL;
   const shortLink = link.replace(/^https?:\/\//, '');
   // La feuille de partage iOS propose « Copier » : seule façon de copier sans module natif en plus.
   const copyLink = () => { Share.share({ message: link }).catch(() => {}); };
@@ -117,40 +119,52 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
                 <View style={{ width: 2 * k, backgroundColor: '#fff' }} />
                 <Image source={{ uri: partner }} style={{ flex: 1, height: cardH }} resizeMode="cover" onLoadEnd={() => setLoaded(n => n + 1)} />
               </View>
-            ) : main
-              ? <Image source={{ uri: main }} style={{ position: 'absolute', width: cardW, height: cardH }} resizeMode="cover" onLoadEnd={() => setLoaded(n => n + 1)} />
-              : <LinearGradient colors={['#1b1b1b', '#0a0a0a']} style={{ position: 'absolute', width: cardW, height: cardH }} />}
-            <LinearGradient colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0.25)', 'rgba(0,0,0,0.9)']} locations={[0, 0.3, 0.55, 1]} style={{ position: 'absolute', width: cardW, height: cardH }} />
+            ) : main ? (
+              // La photo ENTIÈRE, jamais recadrée : posée sur elle-même en flou pour remplir le 9:16.
+              <>
+                <Image source={{ uri: main }} style={{ position: 'absolute', width: cardW, height: cardH }} resizeMode="cover" blurRadius={28} />
+                <View style={{ position: 'absolute', width: cardW, height: cardH, backgroundColor: 'rgba(0,0,0,0.35)' }} />
+                <Image source={{ uri: main }} style={{ position: 'absolute', width: cardW, height: cardH }} resizeMode="contain" onLoadEnd={() => setLoaded(n => n + 1)} />
+              </>
+            ) : <LinearGradient colors={['#1b1b1b', '#0a0a0a']} style={{ position: 'absolute', width: cardW, height: cardH }} />}
+            {/* Un voile seulement en haut et en bas, sous le logo et sous la bande : le milieu de l'image reste intact. */}
+            <LinearGradient colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.5)']} locations={[0, 0.2, 0.7, 1]} style={{ position: 'absolute', width: cardW, height: cardH }} />
 
-            <View style={{ position: 'absolute', top: 34 * k, left: 0, right: 0, alignItems: 'center' }}>
-              <Image source={require('../../assets/ecriture-reiz-blanc.png')} style={{ width: 150 * k, height: 52 * k }} resizeMode="contain" />
-              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9 * k, letterSpacing: 3 * k, fontFamily: F.semibold, marginTop: -2 * k }}>RISE TO YOUR GOALS</Text>
+            {/* Habillage léger (17/11/2026) : l'ancien gros bloc (logo en grand, « RISE TO YOUR GOALS », carte de progression,
+                phrase d'invitation) couvrait la moitié de la story. Il reste le logo en petit et une bande fine.
+                Tout se tient hors des zones qu'Instagram recouvre (son en-tête en haut, sa barre de réponse en bas). */}
+            {/* Le logo et le prénom au centre, en haut (17/11/2026, à la demande de Yllan). */}
+            <View style={{ position: 'absolute', top: 78 * k, left: 18 * k, right: 18 * k, alignItems: 'center' }}>
+              <Image source={require('../../assets/ecriture-reiz-blanc.png')} style={{ width: 96 * k, height: 33 * k }} resizeMode="contain" />
+              {!!(data.firstName || data.username) && (
+                <Text style={{ color: '#fff', fontSize: 14 * k, fontFamily: F.bold, letterSpacing: -0.2 * k, marginTop: 1 * k }} numberOfLines={1}>{data.firstName || `@${data.username}`}</Text>
+              )}
               {!!data.duoNames && (
-                <View style={{ marginTop: 14 * k, backgroundColor: 'rgba(15,15,15,0.72)', borderRadius: 16 * k, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 14 * k, paddingVertical: 7 * k }}>
-                  <Text style={{ color: '#fff', fontSize: 13 * k, fontFamily: F.extrabold }}>{t('story.duoWith', { names: data.duoNames })}</Text>
+                <View style={{ backgroundColor: 'rgba(15,15,15,0.6)', borderRadius: 14 * k, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 11 * k, paddingVertical: 5 * k, marginTop: 8 * k }}>
+                  <Text style={{ color: '#fff', fontSize: 11 * k, fontFamily: F.extrabold }}>{t('story.duoWith', { names: data.duoNames })}</Text>
                 </View>
               )}
             </View>
 
-            <View style={{ position: 'absolute', left: 22 * k, right: 22 * k, bottom: 40 * k }}>
-              <View style={{ backgroundColor: 'rgba(15,15,15,0.72)', borderRadius: 24 * k, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', padding: 18 * k }}>
-                <Text style={{ color: '#fff', fontSize: 14 * k, fontFamily: F.semibold }} numberOfLines={2}>{data.title}</Text>
-                <Text style={{ color: '#fff', fontSize: 34 * k, fontFamily: F.black, letterSpacing: -1 * k, marginTop: 6 * k }} numberOfLines={1} adjustsFontSizeToFit>{data.progressLabel}</Text>
-                <View style={{ height: 8 * k, borderRadius: 4 * k, backgroundColor: 'rgba(255,255,255,0.18)', marginTop: 10 * k, overflow: 'hidden' }}>
-                  <View style={{ width: `${pct}%`, height: '100%', backgroundColor: '#fff', borderRadius: 4 * k }} />
-                </View>
-                {!!data.caption && data.caption !== data.title && (
-                  <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 * k, fontFamily: F.regular, lineHeight: 19 * k, marginTop: 12 * k }} numberOfLines={3}>{data.caption}</Text>
-                )}
-                {!!data.streak && data.streak > 1 && (
-                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 * k, fontFamily: F.semibold, marginTop: 10 * k }}>{tp('story.streak', data.streak || 0)}</Text>
-                )}
+            <View style={{ position: 'absolute', left: 16 * k, right: 16 * k, bottom: 86 * k, backgroundColor: 'rgba(15,15,15,0.6)', borderRadius: 18 * k, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', paddingHorizontal: 14 * k, paddingVertical: 11 * k }}>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 10 * k }}>
+                <Text style={{ flex: 1, color: '#fff', fontSize: 13 * k, fontFamily: F.semibold }} numberOfLines={1}>{data.title}</Text>
+                <Text style={{ color: '#fff', fontSize: 15 * k, fontFamily: F.black, letterSpacing: -0.3 * k }} numberOfLines={1}>{data.progressLabel}</Text>
               </View>
-
-              {/* Pas de faux bouton : un texte, et la place du sticker « Lien » que la personne ajoute dans Instagram. */}
-              <Text style={{ color: '#fff', fontSize: 16 * k, fontFamily: F.extrabold, textAlign: 'center', marginTop: 16 * k }}>{data.duoNames ? t('story.joinUs') : data.username ? t('story.joinUser', { username: data.username }) : t('friends.shareTitle')}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11 * k, fontFamily: F.regular, textAlign: 'center', marginTop: 4 * k }}>{t('story.tagline')}</Text>
-              <View style={{ height: 66 * k }} />
+              <View style={{ height: 5 * k, borderRadius: 3 * k, backgroundColor: 'rgba(255,255,255,0.2)', marginTop: 8 * k, overflow: 'hidden' }}>
+                <View style={{ width: `${pct}%`, height: '100%', backgroundColor: '#fff', borderRadius: 3 * k }} />
+              </View>
+              {(() => {
+                const caption = !!data.caption && data.caption !== data.title ? data.caption : null;
+                const streak = !!data.streak && data.streak > 1 ? tp('story.streak', data.streak) : null;
+                if (!caption && !streak) return null;
+                return (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 * k, marginTop: 7 * k }}>
+                    <Text style={{ flex: 1, color: 'rgba(255,255,255,0.85)', fontSize: 11 * k, fontFamily: F.regular }} numberOfLines={1}>{caption || ''}</Text>
+                    {!!streak && <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11 * k, fontFamily: F.semibold }} numberOfLines={1}>{streak}</Text>}
+                  </View>
+                );
+              })()}
             </View>
           </ViewShot>
           </View>

@@ -995,6 +995,12 @@ export const en: Dict = {
     a11y: { one: 'See my friend', other: 'See my {count} friends' },
   },
   changelog: {
+    v16calTitle: "Your calendar",
+    v16calText: "On your profile, a month at a glance: every day with a session, and a flame at the end of each week you kept up. Tap a day to see the session again.",
+    v16nudgeTitle: "Nudge a friend who drops off",
+    v16nudgeText: "When someone in your circle stops posting, they show up under the bell. One button, and they get your nudge.",
+    v16storyTitle: "A story that shows your session",
+    v16storyText: "The Reiz overlay is lighter: your whole photo or video stays visible.",
     v15cardTitle: "The card of the day",
     v15cardText: "On days when a session is due, a card appears on your lock screen. Its gauge runs down until midnight, and it goes away as soon as you post.",
     v15blurTitle: "Post to see",
@@ -1266,6 +1272,13 @@ export const en: Dict = {
     oneLeft: "Only {name} is missing",
     left: { one: "1 still missing", other: "{count} still missing" },
     fullDays: { one: "1 full-circle day this week", other: "{count} full-circle days this week" },
+  },
+  calendar: {
+    sessions: { one: "{count} session this month", other: "{count} sessions this month" },
+    none: "No session this month",
+    prev: "Previous month",
+    next: "Next month",
+    dayA11y: "Session on {date}",
   },
   soloCard: {
     label: "YOUR WEEK",

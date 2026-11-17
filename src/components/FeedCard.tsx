@@ -317,6 +317,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
             pct: pctValue,
             caption,
             username: u.users?.username,
+            firstName: u.users?.full_name?.trim().split(' ')[0] || undefined,
           });
 
   const openMenu = () => {
