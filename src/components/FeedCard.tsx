@@ -27,6 +27,7 @@ import { FlameBadge } from './FlameBadge';
 import { getMe } from '../lib/me';
 import { t, tp, unitLabel, dirIcon } from '../i18n';
 import { CachedImage } from './CachedImage';
+import { videoStill } from '../lib/videoTools';
 import { FEATURES } from '../lib/features';
 
 // Ouverture/fermeture en fondu-montée. Le contenu reste monté le temps de la
@@ -98,6 +99,39 @@ const STACK_MAX = 4;
 // Les réactions et le compteur de commentaires arrivent pré-chargés via `meta`
 // (chargés en lot par le feed) : zéro requête au montage de la carte.
 const EDIT_CAPTION_MS = 5 * 60 * 1000;
+
+// Fil verrouillé sur Android. expo-image y plafonne le flou (rayon 25) : pour aller plus loin, l'image est
+// dessinée en petit puis agrandie LOCK_ZOOM fois, ce qui multiplie le flou d'autant. On ne distingue plus que des masses.
+const LOCK_BLUR = 25;
+const LOCK_ZOOM = 3;
+const LOCK_SMALL = `${100 / LOCK_ZOOM}%` as `${number}%`;
+const LOCK_INSET = `${(100 - 100 / LOCK_ZOOM) / 2}%` as `${number}%`;
+function HeavyBlur({ uri, style }: { uri: string | null; style: any }) {
+  return (
+    <View style={[style, { overflow: 'hidden', backgroundColor: '#333' }]}>
+      {!!uri && (
+        <CachedImage uri={uri} resizeMode="cover" blurRadius={LOCK_BLUR}
+          style={{ position: 'absolute', width: LOCK_SMALL, height: LOCK_SMALL, left: LOCK_INSET, top: LOCK_INSET, transform: [{ scale: LOCK_ZOOM }] }} />
+      )}
+    </View>
+  );
+}
+
+// Une vidéo verrouillée n'est pas lue : on floute son image du début. Gardée en mémoire par adresse, pour ne pas
+// la recalculer à chaque passage de la carte. Tant qu'elle n'est pas prête (ou si elle échoue) : un gris, pas du noir.
+const lockedStills = new Map<string, string>();
+function LockedVideoStill({ uri, style }: { uri: string; style: any }) {
+  const [still, setStill] = useState<string | null>(lockedStills.get(uri) ?? null);
+  useEffect(() => {
+    const known = lockedStills.get(uri);
+    if (known) { setStill(known); return; }
+    let alive = true;
+    setStill(null);
+    videoStill(uri).then(img => { if (img) lockedStills.set(uri, img); if (alive) setStill(img); }, () => {});
+    return () => { alive = false; };
+  }, [uri]);
+  return <HeavyBlur uri={still} style={style} />;
+}
 
 export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCommentsOnMount, isActive = false, preloadVideo = false, onPinChanged, onDuoReply, onOpenProfile, duoDone, duoValidated, closeAuthor, duelBusyIds, onChallenge, locked, onUnlock }: {
   // L'auteur est dans ton cercle proche : une étoile à côté de son prénom.
@@ -458,6 +492,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
 
   // Android : pas de vrai flou par-dessus, on floute (ou on masque) le média lui-même.
   const hardLock = !!locked && Platform.OS === 'android';
+  const LockVeil: any = hardLock ? View : BlurView;
 
   return (
     <View style={[s.feedCard, { overflow: 'visible' }]}>
@@ -507,19 +542,23 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       {u.photo_url ? (
         <Pressable style={s.feedPhotoWrap} onPress={() => showQuick && setShowQuick(false)} disabled={!showQuick}>
           {/* Fil verrouillé sur Android (17/11/2026) : le BlurView d'expo-blur n'y floute rien, il ne pose qu'un voile
-              teinté, et la séance restait donc lisible. La photo est floutée elle-même, et une vidéo n'est pas lue du tout. */}
+              teinté, et la séance restait donc lisible. Le média est flouté lui-même : la photo directement, la vidéo
+              par son image du début (elle n'est pas lue). Pas de BlurView par-dessus : son voile, ajouté au flou,
+              rendait tout noir. */}
           {isVid
             ? hardLock
-              ? <View style={[s.feedPhoto, { backgroundColor: '#141414' }]} />
+              ? <LockedVideoStill uri={u.photo_url} style={s.feedPhoto} />
               : <FeedVideo uri={u.photo_url} active={isActive} preload={preloadVideo} style={s.feedPhoto} />
             // Même cadre 2:3 pour toutes les photos, comme les vidéos : avec leurs proportions d'origine (30/10/2026), les
             // photos horizontales sortaient toutes petites entre deux grandes. Le fichier entier reste visible dans le parcours.
-            : <FadeInImage uri={u.photo_url} style={s.feedPhoto} resizeMode="cover" blurRadius={hardLock ? 25 : undefined} />}
+            : hardLock
+              ? <HeavyBlur uri={u.photo_url} style={s.feedPhoto} />
+              : <FadeInImage uri={u.photo_url} style={s.feedPhoto} resizeMode="cover" />}
           {!locked && overlay}
           {locked && (
-            <BlurView intensity={55} tint="dark" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+            <LockVeil {...(hardLock ? {} : { intensity: 92, tint: 'dark' })} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
               <Pressable onPress={onUnlock} accessibilityRole="button" accessibilityLabel={`${t('blur.title')}. ${t('blur.cta')}`}
-                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, backgroundColor: hardLock ? 'rgba(10,10,10,0.45)' : 'rgba(10,10,10,0.2)' }}>
+                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, backgroundColor: hardLock ? 'rgba(10,10,10,0.3)' : 'rgba(10,10,10,0.2)' }}>
                 <Ionicons name="eye-off-outline" size={30} color="#fff" />
                 <Text style={{ color: '#fff', fontSize: 22, lineHeight: 27, fontFamily: F.black, letterSpacing: -0.5, textAlign: 'center', marginTop: 14 }} maxFontSizeMultiplier={1.3}>{t('blur.title')}</Text>
                 <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14.5, lineHeight: 21, fontFamily: F.regular, textAlign: 'center', marginTop: 8 }}>{t('blur.text')}</Text>
@@ -527,7 +566,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
                   <Text style={{ color: '#000', fontSize: 15, fontFamily: F.extrabold }} maxFontSizeMultiplier={1.3}>{t('blur.cta')}</Text>
                 </View>
               </Pressable>
-            </BlurView>
+            </LockVeil>
           )}
         </Pressable>
       ) : (

@@ -4,10 +4,8 @@ import { CachedImage, ImageLoadInfo } from './CachedImage';
 
 // Les photos du feed arrivent d'URLs signées : elles se décodent après le rendu
 // de la carte. Sans fondu, elles apparaissent d'un coup et le feed clignote.
-export function FadeInImage({ uri, style, resizeMode = 'cover', onLoaded, blurRadius }: {
+export function FadeInImage({ uri, style, resizeMode = 'cover', onLoaded }: {
   uri: string;
-  /** Flou appliqué à l'image elle-même (sert au fil verrouillé sur Android, voir FeedCard). */
-  blurRadius?: number;
   style?: StyleProp<ImageStyle>;
   resizeMode?: ImageResizeMode;
   onLoaded?: (info: ImageLoadInfo) => void;
@@ -20,7 +18,6 @@ export function FadeInImage({ uri, style, resizeMode = 'cover', onLoaded, blurRa
         uri={uri}
         style={{ width: '100%', height: '100%' }}
         resizeMode={resizeMode}
-        blurRadius={blurRadius}
         onLoad={info => {
           onLoaded?.(info);
           // Déjà sur le téléphone : tout de suite, sans fondu (sinon la photo clignote quand on remonte dans le fil).
