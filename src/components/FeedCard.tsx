@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, memo, ReactNode } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Animated, Easing, Pressable, Modal, FlatList } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Animated, Easing, Pressable, Modal, FlatList, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
@@ -456,6 +456,9 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
     </>
   );
 
+  // Android : pas de vrai flou par-dessus, on floute (ou on masque) le média lui-même.
+  const hardLock = !!locked && Platform.OS === 'android';
+
   return (
     <View style={[s.feedCard, { overflow: 'visible' }]}>
       <CommentsModal
@@ -503,16 +506,20 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       {/* Le média. Toucher ailleurs que sur un bouton referme la barre d'emojis. */}
       {u.photo_url ? (
         <Pressable style={s.feedPhotoWrap} onPress={() => showQuick && setShowQuick(false)} disabled={!showQuick}>
+          {/* Fil verrouillé sur Android (17/11/2026) : le BlurView d'expo-blur n'y floute rien, il ne pose qu'un voile
+              teinté, et la séance restait donc lisible. La photo est floutée elle-même, et une vidéo n'est pas lue du tout. */}
           {isVid
-            ? <FeedVideo uri={u.photo_url} active={isActive} preload={preloadVideo} style={s.feedPhoto} />
+            ? hardLock
+              ? <View style={[s.feedPhoto, { backgroundColor: '#141414' }]} />
+              : <FeedVideo uri={u.photo_url} active={isActive} preload={preloadVideo} style={s.feedPhoto} />
             // Même cadre 2:3 pour toutes les photos, comme les vidéos : avec leurs proportions d'origine (30/10/2026), les
             // photos horizontales sortaient toutes petites entre deux grandes. Le fichier entier reste visible dans le parcours.
-            : <FadeInImage uri={u.photo_url} style={s.feedPhoto} resizeMode="cover" />}
+            : <FadeInImage uri={u.photo_url} style={s.feedPhoto} resizeMode="cover" blurRadius={hardLock ? 25 : undefined} />}
           {!locked && overlay}
           {locked && (
             <BlurView intensity={55} tint="dark" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
               <Pressable onPress={onUnlock} accessibilityRole="button" accessibilityLabel={`${t('blur.title')}. ${t('blur.cta')}`}
-                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, backgroundColor: 'rgba(10,10,10,0.2)' }}>
+                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, backgroundColor: hardLock ? 'rgba(10,10,10,0.45)' : 'rgba(10,10,10,0.2)' }}>
                 <Ionicons name="eye-off-outline" size={30} color="#fff" />
                 <Text style={{ color: '#fff', fontSize: 22, lineHeight: 27, fontFamily: F.black, letterSpacing: -0.5, textAlign: 'center', marginTop: 14 }} maxFontSizeMultiplier={1.3}>{t('blur.title')}</Text>
                 <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14.5, lineHeight: 21, fontFamily: F.regular, textAlign: 'center', marginTop: 8 }}>{t('blur.text')}</Text>
