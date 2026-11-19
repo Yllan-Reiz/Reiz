@@ -16,6 +16,8 @@ export function goalTitle(g: ParsedGoal): string {
   if (g.titleKey) return t(g.titleKey as TKey);
   if (g.kind === 'record') return g.text || (g.activity ? t(`sentence.act.${g.activity}` as TKey) : '');
   if (!g.activity) return g.text;
+  // Les mots de la personne quand la phrase se lit comme un titre (« Pilates le mardi et le jeudi », « Courir un semi »).
+  if (g.ownWords && g.text) return g.text;
   const base = t(`sentence.act.${g.activity}` as TKey);
   return g.amount && g.unit ? `${base} ${num(g.amount)} ${unitLabel(g.unit)}` : base;
 }
@@ -65,7 +67,9 @@ export async function createGoal(g: ParsedGoal, o: GoalOptions): Promise<{ id: s
     row.deadline = deadline;
     if (rhythm) row.per_week = perWeek;
   }
-  const days = o.days && o.days.length > 0 && o.days.length < 7 ? o.days : null;
+  // Jours choisis dans la feuille, sinon ceux dits dans la phrase (« le mardi et le jeudi »).
+  const picked = o.days ?? g.days;
+  const days = picked && picked.length > 0 && picked.length < 7 ? picked : null;
   if (days) row.training_days = days;
   row.category = g.category;
 

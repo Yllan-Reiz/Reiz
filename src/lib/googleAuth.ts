@@ -1,6 +1,7 @@
 import { Linking } from 'react-native';
 import { supabase } from './supabase';
 import { t, lang } from '../i18n';
+import { signalRecovery } from './passwordReset';
 
 // Connexion avec Google via Supabase (OAuth + PKCE), sans module natif :
 // on ouvre l'URL Google dans Safari, Google renvoie vers reiz://auth-callback?code=...
@@ -49,5 +50,7 @@ export async function handleAuthUrl(url: string | null | undefined): Promise<boo
   if (!code) return true;
   const { data, error } = await supabase.auth.exchangeCodeForSession(decodeURIComponent(code));
   if (!error && data?.user) await ensureProfile(data.user);
+  // Lien « mot de passe oublié » : la session est ouverte, il reste à choisir le nouveau mot de passe (App.tsx).
+  if (!error && (data as { redirectType?: string | null } | null)?.redirectType === 'PASSWORD_RECOVERY') signalRecovery();
   return true;
 }

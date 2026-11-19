@@ -19,7 +19,7 @@ import { s, F } from '../styles';
 import { loadFlames, setFlame } from '../lib/flames';
 import { setMe } from '../lib/me';
 import { FeedCardInFeed } from '../components/FeedCard';
-import { NavTab } from '../components/NavTab';
+import { NavTab, navLabelStyle } from '../components/NavTab';
 import { GlassSurface, LIQUID_GLASS } from '../components/GlassSurface';
 import { CreateObjectiveModal } from '../components/CreateObjectiveModal';
 import { WelcomeModal, welcomePending } from '../components/WelcomeFlow';
@@ -56,15 +56,18 @@ const FEED_WINDOW_HOURS = 24;
 
 // Pastille de verre de l'onglet actif. Elle glisse d'un onglet à l'autre en
 // s'étirant puis en reprenant sa forme : c'est ce qui donne l'impression de liquide.
-function GlassBubble({ visible, pillWidth, anim, icon }: {
+function GlassBubble({ visible, pillWidth, anim, icon, label }: {
   visible: boolean;
   pillWidth: number;
   anim: Animated.Value;
   icon: any;
+  label?: string;
 }) {
   if (!visible) return null;
   const slot = (pillWidth - 12) / 2;
-  const bubbleSize = 48;
+  // Avec le mot sous l'icône, la pastille s'élargit pour le contenir (64 au plus, jamais plus large que sa place).
+  const withLabel = FEATURES.navLabels && !!label;
+  const bubbleSize = withLabel ? Math.min(64, slot) : 48;
   // En hébreu la pastille part du bord droit (left devient right) : on la décale vers la gauche.
   const dir = isRTL() ? -1 : 1;
   const translateX = anim.interpolate({
@@ -76,7 +79,7 @@ function GlassBubble({ visible, pillWidth, anim, icon }: {
   const scaleY = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0.9, 1], extrapolate: 'clamp' });
   // Seul le verre se déforme : l'icône reste nette, sinon elle a l'air étirée.
   return (
-    <Animated.View pointerEvents="none" style={[s.navActiveBubble, { transform: [{ translateX }] }]}>
+    <Animated.View pointerEvents="none" style={[s.navActiveBubble, withLabel && { width: bubbleSize, gap: 2 }, { transform: [{ translateX }] }]}>
       <Animated.View style={[StyleSheet.absoluteFillObject, { transform: [{ scaleX }, { scaleY }] }]}>
         {LIQUID_GLASS ? (
           <GlassSurface radius={24} variant="clear" tintColor="rgba(255,255,255,0.18)" style={StyleSheet.absoluteFillObject} />
@@ -85,6 +88,7 @@ function GlassBubble({ visible, pillWidth, anim, icon }: {
         )}
       </Animated.View>
       <Ionicons name={icon} size={22} color="#fff" />
+      {withLabel && <Text style={[navLabelStyle, { color: '#fff' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={1.15}>{label}</Text>}
     </Animated.View>
   );
 }
@@ -97,6 +101,8 @@ function PostButton({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={t('nav.post')}
       onPressIn={() => { spring(0.88); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); }}
       onPressOut={() => spring(1)}
     >
@@ -895,9 +901,10 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             pillWidth={leftPillWidth}
             anim={leftPillAnim}
             icon={tab === 'feed' ? 'home' : 'apps'}
+            label={tab === 'feed' ? t('nav.home') : t('nav.objectives')}
           />
-          <NavTab icon="home" active={tab === 'feed'} onPress={() => (tab === 'feed' ? feedRef.current?.scrollToOffset({ offset: 0, animated: true }) : setTab('feed'))} />
-          <NavTab icon="apps" active={tab === 'objectives'} onPress={() => setTab('objectives')} />
+          <NavTab icon="home" label={t('nav.home')} active={tab === 'feed'} onPress={() => (tab === 'feed' ? feedRef.current?.scrollToOffset({ offset: 0, animated: true }) : setTab('feed'))} />
+          <NavTab icon="apps" label={t('nav.objectives')} active={tab === 'objectives'} onPress={() => setTab('objectives')} />
         </View>
 
         {/* === Bouton + central, isolé === */}
@@ -911,9 +918,10 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             pillWidth={rightPillWidth}
             anim={rightPillAnim}
             icon={tab === 'friends' ? 'person-add' : 'person'}
+            label={tab === 'friends' ? t('nav.friends') : t('nav.profile')}
           />
-          <NavTab icon="person-add" active={tab === 'friends'} onPress={() => setTab('friends')} badge={pendingCount} />
-          <NavTab icon="person" active={tab === 'profile'} onPress={() => setTab('profile')} />
+          <NavTab icon="person-add" label={t('nav.friends')} active={tab === 'friends'} onPress={() => setTab('friends')} badge={pendingCount} />
+          <NavTab icon="person" label={t('nav.profile')} active={tab === 'profile'} onPress={() => setTab('profile')} />
         </View>
       </View>
       {activityLayer}

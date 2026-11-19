@@ -208,6 +208,8 @@ export const en: Dict = {
     addMediaHint: 'Video: {n} seconds max',
     objectiveLabel: 'GOAL',
     noObjective: 'No goals. Create one in "My goals".',
+    noObjectiveYet: "A session is posted on a goal. You don't have one yet.",
+    createObjective: "Create a goal",
     droppedPrivate: {
       one: "🔒 Private goal: {names} won't be tagged. Pick a goal your circle can see to post as a duo.",
       other: "🔒 Private goal: {names} won't be tagged. Pick a goal your circle can see to post as a duo.",
@@ -1101,6 +1103,14 @@ export const en: Dict = {
     letsGo: "Let's go",
     welcomeBack: 'Welcome back',
     welcomeBackSub: 'Sign in to pick up your progress.',
+    forgot: "Forgot password?",
+    forgotNeedEmail: "Type your email in the field above first.",
+    forgotSentTitle: "Check your email",
+    forgotSentText: "If an account exists for {email}, a link is on its way. Open it on this phone to choose a new password.",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
+    newPasswordTitle: "New password",
+    newPasswordSub: "You're signed back in. Choose a new password for next time.",
   },
   onboarding: {
     s1Title: 'Your people know when you skip training.',
@@ -1291,6 +1301,14 @@ export const en: Dict = {
     inviteCta: "Share my link",
     feedHint: "Your friends' sessions will show up here.",
   },
+  // La barre du bas (essai du 19/11/2026) : le mot sous chaque icône, lu aussi par VoiceOver.
+  nav: {
+    home: "Home",
+    objectives: "Goals",
+    friends: "Friends",
+    profile: "Profile",
+    post: "Post a session",
+  },
   quick: {
     progress: "Step {n} of {total}",
     nameTitle: "What's your name?",
@@ -1339,6 +1357,9 @@ export const en: Dict = {
     options: "More options",
     optionsHide: "Fewer options",
     need: "Write your goal or pick a ready-made one.",
+    keepMine: "Keep my sentence as is",
+    orReady: "Or pick a ready-made goal:",
+    orExample: "Or say your activity and how many times a week, for example:",
     act: {
       musculation: "Gym session",
       sport: "Workout",

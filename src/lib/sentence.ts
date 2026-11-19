@@ -28,20 +28,26 @@ export type ParsedGoal = {
   /** Objectif tout prêt : son nom vient de la discipline (clé i18n), et sa durée aussi (en semaines). */
   titleKey?: string;
   weeks?: number;
+  /** Jours dits dans la phrase (« le mardi et le jeudi »), 1 = lundi : ils deviennent les jours de rappel. */
+  days?: number[];
+  /** La phrase se lit telle quelle comme un titre (« Pilates le mardi et le jeudi ») : on garde les mots de la personne. */
+  ownWords?: boolean;
 };
 
-type Activity = { key: string; category: string; emoji: string; re: RegExp };
+type Activity = { key: string; category: string; emoji: string; re: RegExp; /** Activité sans nom à elle dans l'app : le mot de la personne sert de titre, même seul (« Gainage »). */ own?: boolean };
 
 // L'ordre compte : le plus précis d'abord (« cours de yoga » avant « je cours », « footing » avant « foot »).
 const ACTIVITIES: Activity[] = [
   { key: 'hyrox', category: 'hyrox', emoji: '🛷', re: /hyrox|sled|wall ?ball|הייר/i },
   { key: 'crossfit', category: 'crossfit', emoji: '🏋️', re: /cross ?fit|\bwod\b|קרוספיט/i },
+  // Essai du 19/11/2026 : « gym douce » partait en musculation (\bgym), « aquabike » en vélo, « gainage » en natation.
+  { key: 'sport', category: 'autre', emoji: '💪', re: /gym(?:nastique)? douce|gymnastique|aqua ?(?:gym|bike|fitness)|gainage|abdos|renfo|cardio/i, own: true },
   { key: 'pilates', category: 'yoga', emoji: '🧘', re: /pilates|פילאטיס/i },
   { key: 'yoga', category: 'yoga', emoji: '🧘', re: /yoga|stretch|[ée]tirement|mobilit|estiramiento|יוגה|מתיחות/i },
   { key: 'danse', category: 'danse', emoji: '💃', re: /dans[eé]|danc|bail[ea]|zumba|ריקוד|לרקוד/i },
   { key: 'boxe', category: 'combat', emoji: '🥊', re: /box|אגרוף/i },
   { key: 'combat', category: 'combat', emoji: '🥋', re: /\bmma\b|\bjjb\b|\bbjj\b|jiu|judo|karat|krav|lutte|lucha|grappl|muay|kick|taekwondo|combat|martial|ג'ודו|קרב|קראטה/i },
-  { key: 'natation', category: 'natation', emoji: '🏊', re: /nag|natation|nataci|nadar|nado|piscin|swim|longueur|שחי|לשחות|בריכה/i },
+  { key: 'natation', category: 'natation', emoji: '🏊', re: /(?<![a-zà-ÿ])nag|natation|nataci|nadar|nado|piscin|swim|longueur|שחי|לשחות|בריכה/i },
   { key: 'cyclisme', category: 'cyclisme', emoji: '🚴', re: /(?<![a-zà-ÿ])v[ée]lo|cycl|ciclis|bici|bike|biking|gravel|spinning|rpm\b|אופניים|ספינינג/i },
   { key: 'running', category: 'running', emoji: '🏃', re: /courir|\bje cours\b|\bcours \d|course|footing|jogg|\brun|marathon|marat[oó]n|\bsemi\b|trail|sprint|correr|corro|carrera|ריצ|לרוץ|\bרץ\b/i },
   { key: 'street', category: 'street-workout', emoji: '🤸', re: /street|calisth|calisten|traction|dominad|pull.?up|push.?up|pompes|flexion|\bdips\b|muscle.?up|מתח|שכיבות/i },
@@ -84,9 +90,20 @@ const FREQ_MONTH = new RegExp(`${NUM}\\s*${COUNT}?\\s*${PER}\\s*${MONTH}`, 'i');
 const FREQ_BARE = new RegExp(`${NUM}\\s*${COUNT}(?![a-zà-ÿ])`, 'i');
 const TWICE = /\b(once|twice)\b/i;
 const HE_TWICE = /פעמיים|פעם (?:אחת )?בשבוע/;
-const EVERY_DAY = /tous les jours|chaque jour|quotidien|au quotidien|every ?day|daily|each day|cada d[ií]a|todos los d[ií]as|a diario|diari[oa]|כל יום/i;
-const EVERY_OTHER = /un jour sur deux|every other day|d[ií]a por medio|cada dos d[ií]as|יום כן יום לא/i;
+const EVERY_DAY = /tous les jours|chaque jour|par jour|\/ ?(?:jour|j)(?![a-zà-ÿ])|quotidien|au quotidien|every ?day|daily|each day|(?:per|a) day|\/ ?day|cada d[ií]a|todos los d[ií]as|(?:al|por) d[ií]a|a diario|diari[oa]|כל יום|ביום/i;
+const EVERY_OTHER = /un jour sur deux|tous les (?:2|deux) jours|every other day|every (?:2|two) days|d[ií]a por medio|cada (?:2|dos) d[ií]as|יום כן יום לא/i;
 const WEEKEND = /week-?ends?|fin(?:es)? de semana|סוף ?שבוע|סופ"ש/i;
+// Les jours nommés (« le mardi et le jeudi », « on Mondays ») : autant de séances par semaine, et les jours de rappel.
+const WEEKDAYS: RegExp[] = [
+  /(?<![a-zà-ÿ])(?:lundis?|mondays?|lunes)(?![a-zà-ÿ])/i,
+  /(?<![a-zà-ÿ])(?:mardis?|tuesdays?|martes)(?![a-zà-ÿ])/i,
+  /(?<![a-zà-ÿ])(?:mercredis?|wednesdays?|mi[ée]rcoles)(?![a-zà-ÿ])/i,
+  /(?<![a-zà-ÿ])(?:jeudis?|thursdays?|jueves)(?![a-zà-ÿ])/i,
+  /(?<![a-zà-ÿ])(?:vendredis?|fridays?|viernes)(?![a-zà-ÿ])/i,
+  /(?<![a-zà-ÿ])(?:samedis?|saturdays?|s[áa]bados?)(?![a-zà-ÿ])/i,
+  /(?<![a-zà-ÿ])(?:dimanches?|sundays?|domingos?)(?![a-zà-ÿ])/i,
+];
+const namedDays = (text: string): number[] => WEEKDAYS.flatMap((re, i) => (re.test(text) ? [i + 1] : []));
 
 // Une mesure : « 100 kg », « 10 km », « 45 min »...
 const UNITS: [RegExp, string][] = [
@@ -104,6 +121,11 @@ const AMOUNT = /(\d+(?:[.,]\d+)?)\s*([a-zA-ZÀ-ÿ"֐-׿]+)/g;
 // Débuts de phrase qui ne font pas partie du titre : « je veux », « mon objectif est de », « I want to »...
 const LEAD = /^\s*(?:mon objectif(?: est| c'est)?(?: de| d')?|mi objetivo es|my goal is(?: to)?|objectif\s*:?|je (?:veux|vais|voudrais|dois|compte|souhaite)(?: me| m')?|j'aimerais|j'ai envie de|je (?:m'|me )|j'|i (?:want|will|would like|need|plan)(?: to)?|i'?ll|i |quiero|voy a|me gustar[ií]a|debo|tengo que|אני רוצה|אני (?:הולך|הולכת)|המטרה שלי(?: היא)?)\s*/i;
 const TRAIL = /[\s,.;:!?-]+$/;
+// Débuts qui laissent un titre lisible une fois retirés (« je veux courir un semi » donne « Courir un semi »). Les
+// autres phrases à la première personne (« je m'entraîne... », « je vais à la salle ») ne font pas un titre.
+const FIRST_PERSON = /^\s*(?:je\b|j'|i\b|i'|yo\b|me\b|אני)/i;
+const MODAL_LEAD = /^\s*(?:je (?:veux|voudrais|dois|compte|souhaite)|j'aimerais|j'ai envie de|i (?:want|would like|need|plan) to|quiero|me gustar[ií]a|debo|tengo que|אני רוצה)\b/i;
+const readsAsTitle = (input: string) => !FIRST_PERSON.test(input) || MODAL_LEAD.test(input);
 
 const clean = (s: string) => {
   let out = s.replace(/\s+/g, ' ').trim();
@@ -112,7 +134,9 @@ const clean = (s: string) => {
   return out ? out.charAt(0).toUpperCase() + out.slice(1) : '';
 };
 
-function amountIn(text: string): { amount: number; unit: string; raw: string } | null {
+function amountIn(input: string): { amount: number; unit: string; raw: string } | null {
+  // « 10 000 pas » : sans l'espace des milliers, sinon le chiffre lu est « 000 ».
+  const text = input.replace(/(\d)[ \u00a0\u202f](\d{3})(?!\d)/g, '$1$2');
   AMOUNT.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = AMOUNT.exec(text))) {
@@ -124,7 +148,7 @@ function amountIn(text: string): { amount: number; unit: string; raw: string } |
 }
 
 /** Fréquence par semaine dite dans la phrase, et le morceau de texte qui la dit. */
-function frequencyIn(text: string): { perWeek: number; raw: string } | null {
+function frequencyIn(text: string): { perWeek: number; raw: string; days?: number[] } | null {
   let m = FREQ_WEEK.exec(text);
   if (m) { const n = toNum(m[1]); if (n >= 1 && n <= 14) return { perWeek: Math.min(n, 7), raw: m[0] }; }
   m = FREQ_MONTH.exec(text);
@@ -140,8 +164,11 @@ function frequencyIn(text: string): { perWeek: number; raw: string } | null {
   m = FREQ_BARE.exec(text);
   // « 4 séances » sans « par semaine » : un rythme tant que le chiffre tient dans une semaine.
   if (m) { const n = toNum(m[1]); if (n >= 1 && n <= 7) return { perWeek: n, raw: m[0] }; }
+  // Les jours nommés restent dans le titre (raw vide) : « Pilates le mardi et le jeudi ».
+  const days = namedDays(text);
+  if (days.length > 0) return { perWeek: days.length, raw: '', days };
   m = WEEKEND.exec(text);
-  if (m) return { perWeek: 2, raw: m[0] };
+  if (m) return { perWeek: 2, raw: '', days: [6, 7] };
   return null;
 }
 
@@ -152,11 +179,16 @@ export function parseSentence(input: string): ParsedGoal | null {
   const act = ACTIVITIES.find(a => a.re.test(text)) ?? null;
   const freq = frequencyIn(text);
   // La mesure se cherche hors du morceau « 3 fois par semaine » (sinon « 3 h par semaine » se lit deux fois).
-  const measure = amountIn(freq ? text.replace(freq.raw, ' ') : text);
+  const without = freq && freq.raw ? text.replace(freq.raw, ' ') : text;
+  const measure = amountIn(without);
   const extra = EXTRA_EMOJI.find(([r]) => r.test(text))?.[1];
   const emoji = act?.emoji ?? extra ?? '🎯';
   const category = act?.category ?? 'autre';
-  const rest = clean(freq ? text.replace(freq.raw, ' ') : text);
+  const rest = clean(without);
+  // Deux mots au moins et une phrase qui se lit comme un titre : on garde les mots de la personne.
+  const ownWords = readsAsTitle(text) && (rest.split(' ').length >= 2 || (!!act?.own && rest.length >= 3));
+  // Une fréquence chiffrée donnée avec des jours (« 2 fois par semaine, le mardi et le jeudi ») : les jours servent de rappel.
+  const days = freq?.days ?? (freq ? namedDays(text) : []);
 
   if (freq) {
     // Une fréquence sans activité ni rien d'autre à dire (« 3 fois par semaine ») : du sport, par défaut.
@@ -164,13 +196,25 @@ export function parseSentence(input: string): ParsedGoal | null {
     return {
       kind: 'rhythm', activity, category, emoji: activity === 'sport' && !act ? '💪' : emoji, text: rest,
       perWeek: freq.perWeek, amount: measure?.amount, unit: measure?.unit,
+      ...(days.length > 0 && days.length < 7 ? { days } : {}), ...(ownWords ? { ownWords } : {}),
     };
   }
   // Un chiffre mesurable sans fréquence : un record (« 100 kg au bench », « courir 10 km »).
   if (measure) return { kind: 'record', activity: act?.key ?? null, category, emoji, text: rest, amount: measure.amount, unit: measure.unit };
   // Une activité reconnue sans chiffre : 3 fois par semaine, à corriger d'un geste.
-  if (act) return { kind: 'rhythm', activity: act.key, category, emoji, text: rest, perWeek: 3, guessed: true };
+  if (act) return { kind: 'rhythm', activity: act.key, category, emoji, text: rest, perWeek: 3, guessed: true, ...(ownWords ? { ownWords } : {}) };
   return null;
+}
+
+/**
+ * La phrase gardée telle quelle quand rien n'est reconnu (essai du 19/11/2026) : un objectif libre, 3 fois par
+ * semaine, que la personne corrige avec + et −. « Me remettre en forme », « aquagym », « pétanque »...
+ */
+export function freeGoal(input: string): ParsedGoal | null {
+  const text = clean(input || '').slice(0, 80);
+  if (text.length < 3) return null;
+  const emoji = EXTRA_EMOJI.find(([r]) => r.test(text))?.[1] ?? '🎯';
+  return { kind: 'rhythm', activity: null, category: 'autre', emoji, text, perWeek: 3, guessed: true };
 }
 
 /** Objectifs tout prêts, proposés quand la phrase n'est pas comprise (ou d'entrée, champ vide). */

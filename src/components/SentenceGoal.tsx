@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { parseSentence, READY_GOALS, type ParsedGoal } from '../lib/sentence';
+import { parseSentence, freeGoal, READY_GOALS, type ParsedGoal } from '../lib/sentence';
+import { FEATURES } from '../lib/features';
 import { goalTitle, goalSummary } from '../lib/createGoal';
 import { weeksLabel } from '../lib/goal';
 import { GlassSurface } from './GlassSurface';
@@ -44,8 +45,11 @@ export function SentenceGoal({ onChange, autoFocus, tone = 'glass' }: {
   // Rythme corrigé à la main, valable tant que la phrase ne dit pas un autre chiffre.
   const [perWeek, setPerWeek] = useState<number | null>(null);
 
+  // Phrase pas comprise mais gardée telle quelle (essai du 19/11/2026) : un objectif libre, tant que le texte ne change pas.
+  const [kept, setKept] = useState<ParsedGoal | null>(null);
+
   const parsed = useMemo(() => parseSentence(text), [text]);
-  const base = picked ?? parsed;
+  const base = picked ?? parsed ?? kept;
   const goal = useMemo<ParsedGoal | null>(
     () => (base && base.kind === 'rhythm' && perWeek != null ? { ...base, perWeek, guessed: false } : base),
     [base, perWeek],
@@ -62,6 +66,7 @@ export function SentenceGoal({ onChange, autoFocus, tone = 'glass' }: {
   const lastPicked = useRef<ParsedGoal | null>(null);
   const onText = (v: string) => {
     setText(v);
+    setKept(null);
     const ready = lastPicked.current;
     if (!ready) return;
     // Il reste choisi (nom, rythme, durée) tant que la phrase parle de la même activité sans donner de chiffre.
@@ -93,6 +98,7 @@ export function SentenceGoal({ onChange, autoFocus, tone = 'glass' }: {
   };
 
   const typed = text.trim().length >= 3;
+  const free = FEATURES.keepMySentence && typed ? freeGoal(text) : null;
   return (
     <View>
       <TextInput
@@ -142,8 +148,19 @@ export function SentenceGoal({ onChange, autoFocus, tone = 'glass' }: {
         </GlassSurface>
       ) : (
         <View style={{ marginTop: 16 }}>
+          {/* Pas compris : la phrase de la personne passe avant les objectifs tout prêts (« aquagym », « me remettre en forme »). */}
+          {!!free && (
+            <TouchableOpacity onPress={() => { HAPTIC(); setKept(free); }} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={`${t('sentence.keepMine')}. ${free.text}`}
+              style={{ minHeight: 60, borderRadius: 30, paddingLeft: 22, paddingRight: 18, marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#000', fontSize: 16, fontFamily: F.extrabold }} numberOfLines={1} maxFontSizeMultiplier={1.3}>{t('sentence.keepMine')}</Text>
+                <Text style={{ color: 'rgba(0,0,0,0.6)', fontSize: 13, fontFamily: F.semibold, marginTop: 1 }} numberOfLines={1} maxFontSizeMultiplier={1.3}>{free.text}</Text>
+              </View>
+              <Ionicons name="arrow-forward" size={20} color="#000" />
+            </TouchableOpacity>
+          )}
           <Text style={{ color: typed ? '#fff' : 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 19, fontFamily: typed ? F.semibold : F.regular }}>
-            {typed ? t('sentence.notUnderstood') : t('sentence.ready')}
+            {typed ? (free ? t('sentence.orReady') : t('sentence.notUnderstood')) : t('sentence.ready')}
           </Text>
           <View style={{ marginTop: 12, gap: 10 }}>
             {READY_GOALS.map(g => (

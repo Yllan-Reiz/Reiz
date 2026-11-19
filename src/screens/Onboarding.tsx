@@ -10,6 +10,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SocialAuthButtons } from '../components/SocialAuthButtons';
 import { AUTH_BTN } from '../components/GoogleButton';
 import { KeyboardFrame, KeyboardScroll } from '../components/KeyboardFrame';
+import { PasswordInput, ForgotPasswordLink } from '../components/PasswordTools';
+import { FEATURES } from '../lib/features';
 import { s, F } from '../styles';
 import { t, lang, dirIcon } from '../i18n';
 
@@ -107,11 +109,23 @@ export function Onboarding({ onNext, onBack }: { onNext: () => void; onBack?: ()
         </View>
         <View style={s.inputBlock}>
           <Text style={[s.inputLabel, s.authLabel]}>{t('auth.passwordLabel')}</Text>
-          <TextInput style={[s.inputField, s.authField]} placeholder="••••••••" placeholderTextColor="#666" value={loginPassword} onChangeText={setLoginPassword} secureTextEntry keyboardAppearance="dark" maxLength={72} />
+          <PasswordInput style={[s.inputField, s.authField]} placeholder="••••••••" placeholderTextColor="#666" value={loginPassword} onChangeText={setLoginPassword} keyboardAppearance="dark" textContentType="password" autoComplete="current-password" maxLength={72} />
         </View>
+        <ForgotPasswordLink email={loginEmail} />
         <TouchableOpacity style={[s.btn, { marginTop: 8, minHeight: AUTH_BTN.height, borderRadius: AUTH_BTN.radius }, loginLoading && s.btnDisabled]} onPress={loginLoading ? undefined : handleLogin}>
           {loginLoading ? <ActivityIndicator color="#000" /> : <Text style={[s.btnText, { fontSize: AUTH_BTN.text }]}>{t('auth.signInArrow')}</Text>}
         </TouchableOpacity>
+        {/* Essai du 19/11/2026 : un compte créé avec Apple ou Google retrouve son bouton ici aussi (comme sur l'accueil). */}
+        {FEATURES.socialOnLogin && (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: '#222' }} />
+              <Text style={{ color: '#8a8a8a', fontSize: 12 }}>{t('common.or')}</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: '#222' }} />
+            </View>
+            <SocialAuthButtons mode="signin" />
+          </>
+        )}
         <TouchableOpacity style={s.obBackBtn} onPress={() => setShowLogin(false)}>
           <Text style={s.obBackText}>{t('common.backArrow')}</Text>
         </TouchableOpacity>
@@ -171,7 +185,7 @@ export function Onboarding({ onNext, onBack }: { onNext: () => void; onBack?: ()
           ) : (
             <View style={{ marginTop: 18 }}>
               <TextInput style={quickField} placeholder={t('auth.emailPlaceholder')} placeholderTextColor="rgba(255,255,255,0.4)" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoFocus keyboardAppearance="dark" textContentType="emailAddress" autoComplete="email" maxLength={254} accessibilityLabel={t('auth.emailLabel')} />
-              <TextInput style={[quickField, { marginTop: 10 }]} placeholder={t('quick.passwordPlaceholder')} placeholderTextColor="rgba(255,255,255,0.4)" value={password} onChangeText={setPassword} secureTextEntry keyboardAppearance="dark" textContentType="newPassword" autoComplete="new-password" maxLength={72} accessibilityLabel={t('auth.passwordLabel')} />
+              <PasswordInput style={quickField} wrapStyle={{ marginTop: 10 }} placeholder={t('quick.passwordPlaceholder')} placeholderTextColor="rgba(255,255,255,0.4)" value={password} onChangeText={setPassword} keyboardAppearance="dark" textContentType="newPassword" autoComplete="new-password" maxLength={72} accessibilityLabel={t('auth.passwordLabel')} />
               <TouchableOpacity style={[s.btn, { marginTop: AUTH_BTN.gap, minHeight: AUTH_BTN.height, borderRadius: AUTH_BTN.radius }, loading && s.btnDisabled]} onPress={loading ? undefined : handleSignUp} accessibilityRole="button">
                 {loading ? <ActivityIndicator color="#000" /> : <Text style={[s.btnText, { fontSize: AUTH_BTN.text }]}>{t('quick.continue')}</Text>}
               </TouchableOpacity>

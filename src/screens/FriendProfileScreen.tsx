@@ -20,6 +20,7 @@ import { DuelCard } from '../components/DuelCard';
 import { s, F } from '../styles';
 import { FlameInline } from '../components/FlameBadge';
 import { MonthCalendar } from '../components/MonthCalendar';
+import { choose } from '../lib/choose';
 import { t, tp, formatDate } from '../i18n';
 import { FEATURES } from '../lib/features';
 
@@ -157,7 +158,7 @@ export function FriendProfileScreen({ userId, onClose, onOpenProfile, onDuo }: {
       if (error) Alert.alert(t('common.error'), frError(error));
       else Alert.alert(t('feed.reportSentTitle'), t('friendProfile.reportSent'));
     };
-    Alert.alert(t('friendProfile.reportTitle'), t('friendProfile.reportWhy'), [
+    choose(t('friendProfile.reportTitle'), t('friendProfile.reportWhy'), [
       { text: t('common.spam'), onPress: () => send('spam') },
       { text: t('friendProfile.inappropriate'), onPress: () => send('inapproprié') },
       { text: t('common.other'), onPress: () => send('autre') },

@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Animated, E
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
+import { choose } from '../lib/choose';
 import { timeAgo, frError, inUnit, num } from '../lib/helpers';
 import { Update, FeedMeta, Reactor } from '../lib/types';
 import { ALL_REACTION_EMOJIS } from '../constants';
@@ -266,7 +267,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
       if (error) Alert.alert(t('common.error'), frError(error));
       else Alert.alert(t('feed.reportSentTitle'), t('feed.reportSentText'));
     };
-    Alert.alert(t('feed.reportTitle'), t('feed.reportWhy'), [
+    choose(t('feed.reportTitle'), t('feed.reportWhy'), [
       { text: t('common.spam'), onPress: () => send('spam') },
       { text: t('feed.inappropriate'), onPress: () => send('inapproprié') },
       { text: t('common.other'), onPress: () => send('autre') },
@@ -356,7 +357,7 @@ export function FeedCard({ u, meta, currentUserId, onDeleted, onBlocked, openCom
 
   const openMenu = () => {
     if (isMine) {
-      Alert.alert(t('feed.yourPost'), undefined, [
+      choose(t('feed.yourPost'), undefined, [
         ...(Date.now() - new Date(u.created_at).getTime() < EDIT_CAPTION_MS ? [{ text: t('feed.editCaption'), onPress: () => setEditingCaption(caption || '') }] : []),
         { text: t('feed.shareStory'), onPress: shareStory },
         ...(FEATURES.pinPosts ? [{ text: pinned ? t('feed.unpin') : t('feed.pin'), onPress: pinPost }] : []),

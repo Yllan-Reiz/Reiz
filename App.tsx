@@ -28,6 +28,9 @@ import { registerLiveActivityToken, endExpiredLiveActivities, forgetLiveActivity
 import { FEATURES } from './src/lib/features';
 import { saveLanguage } from './src/lib/language';
 import { mark } from './src/lib/perf';
+import { watchRecovery } from './src/lib/passwordReset';
+import { NewPasswordModal } from './src/components/PasswordTools';
+import { ChoiceSheetHost } from './src/components/ChoiceSheet';
 
 // Au-delà, le fil est rechargé au retour dans l'app (liens de photos neufs, posts du jour).
 const STALE_AFTER_MS = 3 * 3600 * 1000;
@@ -42,6 +45,8 @@ export default function App() {
       {/* Fournit les encoches/home indicator réels de l'appareil à tous les écrans */}
       <SafeAreaProvider>
         <AppInner />
+        {/* Android : les fenêtres à plus de 3 choix (voir lib/choose.ts). Ne s'affiche jamais sur iPhone. */}
+        <ChoiceSheetHost />
       </SafeAreaProvider>
     </ErrorBoundary>
   );
@@ -59,6 +64,9 @@ function AppInner() {
   const [postObjective, setPostObjective] = useState<string | null>(null);
   // Remonter Main recharge le fil : utile quand l'accueil vient de créer la photo ou le premier objectif.
   const [mainKey, setMainKey] = useState(0);
+  // Retour du lien « mot de passe oublié » : la session est ouverte, on demande le nouveau mot de passe par-dessus le fil.
+  const [recovery, setRecovery] = useState(false);
+  useEffect(() => watchRecovery(() => setRecovery(true)), []);
   const notifListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
   const registeredUserId = useRef<string | null>(null);
@@ -232,6 +240,7 @@ function AppInner() {
     <>
       <Main key={mainKey} onPost={openPost} navIntent={navIntent} onNavIntentHandled={() => setNavIntent(null)} />
       <WhatsNewModal />
+      <NewPasswordModal visible={recovery} onClose={() => setRecovery(false)} />
       {/* 1.4 : onboarding express (objectif en une phrase, invitation). L'ancien accueil reste derrière QUICK_START. */}
       {!WELCOME_FLOW ? <FindFriendsPrompt /> : QUICK_START ? <QuickStart onChanged={() => setMainKey(k => k + 1)} /> : <WelcomeFlow onChanged={() => setMainKey(k => k + 1)} />}
     </>

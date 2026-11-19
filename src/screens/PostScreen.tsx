@@ -29,6 +29,7 @@ import { s, F } from '../styles';
 import { t, tp, unitLabel, isRTL } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
 import { FEATURES } from '../lib/features';
+import { choose } from '../lib/choose';
 
 // Vidéo de progression : 25 s max (15 s jusqu'à la 1.1). Au-delà, le fichier pèse
 // trop lourd pour la 4G et le fil devient une plateforme vidéo.
@@ -318,7 +319,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
 
   const handlePickPhoto = async () => {
     const needCamera = askCamera;
-    Alert.alert(t('post.mediaTitle'), t('post.mediaSub', { n: VIDEO_MAX_SEC }), [
+    choose(t('post.mediaTitle'), t('post.mediaSub', { n: VIDEO_MAX_SEC }), [
       {
         text: t('common.takePhoto'),
         onPress: async () => {
@@ -456,12 +457,12 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       // Pour le back-office : premier post du compte ou non (le post qu'on vient d'écrire compte déjà).
-      supabase.from('updates').select('id', { count: 'exact', head: true }).eq('user_id', user.id)
-        .then(({ count }) => {
-          track('post_published', { first: count === 1, duo: !!duoWith, moment: momentOn ? momentKind : null });
-          // 1.4 : la première séance validée, dernière marche de l'entonnoir d'onboarding.
-          if (count === 1) track('first_session', { duo: !!duoWith }, 'onboarding');
-        }, () => {});
+      // Attendu (essai du 19/11/2026) : savoir si c'est le premier post décide aussi de la fenêtre de fin.
+      const { count: postCount } = await supabase.from('updates').select('id', { count: 'exact', head: true }).eq('user_id', user.id)
+        .then(r => r, () => ({ count: null as number | null }));
+      track('post_published', { first: postCount === 1, duo: !!duoWith, moment: momentOn ? momentKind : null });
+      // 1.4 : la première séance validée, dernière marche de l'entonnoir d'onboarding.
+      if (postCount === 1) track('first_session', { duo: !!duoWith }, 'onboarding');
       // Séance postée : la carte du duo (Activité en direct) n'a plus lieu d'être.
       endAllLiveActivities();
       const me = (await supabase.from('users').select('username, full_name').eq('id', user.id).maybeSingle()).data;
@@ -513,6 +514,10 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
       // postent en duo, aucune ne s'était lancé de défi).
       const duels = FEATURES.duels && tagged.length > 0 ? await loadDuels().catch(() => null) : null;
       const rival = duels ? tagged.find(f => !duels.some(d => d.otherId === f.id && (d.status === 'active' || d.status === 'pending'))) : undefined;
+      // Essai du 19/11/2026 : « Partager en story ? » revenait après chaque séance. La fenêtre ne s'ouvre plus que
+      // lorsqu'elle a quelque chose à dire : le premier post, un duo, d'autres objectifs avancés, un défi à proposer.
+      // Sinon retour direct au fil, où la séance est déjà en haut (la story reste dans le menu du post).
+      if (FEATURES.rareStoryPrompt && postCount !== 1 && postCount !== null && tagged.length === 0 && !alsoNote && !rival) { onPublish(); return; }
       Alert.alert(title, alsoNote ? `${alsoNote}\n\n${message}` : message, [
         ...(rival ? [{ text: t('duelCard.challengeThisWeek', { name: rival.full_name.split(' ')[0] }), onPress: async () => {
           const err = await proposeDuel(rival.id);
@@ -600,7 +605,17 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
           {loadingObj
             ? <ActivityIndicator color="#fff" style={{ marginBottom: 20 }} />
             : objectives.length === 0
-              ? <View style={s.postEmptyObj}>
+              ? FEATURES.createGoalFromPost
+                ? (
+                  // Essai du 19/11/2026 : la phrase renvoyait vers « Mes objectifs », un nom qu'aucun onglet ne porte.
+                  <View style={[s.postEmptyObj, { gap: 12, paddingVertical: 18 }]}>
+                    <Text style={{ color: '#ddd', fontSize: 14, lineHeight: 20, fontFamily: F.regular, textAlign: 'center' }}>{t('post.noObjectiveYet')}</Text>
+                    <TouchableOpacity style={s.emptyStateBtn} onPress={() => onPublish('new_objective')} accessibilityRole="button">
+                      <Text style={s.emptyStateBtnText}>{t('post.createObjective')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                )
+                : <View style={s.postEmptyObj}>
                   <Text style={{ color: '#888', fontSize: 13 }}>{t('post.noObjective')}</Text>
                 </View>
               : <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.postObjScroll} contentContainerStyle={{ gap: 10, paddingHorizontal: GUTTER }}>

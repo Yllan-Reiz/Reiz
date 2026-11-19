@@ -208,6 +208,8 @@ export const es: Dict = {
     addMediaHint: 'Vídeo: {n} segundos máx.',
     objectiveLabel: 'OBJETIVO',
     noObjective: 'No tienes objetivos. Crea uno en «Mis objetivos».',
+    noObjectiveYet: "Una sesión se publica en un objetivo. Todavía no tienes ninguno.",
+    createObjective: "Crear un objetivo",
     droppedPrivate: {
       one: '🔒 Objetivo privado: {names} no será etiquetado. Elige un objetivo visible para tu círculo para publicar en dúo.',
       other: '🔒 Objetivo privado: {names} no serán etiquetados. Elige un objetivo visible para tu círculo para publicar en dúo.',
@@ -1101,6 +1103,14 @@ export const es: Dict = {
     letsGo: '¡Vamos!',
     welcomeBack: 'Hola de nuevo',
     welcomeBackSub: 'Inicia sesión para retomar tu progreso.',
+    forgot: "¿Olvidaste tu contraseña?",
+    forgotNeedEmail: "Escribe primero tu correo en el campo de arriba.",
+    forgotSentTitle: "Revisa tu correo",
+    forgotSentText: "Si existe una cuenta para {email}, acabamos de enviar un enlace. Ábrelo en este teléfono para elegir una contraseña nueva.",
+    showPassword: "Mostrar la contraseña",
+    hidePassword: "Ocultar la contraseña",
+    newPasswordTitle: "Nueva contraseña",
+    newPasswordSub: "Ya has vuelto a entrar. Elige una contraseña nueva para la próxima vez.",
   },
   onboarding: {
     s1Title: 'Tu gente sabe cuándo abandonas el entreno.',
@@ -1291,6 +1301,14 @@ export const es: Dict = {
     inviteCta: "Compartir mi enlace",
     feedHint: "Las sesiones de tus amigos aparecerán aquí.",
   },
+  // La barre du bas (essai du 19/11/2026) : le mot sous chaque icône, lu aussi par VoiceOver.
+  nav: {
+    home: "Inicio",
+    objectives: "Objetivos",
+    friends: "Amigos",
+    profile: "Perfil",
+    post: "Publicar una sesión",
+  },
   quick: {
     progress: "Paso {n} de {total}",
     nameTitle: "¿Cómo te llamas?",
@@ -1339,6 +1357,9 @@ export const es: Dict = {
     options: "Más opciones",
     optionsHide: "Menos opciones",
     need: "Escribe tu objetivo o elige uno ya hecho.",
+    keepMine: "Dejar mi frase tal cual",
+    orReady: "O elige un objetivo ya hecho:",
+    orExample: "O di tu actividad y cuántas veces por semana, por ejemplo:",
     act: {
       musculation: "Sesión de musculación",
       sport: "Sesión de deporte",

@@ -38,4 +38,30 @@ export const FEATURES = {
   /** Moment Reiz, rangé le 15/11/2026 : bandeau « 10 minutes pour être à l'heure » à la publication et mention
    *  « À l'heure / En retard » dans le fil (3 posts à l'heure sur 27 en 30 jours). Le rappel du jour reste envoyé. */
   momentReiz: false,
+
+  // ---- Essai « testeurs fictifs » (19/11/2026, branche essai-testeurs-fictifs, compte rendu dans
+  // TEST-TESTEURS-FICTIFS-2026-11-19.md). Chaque ligne passée à `false` ramène l'écran d'avant, tel quel.
+  // Lot 1
+  /** « Mot de passe oublié ? » sur les deux écrans de connexion (lien par e-mail, puis nouveau mot de passe dans l'app). */
+  forgotPassword: true,
+  /** « Plus tard » sur le premier objectif de l'accueil (avant : bouton gris sans sortie). */
+  skipFirstGoal: true,
+  /** Phrase pas comprise : « Garder ma phrase telle quelle » crée un objectif libre, 3 fois par semaine, corrigeable. */
+  keepMySentence: true,
+  /** Un mot sous chaque icône de la barre du bas (Accueil, Objectifs, Amis, Profil). */
+  navLabels: true,
+  /** Écran de publication sans objectif : un bouton « Créer un objectif » à la place de la phrase seule. */
+  createGoalFromPost: true,
+  /** Apple et Google sur l'écran « Déjà un compte ? » de l'inscription. */
+  socialOnLogin: true,
+  /** « Partager en story ? » seulement au premier post, aux duos et quand d'autres objectifs avancent (avant : à chaque post). */
+  rareStoryPrompt: true,
+  // Lot 3
+  /** Quelqu'un sans aucun objectif (venu suivre un proche) garde le fil net et peut réagir. */
+  supporters: true,
+  /** Moins de 5 amis : le fil montre 7 jours au lieu de 24 heures. */
+  weekFeedSmallCircle: true,
+  // Lot 4
+  /** Un écran d'une phrase avant la demande de notifications du téléphone, à la fin de l'accueil. */
+  notifsExplainer: true,
 } as const;

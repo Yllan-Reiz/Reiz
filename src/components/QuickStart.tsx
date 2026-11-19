@@ -17,6 +17,7 @@ import { SentenceGoal, type SentenceResult } from './SentenceGoal';
 import { InviteCard, shareInviteCard } from './InviteCard';
 import { KeyboardFrame, KeyboardScroll } from './KeyboardFrame';
 import { welcomePending, seenKey, Rise, CircleFaces } from './WelcomeFlow';
+import { FEATURES } from '../lib/features';
 import { F } from '../styles';
 import { t, dirIcon } from '../i18n';
 
@@ -207,6 +208,14 @@ export function QuickStartModal({ visible, preview, onClose }: { visible: boolea
     next('done');
   };
 
+  // « Plus tard » sur l'objectif : on avance, et le fil n'ouvrira pas la création d'objectif tout seul juste après
+  // (Main le fait une fois pour un compte sans objectif : la personne vient de dire non).
+  const skipObjective = () => {
+    Keyboard.dismiss();
+    if (userId) AsyncStorage.setItem(`reiz.firstobj.${userId}`, '1').catch(() => {});
+    next('skip');
+  };
+
   const share = async (channel: InviteChannel | 'instagram') => {
     if (!userId) return;
     Haptics.selectionAsync().catch(() => {});
@@ -228,6 +237,12 @@ export function QuickStartModal({ visible, preview, onClose }: { visible: boolea
     <>
           {step === 'name' && <Primary label={t('quick.continue')} onPress={saveName} disabled={!name.trim()} busy={busy} />}
           {step === 'objective' && <Primary label={t('quick.continue')} onPress={saveObjective} disabled={!result.goal} busy={busy} />}
+          {/* Essai du 19/11/2026 : quelqu'un venu suivre un proche n'a pas d'objectif à écrire. Avant : bouton gris, aucune sortie. */}
+          {step === 'objective' && FEATURES.skipFirstGoal && !result.goal && !preview && (
+            <TouchableOpacity onPress={skipObjective} accessibilityRole="button" accessibilityLabel={t('quick.later')} style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontFamily: F.semibold }}>{t('quick.later')}</Text>
+            </TouchableOpacity>
+          )}
           {step === 'invite' && (sent > 0
             ? <Primary label={t('quick.finish')} onPress={() => next('done')} />
             : (

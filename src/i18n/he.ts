@@ -210,6 +210,8 @@ export const he: Dict = {
     addMediaHint: 'סרטון: עד {n} שניות',
     objectiveLabel: 'יעד',
     noObjective: 'אין יעדים. צרו אחד ב"היעדים שלי".',
+    noObjectiveYet: "אימון מפרסמים על יעד. עדיין אין לך יעד.",
+    createObjective: "ליצור יעד",
     droppedPrivate: {
       one: '🔒 יעד פרטי: {names} לא יתויג/תתויג. בחרו יעד שהמעגל שלכם רואה כדי לפרסם בזוג.',
       other: '🔒 יעד פרטי: {names} לא יתויגו. בחרו יעד שהמעגל שלכם רואה כדי לפרסם בזוג.',
@@ -1103,6 +1105,14 @@ export const he: Dict = {
     letsGo: 'יאללה',
     welcomeBack: 'טוב לראות אותך שוב',
     welcomeBackSub: 'התחברו כדי להמשיך מאיפה שעצרתם.',
+    forgot: "שכחת סיסמה?",
+    forgotNeedEmail: "קודם כתוב את האימייל שלך בשדה שלמעלה.",
+    forgotSentTitle: "בדוק את האימייל",
+    forgotSentText: "אם יש חשבון עבור {email}, שלחנו קישור. פתח אותו בטלפון הזה כדי לבחור סיסמה חדשה.",
+    showPassword: "הצג סיסמה",
+    hidePassword: "הסתר סיסמה",
+    newPasswordTitle: "סיסמה חדשה",
+    newPasswordSub: "התחברת מחדש. בחר סיסמה חדשה לפעם הבאה.",
   },
   onboarding: {
     s1Title: 'הקרובים שלך יודעים כשאתם מוותרים על האימון.',
@@ -1293,6 +1303,14 @@ export const he: Dict = {
     inviteCta: "שיתוף הקישור שלי",
     feedHint: "האימונים של החברים יופיעו כאן.",
   },
+  // La barre du bas (essai du 19/11/2026) : le mot sous chaque icône, lu aussi par VoiceOver.
+  nav: {
+    home: "בית",
+    objectives: "יעדים",
+    friends: "חברים",
+    profile: "פרופיל",
+    post: "לפרסם אימון",
+  },
   quick: {
     progress: "שלב {n} מתוך {total}",
     nameTitle: "איך קוראים לכם?",
@@ -1341,6 +1359,9 @@ export const he: Dict = {
     options: "אפשרויות נוספות",
     optionsHide: "פחות אפשרויות",
     need: "כתבו את המטרה או בחרו אחת מוכנה.",
+    keepMine: "להשאיר את המשפט שלי כמו שהוא",
+    orReady: "או בחר יעד מוכן:",
+    orExample: "או כתוב את הפעילות וכמה פעמים בשבוע, למשל:",
     act: {
       musculation: "אימון כוח",
       sport: "אימון",

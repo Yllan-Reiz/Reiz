@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, Alert, Keyboard } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,6 +56,9 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
   const weeks = weeksPick === undefined ? (rhythm ? baseWeeks : null) : (rhythm && weeksPick === null ? baseWeeks : weeksPick);
   const deadline = weeks ? addWeeks(localDay(), weeks) : null;
   const onResult = useCallback((r: SentenceResult) => setResult(r), []);
+  // « Pilates le mardi et le jeudi » : les jours dits dans la phrase sont déjà cochés à l'étape suivante.
+  const saidDays = goal?.days?.join(',') ?? '';
+  useEffect(() => { setDays(saidDays ? saidDays.split(',').map(Number) : ALL_DAYS); }, [saidDays]);
 
   const reset = () => { setVisibility('friends'); setDays(ALL_DAYS); setWeeksPick(undefined); setMore(false); setStep('say'); setFormKey(k => k + 1); };
 

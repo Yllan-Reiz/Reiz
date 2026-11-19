@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { parseSentence, type ParsedGoal } from '../lib/sentence';
+import { parseSentence, freeGoal, type ParsedGoal } from '../lib/sentence';
+import { FEATURES } from '../lib/features';
 import { goalTitle, goalSummary } from '../lib/createGoal';
 import { F } from '../styles';
 import { t, type TKey } from '../i18n';
@@ -27,7 +28,12 @@ export function TalkGoal({ onChange, autoFocus }: { onChange: (r: SentenceResult
   // Rythme corrigé à la main, valable tant que la phrase ne dit pas un autre chiffre.
   const [perWeek, setPerWeek] = useState<number | null>(null);
 
-  const parsed = useMemo(() => parseSentence(text), [text]);
+  // Phrase pas comprise mais gardée telle quelle (essai du 19/11/2026) : un objectif libre, tant que le texte ne change pas.
+  const [kept, setKept] = useState<ParsedGoal | null>(null);
+  const onText = (v: string) => { setText(v); setKept(null); };
+
+  const understood = useMemo(() => parseSentence(text), [text]);
+  const parsed = understood ?? kept;
   const goal = useMemo<ParsedGoal | null>(
     () => (parsed && parsed.kind === 'rhythm' && perWeek != null ? { ...parsed, perWeek, guessed: false } : parsed),
     [parsed, perWeek],
@@ -43,7 +49,7 @@ export function TalkGoal({ onChange, autoFocus }: { onChange: (r: SentenceResult
     if (next === goal.perWeek) return;
     HAPTIC();
     // La phrase dit « 3 fois » : on y écrit le nouveau chiffre, pour que la phrase et le résultat disent la même chose.
-    if (parsed?.kind === 'rhythm' && !parsed.guessed) {
+    if (understood?.kind === 'rhythm' && !understood.guessed) {
       const rewritten = text.replace(new RegExp(`(^|\\D)${goal.perWeek}(?!\\d)`), `$1${next}`);
       if (rewritten !== text && parseSentence(rewritten)?.perWeek === next) { setText(rewritten); return; }
     }
@@ -51,6 +57,7 @@ export function TalkGoal({ onChange, autoFocus }: { onChange: (r: SentenceResult
   };
 
   const typed = text.trim().length >= 3;
+  const free = FEATURES.keepMySentence && typed ? freeGoal(text) : null;
   return (
     <View>
       <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, lineHeight: 21, fontFamily: F.semibold, marginBottom: 18 }} maxFontSizeMultiplier={1.3}>{t(tease)}</Text>
@@ -59,7 +66,7 @@ export function TalkGoal({ onChange, autoFocus }: { onChange: (r: SentenceResult
         placeholder={t('sentence.talkPlaceholder')}
         placeholderTextColor="rgba(255,255,255,0.28)"
         value={text}
-        onChangeText={setText}
+        onChangeText={onText}
         autoFocus={autoFocus}
         autoCapitalize="sentences"
         autoCorrect={false}
@@ -92,8 +99,14 @@ export function TalkGoal({ onChange, autoFocus }: { onChange: (r: SentenceResult
         </View>
       ) : (
         <View style={{ marginTop: 24 }}>
+          {!!free && (
+            <TouchableOpacity onPress={() => { HAPTIC(); setKept(free); }} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={`${t('sentence.keepMine')}. ${free.text}`}
+              style={{ height: 56, borderRadius: 18, marginBottom: 22, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 }}>
+              <Text style={{ color: '#000', fontSize: 16, fontFamily: F.extrabold }} maxFontSizeMultiplier={1.3}>{t('sentence.keepMine')}</Text>
+            </TouchableOpacity>
+          )}
           <Text style={typed ? { color: '#fff', fontSize: 14, lineHeight: 19, fontFamily: F.semibold } : label}>
-            {typed ? t('sentence.notYet') : t('sentence.examples')}
+            {typed ? (free ? t('sentence.orExample') : t('sentence.notYet')) : t('sentence.examples')}
           </Text>
           <View style={{ marginTop: 6 }}>
             {EXAMPLES.map(k => (

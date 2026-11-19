@@ -209,6 +209,8 @@ export const fr = {
     addMediaHint: 'Vidéo : {n} secondes max',
     objectiveLabel: 'OBJECTIF',
     noObjective: 'Aucun objectif. Crée-en un dans « Mes objectifs ».',
+    noObjectiveYet: "Une séance se poste sur un objectif. Tu n'en as pas encore.",
+    createObjective: "Créer un objectif",
     droppedPrivate: {
       one: '🔒 Objectif privé : {names} ne sera pas identifié. Choisis un objectif visible par ton cercle pour poster en duo.',
       other: '🔒 Objectif privé : {names} ne seront pas identifiés. Choisis un objectif visible par ton cercle pour poster en duo.',
@@ -1102,6 +1104,14 @@ export const fr = {
     letsGo: "C'est parti",
     welcomeBack: 'Bon retour',
     welcomeBackSub: 'Connecte-toi pour reprendre ta progression.',
+    forgot: "Mot de passe oublié ?",
+    forgotNeedEmail: "Écris d'abord ton e-mail dans le champ du dessus.",
+    forgotSentTitle: "Regarde tes e-mails",
+    forgotSentText: "Si un compte existe pour {email}, un lien vient de partir. Ouvre-le sur ce téléphone pour choisir un nouveau mot de passe.",
+    showPassword: "Afficher le mot de passe",
+    hidePassword: "Masquer le mot de passe",
+    newPasswordTitle: "Nouveau mot de passe",
+    newPasswordSub: "Tu es reconnecté. Choisis un nouveau mot de passe pour la prochaine fois.",
   },
   onboarding: {
     s1Title: 'Tes proches savent quand tu lâches ton entraînement.',
@@ -1292,6 +1302,14 @@ export const fr = {
     inviteCta: "Partager mon lien",
     feedHint: "Les séances de tes amis s'afficheront ici.",
   },
+  // La barre du bas (essai du 19/11/2026) : le mot sous chaque icône, lu aussi par VoiceOver.
+  nav: {
+    home: "Accueil",
+    objectives: "Objectifs",
+    friends: "Amis",
+    profile: "Profil",
+    post: "Poster une séance",
+  },
   quick: {
     progress: "Étape {n} sur {total}",
     nameTitle: "Comment tu t'appelles ?",
@@ -1340,6 +1358,9 @@ export const fr = {
     options: "Plus d'options",
     optionsHide: "Moins d'options",
     need: "Écris ton objectif ou prends-en un tout prêt.",
+    keepMine: "Garder ma phrase telle quelle",
+    orReady: "Ou prends un objectif tout prêt :",
+    orExample: "Ou dis ton activité et combien de fois par semaine, par exemple :",
     act: {
       musculation: "Séance musculation",
       sport: "Séance de sport",

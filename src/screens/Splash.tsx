@@ -7,6 +7,7 @@ import { SocialAuthButtons } from '../components/SocialAuthButtons';
 import { AUTH_BTN } from '../components/GoogleButton';
 import { KeyboardFrame, KeyboardScroll } from '../components/KeyboardFrame';
 import { BubbleSplash } from '../components/BubbleSplash';
+import { PasswordInput, ForgotPasswordLink } from '../components/PasswordTools';
 import { WeekSplash } from '../components/WeekSplash';
 import { BUBBLE_SPLASH, WEEK_SPLASH } from '../constants';
 import { s } from '../styles';
@@ -46,8 +47,9 @@ export function Splash({ onNext }: { onNext: () => void }) {
           </View>
           <View style={s.inputBlock}>
             <Text style={[s.inputLabel, s.authLabel]}>{t('auth.passwordLabel')}</Text>
-            <TextInput style={[s.inputField, s.authField]} placeholder="••••••••" placeholderTextColor="#666" value={password} onChangeText={setPassword} secureTextEntry keyboardAppearance="dark" maxLength={72} />
+            <PasswordInput style={[s.inputField, s.authField]} placeholder="••••••••" placeholderTextColor="#666" value={password} onChangeText={setPassword} keyboardAppearance="dark" textContentType="password" autoComplete="current-password" maxLength={72} />
           </View>
+          <ForgotPasswordLink email={email} />
           <TouchableOpacity style={[s.btn, pill, { marginTop: 8 }, loading && s.btnDisabled]} onPress={loading ? undefined : handleLogin}>
             {loading ? <ActivityIndicator color="#000" /> : <Text style={[s.btnText, btnLabel]}>{t('auth.signInArrow')}</Text>}
           </TouchableOpacity>
