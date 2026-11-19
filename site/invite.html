@@ -38,27 +38,52 @@
     color:#d6d6d6; font-size:14px; line-height:1.5; text-align:left;
   }
   .note strong { color:#fff; }
+  /* Android (essai du 19/11/2026) : au lieu d'un bouton grisé, on garde l'adresse de l'invité pour le prévenir. */
+  .android { text-align:left; margin-bottom:12px; }
+  .android-title { font-size:16px; font-weight:800; margin-bottom:4px; text-align:center; }
+  .android-sub { color:var(--muted); font-size:14px; line-height:1.5; margin-bottom:14px; text-align:center; }
+  .android input[type=email] {
+    display:block; width:100%; padding:15px 16px; border-radius:14px; font-size:16px; margin-bottom:12px;
+    background:#1c1c1c; border:1px solid var(--line); color:#fff; font-family:inherit;
+  }
+  .android input[type=email]:focus { outline:2px solid #fff; outline-offset:1px; }
+  .android-msg { color:var(--muted); font-size:13px; line-height:1.5; text-align:center; }
+  .android-msg a { color:#d6d6d6; }
+  .hp { position:absolute; left:-9999px; width:1px; height:1px; opacity:0; }
+  .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
 </style>
 </head>
 <body>
   <div class="card">
     <img src="logo-reiz.png" alt="Reiz" class="logo" />
-    <h1 id="title">Tu es invité<span id="byName"></span> dans un cercle Reiz.</h1>
-    <p class="sub">Sur Reiz, ton cercle voit ta progression chaque jour. Pas d'excuse, pas d'abandon.</p>
+    <h1 id="title">Tu es invité<span id="byName"></span> sur Reiz.</h1>
+    <p class="sub">Reiz est une app gratuite pour tenir ses objectifs sportifs entre amis : chacun poste ses séances, et ses proches le voient avancer.</p>
 
-    <a class="btn btn-primary" id="openApp" href="#">Ouvrir dans Reiz →</a>
-    <a class="btn btn-secondary" id="download" href="#">Télécharger l'app</a>
+    <!-- Essai du 19/11/2026 : presque tous les invités n'ont pas encore l'app. Le téléchargement passe donc en premier ;
+         « Ouvrir dans Reiz », qui ne faisait rien sans l'app, devient le bouton secondaire. -->
+    <a class="btn btn-primary" id="download" href="#">Télécharger sur l'App Store</a>
+
+    <form class="android hidden" id="androidForm" novalidate>
+      <p class="android-title">Reiz arrive bientôt sur Android.</p>
+      <p class="android-sub">Laisse ton e-mail, on te prévient le jour de la sortie.</p>
+      <label class="sr-only" for="androidEmail">Ton adresse e-mail</label>
+      <input id="androidEmail" type="email" inputmode="email" autocomplete="email" placeholder="ton@email.com" maxlength="254" required />
+      <input class="hp" type="text" name="site" id="androidHp" tabindex="-1" autocomplete="off" aria-hidden="true" />
+      <button class="btn btn-primary" type="submit" id="androidBtn">Préviens-moi</button>
+      <p class="android-msg" id="androidMsg" aria-live="polite">Ton e-mail sert uniquement à te prévenir. <a href="confidentialite.html#liste-sortie">En savoir plus</a></p>
+    </form>
+
+    <a class="btn btn-secondary" id="openApp" href="#">J'ai déjà Reiz, l'ouvrir</a>
 
     <!-- Affiché seulement dans le navigateur intégré d'Instagram, TikTok, etc. : il ne sait pas ouvrir l'app. -->
     <div class="note hidden" id="inAppNote">
       <strong>Tu es dans le navigateur d'Instagram.</strong><br />
-      Pour ouvrir l'app, touche les trois points <strong>•••</strong> (en haut à droite), puis <strong>« Ouvrir dans Safari »</strong>, et touche « Ouvrir dans Reiz ».
+      Pour ouvrir l'app, touche les trois points <strong>•••</strong> (en haut à droite), puis <strong>« Ouvrir dans Safari »</strong>, et touche « J'ai déjà Reiz, l'ouvrir ».
     </div>
 
     <div class="fallback" id="fallback">
       <p>
-        Déjà l'app installée ? Touche « Ouvrir dans Reiz ».<br />
-        Sinon, télécharge-la puis <span id="searchHint">cherche ton parrain dans l'onglet Amis</span>.
+        Une fois Reiz installé, <span id="searchHint">cherche la personne qui t'a invité dans l'onglet Amis</span>.
       </p>
     </div>
   </div>
@@ -115,9 +140,40 @@
       var inApp = /Instagram|FBAN|FBAV|TikTok|musical_ly|Snapchat|Line\//i.test(ua);
 
       if (isAndroid) {
-        download.textContent = 'Bientôt sur Android';
-        download.removeAttribute('href');
-        download.style.opacity = '0.6';
+        // Android : pas encore de téléchargement public. On propose de laisser son e-mail (table waitlist, comme
+        // la liste de sortie du site) au lieu d'un bouton grisé qui ne menait nulle part.
+        download.classList.add('hidden');
+        var form = document.getElementById('androidForm');
+        var input = document.getElementById('androidEmail');
+        var hp = document.getElementById('androidHp');
+        var btn = document.getElementById('androidBtn');
+        var msg = document.getElementById('androidMsg');
+        form.classList.remove('hidden');
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var email = (input.value || '').trim().toLowerCase();
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { msg.textContent = 'Cette adresse ne semble pas valide.'; input.focus(); return; }
+          var done = function () {
+            input.classList.add('hidden'); btn.classList.add('hidden');
+            msg.textContent = 'C\'est noté. On t\'écrit le jour où Reiz sort sur Android.';
+          };
+          // Champ caché rempli : un robot. On répond comme si tout allait bien, sans rien envoyer.
+          if (hp.value) { done(); return; }
+          btn.disabled = true; btn.textContent = 'Envoi…';
+          fetch('https://vpaizbtetwsnvbpmeuab.supabase.co/rest/v1/waitlist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: 'sb_publishable_dAHRrHfSQvNwm1LEpNw5Ww_EOTyejXT', Authorization: 'Bearer sb_publishable_dAHRrHfSQvNwm1LEpNw5Ww_EOTyejXT', Prefer: 'return=minimal' },
+            body: JSON.stringify({ email: email })
+          }).then(function (res) {
+            // 409 : cette adresse est déjà sur la liste, c'est aussi une réussite pour la personne.
+            if (res.ok || res.status === 409) { done(); return; }
+            btn.disabled = false; btn.textContent = 'Préviens-moi';
+            msg.textContent = res.status === 400 ? 'Cette adresse ne semble pas valide.' : 'L\'envoi n\'a pas marché. Réessaie dans un instant.';
+          }).catch(function () {
+            btn.disabled = false; btn.textContent = 'Préviens-moi';
+            msg.textContent = 'Pas de connexion. Réessaie dans un instant.';
+          });
+        });
       } else {
         download.setAttribute('href', IOS_URL);
       }
