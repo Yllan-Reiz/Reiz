@@ -53,6 +53,9 @@ import { maybeAskForUpdate } from '../lib/updatePrompt';
 
 const PAGE_SIZE = 20;
 const FEED_WINDOW_HOURS = 24;
+// Essai du 19/11/2026 : avec moins de 5 amis, 24 heures laissent le fil presque toujours vide. Il montre alors la semaine.
+const SMALL_CIRCLE = 5;
+const SMALL_CIRCLE_HOURS = 7 * 24;
 
 // Pastille de verre de l'onglet actif. Elle glisse d'un onglet à l'autre en
 // s'étirant puis en reprenant sa forme : c'est ce qui donne l'impression de liquide.
@@ -190,6 +193,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   const [winsKey, setWinsKey] = useState(0);
   // Flou du fil (15/11/2026) : rien posté depuis 7 jours, compte de plus de 3 jours. Relu à chaque chargement du fil.
   const [feedLocked, setFeedLocked] = useState(false);
+  // Le fil montre 7 jours (petit cercle) : les textes « dernières 24 h » et « pour aujourd'hui » suivent.
+  const [weekFeed, setWeekFeed] = useState(false);
   const checkFeedLock = async (uid: string) => {
     if (!FEATURES.weeklyBlur) return;
     const [{ data: last, error }, { data: me }] = await Promise.all([
@@ -198,6 +203,12 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     ]);
     // Dans le doute (lecture ratée, date d'inscription inconnue), le fil reste net.
     if (error || !me?.created_at) return;
+    // Essai du 19/11/2026 : quelqu'un qui n'a aucun objectif est venu suivre un proche (« Suis-moi », dit
+    // l'invitation). Il n'a rien à poster : son fil reste net et il peut réagir. Dès qu'il a un objectif, la règle joue.
+    if (FEATURES.supporters) {
+      const { count, error: objError } = await supabase.from('objectives').select('id', { count: 'exact', head: true }).eq('user_id', uid);
+      if (!objError && count === 0) { setFeedLocked(false); return; }
+    }
     const DAY = 24 * 3600 * 1000;
     const lastAt = last?.[0]?.created_at ? new Date(last[0].created_at).getTime() : 0;
     setFeedLocked(Date.now() - lastAt > 7 * DAY && Date.now() - new Date(me.created_at).getTime() > 3 * DAY);
@@ -309,7 +320,9 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     // Le fil repart de zéro toutes les 24 h (fenêtre glissante) : on ne voit que
     // ce que le cercle a fait depuis hier à la même heure. L'historique complet
     // reste dans les profils.
-    const since = new Date(Date.now() - FEED_WINDOW_HOURS * 3600 * 1000).toISOString();
+    const weekly = FEATURES.weekFeedSmallCircle && circleIds.length - 1 < SMALL_CIRCLE;
+    if (offset === 0) setWeekFeed(weekly);
+    const since = new Date(Date.now() - (weekly ? SMALL_CIRCLE_HOURS : FEED_WINDOW_HOURS) * 3600 * 1000).toISOString();
     const { data, error } = await supabase
       .from('updates')
       .select('id, caption, progress_value, created_at, photo_url, user_id, pinned_at, with_user_ids, objective_id, moment, moment_late_min, objectives(visibility, unit, target_value, title, emoji, completed_at, per_week, deadline, starts_at), users(full_name, username, avatar_url)')
@@ -741,7 +754,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                   <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, lineHeight: 18, fontFamily: F.regular, textAlign: 'center', paddingTop: 8, paddingHorizontal: 24 }}>{t('soloCard.feedHint')}</Text>
                 ) : (
                 <View style={{ paddingTop: 40, alignItems: 'center' }}>
-                  <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>{t('main.feedEmpty')}</Text>
+                  <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>{t(weekFeed ? 'main.feedEmptyWeek' : 'main.feedEmpty')}</Text>
                   <Text style={{ color: '#777', marginTop: 4, fontSize: 12 }}>{t('main.feedEmptySub')}</Text>
                   {/* Le texte invite à publier : le bouton le permet tout de suite (1.2). */}
                   <TouchableOpacity style={[s.emptyStateBtn, { marginTop: 16 }]} onPress={() => onPost({ from: 'feed_empty' })} accessibilityRole="button" accessibilityLabel={t('main.feedEmptyCta')}>
@@ -756,7 +769,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 {loadingMore ? <ActivityIndicator color="#fff" /> : null}
                 {!loadingMore && !hasMore && updates.length > 0 ? (
                   <Text style={{ color: '#666', fontSize: 12, textAlign: 'center', paddingHorizontal: 24 }}>
-                    {t('main.feedEnd')}
+                    {t(weekFeed ? 'main.feedEndWeek' : 'main.feedEnd')}
                   </Text>
                 ) : null}
               </View>

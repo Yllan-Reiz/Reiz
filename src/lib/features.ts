@@ -61,6 +61,9 @@ export const FEATURES = {
   supporters: true,
   /** Moins de 5 amis : le fil montre 7 jours au lieu de 24 heures. */
   weekFeedSmallCircle: true,
+  /** Réglages : « Me proposer aux autres membres » toujours visible et nommé pour ce qu'il fait (il coupe aussi
+   *  « Nouveaux sur Reiz », les recommandations et la recherche, pas seulement les contacts). */
+  discoverableForAll: true,
   // Lot 4
   /** Un écran d'une phrase avant la demande de notifications du téléphone, à la fin de l'accueil. */
   notifsExplainer: true,

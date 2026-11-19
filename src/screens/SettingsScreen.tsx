@@ -15,6 +15,7 @@ import { JourneyModal } from '../components/JourneyModal';
 import { contactsAvailable } from '../lib/contacts';
 import { APP_VERSION, WELCOME_FLOW, QUICK_START } from '../constants';
 import { F } from '../styles';
+import { FEATURES } from '../lib/features';
 import { LANGS, lang, chosenLang, deviceLang, setLanguage, type Lang, t, dirIcon, isRTL } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
 
@@ -34,6 +35,9 @@ export function SettingsScreen({ visible, initialView = 'root', onClose, onEditN
   onDeleteAccount: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  // Essai du 19/11/2026 : ce réglage coupe toute la découverte (nouveaux inscrits, recommandations, recherche, contacts).
+  // Il n'apparaissait que dans les versions qui ont la fonction des contacts, sous le nom « Me proposer à mes contacts ».
+  const showDiscoverable = FEATURES.discoverableForAll || contactsAvailable();
   const [view, setView] = useState<View_>('root');
   const [doc, setDoc] = useState<LegalDoc | null>(null);
   const [welcome, setWelcome] = useState(false);
@@ -59,7 +63,7 @@ export function SettingsScreen({ visible, initialView = 'root', onClose, onEditN
   useEffect(() => {
     if (!visible) return;
     setView(initialView);
-    setLoaded({ user: false, enc: false, disc: !contactsAvailable() });
+    setLoaded({ user: false, enc: false, disc: !showDiscoverable });
     // Réseau lent ou requête en échec : la liste s'affiche quand même au bout d'une seconde et demie.
     const timer = setTimeout(() => setLoaded({ user: true, enc: true, disc: true }), 1500);
     return () => clearTimeout(timer);
@@ -80,7 +84,7 @@ export function SettingsScreen({ visible, initialView = 'root', onClose, onEditN
   // avec « Retrouver mes contacts ». Visible seulement dans une version qui a la fonction. null = pas chargé ou colonne absente.
   const [discoverable, setDiscoverable] = useState<boolean | null>(null);
   useEffect(() => {
-    if (!visible || !contactsAvailable()) return;
+    if (!visible || !showDiscoverable) return;
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (user) {
         const { data, error } = await supabase.from('users').select('discoverable').eq('id', user.id).single();
@@ -164,11 +168,11 @@ export function SettingsScreen({ visible, initialView = 'root', onClose, onEditN
 
             <Section title={t('settings.secPrivacy')}>
               <Row icon="star-outline" label={t('settings.closeCircle')} onPress={() => { onClose(); setTimeout(onCloseFriends, 350); }} />
-              {discoverable !== null && <ToggleRow icon="people-outline" label={t('settings.discoverable')} value={discoverable} onChange={toggleDiscoverable} />}
+              {discoverable !== null && <ToggleRow icon="people-outline" label={t(FEATURES.discoverableForAll ? 'settings.discoverableAll' : 'settings.discoverable')} value={discoverable} onChange={toggleDiscoverable} />}
               <Row icon="ban-outline" label={t('settings.blocked')} onPress={() => setView('blocked')} />
               <Row icon="download-outline" label={t('settings.export')} onPress={exportData} last />
             </Section>
-            <Text style={st.hint}>{discoverable !== null ? t('settings.discoverableHint') + ' ' : ''}{t('settings.visibilityHint')}</Text>
+            <Text style={st.hint}>{discoverable !== null ? t(FEATURES.discoverableForAll ? 'settings.discoverableAllHint' : 'settings.discoverableHint') + ' ' : ''}{t('settings.visibilityHint')}</Text>
 
             <Section title={t('settings.secTraining')}>
               <Row icon="location-outline" label={t('presencePanel.title')} onPress={() => setView('presence')} last />
