@@ -19,7 +19,7 @@ export function ChoiceSheetHost() {
 
   return (
     <Modal visible={!!req} transparent animationType="fade" statusBarTranslucent onRequestClose={() => pick(cancel)}>
-      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }} onPress={() => pick(cancel)} accessibilityLabel={t('common.cancel')}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(10,10,10,0.7)', justifyContent: 'flex-end' }} onPress={() => pick(cancel)} accessibilityLabel={t('common.cancel')}>
         <Pressable onPress={() => {}} style={{ backgroundColor: '#161616', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 20, paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) + 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
           {!!req?.title && <Text style={{ color: '#fff', fontSize: 18, fontFamily: F.extrabold, textAlign: 'center', paddingHorizontal: 12 }}>{req.title}</Text>}
           {!!req?.message && <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, lineHeight: 20, fontFamily: F.regular, textAlign: 'center', marginTop: 6, paddingHorizontal: 12 }}>{req.message}</Text>}
