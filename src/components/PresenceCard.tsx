@@ -299,7 +299,7 @@ function PlaceSheet({ visible, circle, onClose }: { visible: boolean; circle: nu
                 ))}
               </View>
 
-              <Text style={{ fontSize: 11, color: '#777', fontFamily: F.bold, letterSpacing: 1.5, marginTop: 26, marginBottom: 8 }}>{t('presenceCard.placeNameLabel')}</Text>
+              <Text style={{ fontSize: 11, color: '#8a8a8a', fontFamily: F.bold, letterSpacing: 1.5, marginTop: 26, marginBottom: 8 }}>{t('presenceCard.placeNameLabel')}</Text>
               <TextInput
                 value={name}
                 onChangeText={setName}

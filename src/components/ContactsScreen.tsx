@@ -142,7 +142,7 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
             contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
             ListHeaderComponent={
               <View style={{ marginBottom: 10 }}>
-                <Text style={{ color: '#777', fontSize: 12, lineHeight: 17, marginBottom: 12 }}>
+                <Text style={{ color: '#8a8a8a', fontSize: 12, lineHeight: 17, marginBottom: 12 }}>
                   {t('contacts.privacy')}
                 </Text>
                 <TextInput
@@ -162,7 +162,7 @@ export function ContactsScreen({ visible, onClose }: { visible: boolean; onClose
                 )}
               </View>
             }
-            ListEmptyComponent={<Text style={{ color: '#777', textAlign: 'center', marginTop: 40 }}>{q ? t('contacts.noneFound') : t('contacts.none')}</Text>}
+            ListEmptyComponent={<Text style={{ color: '#8a8a8a', textAlign: 'center', marginTop: 40 }}>{q ? t('contacts.noneFound') : t('contacts.none')}</Text>}
             renderItem={({ item }) => {
               if (item.kind === 'head') return <Text style={[s.sectionTitle, { marginTop: 16, marginBottom: 8 }]}>{item.title}</Text>;
               if (item.kind === 'user') {

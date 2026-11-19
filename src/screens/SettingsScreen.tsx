@@ -343,7 +343,7 @@ function BlockedList() {
               : <View style={[st.avatar, { alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: '#fff', fontFamily: F.bold }}>{p.full_name?.charAt(0).toUpperCase()}</Text></View>}
             <View style={{ flex: 1 }}>
               <Text style={st.rowLabel} numberOfLines={1}>{p.full_name}</Text>
-              <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular }}>@{p.username}</Text>
+              <Text style={{ color: '#8a8a8a', fontSize: 12, fontFamily: F.regular }}>@{p.username}</Text>
             </View>
             <TouchableOpacity onPress={() => unblock(p)} style={st.smallBtn}><Text style={st.smallBtnText}>{t('settings.unblock')}</Text></TouchableOpacity>
           </View>
@@ -377,7 +377,7 @@ function LanguagePicker() {
           <TouchableOpacity key={o.code ?? 'device'} style={[st.row, i < options.length - 1 && st.rowBorder]} onPress={() => choose(o.code)} activeOpacity={0.7} accessibilityState={{ selected: o.code === picked }}>
             <View style={{ flex: 1 }}>
               <Text style={st.rowLabel} numberOfLines={1}>{o.label}</Text>
-              {!!o.sub && <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular, marginTop: 2 }}>{o.sub}</Text>}
+              {!!o.sub && <Text style={{ color: '#8a8a8a', fontSize: 12, fontFamily: F.regular, marginTop: 2 }}>{o.sub}</Text>}
             </View>
             {o.code === picked && <Ionicons name="checkmark" size={20} color="#fff" />}
           </TouchableOpacity>
@@ -391,7 +391,7 @@ function LanguagePicker() {
 function LegalReader({ doc, bottom }: { doc: LegalDoc; bottom: number }) {
   return (
     <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: bottom + 40 }} showsVerticalScrollIndicator={false}>
-      <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular, marginBottom: 14 }}>{t('settings.lastUpdate', { date: doc.updated })}</Text>
+      <Text style={{ color: '#8a8a8a', fontSize: 12, fontFamily: F.regular, marginBottom: 14 }}>{t('settings.lastUpdate', { date: doc.updated })}</Text>
       {!!doc.intro && <Text style={st.legalIntro}>{doc.intro}</Text>}
       {doc.sections.map(sec => (
         <View key={sec.h} style={{ marginBottom: 22 }}>
@@ -413,15 +413,15 @@ const st = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 52 },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { flex: 1, textAlign: 'center', color: '#fff', fontSize: 17, fontFamily: F.bold },
-  sectionTitle: { fontSize: 11, color: '#777', fontFamily: F.bold, letterSpacing: 1.5, marginBottom: 8 },
+  sectionTitle: { fontSize: 11, color: '#8a8a8a', fontFamily: F.bold, letterSpacing: 1.5, marginBottom: 8 },
   card: { backgroundColor: '#111', borderRadius: 18, borderWidth: 1, borderColor: '#1c1c1c', overflow: 'hidden' },
   // Même hauteur pour toutes les lignes, avec ou sans interrupteur.
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10, minHeight: 52 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: '#1c1c1c' },
   rowLabel: { color: '#fff', fontSize: 15, fontFamily: F.semibold, flexShrink: 1 },
-  rowValue: { color: '#777', fontSize: 13, fontFamily: F.regular, flex: 1, textAlign: 'right' },
-  hint: { color: '#666', fontSize: 12, fontFamily: F.regular, lineHeight: 18, marginTop: 8 },
-  version: { color: '#555', fontSize: 12, fontFamily: F.regular, textAlign: 'center', marginTop: 28 },
+  rowValue: { color: '#8a8a8a', fontSize: 13, fontFamily: F.regular, flex: 1, textAlign: 'right' },
+  hint: { color: '#8a8a8a', fontSize: 12, fontFamily: F.regular, lineHeight: 18, marginTop: 8 },
+  version: { color: '#8a8a8a', fontSize: 12, fontFamily: F.regular, textAlign: 'center', marginTop: 28 },
   inputLabel: { fontSize: 10, color: '#888', letterSpacing: 1.5, fontFamily: F.bold, marginBottom: 6 },
   input: { backgroundColor: '#1a1a1a', borderWidth: 1.5, borderColor: '#2a2a2a', borderRadius: 14, padding: 14, fontSize: 14, color: '#fff', fontFamily: F.regular },
   error: { color: '#ff453a', fontSize: 12, fontFamily: F.regular, marginTop: 6 },

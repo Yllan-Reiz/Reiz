@@ -516,7 +516,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
           ) : (
             <>
               <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>{t('friends.noResult')}</Text>
-              <Text style={{ color: '#666', fontSize: 12, textAlign: 'center' }}>{t('friends.noResultSub')}</Text>
+              <Text style={{ color: '#8a8a8a', fontSize: 12, textAlign: 'center' }}>{t('friends.noResultSub')}</Text>
             </>
           )}
         </View>
@@ -594,7 +594,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       {/* Liste d'amis */}
       <Text style={s.sectionTitle}>{friends.length > 0 ? `${tp('friends.countFriends', friends.length)}${closeIds.size > 0 ? tp('friends.countClose', closeIds.size) : ''}` : t('friends.myFriends')}</Text>
       {friends.length > 0 && (
-        <Text style={{ color: '#777', fontSize: 12, lineHeight: 17, marginBottom: 10, marginTop: -4 }}>
+        <Text style={{ color: '#8a8a8a', fontSize: 12, lineHeight: 17, marginBottom: 10, marginTop: -4 }}>
           {t('friends.starHintBefore')} <Text style={{ color: '#fff', fontFamily: F.bold }}>{t('friends.starHintBold')}</Text>{t('friends.starHintAfter')}
         </Text>
       )}
@@ -603,7 +603,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
       ) : friends.length === 0 ? (
         <View style={{ paddingTop: 30, alignItems: 'center', gap: 8 }}>
           <Text style={{ color: '#888', fontSize: 15, fontFamily: F.bold }}>{t('friends.noFriends')}</Text>
-          <Text style={{ color: '#666', fontSize: 13 }}>{t('friends.noFriendsSub')}</Text>
+          <Text style={{ color: '#8a8a8a', fontSize: 13 }}>{t('friends.noFriendsSub')}</Text>
           <TouchableOpacity style={s.emptyStateBtn} onPress={inviteFriends}>
             <Text style={s.emptyStateBtnText}>{t('friends.inviteArrow')}</Text>
           </TouchableOpacity>

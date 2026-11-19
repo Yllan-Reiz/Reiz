@@ -658,7 +658,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
               })}
             </ScrollView>
             {withIds.length > 0 && (
-              <Text style={{ color: '#777', fontSize: 12, marginTop: 8 }}>
+              <Text style={{ color: '#8a8a8a', fontSize: 12, marginTop: 8 }}>
                 {t('post.taggedHint')}
               </Text>
             )}

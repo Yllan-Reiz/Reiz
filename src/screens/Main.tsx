@@ -755,7 +755,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 ) : (
                 <View style={{ paddingTop: 40, alignItems: 'center' }}>
                   <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>{t(weekFeed ? 'main.feedEmptyWeek' : 'main.feedEmpty')}</Text>
-                  <Text style={{ color: '#777', marginTop: 4, fontSize: 12 }}>{t('main.feedEmptySub')}</Text>
+                  <Text style={{ color: '#8a8a8a', marginTop: 4, fontSize: 12 }}>{t('main.feedEmptySub')}</Text>
                   {/* Le texte invite à publier : le bouton le permet tout de suite (1.2). */}
                   <TouchableOpacity style={[s.emptyStateBtn, { marginTop: 16 }]} onPress={() => onPost({ from: 'feed_empty' })} accessibilityRole="button" accessibilityLabel={t('main.feedEmptyCta')}>
                     <Text style={s.emptyStateBtnText}>{t('main.feedEmptyCta')}</Text>
@@ -768,7 +768,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               <View style={{ height: bottomPad, alignItems: 'center', paddingTop: 10 }}>
                 {loadingMore ? <ActivityIndicator color="#fff" /> : null}
                 {!loadingMore && !hasMore && updates.length > 0 ? (
-                  <Text style={{ color: '#666', fontSize: 12, textAlign: 'center', paddingHorizontal: 24 }}>
+                  <Text style={{ color: '#8a8a8a', fontSize: 12, textAlign: 'center', paddingHorizontal: 24 }}>
                     {t(weekFeed ? 'main.feedEndWeek' : 'main.feedEnd')}
                   </Text>
                 ) : null}
@@ -885,7 +885,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
             })
           }
           {/* Hint suppression */}
-          <Text style={{ color: '#666', fontSize: 11, textAlign: 'center', marginBottom: 8 }}>
+          <Text style={{ color: '#8a8a8a', fontSize: 11, textAlign: 'center', marginBottom: 8 }}>
             {t('main.objHint')}
           </Text>
           <View style={{ height: bottomPad }} />

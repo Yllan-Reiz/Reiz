@@ -116,12 +116,12 @@ export function ProfileTags({ userId, currentUserId, own }: { userId: string; cu
       </View>
 
       {own && tags.length === 0 && !adding && (
-        <Text style={{ color: '#666', fontSize: 12, marginTop: 8 }}>
+        <Text style={{ color: '#8a8a8a', fontSize: 12, marginTop: 8 }}>
           {t('profileTags.hint')}
         </Text>
       )}
       {own && tags.length > 0 && (
-        <Text style={{ color: '#555', fontSize: 11, marginTop: 8 }}>{t('profileTags.longPressHint')}</Text>
+        <Text style={{ color: '#8a8a8a', fontSize: 11, marginTop: 8 }}>{t('profileTags.longPressHint')}</Text>
       )}
 
       {adding && (

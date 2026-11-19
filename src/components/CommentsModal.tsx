@@ -372,7 +372,7 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, f
             {roots.length === 0 ? (
               <View style={{ paddingTop: 40, alignItems: 'center' }}>
                 <Text style={{ color: '#888', fontSize: 14, fontFamily: F.bold }}>{t('comments.empty')}</Text>
-                <Text style={{ color: '#777', marginTop: 4, fontSize: 12 }}>{t('comments.emptySub')}</Text>
+                <Text style={{ color: '#8a8a8a', marginTop: 4, fontSize: 12 }}>{t('comments.emptySub')}</Text>
               </View>
             ) : roots.map(c => (
               <View key={c.id}>

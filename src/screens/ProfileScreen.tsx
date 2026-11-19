@@ -366,7 +366,7 @@ export function ProfileScreen({ onClose, streak, onCreateObjective, onViewProfil
                   placeholder={t('profile.bioPlaceholder')}
                   placeholderTextColor="#666"
                 />
-                <Text style={{ color: '#666', fontSize: 11, alignSelf: 'flex-end' }}>{newBio.length}/150</Text>
+                <Text style={{ color: '#8a8a8a', fontSize: 11, alignSelf: 'flex-end' }}>{newBio.length}/150</Text>
                 <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
                   <TouchableOpacity style={s.profileSaveBtn} onPress={saving ? undefined : handleSaveBio}>
                     {saving ? <ActivityIndicator color="#000" size="small" /> : <Text style={s.profileSaveBtnText}>{t('profile.save')}</Text>}

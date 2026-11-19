@@ -55,7 +55,7 @@ export function Splash({ onNext }: { onNext: () => void }) {
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24, marginBottom: 14 }}>
             <View style={{ flex: 1, height: 1, backgroundColor: '#222' }} />
-            <Text style={{ color: '#666', fontSize: 12 }}>{t('common.or')}</Text>
+            <Text style={{ color: '#8a8a8a', fontSize: 12 }}>{t('common.or')}</Text>
             <View style={{ flex: 1, height: 1, backgroundColor: '#222' }} />
           </View>
           <SocialAuthButtons mode="signin" />

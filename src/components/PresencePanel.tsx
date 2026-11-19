@@ -125,7 +125,7 @@ export function PresencePanel() {
           <Ionicons name="location-outline" size={20} color="#bbb" />
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.semibold }}>{t('presencePanel.autoDetection')}</Text>
-            <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular, marginTop: 2 }}>{auto ? t('presencePanel.on') : t('presencePanel.off')}</Text>
+            <Text style={{ color: '#8a8a8a', fontSize: 12, fontFamily: F.regular, marginTop: 2 }}>{auto ? t('presencePanel.on') : t('presencePanel.off')}</Text>
           </View>
           <Switch value={auto} onValueChange={toggleAuto} trackColor={{ true: '#fff', false: '#333' }} thumbColor={auto ? '#000' : '#999'} ios_backgroundColor="#333" />
         </View>
@@ -138,10 +138,10 @@ export function PresencePanel() {
         )}
       </View>
 
-      <Text style={{ fontSize: 11, color: '#777', fontFamily: F.bold, letterSpacing: 1.5, marginTop: 24, marginBottom: 8, marginLeft: 4 }}>{t('presencePanel.myPlaces')}</Text>
+      <Text style={{ fontSize: 11, color: '#8a8a8a', fontFamily: F.bold, letterSpacing: 1.5, marginTop: 24, marginBottom: 8, marginLeft: 4 }}>{t('presencePanel.myPlaces')}</Text>
       <View style={{ backgroundColor: '#111', borderRadius: 18, borderWidth: 1, borderColor: '#1c1c1c', overflow: 'hidden' }}>
         {places.length === 0 && (
-          <Text style={{ color: '#777', fontSize: 13, lineHeight: 19, padding: 16, fontFamily: F.regular }}>
+          <Text style={{ color: '#8a8a8a', fontSize: 13, lineHeight: 19, padding: 16, fontFamily: F.regular }}>
             {t('presencePanel.noPlaces')}
           </Text>
         )}
@@ -150,7 +150,7 @@ export function PresencePanel() {
             <Ionicons name="location" size={18} color="#fff" />
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.semibold }}>{p.label}</Text>
-              <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular }}>{t('presencePanel.radius', { n: p.radius })}</Text>
+              <Text style={{ color: '#8a8a8a', fontSize: 12, fontFamily: F.regular }}>{t('presencePanel.radius', { n: p.radius })}</Text>
             </View>
             <TouchableOpacity onPress={() => delPlace(p)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityLabel={t('presencePanel.deleteA11y', { label: p.label })}>
               <Ionicons name="trash-outline" size={18} color="#ff453a" />

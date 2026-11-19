@@ -89,7 +89,7 @@ export function GifPicker({ visible, onClose, onPick }: { visible: boolean; onCl
             columnWrapperStyle={{ gap: GAP }}
             contentContainerStyle={{ paddingHorizontal: 16, gap: GAP, paddingBottom: insets.bottom + 48 }}
             ListEmptyComponent={loading ? <ActivityIndicator color="#fff" style={{ marginTop: 40 }} /> : (
-              <Text style={{ color: '#777', fontSize: 13, textAlign: 'center', marginTop: 40 }}>{t('gif.none')}</Text>
+              <Text style={{ color: '#8a8a8a', fontSize: 13, textAlign: 'center', marginTop: 40 }}>{t('gif.none')}</Text>
             )}
             renderItem={({ item }) => (
               <TouchableOpacity

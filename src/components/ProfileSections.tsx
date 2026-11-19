@@ -105,7 +105,7 @@ export function BadgesStrip({ badges, own, grid, noTitle }: { badges: Badge[]; o
     <View>
       {!noTitle && <Text style={s.sectionTitle}>{t('profileSec.badgesCount', { n: earned.length, total: badges.length })}</Text>}
       {shown.length === 0 ? (
-        <Text style={{ color: '#777', fontSize: 13, marginBottom: 8 }}>{t('profileSec.noBadge')}</Text>
+        <Text style={{ color: '#8a8a8a', fontSize: 13, marginBottom: 8 }}>{t('profileSec.noBadge')}</Text>
       ) : grid ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 14 }}>
           {shown.map(b => (
@@ -356,7 +356,7 @@ export function BadgesSection({ badges, own }: { badges: Badge[]; own: boolean }
     <View style={{ marginTop: 26 }}>
       <SectionHeader title={t('profileSec.badges')} count={earned.length} style={{ paddingHorizontal: GUTTER }} />
       {row.length === 0 ? (
-        <Text style={{ color: '#777', fontSize: 13, paddingHorizontal: GUTTER }}>{t('profileSec.noBadge')}</Text>
+        <Text style={{ color: '#8a8a8a', fontSize: 13, paddingHorizontal: GUTTER }}>{t('profileSec.noBadge')}</Text>
       ) : (
         <BadgesStripRow badges={row} onAll={() => setAll(true)} />
       )}
@@ -573,7 +573,7 @@ export function GoalCards({ items, activity, onPress }: {
  * (comme les cartes NFT de la référence). Les épinglés passent en premier.
  */
 export function HistoryCarousel({ posts, onOpen, emptyText }: { posts: Update[]; onOpen: (p: Update) => void; emptyText: string }) {
-  if (posts.length === 0) return <Text style={{ color: '#777', fontSize: 13, paddingHorizontal: GUTTER }}>{emptyText}</Text>;
+  if (posts.length === 0) return <Text style={{ color: '#8a8a8a', fontSize: 13, paddingHorizontal: GUTTER }}>{emptyText}</Text>;
   const sorted = [...posts].sort((a, b) => (b.pinned_at ? 1 : 0) - (a.pinned_at ? 1 : 0));
   return (
     <FloatyCarousel cardW={260} overlap={32} paddingTop={8} paddingBottom={40}>
@@ -684,7 +684,7 @@ export function ObjectiveCard({ o, postedDays, daysCount, onMenu }: {
           <Text style={{ color: '#fff', fontSize: 16, fontFamily: F.bold }} numberOfLines={1}>{o.title}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
             <Ionicons name={vis.icon} size={12} color="#777" />
-            <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular }} numberOfLines={1}>{vis.label}{sub ? `, ${sub}` : ''}</Text>
+            <Text style={{ color: '#8a8a8a', fontSize: 12, fontFamily: F.regular }} numberOfLines={1}>{vis.label}{sub ? `, ${sub}` : ''}</Text>
           </View>
         </View>
         {onMenu && (
@@ -697,7 +697,7 @@ export function ObjectiveCard({ o, postedDays, daysCount, onMenu }: {
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 18 }}>
         <Text style={{ color: '#fff', fontSize: 34, fontFamily: F.black, letterSpacing: -1 }} numberOfLines={1}>
           {inPct ? `${pct}%` : fmtNum(o.current_value)}
-          {!inPct && <Text style={{ color: '#777', fontSize: 16, fontFamily: F.semibold, letterSpacing: 0 }}>{` / ${fmtNum(o.target_value)} ${unitLabel(o.unit)}`}</Text>}
+          {!inPct && <Text style={{ color: '#8a8a8a', fontSize: 16, fontFamily: F.semibold, letterSpacing: 0 }}>{` / ${fmtNum(o.target_value)} ${unitLabel(o.unit)}`}</Text>}
         </Text>
         {!inPct && <Text style={{ color: '#aaa', fontSize: 14, fontFamily: F.bold, marginBottom: 5 }}>{pct}%</Text>}
       </View>
@@ -801,7 +801,7 @@ export function PostsGrid({ posts, onOpen, emptyText }: { posts: Update[]; onOpe
     <View>
       <Text style={s.sectionTitle}>{t('profileSec.history', { n: posts.length })}</Text>
       {posts.length === 0 ? (
-        <Text style={{ color: '#777', fontSize: 13, paddingVertical: 12 }}>{emptyText}</Text>
+        <Text style={{ color: '#8a8a8a', fontSize: 13, paddingVertical: 12 }}>{emptyText}</Text>
       ) : (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}>
           {posts.map(p => <PostTile key={p.id} p={p} width={tile} height={tile} onPress={() => onOpen(p)} />)}

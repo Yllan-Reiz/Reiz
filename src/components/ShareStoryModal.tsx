@@ -188,7 +188,7 @@ export function ShareStoryModal({ visible, data, onClose }: { visible: boolean; 
               <Text style={{ color: '#fff', fontSize: 13, fontFamily: F.bold }}>{t('story.copy')}</Text>
             </TouchableOpacity>
           </View>
-          <Text style={{ color: '#777', fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 17, marginTop: 10 }}>
+          <Text style={{ color: '#8a8a8a', fontSize: 12, fontFamily: F.regular, textAlign: 'center', lineHeight: 17, marginTop: 10 }}>
             {t('story.linkHint')}
           </Text>
         </View>

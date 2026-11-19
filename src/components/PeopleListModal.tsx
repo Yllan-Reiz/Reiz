@@ -121,7 +121,7 @@ export function PeopleListModal({ visible, userId, currentUserId, mode, onClose,
             data={rows}
             keyExtractor={(p, i) => ('header' in p ? `h${i}` : p.id)}
             contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-            ListEmptyComponent={<Text style={{ color: '#777', textAlign: 'center', marginTop: 40 }}>{t('people.none')}</Text>}
+            ListEmptyComponent={<Text style={{ color: '#8a8a8a', textAlign: 'center', marginTop: 40 }}>{t('people.none')}</Text>}
             ListFooterComponent={mode === 'close' && !adding && others.length > 0 ? (
               <TouchableOpacity onPress={() => { Haptics.selectionAsync().catch(() => {}); setAdding(true); }} activeOpacity={0.85}
                 style={{ marginTop: 16, backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 16, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>

@@ -4,6 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase, currentUser } from '../lib/supabase';
 import { frError } from '../lib/helpers';
@@ -30,7 +32,7 @@ import { t, dirIcon } from '../i18n';
 // Retour possible d'une étape à l'autre (flèche en haut à gauche) : l'objectif déjà écrit reste à l'écran, et s'il
 // est corrigé au retour, le nouveau remplace celui qui venait d'être créé (jamais deux objectifs).
 
-type StepId = 'name' | 'objective' | 'invite';
+type StepId = 'name' | 'objective' | 'invite' | 'notifs';
 
 /** Version automatique, montée une fois dans App.tsx pour un compte tout neuf. */
 export function QuickStart({ onChanged }: { onChanged?: () => void }) {
@@ -119,6 +121,14 @@ export function QuickStartModal({ visible, preview, onClose }: { visible: boolea
       if (noName && !preview) list.push('name');
       if (preview || !objs.count) list.push('objective');
       list.push('invite');
+      // Essai du 19/11/2026 : la demande du téléphone tombait seule, 0,6 s après l'accueil, sans dire à quoi servent
+      // les notifications. Un écran l'annonce d'abord. Il n'apparaît que si le téléphone peut encore poser la
+      // question (et dans l'aperçu des Réglages, pour le voir).
+      if (FEATURES.notifsExplainer) {
+        const perm = preview ? null : await Notifications.getPermissionsAsync().catch(() => null);
+        if (preview || (Device.isDevice && perm && perm.status !== 'granted' && perm.canAskAgain)) list.push('notifs');
+      }
+      if (!alive) return;
       // La photo est privée : il faut une adresse signée. Elle arrive après, sans retenir l'écran.
       const path = (row.data as { avatar_url?: string | null } | null)?.avatar_url;
       if (path) signOne(path).then(uri => { if (alive) setAvatar(uri); }).catch(() => {});
@@ -148,6 +158,8 @@ export function QuickStartModal({ visible, preview, onClose }: { visible: boolea
     if (visible && step && !preview) track('welcome_step', { step, index: idx, action: 'view', flow: 'quick' }, 'welcome');
   }, [visible, step, idx, preview]);
 
+  // « Plus tard » sur l'écran des notifications : on ne déclenche pas la demande du téléphone (elle ne se pose qu'une fois).
+  const skipNotifs = useRef(false);
   const finish = async (via: 'end' | 'later') => {
     Keyboard.dismiss();
     if (preview) { onClose(false); return; }
@@ -157,7 +169,12 @@ export function QuickStartModal({ visible, preview, onClose }: { visible: boolea
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     onClose(wrote.current);
     // La demande de notifications du téléphone, maintenant que l'objectif existe (rappels, amis qui postent).
-    if (userId) setTimeout(() => { registerForPushNotifications(userId).catch(() => {}); }, 600);
+    if (userId && !skipNotifs.current) setTimeout(() => { registerForPushNotifications(userId).catch(() => {}); }, 600);
+  };
+  const answerNotifs = (yes: boolean) => {
+    skipNotifs.current = !yes;
+    if (!preview) track('welcome_step', { step: 'notifs', index: idx, action: yes ? 'done' : 'skip', flow: 'quick' }, 'welcome');
+    finish(yes ? 'end' : 'later');
   };
 
   const next = (action: 'done' | 'skip') => {
@@ -230,7 +247,7 @@ export function QuickStartModal({ visible, preview, onClose }: { visible: boolea
 
   const total = 3;
   // Le prénom (étape 1) est déjà fait à l'inscription : la barre commence à 1 sur 3.
-  const filled = step === 'invite' ? 3 : step === 'objective' ? 2 : 1;
+  const filled = step === 'invite' || step === 'notifs' ? 3 : step === 'objective' ? 2 : 1;
 
   // La barre du bas : elle suit le clavier. Vide tant que les étapes ne sont pas connues.
   const footer = (
@@ -242,6 +259,14 @@ export function QuickStartModal({ visible, preview, onClose }: { visible: boolea
             <TouchableOpacity onPress={skipObjective} accessibilityRole="button" accessibilityLabel={t('quick.later')} style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontFamily: F.semibold }}>{t('quick.later')}</Text>
             </TouchableOpacity>
+          )}
+          {step === 'notifs' && (
+            <>
+              <Primary label={t('welcome.enableNotifs')} onPress={() => answerNotifs(true)} />
+              <TouchableOpacity onPress={() => answerNotifs(false)} accessibilityRole="button" accessibilityLabel={t('quick.later')} style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontFamily: F.semibold }}>{t('quick.later')}</Text>
+              </TouchableOpacity>
+            </>
           )}
           {step === 'invite' && (sent > 0
             ? <Primary label={t('quick.finish')} onPress={() => next('done')} />
@@ -315,6 +340,33 @@ export function QuickStartModal({ visible, preview, onClose }: { visible: boolea
                       maxLength={40}
                       accessibilityLabel={t('onboarding.firstNameLabel')}
                     />
+                  </>
+                )}
+
+                {step === 'notifs' && (
+                  <>
+                    <Rise>
+                      <Text style={title} maxFontSizeMultiplier={1.2}>{t('welcome.notifsTitle')}</Text>
+                      <Text style={sub}>{t('welcome.notifsSub')}</Text>
+                    </Rise>
+                    {/* Trois exemples de ce qui arrivera, pour que la demande du téléphone ait un sens. */}
+                    <View style={{ marginTop: 26, gap: 10 }}>
+                      {([['mock1Title', 'mock1Body', 'mockNow'], ['mock2Title', 'mock2Body', 'mock2When'], ['mock3Title', 'mock3Body', 'mock3When']] as const).map(([a, b, w], i) => (
+                        <Rise key={a} delay={100 + i * 70}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+                              <Ionicons name="notifications" size={18} color="#000" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ color: '#fff', fontSize: 14, fontFamily: F.bold }} numberOfLines={1}>{t(`welcome.${a}`)}</Text>
+                              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, fontFamily: F.regular, marginTop: 1 }} numberOfLines={1}>{t(`welcome.${b}`)}</Text>
+                            </View>
+                            <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontFamily: F.regular }}>{t(`welcome.${w}`)}</Text>
+                          </View>
+                        </Rise>
+                      ))}
+                    </View>
+                    <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, lineHeight: 18, fontFamily: F.regular, textAlign: 'center', marginTop: 18 }}>{t('welcome.footNotifs')}</Text>
                   </>
                 )}
 
