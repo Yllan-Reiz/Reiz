@@ -167,7 +167,8 @@ export async function compressVideo(uri: string): Promise<string> {
 
 /** Efface un fichier envoyé puis abandonné (vidéo préparée en avance, puis changée ou jamais publiée). */
 export async function removeUpload(path?: string | null): Promise<void> {
-  if (!path || TESTEUR || path.startsWith('file:')) return;
+  // Un chemin « file: » est un fichier du téléphone (mode testeur) : rien n'est sur le serveur.
+  if (!path || path.startsWith('file:')) return;
   try { await supabase.storage.from(BUCKET).remove([path]); } catch {}
 }
 
