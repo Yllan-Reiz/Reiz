@@ -15,14 +15,15 @@ export const CHANGELOG: {
   video: string | null;
   videoRatio?: number;
 } = {
-  id: 'maj-1.6-calendrier',
+  id: 'maj-1.7-mots',
   title: t('changelog.title'),
   subtitle: t('changelog.subtitle'),
   video: null,
   items: [
-    { emoji: '', title: t('changelog.v16calTitle'), text: t('changelog.v16calText') },
-    { emoji: '', title: t('changelog.v16nudgeTitle'), text: t('changelog.v16nudgeText') },
-    { emoji: '', title: t('changelog.v16storyTitle'), text: t('changelog.v16storyText') },
+    { emoji: '', title: t('changelog.v17navTitle'), text: t('changelog.v17navText') },
+    { emoji: '', title: t('changelog.v17goalTitle'), text: t('changelog.v17goalText') },
+    { emoji: '', title: t('changelog.v17feedTitle'), text: t('changelog.v17feedText') },
+    { emoji: '', title: t('changelog.v17calmTitle'), text: t('changelog.v17calmText') },
   ],
 };
 

@@ -1,0 +1,20 @@
+<!--
+  E-mail « mot de passe oublié » de Reiz, en français (20/11/2026).
+  Supabase l'envoie en anglais par défaut. Pour le remplacer :
+    tableau de bord Supabase, projet Reiz, Authentication, Emails, Templates, « Reset Password ».
+    Objet (Subject) : Ton nouveau mot de passe Reiz
+    Corps (Message body) : coller tout ce qui suit ce commentaire.
+  {{ .ConfirmationURL }} est remplacé par Supabase : ne pas y toucher.
+  Le lien doit être ouvert sur le téléphone qui a fait la demande (l'app y garde la clé de l'échange).
+-->
+<h2>Mot de passe oublié ?</h2>
+
+<p>Touche le bouton ci-dessous <strong>sur le téléphone où Reiz est installé</strong>. L'app s'ouvre et te laisse choisir un nouveau mot de passe.</p>
+
+<p><a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 22px;border-radius:14px;background:#0a0a0a;color:#ffffff;font-weight:700;text-decoration:none;">Choisir un nouveau mot de passe</a></p>
+
+<p>Ce lien marche une seule fois, pendant une heure. Ouvre-le sur le même téléphone que celui où tu as fait la demande.</p>
+
+<p>Tu n'as rien demandé ? Ignore ce message : ton mot de passe ne change pas.</p>
+
+<p>L'équipe Reiz</p>

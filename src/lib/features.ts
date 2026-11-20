@@ -42,8 +42,10 @@ export const FEATURES = {
   // ---- Essai « testeurs fictifs » (19/11/2026, branche essai-testeurs-fictifs, compte rendu dans
   // TEST-TESTEURS-FICTIFS-2026-11-19.md). Chaque ligne passée à `false` ramène l'écran d'avant, tel quel.
   // Lot 1
-  /** « Mot de passe oublié ? » sur les deux écrans de connexion (lien par e-mail, puis nouveau mot de passe dans l'app). */
-  forgotPassword: true,
+  /** « Mot de passe oublié ? » sur les deux écrans de connexion (lien par e-mail, puis nouveau mot de passe dans l'app).
+   *  MASQUÉ le 20/11/2026 : l'envoi de l'e-mail est vérifié, mais le lien qui rouvre l'app et le nouveau mot de passe
+   *  n'ont pas encore été testés de bout en bout. À repasser à `true` une fois ce test fait. */
+  forgotPassword: false,
   /** « Plus tard » sur le premier objectif de l'accueil (avant : bouton gris sans sortie). */
   skipFirstGoal: true,
   /** Phrase pas comprise : « Garder ma phrase telle quelle » crée un objectif libre, 3 fois par semaine, corrigeable. */
