@@ -7,7 +7,6 @@ import { lang } from '../i18n';
 import { legalFr } from '../i18n/legal/fr';
 import { legalEn } from '../i18n/legal/en';
 import { legalEs } from '../i18n/legal/es';
-import { legalHe } from '../i18n/legal/he';
 import type { LegalDoc } from '../i18n/legal/types';
 
 export type { LegalDoc, LegalSection } from '../i18n/legal/types';
@@ -19,6 +18,6 @@ export const SUPPORT_EMAIL = 'reizapp.contact@gmail.com';
 // distance garde l'ancienne politique : elle décrit toujours exactement ce que fait son app.
 const WITH_CONTACTS = contactsAvailable();
 
-const BY_LANG = { fr: legalFr, en: legalEn, es: legalEs, he: legalHe };
+const BY_LANG = { fr: legalFr, en: legalEn, es: legalEs };
 
 export const LEGAL_DOCS: LegalDoc[] = BY_LANG[lang()]({ withContacts: WITH_CONTACTS, email: SUPPORT_EMAIL });

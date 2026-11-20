@@ -19,8 +19,7 @@
         "CFBundleLocalizations": [
           "fr",
           "en",
-          "es",
-          "he"
+          "es"
         ],
         "NSLocationAlwaysUsageDescription": "Reiz utilise ta position uniquement pour détecter ton arrivée à un lieu d'entraînement que tu as choisi (ta salle, ton stade) et prévenir ton cercle proche. Tes coordonnées restent sur ton téléphone et ne sont jamais envoyées."
       },
@@ -111,8 +110,7 @@
     "locales": {
       "fr": "./locales/fr.json",
       "en": "./locales/en.json",
-      "es": "./locales/es.json",
-      "he": "./locales/he.json"
+      "es": "./locales/es.json"
     }
   }
 }

@@ -16,7 +16,7 @@ import { contactsAvailable } from '../lib/contacts';
 import { APP_VERSION, WELCOME_FLOW, QUICK_START } from '../constants';
 import { F } from '../styles';
 import { FEATURES } from '../lib/features';
-import { LANGS, lang, chosenLang, deviceLang, setLanguage, type Lang, t, dirIcon, isRTL } from '../i18n';
+import { LANGS, lang, chosenLang, deviceLang, setLanguage, type Lang, t, dirIcon } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
 
 type View_ = 'root' | 'password' | 'blocked' | 'legal' | 'presence' | 'language' | 'reactions';
@@ -362,10 +362,7 @@ function LanguagePicker() {
   ];
   const choose = (code: Lang | null) => {
     if (code === picked) return;
-    // Vers ou depuis l'hébreu : iOS ne bascule l'alignement naturel du texte qu'à une vraie relance de l'app
-    // (le redémarrage de Reiz garde le même processus). On demande donc de fermer puis rouvrir.
-    const flips = ((code ?? deviceLang()) === 'he') !== isRTL();
-    Alert.alert(t('settings.restartTitle'), t(flips ? 'settings.restartTextDir' : 'settings.restartText'), [
+    Alert.alert(t('settings.restartTitle'), t('settings.restartText'), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('settings.restart'), onPress: () => { setLanguage(code); } },
     ]);

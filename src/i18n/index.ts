@@ -2,31 +2,31 @@ import { I18nManager, NativeModules, Platform, Settings, DevSettings, TurboModul
 import { fr, type Dict } from './fr';
 import { en } from './en';
 import { es } from './es';
-import { he } from './he';
 
-// Langues de Reiz. Le texte de l'app vit dans fr.ts (la référence), et en.ts, es.ts, he.ts en sont la
+// Langues de Reiz. Le texte de l'app vit dans fr.ts (la référence), et en.ts, es.ts en sont la
 // traduction clé pour clé (TypeScript refuse une clé manquante).
+// L'hébreu a été retiré le 20/11/2026 (demande de Yllan) : un téléphone en hébreu, ou un ancien choix « עברית »,
+// retombe sur la langue suivante du téléphone que Reiz parle, sinon l'anglais. L'écriture de droite à gauche n'est
+// plus jamais activée ; le code qui la gérait (isRTL, dirIcon, syncDirection) reste en place, inerte.
 //
 // La langue est choisie au lancement : celle réglée dans Reiz (Réglages > Langue), sinon celle du
 // téléphone si Reiz la parle, sinon l'anglais. Changer de langue relance l'app : rien n'a besoin de se
 // redessiner à chaud, et l'hébreu (de droite à gauche) ne s'applique de toute façon qu'au lancement.
 
-export type Lang = 'fr' | 'en' | 'es' | 'he';
+export type Lang = 'fr' | 'en' | 'es';
 export const LANGS: { code: Lang; name: string }[] = [
   { code: 'fr', name: 'Français' },
   { code: 'en', name: 'English' },
   { code: 'es', name: 'Español' },
-  { code: 'he', name: 'עברית' },
 ];
-const DICTS: Record<Lang, Dict> = { fr, en, es, he };
-const LOCALES: Record<Lang, string> = { fr: 'fr-FR', en: 'en-US', es: 'es-ES', he: 'he-IL' };
+const DICTS: Record<Lang, Dict> = { fr, en, es };
+const LOCALES: Record<Lang, string> = { fr: 'fr-FR', en: 'en-US', es: 'es-ES' };
 const PICKED_KEY = 'reiz.lang';
 // Langues de l'iPhone mémorisées au moment d'un choix manuel : AppleLanguages est alors remplacé par la langue choisie.
 const DEVICE_KEY = 'reiz.deviceLangs';
 
 function asLang(code?: string | null): Lang | null {
   const c = (code || '').slice(0, 2).toLowerCase();
-  if (c === 'iw') return 'he';
   return c in DICTS ? (c as Lang) : null;
 }
 
@@ -37,9 +37,12 @@ function deviceLangs(): string[] {
     // nouvelle architecture de React Native. Intl donne la langue de la région en dernier recours.
     const list: string[] = [];
     if (Platform.OS === 'ios') {
-      const saved = pickedLang() ? Settings.get(DEVICE_KEY) : null;
+      const kept = Settings.get(DEVICE_KEY);
+      const saved = pickedLang() ? kept : null;
       const langs = Array.isArray(saved) ? saved : Settings.get('AppleLanguages');
       if (Array.isArray(langs)) list.push(...langs);
+      // Ancien choix d'une langue retirée (l'hébreu) : les langues d'origine du téléphone, gardées au moment du choix.
+      if (!Array.isArray(saved) && Array.isArray(kept)) list.push(...kept);
       const loc = Settings.get('AppleLocale');
       if (typeof loc === 'string') list.push(loc);
     } else if (NativeModules.I18nManager?.localeIdentifier) {
@@ -73,7 +76,7 @@ let dict: Dict = DICTS[current];
 
 export const lang = () => current;
 export const locale = () => LOCALES[current];
-export const isRTL = () => current === 'he';
+export const isRTL = (): boolean => false;
 // Langue choisie à la main dans Reiz (null : celle du téléphone).
 export const chosenLang = () => pickedLang();
 
