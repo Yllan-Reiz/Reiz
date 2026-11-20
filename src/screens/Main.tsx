@@ -49,6 +49,7 @@ import { FEATURES } from '../lib/features';
 import { InviteCircleCard } from '../components/InviteCircleCard';
 import { SoloCard } from '../components/SoloCard';
 import { myInviteLink } from '../lib/invites';
+import { loadFriendIds } from '../lib/circle';
 import { maybeAskForUpdate } from '../lib/updatePrompt';
 
 const PAGE_SIZE = 20;
@@ -195,24 +196,23 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   const [feedLocked, setFeedLocked] = useState(false);
   // Le fil montre 7 jours (petit cercle) : les textes « dernières 24 h » et « pour aujourd'hui » suivent.
   const [weekFeed, setWeekFeed] = useState(false);
-  const checkFeedLock = async (uid: string) => {
+  // Audit du 20/11/2026 : le flou relisait à part ma dernière séance, ma date d'inscription et mon nombre d'objectifs
+  // (3 requêtes à chaque ouverture). Il se sert maintenant de ce que le fil lit déjà : la série (dernière séance sur
+  // un an), mon profil (date d'inscription) et mes objectifs.
+  const [lastPostAt, setLastPostAt] = useState<string | null | undefined>(undefined);
+  const [accountSince, setAccountSince] = useState<string | null>(null);
+  useEffect(() => {
     if (!FEATURES.weeklyBlur) return;
-    const [{ data: last, error }, { data: me }] = await Promise.all([
-      supabase.from('updates').select('created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
-      supabase.from('users').select('created_at').eq('id', uid).maybeSingle(),
-    ]);
-    // Dans le doute (lecture ratée, date d'inscription inconnue), le fil reste net.
-    if (error || !me?.created_at) return;
+    // Dans le doute (dernière séance ou date d'inscription pas encore lues, lecture ratée), le fil reste net.
+    if (lastPostAt === undefined || !accountSince || loadingObj) return;
     // Essai du 19/11/2026 : quelqu'un qui n'a aucun objectif est venu suivre un proche (« Suis-moi », dit
     // l'invitation). Il n'a rien à poster : son fil reste net et il peut réagir. Dès qu'il a un objectif, la règle joue.
-    if (FEATURES.supporters) {
-      const { count, error: objError } = await supabase.from('objectives').select('id', { count: 'exact', head: true }).eq('user_id', uid);
-      if (!objError && count === 0) { setFeedLocked(false); return; }
-    }
+    if (FEATURES.supporters && objectives.length === 0) { setFeedLocked(false); return; }
     const DAY = 24 * 3600 * 1000;
-    const lastAt = last?.[0]?.created_at ? new Date(last[0].created_at).getTime() : 0;
-    setFeedLocked(Date.now() - lastAt > 7 * DAY && Date.now() - new Date(me.created_at).getTime() > 3 * DAY);
-  };
+    const lastAt = lastPostAt ? new Date(lastPostAt).getTime() : 0;
+    setFeedLocked(Date.now() - lastAt > 7 * DAY && Date.now() - new Date(accountSince).getTime() > 3 * DAY);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastPostAt, accountSince, loadingObj, objectives.length]);
   useEffect(() => {
     if (!FEATURES.duels) return;
     loadDuels().then(list => {
@@ -270,7 +270,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   const fetchFriendCount = async (uid?: string | null) => {
     const id = uid ?? userId;
     if (!id) return;
-    await fetchCircle(id);
+    await fetchCircle(id, true);
   };
 
   // Derniers compteurs connus (demandes, non lus, amis), gardés pour l'ouverture suivante.
@@ -281,16 +281,13 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
   // Ton cercle (toi + tes amis), gardé d'un lancement à l'autre : le fil démarre sans l'attendre.
   const circleRef = useRef<string[] | null>(null);
 
-  const fetchCircle = async (uid: string): Promise<string[]> => {
-    const { data: fr } = await supabase
-      .from('friendships')
-      .select('requester_id, receiver_id')
-      .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`)
-      .eq('status', 'accepted');
-    // Personnes distinctes : une amitié en double ne compte qu'une fois.
-    const ids = [uid, ...new Set((fr || []).map(f => (f.requester_id === uid ? f.receiver_id : f.requester_id)))];
+  const fetchCircle = async (uid: string, force = false): Promise<string[]> => {
+    // Personnes distinctes : une amitié en double ne compte qu'une fois. Lecture partagée avec la carte des objectifs
+    // terminés (lib/circle.ts) ; `null` : lecture ratée, on ne touche pas au nombre d'amis affiché.
+    const friends = await loadFriendIds(uid, force);
+    const ids = [uid, ...(friends ?? [])];
     cacheSet(`circle.${uid}`, ids);
-    if (fr) { setFriendCount(ids.length - 1); cacheSet(`counts.${uid}`, { ...countsRef.current, friends: ids.length - 1 }); }
+    if (friends) { setFriendCount(ids.length - 1); cacheSet(`counts.${uid}`, { ...countsRef.current, friends: ids.length - 1 }); }
     return ids;
   };
 
@@ -315,7 +312,6 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     }
     if (!circleIds) circleIds = [uid];
     circleRef.current = circleIds;
-    if (offset === 0) checkFeedLock(uid).catch(() => {});
 
     // Le fil repart de zéro toutes les 24 h (fenêtre glissante) : on ne voit que
     // ce que le cercle a fait depuis hier à la même heure. L'historique complet
@@ -466,7 +462,7 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
     if (!userId) return;
     setRefreshing(true);
     setWinsKey(k => k + 1);
-    loadWeekState(userId).then(w => { setWeek(w); cacheSet(`week.${userId}`, w); setFlame(userId, w.weeks >= 1); });
+    loadWeekState(userId).then(w => { setWeek(w); setLastPostAt(w.lastPostAt); cacheSet(`week.${userId}`, w); setFlame(userId, w.weeks >= 1); });
     loadFlames(true).catch(() => {});
     fetchPendingCount();
     fetchFriendCount();
@@ -578,13 +574,14 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       }
       lastCounts.current = Date.now();
       // Ta photo : celle d'origine (déjà allégée à l'envoi), sans attendre une version réduite par le serveur.
-      supabase.from('users').select('avatar_url, full_name').eq('id', uid).single().then(async ({ data: me }) => {
+      supabase.from('users').select('avatar_url, full_name, created_at').eq('id', uid).single().then(async ({ data: me }) => {
         setMe({ name: me?.full_name ?? null });
+        setAccountSince(me?.created_at ?? null);
         if (me?.avatar_url) { const url = await signOne(me.avatar_url); setMyAvatar(url); setMe({ avatar: url }); }
       });
       loadFeedPage(0, uid); // remplit aussi le nombre d'amis (liste du cercle)
       myInviteLink(uid).catch(() => {}); // lien d'invitation prêt avant le premier partage
-      loadWeekState(uid).then(w => { setWeek(w); cacheSet(`week.${uid}`, w); setFlame(uid, w.weeks >= 1); });
+      loadWeekState(uid).then(w => { setWeek(w); setLastPostAt(w.lastPostAt); cacheSet(`week.${uid}`, w); setFlame(uid, w.weeks >= 1); });
       // Les flammes de tout le cercle, à côté des photos de profil (elle remplace la série du haut du fil).
       loadFlames().catch(() => {});
       fetchPendingCount(uid);

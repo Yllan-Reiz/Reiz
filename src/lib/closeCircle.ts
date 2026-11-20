@@ -14,7 +14,16 @@ let memo: { uid: string; at: number; list: CloseFriend[] } | null = null;
 /** À appeler après avoir ajouté ou retiré quelqu'un, et à la déconnexion. */
 export function resetCloseCircle() { memo = null; }
 
-export async function loadCloseCircle(force = false): Promise<CloseFriend[]> {
+// Audit du 20/11/2026 : au lancement, le fil et la carte du cercle du jour le demandaient en même temps, et la
+// lecture partait deux fois (4 requêtes au lieu de 2). Un chargement en cours sert à tous.
+let inflight: Promise<CloseFriend[]> | null = null;
+export function loadCloseCircle(force = false): Promise<CloseFriend[]> {
+  if (inflight) return inflight;
+  inflight = readCloseCircle(force).finally(() => { inflight = null; });
+  return inflight;
+}
+
+async function readCloseCircle(force: boolean): Promise<CloseFriend[]> {
   const user = await currentUser();
   if (!user) return [];
   if (!force && memo && memo.uid === user.id && Date.now() - memo.at < 60_000) return memo.list;

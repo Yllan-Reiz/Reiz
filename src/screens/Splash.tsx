@@ -27,7 +27,7 @@ export function Splash({ onNext }: { onNext: () => void }) {
   const handleLogin = async () => {
     if (!email || !password) { Alert.alert(t('common.error'), t('common.fillAll')); return; }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setLoading(false);
     if (error) Alert.alert(t('common.error'), frError(error));
   };

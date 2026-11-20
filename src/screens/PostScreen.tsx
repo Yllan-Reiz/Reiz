@@ -415,7 +415,15 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
     );
   };
 
+  // Audit du 20/11/2026 : deux appuis rapides sur « Publier » lançaient deux envois avant que le bouton ne se grise
+  // (l'état React n'est à jour qu'au rendu suivant). Le verrou, lui, est immédiat.
+  const publishLock = useRef(false);
   const publish = async () => {
+    if (!obj || publishLock.current) return;
+    publishLock.current = true;
+    try { await publishOnce(); } finally { publishLock.current = false; }
+  };
+  const publishOnce = async () => {
     if (!obj) return;
     setPublishing(true);
     const user = await currentUser();

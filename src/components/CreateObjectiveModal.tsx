@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Modal, KeyboardAvoidingView, Platform, Alert, Keyboard } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -62,11 +62,14 @@ export function CreateObjectiveModal({ visible, onClose, onCreated }: { visible:
 
   const reset = () => { setVisibility('friends'); setDays(ALL_DAYS); setWeeksPick(undefined); setMore(false); setStep('say'); setFormKey(k => k + 1); };
 
+  const createLock = useRef(false);
   const handleCreate = async () => {
+    if (createLock.current) return;
     if (!goal) { Alert.alert(t('objective.newTitle'), t('sentence.need')); return; }
     if (days.length === 0) { Alert.alert(t('welcome.daysTitle'), t('welcome.daysText')); return; }
     setSaving(true);
-    const { title, error } = await createGoal(goal, { weeks, days, visibility, from: 'modal', via: result.via, edited: result.edited });
+    createLock.current = true;
+    const { title, error } = await createGoal(goal, { weeks, days, visibility, from: 'modal', via: result.via, edited: result.edited }).finally(() => { createLock.current = false; });
     setSaving(false);
     if (error) { Alert.alert(t('common.error'), /per_week|starts_at|deadline/i.test(error.message || '') ? t('goal.dbNeeded') : frError(error)); return; }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});

@@ -284,15 +284,23 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
   // Recherche de nouvelles personnes : nom, @pseudo, tag de profil ou objectif public (fonction discover_people,
   // qui écarte tes amis, les demandes en cours, les blocages et les comptes qui ne veulent pas être proposés).
   // Tes amis qui correspondent sont listés à part, pour ouvrir leur profil.
+  // Audit du 20/11/2026 : une requête partait à chaque lettre, et une réponse en retard (« ka ») pouvait recouvrir la
+  // bonne (« karim »). On attend 250 ms sans frappe, et seule la dernière recherche lancée a le droit d'afficher.
+  const searchSeq = useRef(0);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (searchTimer.current) clearTimeout(searchTimer.current); }, []);
   const runDiscover = async (terms: string[]) => {
+    const seq = ++searchSeq.current;
     setSearching(true);
     const [{ data }, blocked] = await Promise.all([supabase.rpc('discover_people', { p_terms: terms, p_limit: 20 }), blockedReady.current]);
+    if (seq !== searchSeq.current) return;
     const results = ((data as any[]) || []).filter(u => !blocked.has(u.id)).map(u => ({
       ...u,
       reason: localizeReason(u.reason) || (u.mutual > 0 ? tp('friends.mutual', u.mutual) : `@${u.username}`),
       kind: u.reason?.startsWith('Sport') ? 'sport' : u.reason?.startsWith('Tag') ? 'tag' : u.reason?.startsWith('Objectif') ? 'objective' : u.mutual > 0 ? 'mutual' : 'name',
     }));
     const signed = await signAvatars(results.map(u => u.avatar_url));
+    if (seq !== searchSeq.current) return;
     results.forEach(u => { if (u.avatar_url) u.avatar_url = signed[u.avatar_url] ?? null; });
     setSearchResults(results);
     setSearching(false);
@@ -302,13 +310,16 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
     setSearchQuery(query);
     setActiveSport(null);
     const q = query.trim().replace(/^@/, '').replace(/[,()%]/g, '');
-    if (q.length < 2) { setSearchResults([]); return; }
-    runDiscover([q]);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (q.length < 2) { searchSeq.current++; setSearching(false); setSearchResults([]); return; }
+    setSearching(true);
+    searchTimer.current = setTimeout(() => runDiscover([q]), 250);
   };
 
   const searchSport = (id: string, label: string, terms: string[]) => {
     Haptics.selectionAsync().catch(() => {});
-    if (activeSport === id) { setActiveSport(null); setSearchQuery(''); setSearchResults([]); return; }
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (activeSport === id) { searchSeq.current++; setSearching(false); setActiveSport(null); setSearchQuery(''); setSearchResults([]); return; }
     setActiveSport(id);
     setSearchQuery(label);
     runDiscover(terms);
@@ -420,7 +431,7 @@ export function FriendsTab({ onViewProfile, onPendingCount }: { onViewProfile: (
             setRefreshingFriends(false);
           }}
           onSearch={handleSearch}
-          onClearSearch={() => { setSearchQuery(''); setSearchResults([]); setActiveSport(null); }}
+          onClearSearch={() => { if (searchTimer.current) clearTimeout(searchTimer.current); searchSeq.current++; setSearching(false); setSearchQuery(''); setSearchResults([]); setActiveSport(null); }}
           matchingFriends={searchQuery.trim().length >= 2 && !activeSport ? friends.filter(f => `${f.full_name} ${f.username}`.toLowerCase().includes(searchQuery.trim().replace(/^@/, '').toLowerCase())).slice(0, 5) : []}
           newMembers={newMembers}
           activeSport={activeSport}

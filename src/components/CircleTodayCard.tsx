@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, AppState } from 'react-native';
-import { supabase, currentUser } from '../lib/supabase';
+import { currentUser } from '../lib/supabase';
+import { loadMyWeekData } from '../lib/helpers';
 import { loadCircleRhythm, FriendRhythm } from '../lib/rhythm';
 import { loadCloseCircle } from '../lib/closeCircle';
 import { GlassSurface } from './GlassSurface';
 import { F } from '../styles';
 import { t, tp } from '../i18n';
-import { quotaFor, mondayOf, WEEKLY_COLUMNS, type WeeklyGoal } from '../lib/weekly';
+import { quotaFor, mondayOf } from '../lib/weekly';
 
 // Le cercle du jour (moment Reiz, phase 29, 30/10/2026) : à la place du flou de BeReal, on montre qui de ton cercle
 // a posté aujourd'hui. Chaque post allume un visage ; quand tout le monde a posté, « 🔥 Cercle complet ».
@@ -51,14 +52,12 @@ export function CircleTodayCard({ reloadKey, onOpenProfile }: { reloadKey?: numb
     // Mes jours postés cette semaine (lundi = 0), pour « Cercle complet » et les jours complets.
     const today = (new Date().getDay() + 6) % 7;
     const monday = new Date(); monday.setHours(0, 0, 0, 0); monday.setDate(monday.getDate() - today);
-    const [{ data: mine }, { data: myObjs }] = await Promise.all([
-      supabase.from('updates').select('created_at').eq('user_id', user.id).gte('created_at', monday.toISOString()),
-      supabase.from('objectives').select(WEEKLY_COLUMNS).eq('user_id', user.id),
-    ]);
+    // Mes séances et mes rythmes : la même lecture que la série du fil (helpers.loadMyWeekData), plus deux requêtes à part.
+    const { dates, goals: myObjs } = await loadMyWeekData(user.id);
     const myDays = Array.from({ length: 7 }, () => false);
-    (mine || []).forEach((u: any) => { myDays[(new Date(u.created_at).getDay() + 6) % 7] = true; });
+    dates.forEach(d => { const at = new Date(d); if (at >= monday) myDays[(at.getDay() + 6) % 7] = true; });
     // 1.4 : on m'attend aujourd'hui tant que ma semaine n'est pas validée (les jours prévus ne comptent plus).
-    const myQuota = quotaFor((myObjs || []) as WeeklyGoal[], mondayOf());
+    const myQuota = quotaFor(myObjs, mondayOf());
     setMeScheduled(myDays[today] || myDays.filter(Boolean).length < myQuota);
     let full = 0;
     for (let d = 0; d <= today; d++) if (myDays[d] && members.every(m => !m.scheduled[d] || m.posted[d])) full++;

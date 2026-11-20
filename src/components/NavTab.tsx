@@ -11,7 +11,7 @@ export function NavTab({ icon, label, active, onPress, badge }: { icon: any; lab
   const color = active ? 'transparent' : 'rgba(235,235,245,0.62)';
   return (
     // Le libellé sert aussi à VoiceOver et TalkBack, qui ne lisaient que « bouton » (les icônes n'ont pas de nom).
-    <TouchableOpacity style={s.navItem} onPress={onPress} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: active }}>
+    <TouchableOpacity style={[s.navItem, !!badge && badge > 0 && { zIndex: 3 }]} onPress={onPress} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: active }}>
       {/* L'icône occupe l'espace mais devient transparente quand actif : le bubble flottant la remplace */}
       <Ionicons name={icon} size={22} color={color} />
       {FEATURES.navLabels && !!label && <Text style={[navLabelStyle, { color }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={1.15}>{label}</Text>}

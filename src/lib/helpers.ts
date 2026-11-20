@@ -69,16 +69,32 @@ export function andList(names: string[]): string {
 
 // La série se compte en semaines réussies (voir weekly.ts) : les jours prévus ne la cassent plus, seule une
 // semaine finie sous son quota l'arrête.
+// Mes dates de séances sur un an et mes rythmes. Audit du 20/11/2026 : à l'ouverture, la série du fil, la carte du
+// cercle du jour et le flou du fil lisaient chacun ces mêmes lignes (7 requêtes). Une lecture sert maintenant aux
+// trois ; elle est gardée 3 secondes, le temps que tous ceux qui démarrent ensemble la reçoivent.
+export type MyWeekData = { dates: string[]; goals: WeeklyGoal[]; ok: boolean };
+let myWeek: { uid: string; at: number; p: Promise<MyWeekData> } | null = null;
+export function loadMyWeekData(userId: string): Promise<MyWeekData> {
+  if (myWeek && myWeek.uid === userId && Date.now() - myWeek.at < 3000) return myWeek.p;
+  const p = (async (): Promise<MyWeekData> => {
+    // Un an de séances, les dates seulement.
+    const since = new Date(Date.now() - 370 * 24 * 3600 * 1000).toISOString();
+    const [{ data, error }, objRes] = await Promise.all([
+      supabase.from('updates').select('created_at').eq('user_id', userId).gte('created_at', since).order('created_at', { ascending: false }).limit(1000),
+      supabase.from('objectives').select(WEEKLY_COLUMNS).eq('user_id', userId),
+    ]);
+    // Base d'avant la phase 31 (colonnes absentes) : aucun rythme connu, une séance par semaine suffit.
+    const goals = (objRes.error ? [] : objRes.data || []) as WeeklyGoal[];
+    return { dates: error || !data ? [] : data.map(u => u.created_at as string), goals, ok: !error && !!data };
+  })();
+  myWeek = { uid: userId, at: Date.now(), p };
+  return p;
+}
+
 export async function loadWeekState(userId: string): Promise<WeekState> {
-  // Un an de séances, les dates seulement.
-  const since = new Date(Date.now() - 370 * 24 * 3600 * 1000).toISOString();
-  const [{ data, error }, objRes] = await Promise.all([
-    supabase.from('updates').select('created_at').eq('user_id', userId).gte('created_at', since).order('created_at', { ascending: false }).limit(1000),
-    supabase.from('objectives').select(WEEKLY_COLUMNS).eq('user_id', userId),
-  ]);
-  // Base d'avant la phase 31 (colonnes absentes) : aucun rythme connu, une séance par semaine suffit.
-  const goals = (objRes.error ? [] : objRes.data || []) as WeeklyGoal[];
-  return weekState(error || !data ? [] : data.map(u => u.created_at as string), goals);
+  const { dates, goals, ok } = await loadMyWeekData(userId);
+  // Lecture ratée : la date de la dernière séance reste inconnue (le fil ne se floute pas dans le doute).
+  return { ...weekState(dates, goals), ...(ok ? { lastPostAt: dates[0] ?? null } : {}) };
 }
 
 /** Semaines réussies d'affilée. */

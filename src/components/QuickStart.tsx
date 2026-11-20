@@ -100,6 +100,7 @@ export function QuickStartModal({ visible, preview, onClose }: { visible: boolea
   const created = useRef<{ id: string | null; sig: string } | null>(null);
   const wrote = useRef(false);
   const madeObjective = useRef(false);
+  const saveLock = useRef(false);
   const onResult = useCallback((r: SentenceResult) => setResult(r), []);
 
   useEffect(() => {
@@ -211,8 +212,11 @@ export function QuickStartModal({ visible, preview, onClose }: { visible: boolea
     // Revenu en arrière sans rien changer : l'objectif existe déjà, on avance.
     const sig = JSON.stringify(result.goal);
     if (created.current?.sig === sig) { Keyboard.dismiss(); next('done'); return; }
+    // Deux appuis rapides sur « Continuer » créaient deux fois l'objectif.
+    if (saveLock.current) return;
+    saveLock.current = true;
     setBusy(true);
-    const { id, error } = await createGoal(result.goal, { from: 'welcome', via: result.via, edited: result.edited });
+    const { id, error } = await createGoal(result.goal, { from: 'welcome', via: result.via, edited: result.edited }).finally(() => { saveLock.current = false; });
     setBusy(false);
     if (error) { Alert.alert(t('common.error'), frError(error)); return; }
     // Corrigé après un retour : le premier jet, créé il y a un instant et sans aucune séance, laisse la place.

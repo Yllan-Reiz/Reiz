@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { loadFriendIds } from '../lib/circle';
 import { supabase } from '../lib/supabase';
 import { signAvatars } from '../lib/storage';
 import { loadJourney } from '../lib/journey';
@@ -31,9 +32,7 @@ export function CircleWinsCard({ userId, reloadKey, onOpenProfile }: { userId: s
 
   const load = useCallback(async () => {
     if (!userId) return;
-    const { data: fr } = await supabase.from('friendships').select('requester_id, receiver_id')
-      .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`).eq('status', 'accepted');
-    const ids = [userId, ...((fr || []) as { requester_id: string; receiver_id: string }[]).map(f => (f.requester_id === userId ? f.receiver_id : f.requester_id))];
+    const ids = [userId, ...((await loadFriendIds(userId)) ?? [])];
     const since = new Date(Date.now() - WINDOW_HOURS * 3600 * 1000).toISOString();
     const { data, error } = await supabase.from('objectives')
       .select('id, user_id, title, current_value, target_value, visibility, completed_at')

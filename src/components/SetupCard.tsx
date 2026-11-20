@@ -22,6 +22,10 @@ import { t, tp, dirIcon } from '../i18n';
 type StepId = 'post' | 'photo' | 'objective' | 'friends' | 'place' | 'notifs';
 const LATER_MS = 3 * 24 * 3600 * 1000;
 const laterKey = (uid: string) => `reiz.setup.later.${uid}`;
+// Audit du 20/11/2026 : une fois le profil complet, la carte n'affiche plus rien mais relisait quand même la photo et
+// le nombre de posts à chaque ouverture (2 requêtes). On retient « complet » 7 jours sur le téléphone.
+const DONE_MS = 7 * 24 * 3600 * 1000;
+const doneKey = (uid: string) => `reiz.setup.done.${uid}`;
 const ICONS: Record<StepId, keyof typeof Ionicons.glyphMap> = {
   post: 'add-circle-outline', photo: 'camera-outline', objective: 'flag-outline', friends: 'people-outline', place: 'location-outline', notifs: 'notifications-outline',
 };
@@ -50,8 +54,15 @@ export function SetupCard({ userId, hasObjective, friendCount, onPost, onAddPhot
     Notifications.getPermissionsAsync().then(p => setNotifs(p.status === 'granted')).catch(() => setNotifs(true));
   }, []);
 
+  // null : pas encore su. true : profil déjà complet, rien à lire ni à afficher.
+  const [complete, setComplete] = useState<boolean | null>(null);
   useEffect(() => {
     if (!userId) return;
+    AsyncStorage.getItem(doneKey(userId)).then(v => setComplete(!!v && Date.now() - Number(v) < DONE_MS), () => setComplete(false));
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId || complete !== false) return;
     supabase.from('users').select('avatar_url').eq('id', userId).maybeSingle()
       .then(({ data }) => setHasPhoto(!!data?.avatar_url), () => setHasPhoto(true));
     // Un seul post suffit : la carte est relue à chaque retour sur le fil (Main est remonté après la publication).
@@ -62,7 +73,7 @@ export function SetupCard({ userId, hasObjective, friendCount, onPost, onAddPhot
     checkDevice();
     const sub = AppState.addEventListener('change', st => { if (st === 'active') checkDevice(); });
     return () => sub.remove();
-  }, [userId, checkDevice]);
+  }, [userId, checkDevice, complete]);
 
   const enableNotifs = async () => {
     const cur = await Notifications.getPermissionsAsync().catch(() => null);
@@ -84,7 +95,7 @@ export function SetupCard({ userId, hasObjective, friendCount, onPost, onAddPhot
     { id: 'notifs', done: notifs, onPress: enableNotifs },
   ];
   const left = steps.filter(x => !x.done).length;
-  if (left === 0) return null;
+  if (left === 0) { AsyncStorage.setItem(doneKey(userId), String(Date.now())).catch(() => {}); return null; }
   const doneCount = steps.length - left;
 
   return (

@@ -92,7 +92,7 @@ export function Onboarding({ onNext, onBack }: { onNext: () => void; onBack?: ()
   const handleLogin = async () => {
     if (!loginEmail || !loginPassword) { Alert.alert(t('common.error'), t('common.fillAll')); return; }
     setLoginLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail.trim(), password: loginPassword });
     setLoginLoading(false);
     if (error) Alert.alert(t('common.error'), frError(error));
   };

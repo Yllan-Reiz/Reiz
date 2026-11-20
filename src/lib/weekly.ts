@@ -29,6 +29,8 @@ export type WeekState = {
   left: number;
   /** Jours qu'il reste cette semaine, aujourd'hui compris. */
   daysLeft: number;
+  /** Date de ma dernière séance sur un an (null : aucune). Absent : pas encore lu, ou lecture ratée. */
+  lastPostAt?: string | null;
 };
 
 const atNoon = (day: string) => new Date(`${day.slice(0, 10)}T12:00:00`);
