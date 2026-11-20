@@ -1,4 +1,4 @@
-import { Linking } from 'react-native';
+import { Alert, Linking } from 'react-native';
 import { supabase } from './supabase';
 import { t, lang } from '../i18n';
 import { signalRecovery } from './passwordReset';
@@ -43,12 +43,17 @@ export async function ensureProfile(user: { id: string; user_metadata?: any; ema
   }
 }
 
+const linkFailed = () => Alert.alert(t('auth.linkFailedTitle'), t('auth.linkFailedText'));
+
 // Appelé avec chaque lien entrant. Renvoie true si c'était un retour de connexion Google.
 export async function handleAuthUrl(url: string | null | undefined): Promise<boolean> {
   if (!url || !url.startsWith(AUTH_REDIRECT)) return false;
   const code = url.match(/[?&]code=([^&#\s]+)/)?.[1];
-  if (!code) return true;
+  // Lien refusé par le serveur (déjà utilisé, expiré) : avant le 20/11/2026 l'app ne disait rien, et la personne
+  // restait devant le même écran sans comprendre. Vu pendant le test du mot de passe oublié.
+  if (!code) { if (/[?&#]error(?:_code|_description)?=/.test(url)) linkFailed(); return true; }
   const { data, error } = await supabase.auth.exchangeCodeForSession(decodeURIComponent(code));
+  if (error) { linkFailed(); return true; }
   if (!error && data?.user) await ensureProfile(data.user);
   // Lien « mot de passe oublié » : la session est ouverte, il reste à choisir le nouveau mot de passe (App.tsx).
   if (!error && (data as { redirectType?: string | null } | null)?.redirectType === 'PASSWORD_RECOVERY') signalRecovery();

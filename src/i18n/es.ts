@@ -1115,6 +1115,8 @@ export const es: Dict = {
     hidePassword: "Ocultar la contraseña",
     newPasswordTitle: "Nueva contraseña",
     newPasswordSub: "Ya has vuelto a entrar. Elige una contraseña nueva para la próxima vez.",
+    linkFailedTitle: "Ese enlace no ha funcionado",
+    linkFailedText: "Puede que ya se haya usado, que haya caducado o que se haya abierto en otro dispositivo distinto del que lo pidió. Pide un enlace nuevo y ábrelo en este teléfono.",
   },
   onboarding: {
     s1Title: 'Tu gente sabe cuándo abandonas el entreno.',

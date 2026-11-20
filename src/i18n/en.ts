@@ -1115,6 +1115,8 @@ export const en: Dict = {
     hidePassword: "Hide password",
     newPasswordTitle: "New password",
     newPasswordSub: "You're signed back in. Choose a new password for next time.",
+    linkFailedTitle: "That link didn't work",
+    linkFailedText: "It may have been used already, expired, or opened on a different device from the one that asked for it. Request a new link and open it on this phone.",
   },
   onboarding: {
     s1Title: 'Your people know when you skip training.',

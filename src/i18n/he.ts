@@ -1117,6 +1117,8 @@ export const he: Dict = {
     hidePassword: "הסתר סיסמה",
     newPasswordTitle: "סיסמה חדשה",
     newPasswordSub: "התחברת מחדש. בחר סיסמה חדשה לפעם הבאה.",
+    linkFailedTitle: "הקישור לא עבד",
+    linkFailedText: "ייתכן שכבר השתמשו בו, שפג תוקפו, או שנפתח במכשיר אחר מזה שביקש אותו. בקש קישור חדש ופתח אותו בטלפון הזה.",
   },
   onboarding: {
     s1Title: 'הקרובים שלך יודעים כשאתם מוותרים על האימון.',

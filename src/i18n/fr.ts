@@ -1116,6 +1116,8 @@ export const fr = {
     hidePassword: "Masquer le mot de passe",
     newPasswordTitle: "Nouveau mot de passe",
     newPasswordSub: "Tu es reconnecté. Choisis un nouveau mot de passe pour la prochaine fois.",
+    linkFailedTitle: "Ce lien n'a pas marché",
+    linkFailedText: "Il a peut-être déjà servi, expiré, ou été ouvert sur un autre appareil que celui qui l'a demandé. Redemande un lien et ouvre-le sur ce téléphone.",
   },
   onboarding: {
     s1Title: 'Tes proches savent quand tu lâches ton entraînement.',
