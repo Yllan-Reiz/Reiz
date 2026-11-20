@@ -240,6 +240,8 @@ export const fr = {
     captionLabel: 'LÉGENDE',
     captionPlaceholder: 'Décris ta séance, ton ressenti...',
     uploadingVideo: 'Compression et envoi de la vidéo...',
+    videoPreparing: "Préparation de la vidéo…",
+    videoReady: "Vidéo prête à publier",
     publish: 'Publier',
   },
   welcome: {

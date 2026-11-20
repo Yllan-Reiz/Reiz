@@ -8,7 +8,7 @@ import { askCamera } from '../lib/mediaPerms';
 import * as Haptics from 'expo-haptics';
 import { supabase, currentUser } from '../lib/supabase';
 import { frError, inUnit, num, andList } from '../lib/helpers';
-import { uploadImage, uploadVideo, compressVideo, signAvatars } from '../lib/storage';
+import { uploadImage, uploadVideo, compressVideo, signAvatars, removeUpload } from '../lib/storage';
 import { GlassIconButton } from '../components/ProfileSections';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Objective } from '../lib/types';
@@ -376,17 +376,59 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
     ]);
   };
 
+  // Vidéo : allégée (720p, sortie en mp4) puis envoyée. L'extension sert à reconnaître une vidéo à l'affichage (isVideo).
+  const sendVideo = async (uri: string, userId: string) => {
+    const sendUri = await compressVideo(uri);
+    const isMov = /\.mov$/i.test(sendUri);
+    return uploadVideo(`${userId}/${Date.now()}.${isMov ? 'mov' : 'mp4'}`, sendUri, isMov ? 'video/quicktime' : 'video/mp4');
+  };
+
+  // Vidéo préparée en avance (20/11/2026, FEATURES.videoPrepare). Avant, tout partait à l'appui sur « Publier » :
+  // recompression, puis envoi, et on regardait tourner la roue. Maintenant le travail commence dès que la vidéo est
+  // choisie, pendant qu'on choisit l'objectif et qu'on écrit la légende. À « Publier », on attend seulement ce qui reste.
+  // Une vidéo changée, retirée ou jamais publiée : son fichier déjà envoyé est effacé du serveur.
+  type Prepared = { uri: string; promise: Promise<{ path: string | null; error: { message?: string } | null }>; used: boolean };
+  const prepared = useRef<Prepared | null>(null);
+  const [prep, setPrep] = useState<'idle' | 'running' | 'ready'>('idle');
+  const dropPrepared = () => {
+    const p = prepared.current;
+    prepared.current = null;
+    setPrep('idle');
+    if (p && !p.used) p.promise.then(r => removeUpload(r.path), () => {});
+  };
+  useEffect(() => {
+    if (!FEATURES.videoPrepare) return;
+    dropPrepared();
+    if (!photoUri || mediaType !== 'video') return;
+    const uri = photoUri;
+    const promise = (async () => {
+      const user = await currentUser();
+      if (!user) return { path: null, error: { message: t('post.mustBeSignedIn') } };
+      return sendVideo(uri, user.id);
+    })().catch((e: any) => ({ path: null, error: { message: e?.message } }));
+    prepared.current = { uri, promise, used: false };
+    setPrep('running');
+    promise.then(r => { if (prepared.current?.promise === promise) setPrep(r.path ? 'ready' : 'idle'); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoUri, mediaType]);
+  // Écran quitté sans publier : la vidéo préparée ne reste pas sur le serveur.
+  useEffect(() => () => { const p = prepared.current; if (p && !p.used) p.promise.then(r => removeUpload(r.path), () => {}); }, []);
+
   // Renvoie le CHEMIN de stockage (pas une URL) : le bucket est privé, les URLs
   // sont signées au moment de l'affichage.
   const uploadPhoto = async (uri: string, userId: string): Promise<string | null> => {
     setUploadingPhoto(true);
-    // L'extension du fichier sert à reconnaître une vidéo à l'affichage (voir isVideo).
-    // Vidéo : recompressée en 720p (sortie en mp4) avant envoi.
-    const sendUri = mediaType === 'video' ? await compressVideo(uri) : uri;
-    const isMov = /\.mov$/i.test(sendUri);
-    const { path, error } = mediaType === 'video'
-      ? await uploadVideo(`${userId}/${Date.now()}.${isMov ? 'mov' : 'mp4'}`, sendUri, isMov ? 'video/quicktime' : 'video/mp4')
-      : await uploadImage(`${userId}/${Date.now()}.jpg`, uri);
+    let result: { path: string | null; error: { message?: string } | null };
+    if (mediaType === 'video') {
+      // La vidéo préparée en avance, si c'est bien celle-là. Préparation ratée (réseau) : on repart de zéro, une fois.
+      const ready = prepared.current && prepared.current.uri === uri ? prepared.current : null;
+      result = ready ? await ready.promise : { path: null, error: null };
+      if (!result.path) result = await sendVideo(uri, userId);
+      if (ready && result.path) ready.used = true;
+    } else {
+      result = await uploadImage(`${userId}/${Date.now()}.jpg`, uri);
+    }
+    const { path, error } = result;
     setUploadingPhoto(false);
     if (error) {
       // Message précis pour les vidéos : « trop lourde » se corrige, « réessaie » non.
@@ -452,28 +494,32 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
       // Seulement les amis encore autorisés (changement d'objectif après avoir coché).
       with_user_ids: canTag ? withIds.filter(id => taggable.some(f => f.id === id)) : [],
     });
-    if (!error) {
-      await supabase.from('objectives').update({ current_value: absoluteValue, unit: obj.unit, target_value: obj.target_value }).eq('id', obj.id);
-    }
-    const also = error ? [] : await Promise.all(alsoUpdates().map(async u => ({
-      ...u, failed: !!(await supabase.from('objectives').update({ current_value: u.next }).eq('id', u.o.id)).error,
-    })));
+    // Après le post : l'objectif, les autres objectifs du jour, le compte de mes posts et mon nom partent ENSEMBLE
+    // (20/11/2026 : ils se suivaient un par un, quatre allers-retours à attendre avant le retour au fil).
+    const noCount = { count: null as number | null };
+    const [, also, { count: postCount }, meRes] = error
+      ? [null, [] as { o: Objective; next: number; failed: boolean }[], noCount, { data: null as { username?: string; full_name?: string } | null }] as const
+      : await Promise.all([
+        supabase.from('objectives').update({ current_value: absoluteValue, unit: obj.unit, target_value: obj.target_value }).eq('id', obj.id).then(r => r, () => null),
+        Promise.all(alsoUpdates().map(async u => ({
+          ...u, failed: !!(await supabase.from('objectives').update({ current_value: u.next }).eq('id', u.o.id)).error,
+        }))),
+        // Premier post du compte ou non : pour le back-office, et pour la fenêtre de fin (le post tout juste écrit compte déjà).
+        supabase.from('updates').select('id', { count: 'exact', head: true }).eq('user_id', user.id).then(r => r, () => noCount),
+        supabase.from('users').select('username, full_name').eq('id', user.id).maybeSingle().then(r => r, () => ({ data: null })),
+      ]);
     setPublishing(false);
     if (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
       Alert.alert(t('common.error'), frError(error));
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      // Pour le back-office : premier post du compte ou non (le post qu'on vient d'écrire compte déjà).
-      // Attendu (essai du 19/11/2026) : savoir si c'est le premier post décide aussi de la fenêtre de fin.
-      const { count: postCount } = await supabase.from('updates').select('id', { count: 'exact', head: true }).eq('user_id', user.id)
-        .then(r => r, () => ({ count: null as number | null }));
       track('post_published', { first: postCount === 1, duo: !!duoWith, moment: momentOn ? momentKind : null });
       // 1.4 : la première séance validée, dernière marche de l'entonnoir d'onboarding.
       if (postCount === 1) track('first_session', { duo: !!duoWith }, 'onboarding');
       // Séance postée : la carte du duo (Activité en direct) n'a plus lieu d'être.
       endAllLiveActivities();
-      const me = (await supabase.from('users').select('username, full_name').eq('id', user.id).maybeSingle()).data;
+      const me = meRes.data;
       const storyData: StoryData = {
         // Vidéo : la story en tire une image (voir ShareStoryModal).
         photoUri,
@@ -606,6 +652,13 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
               </View>
           }
         </TouchableOpacity>
+
+        {FEATURES.videoPrepare && mediaType === 'video' && !!photoUri && prep !== 'idle' && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 10 }} accessibilityLiveRegion="polite">
+            {prep === 'running' ? <ActivityIndicator color="#fff" size="small" /> : <Ionicons name="checkmark-circle" size={16} color="#fff" />}
+            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontFamily: F.semibold }}>{t(prep === 'running' ? 'post.videoPreparing' : 'post.videoReady')}</Text>
+          </View>
+        )}
 
         <View style={s.postBody}>
           {/* Objectif */}

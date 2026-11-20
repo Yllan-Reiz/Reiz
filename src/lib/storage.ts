@@ -145,6 +145,11 @@ async function uploadAndroid(
  * Si la compression échoue, on envoie l'original plutôt que de bloquer la publication.
  */
 export async function compressVideo(uri: string): Promise<string> {
+  // Déjà légère (4 Mo au plus, le poids visé après compression) : la recompresser ferait attendre pour rien.
+  try {
+    const info = await FileSystem.getInfoAsync(uri);
+    if (info.exists && typeof info.size === 'number' && info.size > 0 && info.size <= 4 * 1024 * 1024) return uri;
+  } catch {}
   try {
     // Chargé à la demande : le module natif n'existe pas dans Expo Go (tests au simulateur),
     // et un import en tête de fichier ferait planter toute l'app là-bas.
@@ -158,6 +163,12 @@ export async function compressVideo(uri: string): Promise<string> {
   } catch {
     return uri;
   }
+}
+
+/** Efface un fichier envoyé puis abandonné (vidéo préparée en avance, puis changée ou jamais publiée). */
+export async function removeUpload(path?: string | null): Promise<void> {
+  if (!path || TESTEUR || path.startsWith('file:')) return;
+  try { await supabase.storage.from(BUCKET).remove([path]); } catch {}
 }
 
 /**

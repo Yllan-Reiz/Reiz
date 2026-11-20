@@ -239,6 +239,8 @@ export const es: Dict = {
     captionLabel: 'DESCRIPCIÓN',
     captionPlaceholder: 'Describe tu sesión, cómo te has sentido...',
     uploadingVideo: 'Comprimiendo y enviando el vídeo...',
+    videoPreparing: "Preparando el vídeo…",
+    videoReady: "Vídeo listo para publicar",
     publish: 'Publicar',
   },
   welcome: {

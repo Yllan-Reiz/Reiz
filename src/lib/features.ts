@@ -66,6 +66,9 @@ export const FEATURES = {
   /** Réglages : « Me proposer aux autres membres » toujours visible et nommé pour ce qu'il fait (il coupe aussi
    *  « Nouveaux sur Reiz », les recommandations et la recherche, pas seulement les contacts). */
   discoverableForAll: true,
+  /** Vidéo préparée en avance (20/11/2026) : dès qu'elle est choisie, elle est allégée et envoyée pendant qu'on écrit
+   *  la légende. À « Publier », il ne reste presque rien à attendre. À `false` : tout repart à l'appui sur Publier. */
+  videoPrepare: true,
   // Lot 4
   /** Un écran d'une phrase avant la demande de notifications du téléphone, à la fin de l'accueil. */
   notifsExplainer: true,
