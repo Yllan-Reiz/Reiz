@@ -27,7 +27,7 @@ export function ChoiceSheetHost() {
             {others.map((b, i) => (
               <TouchableOpacity key={`${i}-${b.text}`} onPress={() => pick(b)} activeOpacity={0.8} accessibilityRole="button"
                 style={{ minHeight: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, marginBottom: 8, backgroundColor: 'rgba(255,255,255,0.08)' }}>
-                <Text style={{ color: b.style === 'destructive' ? '#ff453a' : '#fff', fontSize: 16, fontFamily: F.bold, textAlign: 'center' }}>{b.text}</Text>
+                <Text style={{ color: '#fff', fontSize: 16, fontFamily: b.style === 'destructive' ? F.extrabold : F.bold, textAlign: 'center' }}>{b.text}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
