@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Reiz à la une</title>
+<style>
+  @font-face { font-family: Inter; font-weight: 400; src: url(../profil/fonts/Inter_400Regular.ttf); }
+  @font-face { font-family: Inter; font-weight: 600; src: url(../profil/fonts/Inter_600SemiBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 800; src: url(../profil/fonts/Inter_800ExtraBold.ttf); }
+  @font-face { font-family: Inter; font-weight: 900; src: url(../profil/fonts/Inter_900Black.ttf); }
+  :root { --bg: #0a0a0a; --card: #141414; --line: #2a2a2a; --muted: #999; --dim: #8a8a8a; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #000; }
+  body { font-family: Inter, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+  body.single { overflow: hidden; }
+  body.single > section:not(.on) { display: none; }
+  body:not(.single) { display: flex; flex-wrap: wrap; gap: 30px; padding: 30px; }
+
+  /* couvertures « à la une » : 1080x1920, Instagram garde le cercle central (même gabarit que ../profil) */
+  .hl { position: relative; width: 1080px; height: 1920px; background: var(--bg); display: grid; place-items: center; }
+  .hl .disc { width: 640px; height: 640px; border-radius: 50%; background: var(--card); border: 6px solid var(--line); display: grid; place-items: center; }
+  .hl svg { width: 300px; height: 300px; stroke: #fff; stroke-width: 5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* stories d'ouverture : 1080x1920, rien d'important au-dessus de 250 px ni en dessous de 1580 px */
+  .st { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
+  .st .logo { height: 46px; position: absolute; left: 100px; top: 250px; }
+  .st .tag { position: absolute; right: 100px; top: 252px; font-size: 28px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; color: #000; background: #fff; border-radius: 10px; padding: 6px 16px; }
+  .st .in { position: absolute; left: 100px; right: 100px; }
+  .st .mark { width: 168px; height: 168px; border-radius: 50%; background: var(--card); border: 3px solid var(--line); display: grid; place-items: center; margin-bottom: 56px; }
+  .st .mark svg { width: 84px; height: 84px; stroke: #fff; stroke-width: 6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .st .kicker { font-size: 34px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--dim); }
+  .st h1 { font-weight: 900; letter-spacing: -.045em; line-height: 1; font-size: 112px; margin-top: 30px; }
+  .st h1 .q { color: var(--dim); }
+  .st p.sub { font-size: 48px; line-height: 1.32; font-weight: 600; color: var(--muted); margin-top: 48px; letter-spacing: -.01em; }
+  .st p.sub b { color: #fff; font-weight: 800; }
+  .st .card { margin-top: 64px; background: var(--card); border: 2px solid var(--line); border-radius: 40px; padding: 52px 56px; font-size: 52px; line-height: 1.3; font-weight: 600; color: #ddd; letter-spacing: -.015em; }
+  .st .card b { color: #fff; font-weight: 800; }
+  .st .hint { position: absolute; left: 100px; right: 100px; top: 1500px; font-size: 38px; font-weight: 700; color: var(--dim); }
+  .st .glow { position: absolute; width: 1100px; height: 1100px; border-radius: 50%; right: -520px; top: 900px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <g id="i-collabs"><circle cx="37" cy="50" r="25"/><circle cx="63" cy="50" r="25"/></g>
+    <g id="i-reposts"><path d="M20 46v-8a11 11 0 0 1 11-11h43"/><path d="M63 16l11 11-11 11"/><path d="M80 54v8a11 11 0 0 1-11 11H26"/><path d="M37 62L26 73l11 11"/></g>
+    <g id="i-faq"><path d="M22 18h56a9 9 0 0 1 9 9v36a9 9 0 0 1-9 9H50L33 87V72H22a9 9 0 0 1-9-9V27a9 9 0 0 1 9-9z"/><path d="M41 38a9 9 0 1 1 14 7.500c-3.500 2.300-5 4-5 7.500"/><path d="M50 62v.01"/></g>
+    <g id="i-coulisses"><path d="M9 50c10-17 24-25 41-25s31 8 41 25c-10 17-24 25-41 25S19 67 9 50z"/><circle cx="50" cy="50" r="12"/></g>
+  </defs>
+</svg>
+
+<!-- couvertures -->
+<section class="hl" id="hl-collabs"><div class="disc"><svg viewBox="0 0 100 100"><use href="#i-collabs"/></svg></div></section>
+<section class="hl" id="hl-reposts"><div class="disc"><svg viewBox="0 0 100 100"><use href="#i-reposts"/></svg></div></section>
+<section class="hl" id="hl-faq"><div class="disc"><svg viewBox="0 0 100 100"><use href="#i-faq"/></svg></div></section>
+<section class="hl" id="hl-coulisses"><div class="disc"><svg viewBox="0 0 100 100"><use href="#i-coulisses"/></svg></div></section>
+
+<!-- stories d'ouverture (une story publiée est nécessaire pour créer chaque onglet) -->
+<section class="st" id="st-collabs">
+  <div class="glow" style="background: radial-gradient(circle, #7a5cff2e 0%, transparent 62%)"></div>
+  <img class="logo" src="../profil/assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <span class="tag">Collabs</span>
+  <div class="in" style="top: 440px">
+    <div class="mark"><svg viewBox="0 0 100 100"><use href="#i-collabs"/></svg></div>
+    <div class="kicker">Salles, clubs, créateurs</div>
+    <h1>On monte un truc ensemble&nbsp;?</h1>
+    <p class="sub">Un défi pour tes adhérents, une séance commune, un reel à deux. <b>Tu proposes, on suit.</b></p>
+  </div>
+  <div class="hint">Écris-nous en message, on répond vite.</div>
+</section>
+
+<section class="st" id="st-reposts">
+  <div class="glow" style="background: radial-gradient(circle, #3b8bff2e 0%, transparent 62%)"></div>
+  <img class="logo" src="../profil/assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <span class="tag">Vos séances</span>
+  <div class="in" style="top: 440px">
+    <div class="mark"><svg viewBox="0 0 100 100"><use href="#i-reposts"/></svg></div>
+    <div class="kicker">Ta séance ici</div>
+    <h1>Tu postes.<br>On te reposte.</h1>
+    <p class="sub">Dans Reiz, touche <b>Partager en story</b> après ta séance et identifie <b>@reiz_officiel</b>.</p>
+  </div>
+  <div class="hint">Les séances repostées restent dans cet onglet.</div>
+</section>
+
+<section class="st" id="st-faq-1">
+  <img class="logo" src="../profil/assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <span class="tag">FAQ 1/4</span>
+  <div class="in" style="top: 580px">
+    <div class="kicker">Tes questions</div>
+    <h1>C'est gratuit&nbsp;?</h1>
+    <div class="card"><b>Oui.</b> Reiz se télécharge gratuitement sur l'App Store.</div>
+  </div>
+  <div class="hint">Le lien est dans la bio.</div>
+</section>
+
+<section class="st" id="st-faq-2">
+  <img class="logo" src="../profil/assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <span class="tag">FAQ 2/4</span>
+  <div class="in" style="top: 580px">
+    <div class="kicker">Tes questions</div>
+    <h1>Qui voit mes séances&nbsp;?</h1>
+    <div class="card"><b>Toi seul décides</b>, objectif par objectif&nbsp;: Mon cercle, Cercle proche, Privé ou Public.</div>
+  </div>
+  <div class="hint">Tu peux changer d'avis à tout moment.</div>
+</section>
+
+<section class="st" id="st-faq-3">
+  <img class="logo" src="../profil/assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <span class="tag">FAQ 3/4</span>
+  <div class="in" style="top: 580px">
+    <div class="kicker">Tes questions</div>
+    <h1>C'est quoi un duo&nbsp;?</h1>
+    <div class="card">Tu identifies un ami sur ta séance. Si vous postez <b>à moins d'une heure d'écart</b>, le duo est validé.</div>
+  </div>
+  <div class="hint">Jusqu'à 3 amis par séance.</div>
+</section>
+
+<section class="st" id="st-faq-4">
+  <img class="logo" src="../profil/assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <span class="tag">FAQ 4/4</span>
+  <div class="in" style="top: 580px">
+    <div class="kicker">Tes questions</div>
+    <h1>Et sur Android&nbsp;?</h1>
+    <div class="card">Reiz est d'abord sur <b>iPhone</b>. La version Android est en préparation, sans date pour l'instant.</div>
+  </div>
+  <div class="hint">Une autre question ? Pose-la en message.</div>
+</section>
+
+<section class="st" id="st-coulisses">
+  <div class="glow" style="background: radial-gradient(circle, #ffb13b26 0%, transparent 62%)"></div>
+  <img class="logo" src="../profil/assets/ecriture-reiz-blanc-trim.png" alt="Reiz">
+  <span class="tag">Coulisses</span>
+  <div class="in" style="top: 440px">
+    <div class="mark"><svg viewBox="0 0 100 100"><use href="#i-coulisses"/></svg></div>
+    <div class="kicker">L'envers de l'appli</div>
+    <h1>Reiz se construit ici.</h1>
+    <p class="sub">Ce qui arrive dans l'appli, ce qu'on teste, et ce qu'on rate aussi. <b>Sans filtre.</b></p>
+  </div>
+  <div class="hint">Dis-nous ce qui manque, on lit tout.</div>
+</section>
+
+<!-- aperçu de la rangée sur le profil (contrôle visuel, pas à publier) -->
+<section id="apercu" style="width: 1080px; background: #000; padding: 60px 40px 70px">
+  <div style="font-size: 26px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #8a8a8a; margin-bottom: 40px">Aperçu sur le profil</div>
+  <div style="display: flex; gap: 34px">
+    <style>
+      #apercu .it { width: 138px; text-align: center; font-size: 22px; font-weight: 600; color: #eee; }
+      #apercu .ring { width: 138px; height: 138px; border-radius: 50%; border: 2px solid #3a3a3a; padding: 6px; margin-bottom: 12px; }
+      #apercu .ring div { width: 100%; height: 100%; border-radius: 50%; background-size: 177.8% auto; background-position: center; }
+    </style>
+    <div class="it"><div class="ring"><div style="background-image: url(../profil/png/a-la-une-appli.png)"></div></div>Appli</div>
+    <div class="it"><div class="ring"><div style="background-image: url(png/a-la-une-reposts.png)"></div></div>Vos séances</div>
+    <div class="it"><div class="ring"><div style="background-image: url(png/a-la-une-collabs.png)"></div></div>Collabs</div>
+    <div class="it"><div class="ring"><div style="background-image: url(../profil/png/a-la-une-badges.png)"></div></div>Badges</div>
+    <div class="it"><div class="ring"><div style="background-image: url(png/a-la-une-faq.png)"></div></div>FAQ</div>
+    <div class="it"><div class="ring"><div style="background-image: url(png/a-la-une-coulisses.png)"></div></div>Coulisses</div>
+  </div>
+</section>
+
+<script>
+  const f = new URLSearchParams(location.search).get('f');
+  if (f) { document.body.classList.add('single'); document.getElementById(f).classList.add('on'); }
+</script>
+</body>
+</html>
