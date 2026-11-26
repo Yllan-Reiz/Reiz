@@ -78,5 +78,5 @@ export const FEATURES = {
   notifsExplainer: true,
 } as const;
 
-/** Fil de découverte : montré tant qu'on a moins d'amis que ça (les amis acceptés, pas les demandes). */
+/** Fil de découverte : en dessous de ce nombre d'amis acceptés, tout le monde ; au-dessus, seulement des amis d'amis. */
 export const DISCOVER_MAX_FRIENDS = 5;

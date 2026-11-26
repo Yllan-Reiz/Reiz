@@ -778,8 +778,10 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
                 {/* Fil de découverte (26/11/2026) : sous le fil du cercle, une fois arrivé au bout, tant qu'on a peu
                     d'amis. Rechargé avec le geste « tirer pour actualiser » (winsKey). Hors du bloc centré au-dessus :
                     centré, son texte ne revenait pas à la ligne. */}
-                {FEATURES.discoverFeed && !!userId && !loadingFeed && !hasMore && friendCount !== null && friendCount < DISCOVER_MAX_FRIENDS && (
-                  <DiscoverFeed userId={userId} reloadKey={winsKey} onOpenProfile={openProfile} bottomPad={bottomPad} />
+                {FEATURES.discoverFeed && !!userId && !loadingFeed && !hasMore && friendCount !== null && (
+                  // Peu d'amis : tout le monde (amis d'amis en tête). Au-delà : seulement quatre amis d'amis.
+                  <DiscoverFeed userId={userId} reloadKey={winsKey} onOpenProfile={openProfile} bottomPad={bottomPad}
+                    onlyMutual={friendCount >= DISCOVER_MAX_FRIENDS} />
                 )}
               </View>
             }
