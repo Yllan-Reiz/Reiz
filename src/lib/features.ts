@@ -30,6 +30,10 @@ export const FEATURES = {
   /** Flou du fil tant qu'on n'a rien posté depuis 7 jours (15/11/2026). Les 3 premiers jours d'un compte ne sont pas
    *  floutés. À `false`, le fil est toujours net. */
   weeklyBlur: true,
+  /** Fil de découverte (26/11/2026, idée de Yllan) : tant qu'on a peu d'amis (moins de DISCOVER_MAX_FRIENDS), le bas
+   *  du fil montre la dernière séance de chaque membre, floutée (empreinte seulement, phase 39). « Ajoute X pour voir »
+   *  envoie la demande d'ami. À `false`, plus de section ni de calcul d'empreinte à la publication. */
+  discoverFeed: true,
   /** Astuces « Le savais-tu ? » un jour sur deux dans l'Activité, à la place de « Ton cercle cette semaine ». */
   activityTips: true,
   /** Jauge de fin de semaine sur l'écran verrouillé (15/11/2026) : l'iPhone redonne son jeton de carte au serveur
@@ -73,3 +77,6 @@ export const FEATURES = {
   /** Un écran d'une phrase avant la demande de notifications du téléphone, à la fin de l'accueil. */
   notifsExplainer: true,
 } as const;
+
+/** Fil de découverte : montré tant qu'on a moins d'amis que ça (les amis acceptés, pas les demandes). */
+export const DISCOVER_MAX_FRIENDS = 5;

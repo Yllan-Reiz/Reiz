@@ -45,7 +45,9 @@ import { ObjectiveEditSheet } from '../components/ObjectiveEditSheet';
 import { ObjectivesTab } from '../components/ObjectivesTab';
 import { useCloseCircle } from '../lib/closeCircle';
 import { t, unitLabel, dirIcon, isRTL } from '../i18n';
-import { FEATURES } from '../lib/features';
+import { FEATURES, DISCOVER_MAX_FRIENDS } from '../lib/features';
+import { DiscoverFeed } from '../components/DiscoverFeed';
+import { healMyBlurhashes } from '../lib/blurhash';
 import { InviteCircleCard } from '../components/InviteCircleCard';
 import { SoloCard } from '../components/SoloCard';
 import { myInviteLink } from '../lib/invites';
@@ -581,6 +583,8 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
       });
       loadFeedPage(0, uid); // remplit aussi le nombre d'amis (liste du cercle)
       myInviteLink(uid).catch(() => {}); // lien d'invitation prêt avant le premier partage
+      // Empreinte floue de mes dernières séances (fil de découverte), sans gêner l'ouverture.
+      if (FEATURES.discoverFeed) setTimeout(() => { healMyBlurhashes(uid).catch(() => {}); }, 5000);
       loadWeekState(uid).then(w => { setWeek(w); setLastPostAt(w.lastPostAt); cacheSet(`week.${uid}`, w); setFlame(uid, w.weeks >= 1); });
       // Les flammes de tout le cercle, à côté des photos de profil (elle remplace la série du haut du fil).
       loadFlames().catch(() => {});
@@ -762,13 +766,21 @@ export function Main({ onPost, navIntent, onNavIntentHandled }: {
               )
             }
             ListFooterComponent={
-              <View style={{ height: bottomPad, alignItems: 'center', paddingTop: 10 }}>
-                {loadingMore ? <ActivityIndicator color="#fff" /> : null}
-                {!loadingMore && !hasMore && updates.length > 0 ? (
-                  <Text style={{ color: '#8a8a8a', fontSize: 12, textAlign: 'center', paddingHorizontal: 24 }}>
-                    {t(weekFeed ? 'main.feedEndWeek' : 'main.feedEnd')}
-                  </Text>
-                ) : null}
+              <View style={{ minHeight: bottomPad, paddingTop: 10 }}>
+                <View style={{ alignItems: 'center' }}>
+                  {loadingMore ? <ActivityIndicator color="#fff" /> : null}
+                  {!loadingMore && !hasMore && updates.length > 0 ? (
+                    <Text style={{ color: '#8a8a8a', fontSize: 12, textAlign: 'center', paddingHorizontal: 24 }}>
+                      {t(weekFeed ? 'main.feedEndWeek' : 'main.feedEnd')}
+                    </Text>
+                  ) : null}
+                </View>
+                {/* Fil de découverte (26/11/2026) : sous le fil du cercle, une fois arrivé au bout, tant qu'on a peu
+                    d'amis. Rechargé avec le geste « tirer pour actualiser » (winsKey). Hors du bloc centré au-dessus :
+                    centré, son texte ne revenait pas à la ligne. */}
+                {FEATURES.discoverFeed && !!userId && !loadingFeed && !hasMore && friendCount !== null && friendCount < DISCOVER_MAX_FRIENDS && (
+                  <DiscoverFeed userId={userId} reloadKey={winsKey} onOpenProfile={openProfile} bottomPad={bottomPad} />
+                )}
               </View>
             }
             renderItem={({ item, index }) => (

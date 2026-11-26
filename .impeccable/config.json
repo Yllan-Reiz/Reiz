@@ -35,6 +35,15 @@
         "value": "#2a0c16",
         "createdAt": "2026-11-07T15:32:38.786Z",
         "reason": "Claude: fond des bulles à mots de l'essai d'accueil à bulles (palette chaude de la vidéo demandée par Yllan), derrière l'interrupteur BUBBLE_SPLASH"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "src/components/DiscoverFeed.tsx"
+        ],
+        "createdAt": "2026-11-26T13:58:10.881Z",
+        "reason": "Claude: faux positif, composant expo-image React Native avec une source blurhash, pas une balise img HTML"
       }
     ]
   }

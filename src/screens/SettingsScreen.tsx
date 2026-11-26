@@ -89,6 +89,11 @@ export function SettingsScreen({ visible, initialView = 'root', onClose, onEditN
       if (user) {
         const { data, error } = await supabase.from('users').select('discoverable').eq('id', user.id).single();
         setDiscoverable(!error && data ? (data as any).discoverable !== false : null);
+        // Lu à part : tant que la colonne n'existe pas (base pas à jour), l'interrupteur reste caché sans gêner l'autre.
+        if (FEATURES.discoverFeed) {
+          const { data: d2, error: e2 } = await supabase.from('users').select('in_discover').eq('id', user.id).single();
+          setInDiscover(!e2 && d2 ? (d2 as any).in_discover !== false : null);
+        }
       }
       setLoaded(l => ({ ...l, disc: true }));
     }, () => setLoaded(l => ({ ...l, disc: true })));
@@ -99,6 +104,16 @@ export function SettingsScreen({ visible, initialView = 'root', onClose, onEditN
     if (!user) return;
     const { error } = await supabase.from('users').update({ discoverable: value }).eq('id', user.id);
     if (error) { setDiscoverable(!value); Alert.alert(t('common.error'), frError(error)); }
+  };
+
+  // « Apparaître aux nouveaux » (users.in_discover, phase 39). null = pas chargé ou colonne absente.
+  const [inDiscover, setInDiscover] = useState<boolean | null>(null);
+  const toggleInDiscover = async (value: boolean) => {
+    setInDiscover(value);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase.from('users').update({ in_discover: value }).eq('id', user.id);
+    if (error) { setInDiscover(!value); Alert.alert(t('common.error'), frError(error)); }
   };
 
   const toggleEncourage = async (value: boolean) => {
@@ -169,10 +184,11 @@ export function SettingsScreen({ visible, initialView = 'root', onClose, onEditN
             <Section title={t('settings.secPrivacy')}>
               <Row icon="star-outline" label={t('settings.closeCircle')} onPress={() => { onClose(); setTimeout(onCloseFriends, 350); }} />
               {discoverable !== null && <ToggleRow icon="people-outline" label={t(FEATURES.discoverableForAll ? 'settings.discoverableAll' : 'settings.discoverable')} value={discoverable} onChange={toggleDiscoverable} />}
+              {inDiscover !== null && <ToggleRow icon="eye-off-outline" label={t('settings.inDiscover')} value={inDiscover} onChange={toggleInDiscover} />}
               <Row icon="ban-outline" label={t('settings.blocked')} onPress={() => setView('blocked')} />
               <Row icon="download-outline" label={t('settings.export')} onPress={exportData} last />
             </Section>
-            <Text style={st.hint}>{discoverable !== null ? t(FEATURES.discoverableForAll ? 'settings.discoverableAllHint' : 'settings.discoverableHint') + ' ' : ''}{t('settings.visibilityHint')}</Text>
+            <Text style={st.hint}>{discoverable !== null ? t(FEATURES.discoverableForAll ? 'settings.discoverableAllHint' : 'settings.discoverableHint') + ' ' : ''}{inDiscover !== null ? t('settings.inDiscoverHint') + ' ' : ''}{t('settings.visibilityHint')}</Text>
 
             <Section title={t('settings.secTraining')}>
               <Row icon="location-outline" label={t('presencePanel.title')} onPress={() => setView('presence')} last />

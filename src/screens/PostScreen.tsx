@@ -30,6 +30,7 @@ import { t, tp, unitLabel, isRTL } from '../i18n';
 import { CachedImage } from '../components/CachedImage';
 import { FEATURES } from '../lib/features';
 import { choose } from '../lib/choose';
+import { makeBlurhash } from '../lib/blurhash';
 
 // Vidéo de progression : 25 s max (15 s jusqu'à la 1.1). Au-delà, le fichier pèse
 // trop lourd pour la 4G et le fil devient une plateforme vidéo.
@@ -471,11 +472,14 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
     const user = await currentUser();
     if (!user) { setPublishing(false); Alert.alert(t('common.error'), t('post.mustBeSignedIn')); return; }
     let photoUrl: string | null = null;
+    // Empreinte floue pour le fil de découverte (phase 39), calculée pendant l'envoi : rien de plus à attendre.
+    const hashing = photoUri && FEATURES.discoverFeed ? makeBlurhash(photoUri, mediaType === 'video') : Promise.resolve(null);
     if (photoUri) {
       photoUrl = await uploadPhoto(photoUri, user.id);
       // Échec d'envoi : on s'arrête là plutôt que de publier sans le média choisi.
       if (!photoUrl) { setPublishing(false); return; }
     }
+    const blurhash = await hashing;
     // progress_value = pourcentage (0-100), c'est ce que le feed affiche.
     // current_value = valeur absolue dans l'unité de l'objectif (séances, km...),
     // affichée partout ailleurs. Les deux sont calculées à partir du même compteur.
@@ -491,6 +495,7 @@ export function PostScreen({ onBack, onPublish, duoWith, objectiveId }: { onBack
       // Pourcentage exact, pas arrondi : 215 sur 240 kg arrondi à 90 % s'affichait 216 kg dans le fil.
       progress_value: isPercent || !(target > 0) ? pct : Math.min(100, Math.round((value / target) * 1000000) / 10000),
       photo_url: photoUrl,
+      ...(blurhash ? { blurhash } : {}),
       // Seulement les amis encore autorisés (changement d'objectif après avoir coché).
       with_user_ids: canTag ? withIds.filter(id => taggable.some(f => f.id === id)) : [],
     });
