@@ -20,6 +20,10 @@ try {
 /** true = verre Apple natif dispo (iOS 26+). Sert aussi à ajuster les couleurs autour. */
 export const LIQUID_GLASS = liquid && !!NativeGlassView;
 
+/** Méthode de flou sur Android (27/11/2026). Sans elle, le BlurView d'expo-blur n'y floute rien : il pose un voile
+ *  teinté et on lit la page dessous (l'Activité laissait voir le fil). Vérifié sur l'émulateur Pixel 7. */
+export const ANDROID_BLUR_METHOD = Platform.OS === 'android' ? ('dimezisBlurView' as const) : undefined;
+
 // Sur iOS on prend le matériau système des barres (celui des tab bars Apple),
 // sur Android le blur expérimental de expo-blur.
 const FALLBACK_TINT = Platform.OS === 'ios' ? 'systemChromeMaterialDark' : 'dark';
@@ -65,7 +69,7 @@ export function GlassSurface({
       <BlurView
         intensity={intensity}
         tint={FALLBACK_TINT as any}
-        experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
+        experimentalBlurMethod={ANDROID_BLUR_METHOD}
         style={StyleSheet.absoluteFill}
       />
       {/* Reflet spéculaire : la lumière tombe du haut, le bas s'assombrit */}

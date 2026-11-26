@@ -24,7 +24,7 @@ import { ContactsScreen } from './ContactsScreen';
 import { SportCarousel, SPORTS, Sport } from './SportCarousel';
 import { LocationScene } from './LocationScene';
 import { TrainingDaysPicker } from './TrainingDays';
-import { GlassCard, GlassSurface } from './GlassSurface';
+import { GlassCard, GlassSurface, ANDROID_BLUR_METHOD } from './GlassSurface';
 import { F } from '../styles';
 import { t, unitLabel, dirIcon, TKey } from '../i18n';
 import { WEEK_CHOICES, weeksLabel, addWeeks, localDay, deadlineLabel, rhythmTarget } from '../lib/goal';
@@ -902,7 +902,7 @@ function SportBackdrop({ photo }: { photo: ImageSourcePropType }) {
   return (
     <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: v }]}>
       <Image source={photo} style={StyleSheet.absoluteFill} resizeMode="cover" />
-      <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
+      <BlurView intensity={28} tint="dark" experimentalBlurMethod={ANDROID_BLUR_METHOD} style={StyleSheet.absoluteFill} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(5,5,5,0.5)' }]} />
       <LinearGradient colors={['rgba(5,5,5,0.7)', 'rgba(5,5,5,0)', 'rgba(5,5,5,0)', 'rgba(5,5,5,0.85)']} locations={[0, 0.22, 0.62, 1]} style={StyleSheet.absoluteFill} />
     </Animated.View>

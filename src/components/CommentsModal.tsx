@@ -13,7 +13,7 @@ import { s, F } from '../styles';
 import { t, isRTL } from '../i18n';
 import { CachedImage } from './CachedImage';
 import { BlurView } from 'expo-blur';
-import { GlassSurface } from './GlassSurface';
+import { GlassSurface, ANDROID_BLUR_METHOD } from './GlassSurface';
 import { KeyboardDock, keyboardDockAvailable } from '../../modules/reiz-keyboard-dock';
 import { FlameBadge } from './FlameBadge';
 
@@ -387,7 +387,7 @@ export function CommentsModal({ visible, updateId, postOwnerId, currentUserId, f
         <View>
         {/* Son propre verre : la liste passe dessous quand le clavier est ouvert. Déborde en bas, derrière les coins du clavier. */}
         <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: -40, overflow: 'hidden' }}>
-          <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={70} tint="dark" experimentalBlurMethod={ANDROID_BLUR_METHOD} style={StyleSheet.absoluteFill} />
           <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10,10,10,0.35)' }]} />
         </View>
         {replyTo && (

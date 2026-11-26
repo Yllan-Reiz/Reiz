@@ -5,7 +5,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { GlassSurface } from './GlassSurface';
+import { GlassSurface, ANDROID_BLUR_METHOD } from './GlassSurface';
 import { InviteCard, shareInviteCard, clipboard } from './InviteCard';
 import { APP_STORE_URL } from '../constants';
 import { currentUser } from '../lib/supabase';
@@ -99,7 +99,7 @@ export function ShareProfileSheet({ visible, onClose, name, username, avatar }: 
       <View style={{ flex: 1, backgroundColor: '#0a0a0a' }}>
         {/* Fond : ta photo floutée, comme la carte BeReal. */}
         {avatar ? <Image source={{ uri: avatar }} style={StyleSheet.absoluteFill} resizeMode="cover" blurRadius={Platform.OS === 'ios' ? 0 : 20} /> : null}
-        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+        <BlurView intensity={80} tint="dark" experimentalBlurMethod={ANDROID_BLUR_METHOD} style={StyleSheet.absoluteFill} />
         <LinearGradient colors={['rgba(10,10,10,0.35)', 'rgba(10,10,10,0.7)']} style={StyleSheet.absoluteFill} />
 
         <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, flexDirection: 'row' }}>

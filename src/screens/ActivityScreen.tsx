@@ -9,7 +9,7 @@ import { ActivityItem, Update, FeedMeta } from '../lib/types';
 import { s, F } from '../styles';
 import { GUTTER, hasSchedule, daysLabel } from '../constants';
 import { FeedCard } from '../components/FeedCard';
-import { GlassCard } from '../components/GlassSurface';
+import { GlassCard, ANDROID_BLUR_METHOD } from '../components/GlassSurface';
 import { GlassBackdrop, GlassIconButton } from '../components/ProfileSections';
 import { Faces, CloseCircleCard } from '../components/CloseCircleCard';
 import { PresenceCard } from '../components/PresenceCard';
@@ -391,7 +391,7 @@ export function ActivityScreen({ overlay, currentUserId, backdropUrl, onClose, o
     <Animated.View style={[s.container, overlay && { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'transparent', opacity: appear, zIndex: 20 }]}>
       {overlay ? (
         <>
-          <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={70} tint="dark" experimentalBlurMethod={ANDROID_BLUR_METHOD} style={StyleSheet.absoluteFill} />
           <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10,10,10,0.38)' }]} />
         </>
       ) : <GlassBackdrop avatarUrl={backdropUrl ?? null} />}
