@@ -30,6 +30,17 @@ const ICONS: Record<StepId, keyof typeof Ionicons.glyphMap> = {
   post: 'add-circle-outline', photo: 'camera-outline', objective: 'flag-outline', friends: 'people-outline', place: 'location-outline', notifs: 'notifications-outline',
 };
 
+// Carte en blanc (26/11/2026, demande de Yllan : « tu échanges les couleurs et tu changes rien ») : sur le fil noir, elle
+// ressort et pousse à compléter son profil. À `false`, l'ancienne carte en verre sombre revient telle quelle.
+const SETUP_WHITE = true;
+const FG = SETUP_WHITE ? '#000' : '#fff';
+const ink = (a: number) => (SETUP_WHITE ? `rgba(0,0,0,${a})` : `rgba(255,255,255,${a})`);
+function SetupShell({ children }: { children: React.ReactNode }) {
+  return SETUP_WHITE
+    ? <View style={{ marginBottom: 14, borderRadius: 28, backgroundColor: '#fff', overflow: 'hidden' }}>{children}</View>
+    : <GlassSurface radius={28} style={{ marginBottom: 14 }}>{children}</GlassSurface>;
+}
+
 export function SetupCard({ userId, hasObjective, friendCount, onPost, onAddPhoto, onAddObjective, onFindFriends }: {
   userId: string | null;
   /** null tant que ce n'est pas chargé : la carte attend pour ne pas clignoter. */
@@ -100,10 +111,10 @@ export function SetupCard({ userId, hasObjective, friendCount, onPost, onAddPhot
 
   return (
     <>
-      <GlassSurface radius={28} style={{ marginBottom: 14 }}>
+      <SetupShell>
         <View style={{ padding: 18 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontFamily: F.bold, letterSpacing: 1.5 }}>
+            <Text style={{ color: ink(0.55), fontSize: 10, fontFamily: F.bold, letterSpacing: 1.5 }}>
               {t('setup.label', { done: doneCount, total: steps.length })}
             </Text>
             <TouchableOpacity
@@ -111,19 +122,19 @@ export function SetupCard({ userId, hasObjective, friendCount, onPost, onAddPhot
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityLabel={t('setup.hide')}
             >
-              <Ionicons name="close" size={18} color="rgba(255,255,255,0.5)" />
+              <Ionicons name="close" size={18} color={ink(0.5)} />
             </TouchableOpacity>
           </View>
 
-          <Text style={{ color: '#fff', fontSize: 24, fontFamily: F.black, letterSpacing: -0.6, marginTop: 10 }}>
+          <Text style={{ color: FG, fontSize: 24, fontFamily: F.black, letterSpacing: -0.6, marginTop: 10 }}>
             {tp('setup.title', left)}
           </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14, lineHeight: 21, fontFamily: F.regular, marginTop: 6 }}>
+          <Text style={{ color: ink(0.75), fontSize: 14, lineHeight: 21, fontFamily: F.regular, marginTop: 6 }}>
             {t('setup.sub')}
           </Text>
 
-          <View style={{ height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.14)', marginTop: 14, overflow: 'hidden' }}>
-            <View style={{ width: `${(doneCount / steps.length) * 100}%`, height: 4, borderRadius: 2, backgroundColor: '#fff' }} />
+          <View style={{ height: 4, borderRadius: 2, backgroundColor: ink(0.14), marginTop: 14, overflow: 'hidden' }}>
+            <View style={{ width: `${(doneCount / steps.length) * 100}%`, height: 4, borderRadius: 2, backgroundColor: FG }} />
           </View>
 
           <View style={{ marginTop: 6 }}>
@@ -133,23 +144,23 @@ export function SetupCard({ userId, hasObjective, friendCount, onPost, onAddPhot
                 key={step.id}
                 activeOpacity={0.8}
                 onPress={() => { Haptics.selectionAsync().catch(() => {}); track('setup_tap', { step: step.id }, 'feed'); step.onPress(); }}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: 'rgba(255,255,255,0.08)' }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: ink(0.08) }}
               >
-                <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' }}>
-                  <Ionicons name={ICONS[step.id]} size={17} color="#fff" />
+                <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: ink(0.12) }}>
+                  <Ionicons name={ICONS[step.id]} size={17} color={FG} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: '#fff', fontSize: 15, fontFamily: F.bold }}>
+                  <Text style={{ color: FG, fontSize: 15, fontFamily: F.bold }}>
                     {t(`setup.${step.id}`)}
                   </Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, fontFamily: F.regular, marginTop: 1 }}>{t(`setup.${step.id}Sub`)}</Text>
+                  <Text style={{ color: ink(0.55), fontSize: 12, fontFamily: F.regular, marginTop: 1 }}>{t(`setup.${step.id}Sub`)}</Text>
                 </View>
-                <Ionicons name={dirIcon('chevron-forward')} size={18} color="rgba(255,255,255,0.6)" />
+                <Ionicons name={dirIcon('chevron-forward')} size={18} color={ink(0.6)} />
               </TouchableOpacity>
             ))}
           </View>
         </View>
-      </GlassSurface>
+      </SetupShell>
 
       <Modal visible={placeOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setPlaceOpen(false); checkDevice(); }}>
         <View style={s.modalContainer}>
