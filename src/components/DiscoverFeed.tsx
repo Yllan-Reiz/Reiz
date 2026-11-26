@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Alert } from 'react-native';
-import { requireOptionalNativeModule } from 'expo';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
@@ -11,6 +10,7 @@ import { s, F } from '../styles';
 import { t } from '../i18n';
 import { CachedImage } from './CachedImage';
 import { makeBlurhash } from '../lib/blurhash';
+import { BlurhashImage } from './BlurhashImage';
 
 // Fil de découverte (26/11/2026, idée de Yllan) : un nouveau venu n'arrive plus sur un fil vide. Sous son fil, la
 // dernière séance de chaque membre, floutée ; pour la voir, il ajoute la personne en ami.
@@ -38,13 +38,6 @@ const neutralFor = (id: string) => NEUTRAL[id.split('').reduce((a, c) => a + c.c
 const avatarHashes = new Map<string, string | null>();
 function backdropHash(r: Row, avatarHash: string | null | undefined): string {
   return r.blurhash ?? avatarHash ?? neutralFor(r.user_id);
-}
-
-let ExpoImage: any | null | undefined;
-function expoImage(): any | null {
-  if (ExpoImage !== undefined) return ExpoImage;
-  try { ExpoImage = requireOptionalNativeModule('ExpoImage') ? require('expo-image').Image : null; } catch { ExpoImage = null; }
-  return ExpoImage;
 }
 
 const firstName = (r: Row) => (r.full_name || r.username || '').trim().split(' ')[0] || r.username;
@@ -98,7 +91,6 @@ export function DiscoverFeed({ userId, reloadKey, onOpenProfile, bottomPad, only
   };
 
   if (!rows || rows.length === 0) return null;
-  const Img = expoImage();
 
   return (
     // Le bas de la liste a déjà la place de la barre d'onglets ; la section la redonne sous sa dernière carte.
@@ -134,9 +126,7 @@ export function DiscoverFeed({ userId, reloadKey, onOpenProfile, bottomPad, only
               </View>
             </View>
             <View style={s.feedPhotoWrap}>
-              {Img
-                ? <Img source={{ blurhash: backdropHash(r, avatarHashes.get(r.user_id)), width: 24, height: 36 }} contentFit="cover" transition={0} style={s.feedPhoto} accessible={false} />
-                : <View style={[s.feedPhoto, { backgroundColor: '#1c1c1c' }]} />}
+              <BlurhashImage hash={backdropHash(r, avatarHashes.get(r.user_id))} style={s.feedPhoto} />
               <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, backgroundColor: 'rgba(10,10,10,0.28)' }}>
                 <Ionicons name={isSent ? 'time-outline' : 'eye-off-outline'} size={30} color="#fff" />
                 <Text style={{ color: '#fff', fontSize: 22, lineHeight: 27, fontFamily: F.black, letterSpacing: -0.5, textAlign: 'center', marginTop: 14 }} maxFontSizeMultiplier={1.3}>
